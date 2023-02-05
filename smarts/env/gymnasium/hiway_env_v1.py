@@ -52,11 +52,8 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.visdom_client import VisdomClient
-from smarts.env.gymnasium.utils.action_conversion import (
-    ActionOptions,
-    ActionSpacesFormatter,
-)
-from smarts.env.gymnasium.utils.observation_conversion import (
+from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
+from smarts.env.utils.observation_conversion import (
     ObservationOptions,
     ObservationSpacesFormatter,
 )
@@ -127,6 +124,10 @@ class HiWayEnvV1(gym.Env):
             for how the formatting matches the observation space. String version
             can be used instead. See :class:`ObservationOptions`. Defaults to
             :attr:`ObservationOptions.default`.
+        action_options (ActionOptions, string): Defines the options
+            for how the formatting matches the action space. String version
+            can be used instead. See :class:`ActionOptions`. Defaults to
+            :attr:`ActionOptions.default`.
     """
 
     metadata = {"render.modes": ["human"]}
@@ -304,9 +305,9 @@ class HiWayEnvV1(gym.Env):
                 dones["__all__"],
                 info,
             )
-        elif (
-            self._observations_formatter.observation_options
-            == ObservationOptions.multi_agent
+        elif self._observations_formatter.observation_options in (
+            ObservationOptions.multi_agent,
+            ObservationOptions.unformatted,
         ):
             return (
                 self._observations_formatter.format(observations),

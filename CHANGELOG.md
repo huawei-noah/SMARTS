@@ -16,6 +16,19 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 ### Security
 
+## [1.0.3] 2023-02-04
+### Added
+- Added action formatting option to `hiway-v0`.
+- Introduced `debug: serial: bool` option to driving smarts benchmark config.
+### Changed
+- Moved action and observation conversions from `smarts.env.gymnasium.utils` to `smarts.env.utils`.
+### Fixed
+- Fixed an issue where termination while envision is enabled but not connected would cause a flurry of broken pipe errors.
+- Fixed an issue where activating visdom would cause errors.
+- Fixed an issue where metrics break down with unformatted observations.
+- Fixed an issue where `hiway-v1` would cause an exception when using "unformatted" observations.
+- Unformatted actions and observations in `hiway-v0` provide `None` rather than an incorrect space.
+
 ## [1.0.2] 2023-01-27
 ### Added
 - The `hiway-v1` environment can now be configured to provide an "unformatted" observation. 

@@ -23,7 +23,6 @@ from typing import Any, Dict, Optional, Tuple
 
 import gym
 
-from smarts import sstudio
 from smarts.core.agent_interface import (
     OGM,
     RGB,
@@ -38,6 +37,7 @@ from smarts.env.hiway_env import HiWayEnv
 from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.single_agent import SingleAgent
+from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -108,7 +108,7 @@ def intersection_v0_env(
         A single-agent unprotected left turn intersection environment.
     """
 
-    scenario = [
+    scenarios = [
         str(
             pathlib.Path(__file__).absolute().parents[1]
             / "scenarios"
@@ -116,7 +116,7 @@ def intersection_v0_env(
             / "1_to_1lane_left_turn_c"
         )
     ]
-    sstudio.build_scenario(scenario=scenario)
+    build_scenarios(scenarios=scenarios)
 
     done_criteria = DoneCriteria(
         collision=True,
@@ -159,7 +159,7 @@ def intersection_v0_env(
     }
 
     env = HiWayEnv(
-        scenarios=scenario,
+        scenarios=scenarios,
         agent_specs=agent_specs,
         sim_name="LeftTurn",
         headless=headless,

@@ -267,7 +267,7 @@ if __name__ == "__main__":
         help="Destination path of where to copy the model when training is over",
     )
     args = parser.parse_args()
-    build_scenario(clean=False, scenario=args.scenario, seed=42)
+    build_scenario(scenario=args.scenario, clean=False, seed=42)
 
     main(
         scenario=args.scenario,

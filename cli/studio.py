@@ -17,12 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import multiprocessing
-import os
-from multiprocessing import Process, Semaphore, synchronize
+
 from multiprocessing.pool import ThreadPool
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import List, Sequence
 
 import click
 
@@ -50,41 +48,11 @@ def scenario_cli():
 )
 @click.argument("scenario", type=click.Path(exists=True), metavar="<scenario>")
 def build(clean: bool, scenario: str, seed: int):
-    click.echo(f"build-scenario {scenario}")
-
     from smarts.sstudio.scenario_construction import build_scenario
 
     assert seed == None or isinstance(seed, (int))
 
-    build_scenario(clean, scenario, seed, click.echo)
-
-
-def _build_scenario_proc(
-    clean: bool,
-    scenario: str,
-    semaphore: synchronize.Semaphore,
-    seed: int,
-):
-    from smarts.sstudio.scenario_construction import build_scenario
-
-    semaphore.acquire()
-    try:
-        build_scenario(clean, scenario, seed, click.echo)
-    finally:
-        semaphore.release()
-
-
-def _is_scenario_folder_to_build(path: str) -> bool:
-    if os.path.exists(os.path.join(path, "waymo.yaml")):
-        # for now, don't try to build Waymo scenarios...
-        return False
-    if os.path.exists(os.path.join(path, "scenario.py")):
-        return True
-    from smarts.sstudio.types import MapSpec
-
-    map_spec = MapSpec(path)
-    road_map, _ = map_spec.builder_fn(map_spec)
-    return road_map is not None
+    build_scenario(scenario=scenario, clean=clean, seed=seed, log=click.echo)
 
 
 @scenario_cli.command(
@@ -105,37 +73,9 @@ def _is_scenario_folder_to_build(path: str) -> bool:
 )
 @click.argument("scenarios", nargs=-1, metavar="<scenarios>")
 def build_all(clean: bool, scenarios: List[str], seed: int):
-    build_scenarios(clean, scenarios, seed)
+    from smarts.sstudio.scenario_construction import build_scenarios
 
-
-def build_scenarios(
-    clean: bool,
-    scenarios: List[str],
-    seed: Optional[int] = None,
-):
-    if not scenarios:
-        # nargs=-1 in combination with a default value is not supported
-        # if scenarios is not given, set /scenarios as default
-        scenarios = ["scenarios"]
-
-    concurrency = max(1, multiprocessing.cpu_count() - 1)
-    sema = Semaphore(concurrency)
-    all_processes = []
-    for scenarios_path in scenarios:
-        for subdir, _, _ in os.walk(scenarios_path):
-            if _is_scenario_folder_to_build(subdir):
-                p = Path(subdir)
-                scenario = f"{scenarios_path}/{p.relative_to(scenarios_path)}"
-                proc = Process(
-                    target=_build_scenario_proc,
-                    args=(clean, scenario, sema, seed),
-                )
-                all_processes.append((scenario, proc))
-                proc.start()
-
-    for scenario_path, proc in all_processes:
-        click.echo(f"Waiting on {scenario_path} ...")
-        proc.join()
+    build_scenarios(scenarios=scenarios, clean=clean, seed=seed, log=click.echo)
 
 
 @scenario_cli.command(
