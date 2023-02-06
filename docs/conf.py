@@ -46,11 +46,11 @@ extensions = [
 
 extlinks = {
     "examples": (
-        "https://github.com/huawei-noah/SMARTS/blob/develop/examples/%s",
+        "https://github.com/huawei-noah/SMARTS/blob/master/examples/%s",
         "%s",
     ),
     "scenarios": (
-        "https://github.com/huawei-noah/SMARTS/blob/develop/scenarios/%s",
+        "https://github.com/huawei-noah/SMARTS/blob/master/scenarios/%s",
         "%s",
     ),
 }

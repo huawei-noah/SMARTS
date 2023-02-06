@@ -5,6 +5,7 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
 
+from .interaction_aware_motion_prediction.policy import Policy as IAMPAgent
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
 from .waypoint_tracking_agent import WaypointTrackingAgent
@@ -102,3 +103,13 @@ def human_keyboard_entrypoint(*arg, **kwargs):
 
 
 register(locator="human-in-the-loop-v0", entry_point=human_keyboard_entrypoint)
+
+register(
+    locator="interaction-aware-motion-prediction-agent-v0",
+    entry_point=lambda **kwargs: AgentSpec(
+        interface=AgentInterface(
+            action=ActionSpaceType.TargetPose,
+        ),
+        agent_builder=IAMPAgent,
+    ),
+)

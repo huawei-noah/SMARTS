@@ -1,42 +1,5 @@
 # Policy Zoo
 
-## Packaging Policies
-
-**Build policies** (and make available in zoo/policies)
-
-```bash
-# cd <project root>
-scl zoo build <policy>
-# e.g. scl zoo build zoo/policies/open-agent
-```
-
-**Installing policies** (and make available in zoo/policies)
-
-```bash
-# cd <project root>
-scl zoo install <policy>
-# e.g. scl zoo install zoo/policies/open-agent
-```
-
-**Use** (in scenarios)
-Under your scenario directory, create a requirements.txt
-```
-# we'll be serving packages from a local pip index
---extra-index-url http://localhost:8080
-open-agent==0.1.195
-```
-
-Then in your scenario.py:
-```python
-# */scenario.py (example)
-# ...
-t.SocialAgentActor(
-    name="my-open-agent",
-    agent_locator="open_agent:open_agent-v0"
-)
-# ...
-```
-
 ## Evaluating Policies
 
 ### Introduction

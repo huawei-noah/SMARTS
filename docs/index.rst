@@ -78,6 +78,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    ecosystem/sumo.rst
    ecosystem/waymo.rst
    ecosystem/rllib.rst
+   ecosystem/agent_zoo.rst
 
 .. toctree::
    :hidden:

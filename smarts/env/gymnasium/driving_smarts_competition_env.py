@@ -24,7 +24,7 @@ import math
 import os
 import pathlib
 from functools import partial
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
@@ -42,6 +42,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
+from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.scenario_construction import build_scenario
 
 logger = logging.getLogger(__file__)
@@ -64,6 +65,7 @@ def driving_smarts_competition_v0_env(
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
+    observation_options: Union[ObservationOptions, str] = ObservationOptions.default,
 ):
     """An environment with a mission to be completed by a single or multiple ego agents.
 
@@ -188,19 +190,22 @@ def driving_smarts_competition_v0_env(
             ),
         )
 
+    observation_options = ObservationOptions[observation_options]
     env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
         agent_interfaces=agent_interfaces,
         sim_name="Driving_SMARTS_v0",
         headless=headless,
         visdom=visdom,
+        fixed_timestep_sec=0.1,
         seed=seed,
         sumo_options=SumoOptions(headless=sumo_headless),
         visualization_client_builder=visualization_client_builder,
+        observation_options=observation_options,
     )
     env.action_space = env_action_space
     if ActionSpaceType[action_space] == ActionSpaceType.TargetPose:
-        env = _LimitTargetPose(env)
+        env = _LimitTargetPose(env, observation_options=observation_options)
     return env
 
 
@@ -395,13 +400,18 @@ def resolve_agent_interface(
 class _LimitTargetPose(gym.Wrapper):
     """Uses previous observation to limit the next TargetPose action range."""
 
-    def __init__(self, env: gym.Env):
+    def __init__(
+        self,
+        env: gym.Env,
+        observation_options: ObservationOptions = ObservationOptions.default,
+    ):
         """
         Args:
             env (gym.Env): Environment to be wrapped.
         """
         super().__init__(env)
         self._prev_obs: Dict[str, Dict[str, Any]]
+        self._observation_options = observation_options
 
     def step(
         self, action: Dict[str, np.ndarray]
@@ -451,12 +461,19 @@ class _LimitTargetPose(gym.Wrapper):
 
     def _store(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         filtered_obs: Dict[str, Dict[str, Any]] = {}
+
+        if self._observation_options == ObservationOptions.unformatted:
+            filter_func = lambda agent_obs: copy.deepcopy(
+                agent_obs.ego_vehicle_state.position[:2]
+            )
+        else:
+            filter_func = lambda agent_obs: copy.deepcopy(
+                agent_obs["ego_vehicle_state"]["position"][:2]
+            )
+
         for agent_name, agent_obs in obs.items():
-            filtered_obs[agent_name] = {
-                "position": copy.deepcopy(
-                    agent_obs["ego_vehicle_state"]["position"][:2]
-                )
-            }
+            filtered_obs[agent_name] = {"position": filter_func(agent_obs)}
+
         return filtered_obs
 
     def _limit(

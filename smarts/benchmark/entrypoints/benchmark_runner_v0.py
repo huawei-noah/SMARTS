@@ -53,10 +53,12 @@ def _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant=
         **agent_config["interface"],
     )
     env = Metrics(env)
-    agent = agent_registry.make_agent(
-        locator=agent_config["locator"],
-        **agent_config["kwargs"],
-    )
+    agents = {
+        agent_id: agent_registry.make_agent(
+            locator=agent_config["locator"], **agent_config.get("kwargs", {})
+        )
+        for agent_id in env.agent_ids
+    }
 
     observation, info = env.reset()
     current_resets = 0
@@ -64,7 +66,8 @@ def _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant=
         while current_resets < episodes:
             try:
                 action = {
-                    agent_id: agent.act(obs) for agent_id, obs in observation.items()
+                    agent_id: agents[agent_id].act(obs)
+                    for agent_id, obs in observation.items()
                 }
                 # assert env.action_space.contains(action)
             except Exception:
@@ -185,7 +188,7 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
     print(format_one_line_scores(named_scores))
     print()
     print("`Driving SMARTS V0` averaged result:")
-    print(format_scores_total(named_scores, len(env_args) or 1))
+    print(format_scores_total(named_scores, len(env_args)))
 
 
 def benchmark_from_configs(benchmark_config, agent_config, debug_log=False):

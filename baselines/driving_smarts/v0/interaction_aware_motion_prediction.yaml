@@ -1,0 +1,7 @@
+agent:
+  interface:
+    action_space: "TargetPose" # we can only allow `RelativeTargetPose` and `TargetPose`
+    img_meters: 50 # Observation image area size in meters.
+    img_pixels: 112 # Observation image size in pixels.
+    observation_options: "unformatted"
+  locator: "zoo.policies:interaction-aware-motion-prediction-agent-v0"
