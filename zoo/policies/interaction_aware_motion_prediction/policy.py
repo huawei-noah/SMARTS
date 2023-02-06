@@ -1,21 +1,25 @@
 from pathlib import Path
 from typing import Any, Dict
-from .predictor import *
-from .planner import *
-from .observation import observation_adapter
 
 from smarts.core.agent import Agent
 from zoo.utils.command import run as runcmd
+
+from .observation import observation_adapter
+from .planner import *
+from .predictor import *
+
 
 class Policy(Agent):
     def __init__(self):
         model = Path(__file__).absolute().parents[0] / "predictor_5000_0.6726.pth"
         if not model.exists():
             # Download trained model.
-            runcmd("wget -O model https://github.com/smarts-project/smarts-project.rl/blob/master/interaction_aware_motion_prediction/predictor_5000_0.6726.pth")
+            runcmd(
+                "wget -O model https://github.com/smarts-project/smarts-project.rl/blob/master/interaction_aware_motion_prediction/predictor_5000_0.6726.pth"
+            )
 
         self.predictor = Predictor()
-        self.predictor.load_state_dict(torch.load(model, map_location='cpu'))
+        self.predictor.load_state_dict(torch.load(model, map_location="cpu"))
         self.predictor.eval()
         self.planner = Planner(self.predictor)
         self.observer = observation_adapter(num_neighbors=5)
@@ -40,6 +44,6 @@ class Policy(Agent):
 
         # Act
         self.actions = self.planner.plan(wrapped_obs)
-        self.actions = self.actions[:self.cycle]
+        self.actions = self.actions[: self.cycle]
 
         return self.actions.pop(0)

@@ -1,6 +1,8 @@
-import numpy as np
-import math
 import bisect
+import math
+
+import numpy as np
+
 
 class CubicSpline1D:
     """
@@ -36,8 +38,9 @@ class CubicSpline1D:
         # calc spline coefficient b and d
         for i in range(self.nx - 1):
             d = (self.c[i + 1] - self.c[i]) / (3.0 * h[i])
-            b = 1.0 / h[i] * (self.a[i + 1] - self.a[i]) \
-                - h[i] / 3.0 * (2.0 * self.c[i] + self.c[i + 1])
+            b = 1.0 / h[i] * (self.a[i + 1] - self.a[i]) - h[i] / 3.0 * (
+                2.0 * self.c[i] + self.c[i + 1]
+            )
             self.d.append(d)
             self.b.append(b)
 
@@ -57,8 +60,9 @@ class CubicSpline1D:
 
         i = self.__search_index(x)
         dx = x - self.x[i]
-        position = self.a[i] + self.b[i] * dx + \
-            self.c[i] * dx ** 2.0 + self.d[i] * dx ** 3.0
+        position = (
+            self.a[i] + self.b[i] * dx + self.c[i] * dx**2.0 + self.d[i] * dx**3.0
+        )
 
         return position
 
@@ -79,7 +83,7 @@ class CubicSpline1D:
 
         i = self.__search_index(x)
         dx = x - self.x[i]
-        dy = self.b[i] + 2.0 * self.c[i] * dx + 3.0 * self.d[i] * dx ** 2.0
+        dy = self.b[i] + 2.0 * self.c[i] * dx + 3.0 * self.d[i] * dx**2.0
 
         return dy
 
@@ -134,10 +138,12 @@ class CubicSpline1D:
         """
         B = np.zeros(self.nx)
         for i in range(self.nx - 2):
-            B[i + 1] = 3.0 * (a[i + 2] - a[i + 1]) / h[i + 1]\
-                - 3.0 * (a[i + 1] - a[i]) / h[i]
+            B[i + 1] = (
+                3.0 * (a[i + 2] - a[i + 1]) / h[i + 1] - 3.0 * (a[i + 1] - a[i]) / h[i]
+            )
 
         return B
+
 
 class CubicSpline2D:
     """
@@ -201,7 +207,7 @@ class CubicSpline2D:
         ddx = self.sx.calc_second_derivative(s)
         dy = self.sy.calc_first_derivative(s)
         ddy = self.sy.calc_second_derivative(s)
-        k = (ddy * dx - ddx * dy) / ((dx ** 2 + dy ** 2)**(3 / 2))
+        k = (ddy * dx - ddx * dy) / ((dx**2 + dy**2) ** (3 / 2))
 
         return k
 
@@ -224,6 +230,7 @@ class CubicSpline2D:
 
         return yaw
 
+
 class FrenetPath:
     def __init__(self):
         self.t = []
@@ -244,6 +251,7 @@ class FrenetPath:
         self.yaw = []
         self.ds = []
         self.c = []
+
 
 def generate_target_course(x, y):
     csp = CubicSpline2D(x, y)
@@ -269,12 +277,20 @@ class QuinticPolynomial:
         self.a1 = vxs
         self.a2 = axs / 2.0
 
-        A = np.array([[time ** 3, time ** 4, time ** 5],
-                      [3 * time ** 2, 4 * time ** 3, 5 * time ** 4],
-                      [6 * time, 12 * time ** 2, 20 * time ** 3]])
-        b = np.array([xe - self.a0 - self.a1 * time - self.a2 * time ** 2,
-                      vxe - self.a1 - 2 * self.a2 * time,
-                      axe - 2 * self.a2])
+        A = np.array(
+            [
+                [time**3, time**4, time**5],
+                [3 * time**2, 4 * time**3, 5 * time**4],
+                [6 * time, 12 * time**2, 20 * time**3],
+            ]
+        )
+        b = np.array(
+            [
+                xe - self.a0 - self.a1 * time - self.a2 * time**2,
+                vxe - self.a1 - 2 * self.a2 * time,
+                axe - 2 * self.a2,
+            ]
+        )
         x = np.linalg.solve(A, b)
 
         self.a3 = x[0]
@@ -282,24 +298,40 @@ class QuinticPolynomial:
         self.a5 = x[2]
 
     def calc_point(self, t):
-        xt = self.a0 + self.a1 * t + self.a2 * t ** 2 + \
-             self.a3 * t ** 3 + self.a4 * t ** 4 + self.a5 * t ** 5
+        xt = (
+            self.a0
+            + self.a1 * t
+            + self.a2 * t**2
+            + self.a3 * t**3
+            + self.a4 * t**4
+            + self.a5 * t**5
+        )
 
         return xt
 
     def calc_first_derivative(self, t):
-        xt = self.a1 + 2 * self.a2 * t + \
-             3 * self.a3 * t ** 2 + 4 * self.a4 * t ** 3 + 5 * self.a5 * t ** 4
+        xt = (
+            self.a1
+            + 2 * self.a2 * t
+            + 3 * self.a3 * t**2
+            + 4 * self.a4 * t**3
+            + 5 * self.a5 * t**4
+        )
 
         return xt
 
     def calc_second_derivative(self, t):
-        xt = 2 * self.a2 + 6 * self.a3 * t + 12 * self.a4 * t ** 2 + 20 * self.a5 * t ** 3
+        xt = (
+            2 * self.a2
+            + 6 * self.a3 * t
+            + 12 * self.a4 * t**2
+            + 20 * self.a5 * t**3
+        )
 
         return xt
 
     def calc_third_derivative(self, t):
-        xt = 6 * self.a3 + 24 * self.a4 * t + 60 * self.a5 * t ** 2
+        xt = 6 * self.a3 + 24 * self.a4 * t + 60 * self.a5 * t**2
 
         return xt
 
@@ -309,22 +341,20 @@ class CubicPolynomial:
         self.a0 = vxs
         self.a1 = axs
 
-        A = np.array([[time ** 2, time ** 3],
-                      [2 * time, 3 * time ** 2]])
-        b = np.array([vxe - self.a0 - self.a1 * time,
-                      axe - self.a1])
+        A = np.array([[time**2, time**3], [2 * time, 3 * time**2]])
+        b = np.array([vxe - self.a0 - self.a1 * time, axe - self.a1])
         x = np.linalg.solve(A, b)
 
         self.a2 = x[0]
         self.a3 = x[1]
 
     def calc_point(self, t):
-        xt = self.a0 + self.a1 * t + self.a2 * t ** 2 + self.a3 * t ** 3
+        xt = self.a0 + self.a1 * t + self.a2 * t**2 + self.a3 * t**3
 
         return xt
 
     def calc_first_derivative(self, t):
-        xt = self.a1 + 2 * self.a2 * t + 3 * self.a3 * t ** 2
+        xt = self.a1 + 2 * self.a2 * t + 3 * self.a3 * t**2
 
         return xt
 
@@ -333,7 +363,8 @@ class CubicPolynomial:
 
         return xt
 
-def generate_lon_profile(v_s, a_s, acc): 
+
+def generate_lon_profile(v_s, a_s, acc):
     v_target = np.clip(v_s + acc * 3, 0, 16)
     if acc != 0:
         t_target = round((v_target - v_s) / acc, 3)
@@ -346,23 +377,24 @@ def generate_lon_profile(v_s, a_s, acc):
     speed = [lon_profile.calc_point(t) for t in T]
 
     if len(speed) < 30:
-        speed.extend([speed[-1] for _ in range(30-len(speed))])
-    
+        speed.extend([speed[-1] for _ in range(30 - len(speed))])
+
     speed = np.clip(speed, 0.01, 16)
     displacement = np.cumsum(speed * 0.1)
 
-    return speed, displacement 
+    return speed, displacement
+
 
 def generate_lat_profile(d, v_d):
     d_target = 0
     t_target = np.clip(np.abs(d - d_target) / 1.5, 0.1, 3)
-    T = np.arange(0.1, t_target+0.1, 0.1) 
+    T = np.arange(0.1, t_target + 0.1, 0.1)
     lat_profile = QuinticPolynomial(d, v_d, 0, d_target, 0, 0, t_target)
     displacement = [lat_profile.calc_point(t) for t in T]
     speed = [lat_profile.calc_first_derivative(t) for t in T]
-    
+
     if len(speed) < 30:
-        speed.extend([speed[-1] for _ in range(30-len(speed))])
-        displacement.extend([displacement[-1] for _ in range(30-len(displacement))])
+        speed.extend([speed[-1] for _ in range(30 - len(speed))])
+        displacement.extend([displacement[-1] for _ in range(30 - len(displacement))])
 
     return speed, displacement
