@@ -98,7 +98,7 @@ def _lane() -> Tuple[Callable[[Dict[str, int]], Dict[str, str]], gym.Space]:
     return wrapper, space
 
 
-def _actuator_dynamic() -> Tuple[Callable[[Dict[str, int]], Dict[str, str]], gym.Space]:
+def _actuator_dynamic() -> Tuple[Callable[[Dict[str, numpy.ndarray]], Dict[str, numpy.ndarray]], gym.Space]:
     space = gym.spaces.Box(
         low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
     )
