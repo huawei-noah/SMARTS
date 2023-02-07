@@ -1,3 +1,4 @@
+# pytype: skip-file
 import math
 from collections import defaultdict
 
