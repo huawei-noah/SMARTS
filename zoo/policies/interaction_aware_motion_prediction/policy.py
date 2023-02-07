@@ -9,16 +9,15 @@ from .planner import *
 from .predictor import *
 
 import interaction_aware_motion_prediction
-from pkg_resources import resource_filename
-
+import importlib.resources as pkg_resources
 
 class Policy(Agent):
     def __init__(self):
         # model = Path(__file__).absolute().parents[0] / "predictor_5000_0.6726.pth"
-        model = resource_filename(interaction_aware_motion_prediction.__name__, "predictor_5000_0.6726.pth")
-        self.predictor = Predictor()
-        self.predictor.load_state_dict(torch.load(model, map_location="cpu"))
-        self.predictor.eval()
+        with pkg_resources.path(interaction_aware_motion_prediction, "predictor_5000_0.6726.pth") as model:
+            self.predictor = Predictor()
+            self.predictor.load_state_dict(torch.load(model, map_location="cpu"))
+            self.predictor.eval()
         self.planner = Planner(self.predictor)
         self.observer = observation_adapter(num_neighbors=5)
         self.cycle = 3
