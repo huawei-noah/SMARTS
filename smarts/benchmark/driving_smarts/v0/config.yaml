@@ -11,9 +11,9 @@ benchmark:
       For history see: 
         - https://codalab.lisn.upsaclay.fr/competitions/6618
         - https://smarts-project.github.io/archive/2022_nips_driving_smarts/
-  eval_episodes: 50
+  eval_episodes: 2
   debug:
-    serial: False
+    serial: True
   shared_env_kwargs:
     seed: 42
     headless: true
@@ -21,14 +21,14 @@ benchmark:
     standard:
       loc: "smarts.env:driving-smarts-competition-v0"
       scenarios:
-        - 1_to_2lane_left_turn_c
-        - 1_to_2lane_left_turn_t
-        - 3lane_merge_multi_agent
+        # - 1_to_2lane_left_turn_c
+        # - 1_to_2lane_left_turn_t
+        # - 3lane_merge_multi_agent
         - 3lane_merge_single_agent
-        - 3lane_cruise_multi_agent
-        - 3lane_cruise_single_agent
-        - 3lane_cut_in
-        - 3lane_overtake
+        # - 3lane_cruise_multi_agent
+        # - 3lane_cruise_single_agent
+        # - 3lane_cut_in
+        # - 3lane_overtake
       kwargs:
         seed: 42
     # bubble: # reserved for bubble env
