@@ -86,6 +86,7 @@ autodoc_mock_imports = [
     "ray",
     "tabulate",
     "tools",
+    "torch",
     "waymo_open_dataset",
 ]
 
