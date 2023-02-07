@@ -849,13 +849,18 @@ class SMARTS(ProviderManager):
         try:
             self.destroy()
         except (TypeError, AttributeError) as e:
-            raise SMARTSDestroyedError(
-                "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
-                " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
-                " go away.",
-                e,
-            )
-
+            # This is a print statement because the logging module may be deleted at program exit.
+            try:
+                exception = SMARTSDestroyedError(
+                    "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
+                    " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
+                    " go away.",
+                    e,
+                )
+            except (AttributeError, KeyboardInterrupt):
+                return
+            raise exception
+            
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)

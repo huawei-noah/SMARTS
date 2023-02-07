@@ -17,8 +17,8 @@ traffic = t.Traffic(
     flows=[
         t.Flow(
             route=t.Route(
-                begin=("west", lane_idx, 0),
-                end=("east", lane_idx, "max"),
+                begin=("E0", lane_idx, 0),
+                end=("E0", lane_idx, "max"),
             ),
             repeat_route=True,
             rate=50,
