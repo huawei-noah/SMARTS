@@ -16,7 +16,7 @@ These agents should be installed prior to being used in SMARTS environments.
 
 .. note::
 
-    To build a wheel and install a zoo agent, execute:
+    To build a wheel, execute:
 
     .. code-block:: bash
 
