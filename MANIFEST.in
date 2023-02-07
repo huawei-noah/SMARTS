@@ -6,3 +6,4 @@ recursive-include smarts/benchmark *.yaml *.yml
 recursive-include smarts/ros/src *.launch *.msg *.srv package.xml CMakeLists.txt *.py
 recursive-include smarts/scenarios *.xml *.py
 recursive-include smarts/diagnostic *.xml *.py
+recursive-exclude smarts/scenarios/**/build *.xml

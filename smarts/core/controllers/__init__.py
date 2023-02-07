@@ -51,11 +51,14 @@ class ActionSpaceType(Enum):
 
     Continuous = 0
     """
-    Action=(throttle, brake, steering_angle)
+    Action=(throttle, brake, steering)
 
     + throttle: Range=[0, 1]. Type=float.
     + brake: Range=[0, 1]. Type=float.
-    + steering_angle: Range=[-1, 1]. Type=float.
+    + steering: Range=[-1, 1]. Type=float.
+
+    Steering maps to full turn in one direction to a full turn in the other.
+    Direction of turn for the steering depends on the vehicle.
     """
     Lane = 1
     """
@@ -72,10 +75,11 @@ class ActionSpaceType(Enum):
         
     + throttle: Range=[0, 1]. Type=float. 
     + brake: Range=[0, 1]. Type=float.
-    + steering_rate: Type=float.
+    + steering_rate: Range[-1, 1]. Type=float.
     
-    Steering rate means the amount of steering angle change *per second* 
-    (either positive or negative) to be applied to the current steering angle.
+    Steering rate means the amount of steering change *per second*.
+    (either positive or negative) to be applied to the current steering.
+    This gets clipped to the available steering of the vehicle (which may vary.)
     """
     LaneWithContinuousSpeed = 3
     """
