@@ -65,6 +65,7 @@ apidoc_excluded_paths = [
     "setup.py",
     "scenarios",
     "smarts/ros",
+    "zoo/policies/interaction_aware_motion_prediction",
 ]
 apidoc_extra_args = [
     "--force",

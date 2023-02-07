@@ -1,6 +1,5 @@
 # pytype: skip-file
 import importlib.resources as pkg_resources
-from pathlib import Path
 from typing import Any, Dict
 
 from smarts.core.agent import Agent
