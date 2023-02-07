@@ -857,7 +857,7 @@ class SMARTS(ProviderManager):
                     " go away.",
                     e,
                 )
-            except:
+            except (AttributeError, KeyboardInterrupt):
                 return
             raise exception
 
