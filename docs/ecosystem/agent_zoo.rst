@@ -26,23 +26,24 @@ These agents should be installed prior to being used in SMARTS environments.
 Agents
 ------
 
-#. Interaction-aware motion prediction agent 
-    * This agent was contributed as part of NeurIPS2022 Driving SMARTS competition.
-    * Agent `code <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/interaction_aware_motion_prediction>`_.
-    * Run as follows:
-    
-        .. code-block:: bash
+#. Interaction-aware motion prediction agent
 
-            $ cd <path>/SMARTS
-            # Install a zoo agent.
-            $ scl zoo install zoo/policies/interaction_aware_motion_prediction
-            $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/interaction_aware_motion_prediction.yaml" --auto-install 
+   * This agent was contributed as part of NeurIPS2022 Driving SMARTS competition.
+   * Agent `code <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/interaction_aware_motion_prediction>`_.
+   * Run as follows:
+    
+     .. code-block:: bash
+
+       $ cd <path>/SMARTS
+       # Install a zoo agent.
+       $ scl zoo install zoo/policies/interaction_aware_motion_prediction
+       $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/interaction_aware_motion_prediction.yaml" --auto-install 
 
 Contribute agents
 -----------------
 
 .. note::
-    This section is only for contributers to the agent zoo.
+    This section is only for contributing to the agent zoo.
 
 First, add the new agent to `Agent Zoo <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_. It should contain 
 

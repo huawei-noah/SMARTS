@@ -77,6 +77,7 @@ apidoc_extra_args = [
 autodoc_mock_imports = [
     "cpuinfo",
     "cv2",
+    "gymnasium",
     "lxml",
     "mdutils",
     "moviepy",
