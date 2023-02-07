@@ -13,7 +13,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Clarified the actions for `ActionSpaceType.Continuous` and `ActionSpaceType.ActuatorDynamic` in their respective docstrings.
+- Excluded from wheel any scenario build files in pattern `smarts/**/build/**/*.xml`.
 ### Removed
+- Removed duplicated `smarts.env.gymnasium.action_conversion` module.
 ### Security
 
 ## [1.0.3] 2023-02-04
