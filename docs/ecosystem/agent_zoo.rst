@@ -28,6 +28,7 @@ Agents
 
 #. Interaction-aware motion prediction agent 
     * This agent was contributed as part of NeurIPS2022 Driving SMARTS competition.
+    * Agent `code <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/interaction_aware_motion_prediction>`_.
     * Run as follows:
     
         .. code-block:: bash
