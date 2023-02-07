@@ -104,6 +104,7 @@ def human_keyboard_entrypoint(*arg, **kwargs):
 
 register(locator="human-in-the-loop-v0", entry_point=human_keyboard_entrypoint)
 
+
 register(
     locator="interaction-aware-motion-prediction-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(

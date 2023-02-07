@@ -1,4 +1,5 @@
 # pytype: skip-file
+import importlib.resources as pkg_resources
 from pathlib import Path
 from typing import Any, Dict
 
@@ -8,13 +9,15 @@ from .observation import observation_adapter
 from .planner import *
 from .predictor import *
 
-import interaction_aware_motion_prediction
-import importlib.resources as pkg_resources
 
 class Policy(Agent):
     def __init__(self):
         # model = Path(__file__).absolute().parents[0] / "predictor_5000_0.6726.pth"
-        with pkg_resources.path(interaction_aware_motion_prediction, "predictor_5000_0.6726.pth") as model:
+        import interaction_aware_motion_prediction
+
+        with pkg_resources.path(
+            interaction_aware_motion_prediction, "predictor_5000_0.6726.pth"
+        ) as model:
             self.predictor = Predictor()
             self.predictor.load_state_dict(torch.load(model, map_location="cpu"))
             self.predictor.eval()
