@@ -860,7 +860,7 @@ class SMARTS(ProviderManager):
             except (AttributeError, KeyboardInterrupt):
                 return
             raise exception
-
+            
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)

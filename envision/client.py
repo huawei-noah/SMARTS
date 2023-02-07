@@ -124,6 +124,7 @@ class Client:
             endpoint = "ws://localhost:8081"
 
         self._logging_process = None
+        self._logging_queue = None
         if output_dir:
             output_dir = Path(f"{output_dir}/{int(time.time())}")
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -209,7 +210,7 @@ class Client:
     def _connect(
         self,
         endpoint,
-        state_queue,
+        state_queue: multiprocessing.Queue,
         wait_between_retries: float = 0.05,
         data_formatter_args: Optional[EnvisionDataFormatterArgs] = None,
     ):
@@ -259,11 +260,11 @@ class Client:
 
             while True:
                 state = state_queue.get()
-                if type(state) is Client.QueueDone:
-                    ws.close()
+                if isinstance(type(state), Client.QueueDone):
                     break
 
                 optionally_serialize_and_write(state, ws)
+            ws.close()
 
         def run_socket(endpoint, wait_between_retries):
             nonlocal connection_established
@@ -279,6 +280,8 @@ class Client:
 
                 if not connection_established:
                     self._log.info(f"Attempt {tries} to connect to Envision.")
+                    if not state_queue.empty():
+                        break
                 else:
                     # No information left to send, connection is likely done
                     if state_queue.empty():
@@ -292,7 +295,10 @@ class Client:
                 tries += 1
                 time.sleep(wait_between_retries)
 
-        run_socket(endpoint, wait_between_retries)
+        try:
+            run_socket(endpoint, wait_between_retries)
+        except (BrokenPipeError, KeyboardInterrupt, EOFError):
+            pass
 
     def send(self, state: Union[types.State, types.Preamble]):
         """Send the given envision state to the remote as the most recent state."""
@@ -312,17 +318,13 @@ class Client:
         if self._state_queue:
             self._state_queue.put(Client.QueueDone())
 
+        if self._logging_queue:
+            self._logging_queue.put(Client.QueueDone())
+
         if self._process:
             self._process.join(timeout=3)
             self._process = None
 
-        if self._state_queue:
-            self._state_queue.close()
-            self._state_queue = None
-
-        if self._logging_process and self._logging_queue:
-            self._logging_queue.put(Client.QueueDone())
+        if self._logging_process:
             self._logging_process.join(timeout=3)
             self._logging_process = None
-            self._logging_queue.close()
-            self._logging_queue = None
