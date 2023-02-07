@@ -351,7 +351,7 @@ class HiWayEnvV1(gym.Env):
 
         self._dones_registered = 0
         observations = self._smarts.reset(scenario)
-        info = {}
+        info = {"map_source": self._smarts.scenario.road_map.source}
 
         if self._env_renderer is not None:
             self._env_renderer.reset(observations)
