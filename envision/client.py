@@ -173,7 +173,7 @@ class Client:
         with path.open("w", encoding="utf-8") as f:
             while True:
                 state = queue.get()
-                if type(state) is Client.QueueDone:
+                if isinstance(state, Client.QueueDone) or state is None:
                     break
 
                 if not isinstance(state, str):
@@ -260,7 +260,7 @@ class Client:
 
             while True:
                 state = state_queue.get()
-                if isinstance(type(state), Client.QueueDone):
+                if isinstance(state, Client.QueueDone) or state is None:
                     break
 
                 optionally_serialize_and_write(state, ws)
