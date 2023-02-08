@@ -1,9 +1,9 @@
 .. _benchmark:
 
-Driving SMARTS Competition Benchmark
-====================================
+Driving SMARTS 2022
+===================
 
-The Driving SMARTS competition benchmark is a benchmark derived from the
+The Driving SMARTS 2022 is a benchmark derived from the
 NeurIPS 2022 Driving SMARTS Competition.
 
 This benchmark is intended to address the following requirements:
@@ -30,7 +30,7 @@ available.
 
 .. code:: bash
 
-   > scl benchmark list 
+   $ scl benchmark list 
    BENCHMARK_NAME               BENCHMARK_ID             VERSIONS
    - Driving SMARTS:            driving_smarts           0.0 0.1
 
@@ -133,7 +133,7 @@ file.
 
 .. code:: bash
 
-   > scl benchmark run driving_smarts "./baselines/driving_smarts/v0/agent_config.yaml" --auto-install # --auto-install only needs to be used to get dependencies.
+   $ scl benchmark run driving_smarts "./baselines/driving_smarts/v0/agent_config.yaml" --auto-install # --auto-install only needs to be used to get dependencies.
    Starting `Driving SMARTS V1` benchmark.
    This is a cleaned up version of the Driving SMARTS benchmark.
 
@@ -151,17 +151,17 @@ file.
 
    `Driving SMARTS V0` result:
    - completion: 1
-   - humanness: 0.2
-   - rules: 0.8
-   - time: 0.3
-   - overall: 1.7
+   - humanness: 0.7
+   - rules: 0.9
+   - time: 0.2
+   - overall: 0.504
 
 A particular version of a benchmark can be targeted using a modified
 syntax ``benchmark_name==version``:
 
 .. code:: bash
 
-   > scl benchmark run driving_smarts==0.0 ...
+   $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/agent_config.yaml"
 
 Advanced Configuration
 ----------------------
@@ -178,7 +178,7 @@ what benchmarks are currently available. This can be passed using
 
 .. code:: bash
 
-   > scl benchmark run --benchmark-listing benchmark_listing.yaml driving_smarts "./baselines/driving_smarts/v0/agent_config.yaml"
+   $ scl benchmark run --benchmark-listing benchmark_listing.yaml driving_smarts "./baselines/driving_smarts/v0/agent_config.yaml"
 
 WARNING! Since with ``scl benchmark run`` this listing directs to a code
 ``entrypoint`` do not use this with a listing file from an unknown
@@ -192,7 +192,7 @@ file.
 
 .. code:: bash
 
-   > scl benchmark list --benchmark-listing benchmark_listing.yaml
+   $ scl benchmark list --benchmark-listing benchmark_listing.yaml
 
 Listing File
 ^^^^^^^^^^^^

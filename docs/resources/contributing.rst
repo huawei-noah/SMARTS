@@ -54,7 +54,7 @@ Pre-Push Checklist
 ------------------
 
 1. Do your best to see that your code compiles locally.
-2. Do not push to ``master``. Instead make a branch and a pull request to the ``develop`` branch.
+2. Do not push directly to ``master``. Instead make a branch and a pull request to the ``master`` branch.
 
 Submission of a Pull Request
 ----------------------------
