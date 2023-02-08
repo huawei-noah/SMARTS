@@ -56,7 +56,23 @@ def gen_id():
 
 
 @lru_cache(maxsize=1)
-def config(default=Path(".") / "smarts_engine.ini") -> Config:
+def config(default=str("./smarts_engine.ini")) -> Config:
+    """Get the SMARTS environment config for the smarts engine.
+
+    .. note::
+
+        This searches the following locations and loads the first one it finds:
+        ./smarts_engine.ini
+        ~/.smarts/engine.ini
+        /etc/smarts/engine.ini
+        $PYTHON_PATH/smarts/engine.ini
+
+    Args:
+        default (str, optional): The default configurable location. Defaults to "./smarts_engine.ini".
+
+    Returns:
+        Config: A configuration utility that allows resolving environment and `engine.ini` configuration.
+    """
     from smarts.core.utils.file import smarts_global_user_dir, smarts_local_user_dir
 
     def get_file(config_file):
@@ -70,7 +86,7 @@ def config(default=Path(".") / "smarts_engine.ini") -> Config:
 
     conf = partial(Config, environment_prefix="SMARTS")
 
-    file = get_file(default)
+    file = get_file(Path(default))
     if file:
         return conf(file)
 

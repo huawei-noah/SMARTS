@@ -78,6 +78,6 @@ def test_get_missing_section_and_missing_option():
 
     with pytest.raises(KeyError):
         config.get_setting("core", "not_a_setting")
-    
+
     with pytest.raises(KeyError):
         config.get_setting("not_a_section", "bar")
