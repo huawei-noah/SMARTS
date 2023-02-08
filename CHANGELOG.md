@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added map source uri as `map_source` inside of `hiway-v1` reset info to indicate what the current map is on reset.
 ### Changed
+- Made changes in the docs to reflect `master` branch as the main development branch.
 ### Deprecated
 ### Fixed
 - Fixed an exit error that occurs when envision attempts to close down.

@@ -46,11 +46,11 @@ extensions = [
 
 extlinks = {
     "examples": (
-        "https://github.com/huawei-noah/SMARTS/blob/develop/examples/%s",
+        "https://github.com/huawei-noah/SMARTS/blob/master/examples/%s",
         "%s",
     ),
     "scenarios": (
-        "https://github.com/huawei-noah/SMARTS/blob/develop/scenarios/%s",
+        "https://github.com/huawei-noah/SMARTS/blob/master/scenarios/%s",
         "%s",
     ),
 }
@@ -77,6 +77,7 @@ apidoc_extra_args = [
 autodoc_mock_imports = [
     "cpuinfo",
     "cv2",
+    "gymnasium",
     "lxml",
     "mdutils",
     "moviepy",
