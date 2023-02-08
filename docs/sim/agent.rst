@@ -72,20 +72,20 @@ A registered agent can, at a later time, be built (i.e., instantiated) using its
     # Builds the agent, by instantiatng the agent's policy.
     follow_waypoints_agent = make_agent("smarts.zoo:follow-waypoints-v0")
 
-The syntax of an agent locator is: 
-``"`` ``module.importable.in.python`` ``:`` ``registered_name_of_agent`` ``-v`` ``X`` ``"``
+| The syntax of an agent locator is:
+| ``"`` ``module.importable.in.python`` ``:`` ``registered_name_of_agent`` ``-v`` ``X`` ``"``
 
--  ``module.importable.in.python``: Denotes the module containing the agent
-  registry. In SMARTS, agent registry is at ``smarts.zoo``. The module must be 
-  importable from within python. An easy test to see if the module is 
-  importable, is to try importing the module within interactive python or a 
-  script (e.g., ``import module.importable.in.python``)
-- ``:``: A separator, which separates the module and name sections of the
-   locator.
--  ``registered_name_of_agent``: The registered name of the agent.
--  ``-v``: A version separator, which separates the name and version
+-  ``module.importable.in.python`` : Denotes the module containing the agent
+   registry. In SMARTS, agent registry is at ``smarts.zoo``. The module must be 
+   importable from within python. An easy test to see if the module is  
+   importable, is to try importing the module within interactive python or a 
+   script (e.g., ``import module.importable.in.python``)
+- ``:`` : A separator, which separates the module and name sections of the
+  locator.
+-  ``registered_name_of_agent`` : The registered name of the agent.
+-  ``-v`` : A version separator, which separates the name and version
    sections of the locator.
--  ``X``: The version of the agent. This is required to register
+-  ``X`` : The version of the agent. This is required to register
    an agent. The version can be any integer.
 
 
