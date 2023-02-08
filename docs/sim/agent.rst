@@ -75,9 +75,10 @@ A registered agent can, at a later time, be built (i.e., instantiated) using its
 | The syntax of an agent locator is:
 | ``"`` ``module.importable.in.python`` ``:`` ``registered_name_of_agent`` ``-v`` ``X`` ``"``
 
--  ``module.importable.in.python`` : Denotes the module containing the agent
-   registry. In SMARTS, agent registry is at ``smarts.zoo``. The module must be 
-   importable from within python. An easy test to see if the module is  
+-  ``module.importable.in.python`` : Denotes the module in which the agent was 
+   registered. For example, if the agent was registered in 
+   ``smarts/zoo/__init__.py``, the module would be ``smarts.zoo``. The module
+   must be importable from within python. An easy test to see if the module is
    importable, is to try importing the module within interactive python or a 
    script (e.g., ``import module.importable.in.python``)
 - ``:`` : A separator, which separates the module and name sections of the
