@@ -36,7 +36,7 @@ def benchmark_cli():
     "run",
 )
 @click.argument("benchmark_id", nargs=1, metavar="<benchmark_id>")
-@click.argument("agent_config", nargs=1, metavar="<agent_config>")
+@click.argument("agent_locator", nargs=1, metavar="<agent_locator>")
 @click.option(
     "--debug-log",
     is_flag=True,
@@ -57,7 +57,7 @@ def benchmark_cli():
 )
 def run(
     benchmark_id: str,
-    agent_config: str,
+    agent_locator: str,
     debug_log: bool,
     benchmark_listing: Optional[str],
     auto_install: bool,
@@ -68,22 +68,20 @@ def run(
 
     \b
     <benchmark_id> is formatted like BENCHMARK_NAME==BENCHMARK_VERSION.
-    <agent_config> is the path to an agent configuration file.
+    <agent_locator> is the locator string for the registered agent.
 
-    An example use: `scl benchmark run --auto-install driving_smarts==0.0 ./baselines/driving_smarts/v0/agent_config.yaml`
+    An example use: `scl benchmark run --auto-install driving_smarts==0.0 random-relative-target-pose-agent-v0`
     """
     from smarts.benchmark import BENCHMARK_LISTING_FILE, run_benchmark
 
     benchmark_id, _, benchmark_version = benchmark_id.partition("==")
 
     run_benchmark(
-        benchmark_id,
-        float(benchmark_version) if benchmark_version else None,
-        Path(agent_config),
-        Path(benchmark_listing)
-        if benchmark_listing is not None
-        else BENCHMARK_LISTING_FILE,
-        debug_log,
+        benchmark_name=benchmark_id,
+        benchmark_version=float(benchmark_version) if benchmark_version else None,
+        agent_locator=agent_locator,
+        benchmark_listing=Path(benchmark_listing) if benchmark_listing is not None else BENCHMARK_LISTING_FILE,
+        debug_log=debug_log,
         auto_install=auto_install,
     )
 

@@ -70,7 +70,7 @@ def _get_entrypoint(path, name):
 def run_benchmark(
     benchmark_name: str,
     benchmark_version: Optional[float],
-    agent_config: Path,
+    agent_locator: str,
     benchmark_listing: Path,
     debug_log: bool = False,
     auto_install: bool = False,
@@ -81,7 +81,7 @@ def run_benchmark(
     Args:
         benchmark_name(str): The name of the benchmark to run.
         benchmark_version(float|None): The version of the benchmark.
-        agent_config(Path): An agent configuration file.
+        agent_locator(str): Locator string for the registered agent.
         benchmark_listing(Path): A configuration file that lists benchmark metadata and must list
             the target benchmark.
         debug_log: Debug to stdout.
@@ -108,7 +108,7 @@ def run_benchmark(
     entrypoint = _get_entrypoint(module, name)
     entrypoint(
         **benchmark_spec.get("params", {}),
-        agent_config=str(agent_config),
+        agent_locator=agent_locator,
         debug_log=debug_log,
     )
 
