@@ -25,8 +25,13 @@ Core functionality of the SMARTS simulator
 
 import random
 import uuid
+from functools import lru_cache, partial
+from pathlib import Path
 
 import numpy as np
+
+import smarts
+from smarts.core.configuration import Config
 
 _current_seed = None
 
@@ -48,3 +53,39 @@ def gen_id():
     """Generates a unique but deterministic id if `smarts.core.seed` has set the core seed."""
     id_ = uuid.UUID(int=random.getrandbits(128))
     return str(id_)[:8]
+
+
+@lru_cache(maxsize=1)
+def config(default=Path(".") / "smarts_engine.ini") -> Config:
+    from smarts.core.utils.file import smarts_global_user_dir, smarts_local_user_dir
+
+    def get_file(config_file):
+        try:
+            if not config_file.is_file():
+                return ""
+        except PermissionError:
+            return ""
+
+        return str(config_file)
+
+    conf = partial(Config, environment_prefix="SMARTS")
+
+    file = get_file(default)
+    if file:
+        return conf(file)
+
+    try:
+        local_dir = smarts_local_user_dir()
+    except PermissionError:
+        file = ""
+    else:
+        file = get_file(Path(local_dir) / "engine.ini")
+    if file:
+        return conf(file)
+
+    global_dir = smarts_global_user_dir()
+    file = get_file(Path(global_dir) / "engine.ini")
+    if file:
+        return conf(file)
+
+    return conf(get_file(Path(smarts.__file__).parent.absolute() / "engine.ini"))

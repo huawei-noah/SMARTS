@@ -95,3 +95,15 @@ class Config:
                 raise
             return default
         return cast(value)
+
+    def __call__(
+        self,
+        section: str,
+        option: str,
+        default: Any = _UNSET,
+        cast: Callable[[str], Any] = str,
+    ) -> Optional[Any]:
+        return self.get_setting(section, option, default, cast)
+
+    def __repr__(self) -> str:
+        return f"Config(config_file={ {k: dict(v.items()) for k, v in self._config.items(raw=True)} }, environment_prefix={self._environment_prefix})"

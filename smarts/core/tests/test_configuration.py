@@ -67,3 +67,17 @@ def test_get_setting_with_environment_variables(config_path):
     config = Config(config_path, "smarts")
     assert config.get_setting("nonexistent", "option", default=None) == "now_exists"
     del os.environ["SMARTS_NONEXISTENT_OPTION"]
+
+
+def test_get_missing_section_and_missing_option():
+    from smarts.core import config as core_conf
+
+    core_conf.cache_clear()
+
+    config: Config = core_conf()
+
+    with pytest.raises(KeyError):
+        config.get_setting("core", "not_a_setting")
+    
+    with pytest.raises(KeyError):
+        config.get_setting("not_a_section", "bar")

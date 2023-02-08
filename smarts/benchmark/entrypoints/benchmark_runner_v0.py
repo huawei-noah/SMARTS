@@ -28,7 +28,6 @@ import psutil
 import ray
 
 from smarts.benchmark.driving_smarts import load_config
-from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
 from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metrics import Metrics, Score
 from smarts.zoo import registry as agent_registry

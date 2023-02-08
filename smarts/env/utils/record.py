@@ -24,13 +24,13 @@ import gym
 import numpy as np
 
 from smarts.core.sensors import Observation
-from smarts.core.utils.file import smarts_log_dir
+from smarts.core.utils.file import smarts_local_user_dir
 from smarts.env.wrappers.utils.rendering import vis_sim_obs
 
 Action = Any
 Operation = Any
 
-default_log_dir = smarts_log_dir()
+default_log_dir = smarts_local_user_dir()
 
 
 class AgentCameraRGBRender:

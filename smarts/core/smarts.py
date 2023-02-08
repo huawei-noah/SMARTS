@@ -32,7 +32,7 @@ from smarts import VERSION
 from smarts.core.plan import Plan
 from smarts.core.utils.logging import timeit
 
-from . import models
+from . import models, config
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
@@ -70,8 +70,6 @@ logging.basicConfig(
     datefmt="%Y-%m-%d,%H:%M:%S",
     level=logging.ERROR,
 )
-
-MAX_PYBULLET_FREQ = 240
 
 
 class SMARTSNotSetupError(Exception):
@@ -728,7 +726,7 @@ class SMARTS(ProviderManager):
         client.configureDebugVisualizer(
             pybullet.COV_ENABLE_GUI, 0  # pylint: disable=no-member
         )
-
+        MAX_PYBULLET_FREQ = config()("physics", "max_pybullet_freq", cast=int)
         # PyBullet defaults the timestep to 240Hz. Several parameters are tuned with
         # this value in mind. For example the number of solver iterations and the error
         # reduction parameters (erp) for contact, friction and non-contact joints.
@@ -857,10 +855,10 @@ class SMARTS(ProviderManager):
                     " go away.",
                     e,
                 )
-            except (AttributeError, KeyboardInterrupt):
+            except (TypeError, KeyboardInterrupt):
                 return
             raise exception
-            
+
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
         self._clear_collisions(vehicle_ids)
@@ -1281,7 +1279,9 @@ class SMARTS(ProviderManager):
     def fixed_timestep_sec(self, fixed_timestep_sec: float):
         if not fixed_timestep_sec:
             # This is the fastest we could possibly run given constraints from pybullet
-            self._rounder = rounder_for_dt(round(1 / MAX_PYBULLET_FREQ, 6))
+            self._rounder = rounder_for_dt(
+                round(1 / config().get_setting("physics", "max_pybullet_freq", cast=int), 6)
+            )
         else:
             self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._fixed_timestep_sec = fixed_timestep_sec
