@@ -48,12 +48,14 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     env = gym.make(
         env_config["env"],
         scenario=env_config["scenario"],
+        agent_interface=agent_registry.make(locator=agent_locator).interface
         **env_config["kwargs"],
     )
     env = Metrics(env)
-    agent = agent_registry.make_agent(
-        locator=agent_locator
-    )
+    agents = {
+        agent_id: agent_registry.make_agent(locator=agent_locator)
+        for agent_id in env.agent_ids
+    }
 
     observation, info = env.reset()
     current_resets = 0
@@ -61,7 +63,8 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
         while current_resets < episodes:
             try:
                 action = {
-                    agent_id: agent.act(obs) for agent_id, obs in observation.items()
+                    agent_id: agents[agent_id].act(obs)
+                    for agent_id, obs in observation.items()
                 }
                 # assert env.action_space.contains(action)
             except Exception:
