@@ -84,6 +84,7 @@ autodoc_mock_imports = [
     "moviepy",
     "opendrive2lanelet",
     "pathos",
+    "PIL",
     "pynput",
     "ray",
     "tabulate",
