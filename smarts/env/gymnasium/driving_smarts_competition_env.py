@@ -24,7 +24,7 @@ import math
 import os
 import pathlib
 from functools import partial
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -143,7 +143,6 @@ def driving_smarts_competition_v0_env(
             ),
         )
 
-    observation_options = ObservationOptions[observation_options]
     env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
         agent_interfaces=agent_interfaces,
@@ -339,18 +338,13 @@ def resolve_agent_interface(agent_interface: AgentInterface):
 class _LimitTargetPose(gym.Wrapper):
     """Uses previous observation to limit the next TargetPose action range."""
 
-    def __init__(
-        self,
-        env: gym.Env,
-        observation_options: ObservationOptions = ObservationOptions.default,
-    ):
+    def __init__(self, env: gym.Env):
         """
         Args:
             env (gym.Env): Environment to be wrapped.
         """
         super().__init__(env)
         self._prev_obs: Dict[str, Dict[str, Any]]
-        self._observation_options = observation_options
 
     def step(
         self, action: Dict[str, np.ndarray]

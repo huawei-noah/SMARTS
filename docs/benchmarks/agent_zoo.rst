@@ -37,7 +37,7 @@ Agents
        $ cd <path>/SMARTS
        # Install a zoo agent.
        $ scl zoo install zoo/policies/interaction_aware_motion_prediction
-       $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/interaction_aware_motion_prediction.yaml" --auto-install 
+       $ scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
 
 Contribute agents
 -----------------

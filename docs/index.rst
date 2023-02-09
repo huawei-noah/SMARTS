@@ -54,6 +54,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
 
    benchmarks/benchmark.rst
    benchmarks/driving_smarts_2022.rst
+   benchmarks/agent_zoo.rst
 
 .. toctree::
    :hidden:
@@ -79,7 +80,6 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    ecosystem/sumo.rst
    ecosystem/waymo.rst
    ecosystem/rllib.rst
-   ecosystem/agent_zoo.rst
 
 .. toctree::
    :hidden:
