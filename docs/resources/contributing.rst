@@ -100,6 +100,10 @@ Execute the following to build the docs locally.
     $ python3.8 -m http.server 8000 --bind 127.0.0.1 -d docs/_build/html
     # Open http://127.0.0.1:8000 in your browser
 
+If documentation is incomplete please mark the area with a ``.. todo::`` as described in `sphinx.ext.todo <https://www.sphinx-doc.org/en/master/usage/extensions/todo.html>`_.
+
+Feel free to further contribute to the documentation and look at :ref:`todo` for sections that may yet need to be filled.
+
 Communication
 -------------
 

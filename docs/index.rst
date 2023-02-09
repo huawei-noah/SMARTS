@@ -69,6 +69,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :caption: API
 
    api/modules.rst
+   sim/configuration.rst
 
 .. toctree::
    :hidden:
@@ -88,3 +89,4 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    resources/diagnostic.rst
    resources/faq.rst
    resources/contributing.rst
+   resources/todo.rst
