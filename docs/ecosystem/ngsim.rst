@@ -3,9 +3,9 @@
 NGSIM
 =====
 
-**NGSIM** is the Next Generation Simulation dataset, a free use dataset created
- by the US Department of Transportation (DOT) and described
-`here <https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm>`_.
+**NGSIM** is the Next Generation Simulation dataset, a free to use dataset created
+by the US Department of Transportation (DOT) and described
+`here <https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm>`__.
 
 
 NGSIM traffic history scenarios
@@ -15,17 +15,14 @@ These scenarios are located in the `smarts repository <https://github.com/huawei
 
 To use these scenarios, you must first download the dataset in an appropriate format.
 SMARTS assumes that the data will be in tab-separated text files.
-Its import scripts were tested on and work with the data downloaded from `here <http://bit.ly/PPUU-data>`_,
+Its import scripts were tested on and work with the data downloaded from `here <http://bit.ly/PPUU-data>`__,
 which is the same as was used by this `PPUU project <https://github.com/Atcold/pytorch-PPUU>`_.
 
 After the dataset has been downloaded, you will need to update each ``scenario.py``
-in the ngsim scenario directories (e.g., :scenarios:`NGSIM/i80/scenario.py`, :scenarios:`NGSIM/us101/scenario.py`, and/or :scenarios:`NGSIM/peach/scneario.py`) to point the `input_path` field
+in the ngsim scenario directories (e.g., :scenarios:`NGSIM/i80/scenario.py`, :scenarios:`NGSIM/us101/scenario.py`, and/or :scenarios:`NGSIM/peachtree/scenario.py`) to point the `input_path` field
 to the dataset location on your filesystem.
 
-Once that is done, you should be able to build your scenarios in the normal way, for example:
-```bash
-scl scenario build-all --clean scenarios/NGSIM
-```
+Once that is done, you should be able to build your scenarios in the normal way, for example: ``scl scenario build-all --clean scenarios/NGSIM``
 
 For each traffic history dataset specified in your ``scenario.py``, 
 this will create a corresponding ``.shf`` file that SMARTS will use
@@ -36,7 +33,7 @@ Although they attempt to align with the positions in the traffic dataset,
 their level of exactness may not be enough for some model-training situations,
 so you may want or need to refine them with SUMO's `netedit tool <https://sumo.dlr.de/docs/Netedit/index.html>`_.
 
-An example of how traffic history might be saved as observations can be found in :py:module:`smarts.dataset.traffic_histories_to_observations`. 
+An example of how traffic history might be saved as observations can be found in :mod:`~smarts.dataset.traffic_histories_to_observations`. 
 
 To consume the generated observations you could use the following approach:
 
@@ -95,6 +92,6 @@ Alternatively, an approach like :examples:`traffic_histories_vehicle_replacement
 
 
 Samples
-------
+-------
 
 Some specific dataset samples can be found at: https://github.com/smarts-project/smarts-project.offline-datasets
