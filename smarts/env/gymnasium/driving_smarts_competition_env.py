@@ -32,11 +32,8 @@ import numpy as np
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
-    OGM,
-    RGB,
     AgentInterface,
     DoneCriteria,
-    DrivableAreaGridMap,
     RoadWaypoints,
     Waypoints,
 )
@@ -57,124 +54,80 @@ MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 
 def driving_smarts_competition_v0_env(
     scenario: str,
-    img_meters: int = 64,
-    img_pixels: int = 256,
-    action_space="RelativeTargetPose",
+    agent_interface: AgentInterface,
     headless: bool = True,
     seed: int = 42,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
-    observation_options: Union[ObservationOptions, str] = ObservationOptions.default,
 ):
     """An environment with a mission to be completed by a single or multiple ego agents.
 
     Observation space for each agent:
-
-        A ``smarts.core.sensors.Observation`` is returned as observation.
+        An unformatted :class:`~smarts.core.observations.Observation` is returned as observation.
 
     Action space for each agent:
-    .. note::
+        Action space for each agent is configured through its `AgentInterface`.
+        The action space could be either of the following.
 
-        A ``smarts.core.controllers.ActionSpaceType.RelativeTargetPose``, which is a
-        sequence of [Δx, Δy, heading] or a
-        ``smarts.core.controllers.ActionSpaceType.TargetPose``, which is a
-            sequence of [x-coordinate, y-coordinate, heading, 0.1].
+        (i) :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
 
-        Type(RelativeTargetPose):
+           +------------------------------------+-------------+-------+
+           | Action                             | Values      | Units |
+           +====================================+=============+=======+
+           | Δx-coordinate                      | [-2.8, 2.8] | m     |
+           +------------------------------------+-------------+-------+
+           | Δy-coordinate                      | [-2.8, 2.8] | m     |
+           +------------------------------------+-------------+-------+
+           | Heading with respect to map's axes | [-π, π]     | rad   |
+           +------------------------------------+-------------+-------+
 
-        .. code-block:: python
+        (ii) :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
 
-            gym.spaces.Box(
-                    low=np.array([-28, -28, -π]),
-                    high=np.array([28, 28, π]),
-                    dtype=np.float32
-                    )
-
-        .. list-table:: Table
-            :widths: 25 25
-            :header-rows: 1
-
-            * - Action
-              - Value range
-            * - Ego's next x-coordinate on the map
-              - [-2.8m/s,2.8m/s]
-            * - Ego's next y-coordinate on the map
-              - [-2.8m/s,2.8m/s]
-            * - Ego's next heading with respect to the map's axes
-              - [-π,π]
-
-        Type(TargetPose):
-
-        .. code-block:: python
-
-            gym.spaces.Box(
-                    low=np.array([-1e10, -1e10, -π, 0.1]),
-                    high=np.array([1e10, 1e10, π], 0.1),
-                    dtype=np.float32
-                    )
-
-        .. list-table:: Table
-            :widths: 25 25
-            :header-rows: 1
-
-            * - Action
-              - Value range
-            * - Ego's next x-coordinate on the map
-              - [-1e10m,1e10m]
-            * - Ego's next y-coordinate on the map
-              - [-1e10m,1e10m]
-            * - Ego's next heading with respect to the map's axes
-              - [-π,π]
-            * - The time delta snapped to 0.1 seconds.
-              - [0.1,0.1]
+            +------------------------------------+---------------+-------+
+            | Action                             | Values        | Units |
+            +====================================+===============+=======+
+            | Next x-coordinate                  | [-1e10, 1e10] | m     |
+            +------------------------------------+---------------+-------+
+            |  Next y-coordinate                 | [-1e10, 1e10] | m     |
+            +------------------------------------+---------------+-------+
+            | Heading with respect to map's axes | [-π, π]       | rad   |
+            +------------------------------------+---------------+-------+
+            | ΔTime                              |  0.1          | s     |
+            +------------------------------------+---------------+-------+
 
     Reward:
-
         Reward is distance travelled (in meters) in each step, including the termination step.
 
     Episode termination:
-
-    .. note::
-
         Episode is terminated if any of the following occurs.
 
-            1. Steps per episode exceed 800.
+        1. Steps per episode exceed 800.
+        2. Agent collides, drives off road, drives off route, or drives on wrong way.
 
-            2. Agent collides, drives off road, drives off route, or drives on wrong way.
+    Args:
+        scenario (str): Scenario name or path to scenario folder.
+        agent_interface (AgentInterface): Agent interface specification.
+        headless (bool, optional): If True, disables visualization in
+            Envision. Defaults to False.
+        seed (int, optional): Random number generator seed. Defaults to 42.
+        visdom (bool, optional): If True, enables visualization of observed
+            RGB images in Visdom. Defaults to False.
+        sumo_headless (bool, optional): If True, disables visualization in
+            SUMO GUI. Defaults to True.
+        envision_record_data_replay_path (Optional[str], optional):
+            Envision's data replay output directory. Defaults to None.
 
-    Solved requirement:
-
-    .. note::
-
-        If agent successfully completes the mission then ``info["score"]`` will
-        equal 1, else it is 0. Considered solved when ``info["score"] == 1`` is
-        achieved over 500 consecutive episodes.
-
-    :param scenario: Scenario name or path to scenario folder.
-    :type scenario: str
-    :param img_meters: Ground square size covered by image observations. Defaults to 64 x 64 meter (height x width) square.
-    :type img_meters: int
-    :param img_pixels: Pixels representing the square image observations. Defaults to 256 x 256 pixels (height x width) square.
-    :type img_pixels: int
-    :param action_space: Action space used. Defaults to ``Continuous``.
-    :param headless: If True, disables visualization in Envision. Defaults to False.
-    :type headless: bool, optional
-    :param visdom: If True, enables visualization of observed RGB images in Visdom. Defaults to False.
-    :type visdom: bool, optional
-    :param sumo_headless: If True, disables visualization in SUMO GUI. Defaults to True.
-    :type sumo_headless: bool, optional
-    :param envision_record_data_replay_path: Envision's data replay output directory. Defaults to None.
-    :type envision_record_data_replay_path: Optional[str], optional
-    :return: An environment described by the input argument ``scenario``.
+    Returns:
+        An environment described by the input argument `scenario`.
     """
 
     env_specs = _get_env_specs(scenario)
     build_scenario(scenario=env_specs["scenario"])
 
+    resolved_agent_interface = resolve_agent_interface(agent_interface)
     agent_interfaces = {
-        f"Agent_{i}": resolve_agent_interface(img_meters, img_pixels, action_space)
-        for i in range(env_specs["num_agent"])
+        f"Agent_{i}": resolved_agent_interface for i in range(env_specs["num_agent"])
     }
     env_action_space = resolve_env_action_space(agent_interfaces)
 
@@ -201,11 +154,11 @@ def driving_smarts_competition_v0_env(
         seed=seed,
         sumo_options=SumoOptions(headless=sumo_headless),
         visualization_client_builder=visualization_client_builder,
-        observation_options=observation_options,
+        observation_options=ObservationOptions.unformatted,
     )
     env.action_space = env_action_space
-    if ActionSpaceType[action_space] == ActionSpaceType.TargetPose:
-        env = _LimitTargetPose(env, observation_options=observation_options)
+    if resolved_agent_interface.action == ActionSpaceType.TargetPose:
+        env = _LimitTargetPose(env)
     return env
 
 
@@ -350,13 +303,11 @@ def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
     )
 
 
-def resolve_agent_interface(
-    img_meters: int = 64,
-    img_pixels: int = 256,
-    action_space="RelativeTargetPose",
-    **kwargs,
-):
-    """Resolve an agent interface for the environments in this module."""
+def resolve_agent_interface(agent_interface: AgentInterface):
+    """Resolve the agent interface for a given environment. Some interface
+    values can be configured by the user, but others are pre-determined and
+    fixed.
+    """
 
     done_criteria = DoneCriteria(
         collision=True,
@@ -372,26 +323,14 @@ def resolve_agent_interface(
     waypoints_lookahead = 50
     return AgentInterface(
         accelerometer=True,
-        action=ActionSpaceType[action_space],
+        action=agent_interface.action,
         done_criteria=done_criteria,
-        drivable_area_grid_map=DrivableAreaGridMap(
-            width=img_pixels,
-            height=img_pixels,
-            resolution=img_meters / img_pixels,
-        ),
+        drivable_area_grid_map=agent_interface.drivable_area_grid_map,
         lidar_point_cloud=True,
         max_episode_steps=max_episode_steps,
         neighborhood_vehicle_states=True,
-        occupancy_grid_map=OGM(
-            width=img_pixels,
-            height=img_pixels,
-            resolution=img_meters / img_pixels,
-        ),
-        top_down_rgb=RGB(
-            width=img_pixels,
-            height=img_pixels,
-            resolution=img_meters / img_pixels,
-        ),
+        occupancy_grid_map=agent_interface.occupancy_grid_map,
+        top_down_rgb=agent_interface.top_down_rgb,
         road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
         waypoint_paths=Waypoints(lookahead=waypoints_lookahead),
     )
@@ -461,19 +400,10 @@ class _LimitTargetPose(gym.Wrapper):
 
     def _store(self, obs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         filtered_obs: Dict[str, Dict[str, Any]] = {}
-
-        if self._observation_options == ObservationOptions.unformatted:
-            filter_func = lambda agent_obs: copy.deepcopy(
-                agent_obs.ego_vehicle_state.position[:2]
-            )
-        else:
-            filter_func = lambda agent_obs: copy.deepcopy(
-                agent_obs["ego_vehicle_state"]["position"][:2]
-            )
-
         for agent_name, agent_obs in obs.items():
-            filtered_obs[agent_name] = {"position": filter_func(agent_obs)}
-
+            filtered_obs[agent_name] = {
+                "position": copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])
+            }
         return filtered_obs
 
     def _limit(
