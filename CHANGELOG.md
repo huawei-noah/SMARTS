@@ -13,7 +13,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added map source uri as `map_source` inside of `hiway-v1` reset info to indicate what the current map is on reset.
 ### Changed
 - Made changes in the docs to reflect `master` branch as the main development branch.
-- Enabled supplying agent locator directly to benchmark runner and removed need for an intermediary config file.
+- Enabled supplying agent locator directly to benchmark runner and removed the need for an intermediary config file. Updated benchmark docs to reflect this.
+- Individualised the agent instances in the `benchmark_runner_v0.py`.
+- Made driving_smarts_competition_v0 env configurable through supply of `AgentInterface`.
+- Observation of driving_smarts_competition_v0 env was fixed to be of type `ObservationOptions.unformatted`.
 ### Deprecated
 ### Fixed
 - Fixed an exit error that occurs when envision attempts to close down.
