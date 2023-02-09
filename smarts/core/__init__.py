@@ -30,7 +30,6 @@ from pathlib import Path
 
 import numpy as np
 
-import smarts
 from smarts.core.configuration import Config
 
 _current_seed = None
@@ -56,7 +55,7 @@ def gen_id():
 
 
 @lru_cache(maxsize=1)
-def config(default=str("./smarts_engine.ini")) -> Config:
+def config(default: str = "./smarts_engine.ini") -> Config:
     """Get the SMARTS environment config for the smarts engine.
 
     .. note::
@@ -75,7 +74,7 @@ def config(default=str("./smarts_engine.ini")) -> Config:
     """
     from smarts.core.utils.file import smarts_global_user_dir, smarts_local_user_dir
 
-    def get_file(config_file):
+    def get_file(config_file: Path):
         try:
             if not config_file.is_file():
                 return ""
@@ -86,7 +85,7 @@ def config(default=str("./smarts_engine.ini")) -> Config:
 
     conf = partial(Config, environment_prefix="SMARTS")
 
-    file = get_file(Path(default))
+    file = get_file(Path(default).absolute())
     if file:
         return conf(file)
 
@@ -104,4 +103,5 @@ def config(default=str("./smarts_engine.ini")) -> Config:
     if file:
         return conf(file)
 
-    return conf(get_file(Path(smarts.__file__).parent.absolute() / "engine.ini"))
+    default_path = Path(__file__).parents[1].resolve() / "engine.ini"
+    return conf(get_file(default_path))

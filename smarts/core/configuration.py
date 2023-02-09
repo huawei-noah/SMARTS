@@ -42,17 +42,19 @@ class Config:
     def __init__(
         self, config_file: Union[str, Path], environment_prefix: str = ""
     ) -> None:
-        if isinstance(config_file, str):
-            config_file = Path(config_file)
-        if not config_file.is_file():
-            raise FileNotFoundError(f"Configuration file not found at {config_file}")
-
         self._config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()
         )
-        self._config.read(str(config_file.absolute()))
         self._environment_prefix = environment_prefix.upper()
-        self._format_string = self._environment_prefix + "_{}_{}"
+        self._environment_variable_format_string = self._environment_prefix + "_{}_{}"
+
+        if isinstance(config_file, str):
+            config_file = Path(config_file)
+        config_file = config_file.resolve()
+        if not config_file.is_file():
+            raise FileNotFoundError(f"Configuration file not found at {config_file}")
+
+        self._config.read(str(config_file.absolute()))
 
     @property
     def environment_prefix(self):
@@ -84,7 +86,9 @@ class Config:
             KeyError: If the configuration option is not found in the configuration file and no default is provided.
             configparser.NoSectionError: If the section in the configuration file is not found and no default is provided.
         """
-        env_variable = self._format_string.format(section.upper(), option.upper())
+        env_variable = self._environment_variable_format_string.format(
+            section.upper(), option.upper()
+        )
         setting = os.getenv(env_variable)
         if setting is not None:
             return cast(setting)
