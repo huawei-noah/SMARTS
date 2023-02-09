@@ -48,7 +48,7 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     env = gym.make(
         env_config["env"],
         scenario=env_config["scenario"],
-        agent_interface=agent_registry.make(locator=agent_locator).interface
+        agent_interface=agent_registry.make(locator=agent_locator).interface,
         **env_config["kwargs"],
     )
     env = Metrics(env)
