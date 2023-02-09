@@ -48,24 +48,47 @@ Next, a minimal example of how to create and register an agent is illustrated.
         ),
         # Agent's policy.
         agent_builder=FollowWaypoints,
+        agent_params=None, # Optional parameters passed to agent_builder during building. 
     )
 
-    # Builds the agent, by instantiatng the agent's policy.
-    agent = agent_spec.build_agent()
+    def entry_point(**kwargs):
+       """An entrypoint for the agent, which takes any number of optional keyword
+       arguments, and returns an :class:`~smarts.zoo.agent_spec.AgentSpec`.
+       """
+       return agent_spec
 
-    # Registers the agent.
+    # Register the agent.
     register(
         locator="follow-waypoints-v0",
-        entry_point=lambda **kwargs: agent_spec,
+        entry_point=entry_point,
     )
 
-A registered agent can be invoked later.
+A registered agent can, at a later time, be built (i.e., instantiated) using its agent locator string.
 
 .. code-block:: python
 
-    from smarts.zoo.registry import make as zoo_make
+    from smarts.zoo.registry import make_agent
 
-    agent_spec = zoo_make("follow-waypoints-v0")
+    # Builds the agent, by instantiatng the agent's policy.
+    follow_waypoints_agent = make_agent("smarts.zoo:follow-waypoints-v0")
+
+| The syntax of an agent locator is:
+| ``"`` ``module.importable.in.python`` ``:`` ``registered_name_of_agent`` ``-v`` ``X`` ``"``
+
+-  ``module.importable.in.python`` : Denotes the module in which the agent was 
+   registered. For example, if the agent was registered in 
+   ``smarts/zoo/__init__.py``, the module would be ``smarts.zoo``. The module
+   must be importable from within python. An easy test to see if the module is
+   importable, is to try importing the module within interactive python or a 
+   script (e.g., ``import module.importable.in.python``)
+- ``:`` : A separator, which separates the module and name sections of the
+  locator.
+-  ``registered_name_of_agent`` : The registered name of the agent.
+-  ``-v`` : A version separator, which separates the name and version
+   sections of the locator.
+-  ``X`` : The version of the agent. This is required to register
+   an agent. The version can be any positive integer.
+
 
 Sections below elaborate on the agent's `interface` and `policy` design.
 

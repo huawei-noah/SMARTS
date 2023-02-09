@@ -1,139 +1,23 @@
 .. _benchmark:
 
-Driving SMARTS 2022
-===================
+Instructions
+============
 
-The Driving SMARTS 2022 is a benchmark derived from the
-NeurIPS 2022 Driving SMARTS Competition.
+Run a benchmark
+---------------
 
-This benchmark is intended to address the following requirements:
+| Run a particular benchmark by executing 
+| ``scl benchmark run <benchmark_name>==<benchmark_version> <agent_locator> --auto-install`` 
 
--  The benchmark should use an up to date version of gym to simplify the
-   interface. (we used gymnasium)
--  The competition gym environment should strictly follow the
-   requirements of the gym interface to allow for obvious actions and
-   observations.
--  The observations out of this environment should be just data.
--  The benchmark runner should be configurable for future benchmark
-   versions.
--  Added benchmarks should be versioned.
--  Added benchmarks should be discover-able.
+The ``--auto-install`` flag is optional and is only needed for the
+first time the benchmark is run to install the benchmark's dependencies.
 
-See: https://smarts-project.github.io/archive/2022_nips_driving_smarts/
-for historical context.
-
-Benchmark discovery
--------------------
-
-The ``scl benchmark list`` command is used to check what benchmarks are
-available.
+If ``scl benchmark run <benchmark_name> <agent_locator>`` is run without the
+benchmark version, then the benchmark's latest version is run by default.
 
 .. code:: bash
 
-   $ scl benchmark list 
-   BENCHMARK_NAME               BENCHMARK_ID             VERSIONS
-   - Driving SMARTS:            driving_smarts           0.0 0.1
-
-If creating your own version it is also possible to use
-``--benchmark-listing`` to target a different benchmark listing file.
-
-Agent configuration
--------------------
-
-Agent Configuration for Driving SMARTS 0.0
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The current version of the agent configuration is as follows:
-
-.. code:: yaml
-
-   # baselines/driving_smarts/v0/agent_config.yaml
-   agent:
-     interface: # This is a section specific to the benchmark `driving_smarts==0.0`
-       # we currently allow `RelativeTargetPose` and `TargetPose` 
-       action_space: "RelativeTargetPose" 
-       img_meters: 50 # Observation image area size in meters.
-       img_pixels: 112 # Observation image size in pixels.
-     locator: "smarts.zoo:random-relative-target-pose-agent-v0" # This is an example agent
-     kwargs: # A collection of keyword arguments provided to the agent entrypoint
-       speed: 20
-
-Of particular note is the ``locator`` which is has to resolve to the
-registration of an agent. This can be registered as seen below.
-
-.. code:: python
-
-   # smarts/zoo/__init__.py
-   import math
-   import random
-   from typing import Any, Dict
-
-   from smarts.core.agent import Agent
-   from smarts.core.agent_interface import ActionSpaceType, AgentInterface
-   from smarts.zoo.agent_spec import AgentSpec
-   from smarts.zoo.registry import register
-
-
-   class RandomRelativeTargetPoseAgent(Agent):
-       """A simple agent that can move a random distance."""
-
-       def __init__(self, speed=28, timestep=0.1) -> None:
-           super().__init__()
-           self._speed_per_step = speed / timestep
-
-       def act(self, obs: Dict[str, Any], **configs):
-           return [
-               (random.random() - 0.5) * self._speed_per_step,
-               (random.random() - 0.5) * self._speed_per_step,
-               random.random() * 2 * math.pi - math.pi,
-           ]
-
-   # Note `speed` from configuration file maps here.
-   def entry_point(speed=10, **kwargs):
-       """An example entrypoint for a simple agent.
-       This can have any number of arguments similar to the gym environment standard.
-       """
-       return AgentSpec(
-           AgentInterface(
-               action=ActionSpaceType.RelativeTargetPose,
-           ),
-           agent_builder=RandomRelativeTargetPoseAgent,
-           agent_params=dict(speed=speed),
-       )
-
-
-   # Where the name of the agent is registered.
-   # note this is in `smarts/zoo/__init__.py` which is the `smarts.zoo` module.
-   # this would be referenced like `"smarts.zoo:random-relative-target-pose-agent-v0"`
-   register("random-relative-target-pose-agent-v0", entry_point)
-
-The syntax of the referencing the locator is like ``"``
-``module.importable.in.python`` ``:`` ``registered_name_of_agent``
-``-v`` ``X`` ``"``.
-
--  Module: ``module.importable.in.python`` The module section must be
-   importable from within python. An easy test to see if the module is
-   importable is to try importing the module within interactive python
-   or a script (e.g. ``import module.importable.in.python``)
--  Separator: ``:`` This separates the module and name sections of the
-   locator.
--  Registered name: ``registered_name_of_agent`` The name of the agent
-   as registered using ``smarts.zoo.register``.
--  Version separator: ``-v`` This separates the name and version
-   sections of the locator.
--  Version: ``X`` The version of the agent (this is required to register
-   an agent.) ``X`` can be any integer.
-
-Running the benchmark
----------------------
-
-The easiest way to run the benchmark is through ``scl benchmark run``.
-This takes a benchmark name, benchmark version, and agent configuration
-file.
-
-.. code:: bash
-
-   $ scl benchmark run driving_smarts "./baselines/driving_smarts/v0/agent_config.yaml" --auto-install # --auto-install only needs to be used to get dependencies.
+   $ scl benchmark run driving_smarts smarts.zoo:random-relative-target-pose-agent-v0 --auto-install 
    Starting `Driving SMARTS V1` benchmark.
    This is a cleaned up version of the Driving SMARTS benchmark.
 
@@ -156,48 +40,45 @@ file.
    - time: 0.2
    - overall: 0.504
 
-A particular version of a benchmark can be targeted using a modified
-syntax ``benchmark_name==version``:
+See available benchmarks
+------------------------
+
+The ``scl benchmark list`` command can be used to see the list of available benchmarks.
 
 .. code:: bash
 
-   $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/agent_config.yaml"
+   $ scl benchmark list 
+   BENCHMARK_NAME               BENCHMARK_ID             VERSIONS
+   - Driving SMARTS:            driving_smarts           0.0 0.1
 
-Advanced Configuration
-----------------------
+Custom benchmark listing
+------------------------
 
-``--benchmark-listing``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-``scl benchmark run``
-^^^^^^^^^^^^^^^^^^^^^
-
-The benchmark listing file is used by ``scl benchmark run`` to determine
-what benchmarks are currently available. This can be passed using
-``--benchmark-listing`` to provide a different list of benchmarks.
+The ``scl benchmark run`` uses a 
+`default benchmark listing <https://github.com/huawei-noah/SMARTS/blob/master/smarts/benchmark/benchmark_listing.yaml>`_ 
+file to determine the currently available benchmarks. Alternatively, a custom
+benchmark listing file may be supplied as follows.   
 
 .. code:: bash
 
-   $ scl benchmark run --benchmark-listing benchmark_listing.yaml driving_smarts "./baselines/driving_smarts/v0/agent_config.yaml"
+   $ scl benchmark run --benchmark-listing benchmark_listing.yaml <benchmark_name> <agent_locator>
 
-WARNING! Since with ``scl benchmark run`` this listing directs to a code
-``entrypoint`` do not use this with a listing file from an unknown
-source.
+.. warning::
 
-``scl benchmark list``
-^^^^^^^^^^^^^^^^^^^^^^
+    Since a listing directs ``scl benchmark run`` to execute an 
+    ``entrypoint`` code, do not use this with a listing file from an unknown
+    source.
 
-This option also appears on ``scl benchmark list`` to examine a listing
-file.
+The list of benchmarks from the custom benchmark listing file can be examined as usual.
 
 .. code:: bash
 
    $ scl benchmark list --benchmark-listing benchmark_listing.yaml
 
-Listing File
-^^^^^^^^^^^^
+Benchmark listing file
+----------------------
 
-The listing file is organised as below.
+The benchmark listing file is organised as below.
 
 .. code:: yaml
 
@@ -216,17 +97,18 @@ The listing file is organised as below.
            params: # additional values to pass into the entrypoint as named keyword arguments.
              benchmark_config: ${{smarts.benchmark.driving_smarts.v0}}/config.yaml
 
-Resolving module directories
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. note:: 
+    
+    Resolving module directories.
 
-The benchmark configuration directory can be dynamically found through
-python using an evaluation syntax ``${{}}``. This is experimental and
-open to change but the following resolves the python module location in
-loaded configuration files:
+    The benchmark configuration directory can be dynamically found through
+    python using an evaluation syntax ``${{}}``. This is experimental and
+    open to change but the following resolves the python module location in
+    loaded configuration files:
 
-.. code:: yaml
+    .. code:: yaml
 
-   somewhere_path: ${{module.to.resolve}}/file.txt # resolves to <path>/module/to/resolve/file.txt
+        somewhere_path: ${{module.to.resolve}}/file.txt # resolves to <path>/module/to/resolve/file.txt
 
-This avoids loading the module into python but resolves to the first
-path that matches the module.
+    This avoids loading the module into python but resolves to the first
+    path that matches the module.
