@@ -8,8 +8,8 @@ NeurIPS 2022 Driving SMARTS Competition.
 
 This benchmark is intended to address the following requirements:
 
--  The benchmark should use an up to date version of gym to simplify the
-   interface. (we used gymnasium)
+-  The benchmark should use an up-to-date version of ``gym`` to simplify the
+   interface. As such we should use `gymnasium <https://github.com/Farama-Foundation/Gymnasium>`_ for new environments.
 -  The competition gym environment should strictly follow the
    requirements of the gym interface to allow for obvious actions and
    observations.
