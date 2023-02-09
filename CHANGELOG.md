@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 - Added map source uri as `map_source` inside of `hiway-v1` reset info to indicate what the current map is on reset.
+- Added NGSIM documentation.
 - Added a zoo agent, named Interaction-aware Motion Prediction, from NeurIPS2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 - Added Agent Zoo documentation in ReadTheDocs.
 ### Changed
