@@ -87,7 +87,7 @@ A registered agent can, at a later time, be built (i.e., instantiated) using its
 -  ``-v`` : A version separator, which separates the name and version
    sections of the locator.
 -  ``X`` : The version of the agent. This is required to register
-   an agent. The version can be any integer.
+   an agent. The version can be any positive integer.
 
 
 Sections below elaborate on the agent's `interface` and `policy` design.

@@ -9,8 +9,8 @@ Run a benchmark
 | Run a particular benchmark by executing 
 | ``scl benchmark run <benchmark_name>==<benchmark_version> <agent_locator> --auto-install`` 
 
-The ``--auto-install`` flag is optional and is only
-needed once at the start to install the benchmark's dependencies.
+The ``--auto-install`` flag is optional and is only needed for the
+first time the benchmark is run to install the benchmark's dependencies.
 
 If ``scl benchmark run <benchmark_name> <agent_locator>`` is run without the
 benchmark version, then the benchmark's latest version is run by default.
