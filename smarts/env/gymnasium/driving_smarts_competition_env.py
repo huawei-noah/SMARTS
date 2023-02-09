@@ -39,8 +39,8 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
-from smarts.sstudio.scenario_construction import build_scenario
 from smarts.env.utils.observation_conversion import ObservationOptions
+from smarts.sstudio.scenario_construction import build_scenario
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
@@ -67,11 +67,11 @@ def driving_smarts_competition_v0_env(
         An unformatted :class:`~smarts.core.observations.Observation` is returned as observation.
 
     Action space for each agent:
-        Action space for each agent is configured through its `AgentInterface`. 
+        Action space for each agent is configured through its `AgentInterface`.
         The action space could be either of the following.
-        
+
         (i) :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
-        
+
            +------------------------------------+-------------+-------+
            | Action                             | Values      | Units |
            +====================================+=============+=======+
@@ -110,7 +110,7 @@ def driving_smarts_competition_v0_env(
         agent_interface (AgentInterface): Agent interface specification.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
-        seed (int, optional): Random number generator seed. Defaults to 42.    
+        seed (int, optional): Random number generator seed. Defaults to 42.
         visdom (bool, optional): If True, enables visualization of observed
             RGB images in Visdom. Defaults to False.
         sumo_headless (bool, optional): If True, disables visualization in
@@ -127,8 +127,7 @@ def driving_smarts_competition_v0_env(
 
     resolved_agent_interface = resolve_agent_interface(agent_interface)
     agent_interfaces = {
-        f"Agent_{i}": resolved_agent_interface
-        for i in range(env_specs["num_agent"])
+        f"Agent_{i}": resolved_agent_interface for i in range(env_specs["num_agent"])
     }
     env_action_space = resolve_env_action_space(agent_interfaces)
 
@@ -303,10 +302,10 @@ def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
     )
 
 
-def resolve_agent_interface(agent_interface:AgentInterface):
+def resolve_agent_interface(agent_interface: AgentInterface):
     """Resolve the agent interface for a given environment. Some interface
     values can be configured by the user, but others are pre-determined and
-    fixed. 
+    fixed.
     """
 
     done_criteria = DoneCriteria(
@@ -397,9 +396,7 @@ class _LimitTargetPose(gym.Wrapper):
         filtered_obs: Dict[str, Dict[str, Any]] = {}
         for agent_name, agent_obs in obs.items():
             filtered_obs[agent_name] = {
-                "position": copy.deepcopy(
-                    agent_obs.ego_vehicle_state.position[:2]
-                )
+                "position": copy.deepcopy(agent_obs.ego_vehicle_state.position[:2])
             }
         return filtered_obs
 

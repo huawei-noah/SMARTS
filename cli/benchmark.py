@@ -80,7 +80,9 @@ def run(
         benchmark_name=benchmark_id,
         benchmark_version=float(benchmark_version) if benchmark_version else None,
         agent_locator=agent_locator,
-        benchmark_listing=Path(benchmark_listing) if benchmark_listing is not None else BENCHMARK_LISTING_FILE,
+        benchmark_listing=Path(benchmark_listing)
+        if benchmark_listing is not None
+        else BENCHMARK_LISTING_FILE,
         debug_log=debug_log,
         auto_install=auto_install,
     )
