@@ -291,7 +291,7 @@ class MetricsBase(gym.Wrapper):
         humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
         rules = _rules(costs=costs_tot, agents_tot=agents_tot)
         time = _time(counts=counts_tot)
-        overall = completion * (1 - time) * (1 - humanness) * (1 - rules)
+        overall = completion * (1 - time) * humanness * rules
 
         return Score(
             completion=completion,

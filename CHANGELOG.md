@@ -18,6 +18,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an exit error that occurs when envision attempts to close down.
 - Clarified the actions for `ActionSpaceType.Continuous` and `ActionSpaceType.ActuatorDynamic` in their respective docstrings.
 - Excluded from wheel any scenario build files in pattern `smarts/**/build/**/*.xml`.
+- Fixed an unintended regression in the metrics.
 ### Removed
 - Removed duplicated `smarts.env.gymnasium.action_conversion` module.
 ### Security
