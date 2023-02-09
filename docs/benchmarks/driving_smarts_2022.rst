@@ -30,10 +30,10 @@ Compatible zoo agents
 ---------------------
 
 A list of SMARTS zoo agents which are compatible with this benchmark is
-provided here. A compatible zoo agent can be run as follows.
+provided at :ref:`Agent Zoo <agent_zoo>`. A compatible zoo agent can be run as follows.
 
 .. code-block:: bash
 
     $ cd <path>/SMARTS
-    $ scl zoo install <path/to/agent policy>
+    $ scl zoo install <full agent path>
     $ scl benchmark run driving_smarts==0.0 <agent_locator> --auto_install

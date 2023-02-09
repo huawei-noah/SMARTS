@@ -23,22 +23,6 @@ These agents should be installed prior to being used in SMARTS environments.
         $ scl zoo build <agent>
         # e.g. scl zoo build zoo/policies/interaction_aware_motion_prediction
 
-Available agents
-----------------
-
-#. Interaction-aware motion prediction
-
-   * This agent was contributed as part of NeurIPS2022 Driving SMARTS competition.
-   * Source: `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`_.
-   * Run as follows:
-    
-     .. code-block:: bash
-
-       $ cd <path>/SMARTS
-       # Install a zoo agent.
-       $ scl zoo install zoo/policies/interaction_aware_motion_prediction
-       $ scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
-
 Contribute agents
 -----------------
 
@@ -52,3 +36,28 @@ First, add the new agent to `Agent Zoo <https://github.com/huawei-noah/SMARTS/tr
 * algorithm explanation. 
 
 Then, register the newly added zoo agent in ``SMARTS/zoo/policies/__init__.py``.
+
+Available agents
+----------------
+
++-----------------------------------------------------------+-------------------------------------------------------------+---------------------+---------------------------------------------------------+
+| Zoo agent (locator)                                       | Action space                                                | Benchmark (if any)  | Agent path                                              |
++===========================================================+=============================================================+=====================+=========================================================+
+| zoo.policies:interaction-aware-motion-prediction-agent-v0 | :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose` | driving_smarts==0.0 | <path>/zoo/policies/interaction_aware_motion_prediction |
++-----------------------------------------------------------+-------------------------------------------------------------+---------------------+---------------------------------------------------------+
+|                                                           |                                                             |                     |                                                         |
++-----------------------------------------------------------+-------------------------------------------------------------+---------------------+---------------------------------------------------------+
+
+Interaction-aware motion prediction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Contributed as part of NeurIPS2022 Driving SMARTS competition.
+* Source: `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`_.
+* Run as follows:
+
+.. code-block:: bash
+
+    $ cd <path>/SMARTS
+    # Install a zoo agent.
+    $ scl zoo install zoo/policies/interaction_aware_motion_prediction
+    $ scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
