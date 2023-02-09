@@ -23,13 +23,13 @@ These agents should be installed prior to being used in SMARTS environments.
         $ scl zoo build <agent>
         # e.g. scl zoo build zoo/policies/interaction_aware_motion_prediction
 
-Agents
-------
+Available agents
+----------------
 
-#. Interaction-aware motion prediction agent
+#. Interaction-aware motion prediction
 
    * This agent was contributed as part of NeurIPS2022 Driving SMARTS competition.
-   * Agent `code <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/interaction_aware_motion_prediction>`_.
+   * Source: `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`_.
    * Run as follows:
     
      .. code-block:: bash
