@@ -10,11 +10,17 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added map source uri as `map_source` inside of `hiway-v1` reset info to indicate what the current map is on reset.
 - Added a zoo agent, named Interaction-aware Motion Prediction, from NeurIPS2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 ### Changed
+- Made changes in the docs to reflect `master` branch as the main development branch.
 ### Deprecated
 ### Fixed
+- Fixed an exit error that occurs when envision attempts to close down.
+- Clarified the actions for `ActionSpaceType.Continuous` and `ActionSpaceType.ActuatorDynamic` in their respective docstrings.
+- Excluded from wheel any scenario build files in pattern `smarts/**/build/**/*.xml`.
 ### Removed
+- Removed duplicated `smarts.env.gymnasium.action_conversion` module.
 ### Security
 
 ## [1.0.3] 2023-02-04

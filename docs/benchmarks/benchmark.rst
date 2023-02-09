@@ -1,9 +1,9 @@
 .. _benchmark:
 
-Driving SMARTS Competition
-==========================
+Driving SMARTS 2022
+===================
 
-The Driving SMARTS competition benchmark is a benchmark derived from the
+The Driving SMARTS 2022 is a benchmark derived from the
 NeurIPS 2022 Driving SMARTS Competition.
 
 This benchmark is intended to address the following requirements:
@@ -161,7 +161,7 @@ syntax ``benchmark_name==version``:
 
 .. code:: bash
 
-   $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/agent_config.yaml" --auto-install
+   $ scl benchmark run driving_smarts==0.0 "./baselines/driving_smarts/v0/agent_config.yaml"
 
 Advanced Configuration
 ----------------------
