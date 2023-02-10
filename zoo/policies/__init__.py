@@ -1,4 +1,5 @@
-from typing import Any, Dict
+import importlib
+from pathlib import Path
 
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
@@ -102,3 +103,33 @@ def human_keyboard_entrypoint(*arg, **kwargs):
 
 
 register(locator="human-in-the-loop-v0", entry_point=human_keyboard_entrypoint)
+
+
+def _verify_installation(pkg: str, module: str):
+    try:
+        lib = importlib.import_module(module, pkg)
+    except (ModuleNotFoundError, ImportError):
+        raise ModuleNotFoundError(
+            "Zoo agent is not installed. "
+            f"Install via `scl zoo install {str(Path(__file__).resolve().parent/pkg)}`."
+        )
+
+    return lib
+
+
+def entry_point_iamp(**kwargs):
+    pkg = "interaction_aware_motion_prediction"
+    module = ".policy"
+    lib = _verify_installation(pkg=pkg, module=module)
+
+    return AgentSpec(
+        interface=AgentInterface(
+            action=ActionSpaceType.TargetPose,
+        ),
+        agent_builder=lib.Policy,
+    )
+
+
+register(
+    locator="interaction-aware-motion-prediction-agent-v0", entry_point=entry_point_iamp
+)

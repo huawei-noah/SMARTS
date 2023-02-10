@@ -3,6 +3,13 @@
 Instructions
 ============
 
+A benchmark is a standard set of rigorous environments which can be used to 
+assess and compare the performance of agents built by various researchers. 
+
+:doc:`Agent Zoo </benchmarks/agent_zoo>` contains prebuilt and trained agents 
+which could be deployed as reference ego agent in the benchmarks. Feel free to 
+mix and match compatible agents and benchmarks.
+
 Run a benchmark
 ---------------
 

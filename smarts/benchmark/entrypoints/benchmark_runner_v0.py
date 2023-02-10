@@ -185,7 +185,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     print(format_one_line_scores(named_scores))
     print()
     print("`Driving SMARTS V0` averaged result:")
-    print(format_scores_total(named_scores, len(env_args) or 1))
+    print(format_scores_total(named_scores, len(env_args)))
 
 
 def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):

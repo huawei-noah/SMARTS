@@ -4,7 +4,7 @@ Driving SMARTS 2022
 ===================
 
 The Driving SMARTS 2022 is a benchmark derived from the
-NeurIPS 2022 Driving SMARTS Competition.
+`NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ competition.
 
 This benchmark is intended to address the following requirements:
 
@@ -19,21 +19,17 @@ This benchmark is intended to address the following requirements:
 -  Added benchmarks should be versioned.
 -  Added benchmarks should be discover-able.
 
-See `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ page for historical context.
-
 This benchmark allows ego agents to use any one of the following action spaces.
 
 + :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
 + :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
 
-Compatible zoo agents
----------------------
-
-A list of SMARTS zoo agents which are compatible with this benchmark is
-provided here. A compatible zoo agent can be run as follows.
+See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. A compatible zoo agent can be run as follows.
 
 .. code-block:: bash
 
     $ cd <path>/SMARTS
-    $ scl zoo install <path/to/agent policy>
+    $ scl zoo install <agent path>
+    # e.g., scl zoo install zoo/policies/interaction_aware_motion_prediction
     $ scl benchmark run driving_smarts==0.0 <agent_locator> --auto_install
+    # e.g., scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
