@@ -1282,19 +1282,10 @@ class SMARTS(ProviderManager):
     @fixed_timestep_sec.setter
     def fixed_timestep_sec(self, fixed_timestep_sec: float):
         if not fixed_timestep_sec:
-            # This is the fastest we could possibly run given constraints from pybullet
-            self._rounder = rounder_for_dt(
-                round(
-                    1
-                    / config()(
-                        "physics",
-                        "max_pybullet_freq",
-                        default=MAX_PYBULLET_FREQ,
-                        cast=int,
-                    ),
-                    6,
-                )
+            max_pybullet_freq = config()(
+                "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
             )
+            self._rounder = rounder_for_dt(round(1 / max_pybullet_freq, 6))
         else:
             self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._fixed_timestep_sec = fixed_timestep_sec
