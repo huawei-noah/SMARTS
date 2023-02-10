@@ -46,6 +46,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    sim/simulator.rst
    sim/scenario_studio.rst
    sim/bubbles.rst
+   sim/configuration.rst
 
 .. toctree::
    :hidden:
@@ -69,7 +70,6 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :caption: API
 
    api/modules.rst
-   sim/configuration.rst
 
 .. toctree::
    :hidden:
