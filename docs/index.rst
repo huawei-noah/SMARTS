@@ -46,6 +46,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    sim/simulator.rst
    sim/scenario_studio.rst
    sim/bubbles.rst
+   sim/configuration.rst
 
 .. toctree::
    :hidden:
@@ -53,6 +54,8 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :caption: Benchmarks
 
    benchmarks/benchmark.rst
+   benchmarks/agent_zoo.rst
+   benchmarks/driving_smarts_2022.rst
 
 .. toctree::
    :hidden:
@@ -78,7 +81,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    ecosystem/sumo.rst
    ecosystem/waymo.rst
    ecosystem/rllib.rst
-   ecosystem/agent_zoo.rst
+   ecosystem/ngsim.rst
 
 .. toctree::
    :hidden:
@@ -89,3 +92,4 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    resources/diagnostic.rst
    resources/faq.rst
    resources/contributing.rst
+   resources/todo.rst

@@ -31,8 +31,9 @@ class FormatAction(gym.ActionWrapper):
 
     Note:
 
-        (a) Only ``ActionSpaceType.Continuous``, ``ActionSpaceType.Lane``, and
-            ``ActionSpaceType.TargetPose`` are supported by this wrapper now.
+        (a) Only ``ActionSpaceType.Continuous``, ``ActionSpaceType.Lane``,
+            ``ActionSpaceType.ActuatorDynamic``, and `ActionSpaceType.TargetPose``
+            are supported by this wrapper now.
 
         (b) All agents should have the same action space.
     """
@@ -50,6 +51,7 @@ class FormatAction(gym.ActionWrapper):
         space_map = {
             "Continuous": _continuous,
             "Lane": _lane,
+            "ActuatorDynamic": _actuator_dynamic,
             "TargetPose": _target_pose,
         }
         self._wrapper, action_space = space_map.get(space.name)()
@@ -92,6 +94,19 @@ def _lane() -> Tuple[Callable[[Dict[str, int]], Dict[str, str]], gym.Space]:
 
     def wrapper(action: Dict[str, int]) -> Dict[str, str]:
         return {k: action_map[v] for k, v in action.items()}
+
+    return wrapper, space
+
+
+def _actuator_dynamic() -> Tuple[
+    Callable[[Dict[str, np.ndarray]], Dict[str, np.ndarray]], gym.Space
+]:
+    space = gym.spaces.Box(
+        low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
+    )
+
+    def wrapper(action: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        return {k: v.astype(np.float32) for k, v in action.items()}
 
     return wrapper, space
 

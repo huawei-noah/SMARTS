@@ -32,7 +32,7 @@ from smarts import VERSION
 from smarts.core.plan import Plan
 from smarts.core.utils.logging import timeit
 
-from . import models
+from . import config, models
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
@@ -728,7 +728,9 @@ class SMARTS(ProviderManager):
         client.configureDebugVisualizer(
             pybullet.COV_ENABLE_GUI, 0  # pylint: disable=no-member
         )
-
+        max_pybullet_freq = config()(
+            "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
+        )
         # PyBullet defaults the timestep to 240Hz. Several parameters are tuned with
         # this value in mind. For example the number of solver iterations and the error
         # reduction parameters (erp) for contact, friction and non-contact joints.
@@ -741,11 +743,11 @@ class SMARTS(ProviderManager):
         self._pybullet_period = (
             self._fixed_timestep_sec
             if self._fixed_timestep_sec
-            else 1 / MAX_PYBULLET_FREQ
+            else 1 / max_pybullet_freq
         )
         client.setPhysicsEngineParameter(
             fixedTimeStep=self._pybullet_period,
-            numSubSteps=int(self._pybullet_period * MAX_PYBULLET_FREQ),
+            numSubSteps=int(self._pybullet_period * max_pybullet_freq),
             numSolverIterations=10,
             solverResidualThreshold=0.001,
             # warmStartingFactor=0.99
@@ -849,12 +851,17 @@ class SMARTS(ProviderManager):
         try:
             self.destroy()
         except (TypeError, AttributeError) as e:
-            raise SMARTSDestroyedError(
-                "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
-                " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
-                " go away.",
-                e,
-            )
+            # This is a print statement because the logging module may be deleted at program exit.
+            try:
+                exception = SMARTSDestroyedError(
+                    "ERROR: A SMARTS instance may have been deleted by gc before a call to destroy."
+                    " Please explicitly call `del obj` or `SMARTS.destroy()` to make this error"
+                    " go away.",
+                    e,
+                )
+            except (TypeError, KeyboardInterrupt):
+                return
+            raise exception
 
     def _teardown_vehicles(self, vehicle_ids):
         self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
@@ -1275,8 +1282,10 @@ class SMARTS(ProviderManager):
     @fixed_timestep_sec.setter
     def fixed_timestep_sec(self, fixed_timestep_sec: float):
         if not fixed_timestep_sec:
-            # This is the fastest we could possibly run given constraints from pybullet
-            self._rounder = rounder_for_dt(round(1 / MAX_PYBULLET_FREQ, 6))
+            max_pybullet_freq = config()(
+                "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
+            )
+            self._rounder = rounder_for_dt(round(1 / max_pybullet_freq, 6))
         else:
             self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._fixed_timestep_sec = fixed_timestep_sec
