@@ -4,7 +4,7 @@ Driving SMARTS 2022
 ===================
 
 The Driving SMARTS 2022 is a benchmark derived from the
-NeurIPS 2022 Driving SMARTS Competition.
+`NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ competition.
 
 This benchmark is intended to address the following requirements:
 
@@ -18,8 +18,6 @@ This benchmark is intended to address the following requirements:
    versions.
 -  Added benchmarks should be versioned.
 -  Added benchmarks should be discover-able.
-
-See `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ page for historical context.
 
 This benchmark allows ego agents to use any one of the following action spaces.
 
