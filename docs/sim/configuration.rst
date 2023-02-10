@@ -5,7 +5,7 @@ Configuration
 
 You can change the behavior of the underlying SMARTS engine.
 
-Configuration of the engine can come from several sources. These locations take precidence as noted:
+Configuration of the engine can come from several sources. These locations take precedence as noted:
 
 1. Individual ``SMARTS_`` prefixed environment variables (e.g. ``SMARTS_SENSOR_WORKER_COUNT``)
 2. Local directory engine configuration (./smarts_engine.ini )
