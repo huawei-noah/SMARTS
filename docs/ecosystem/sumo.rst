@@ -5,7 +5,7 @@ SUMO
 
 Learn SUMO through its user `documentation <https://sumo.dlr.de/docs/index.html>`_ . 
 
-SMARTS currently directly installs SUMO version >=1.12.0 via `pip`. 
+SMARTS currently directly installs SUMO version >=1.15.0 via `pip`. 
 
 .. code-block:: bash
 

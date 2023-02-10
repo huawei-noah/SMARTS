@@ -142,17 +142,31 @@ def pickle_hash_int(obj) -> int:
     return c_int64(val).value
 
 
-def smarts_log_dir() -> str:
-    """Retrieves the smarts logging directory."""
+def smarts_local_user_dir() -> str:
+    """Retrieves the smarts logging directory.
+
+    Returns:
+        str: The smarts local user directory path.
+    """
     ## Following should work for linux and macos
     smarts_dir = os.path.join(os.path.expanduser("~"), ".smarts")
     os.makedirs(smarts_dir, exist_ok=True)
     return smarts_dir
 
 
+def smarts_global_user_dir() -> str:
+    """Retrieves the smarts global user directory.
+
+    Returns:
+        str: The smarts global user directory path.
+    """
+    smarts_dir = os.path.join("/etc", "smarts")
+    return smarts_dir
+
+
 def make_dir_in_smarts_log_dir(dir):
     """Return a new directory location in the smarts logging directory."""
-    return os.path.join(smarts_log_dir(), dir)
+    return os.path.join(smarts_local_user_dir(), dir)
 
 
 @contextmanager
