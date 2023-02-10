@@ -18,7 +18,7 @@ Note that configuration files resolve all settings at the first found configurat
 Options
 -------
 
-All settings demostrated as environment variables are formatted to ``UPPERCASE`` and prefixed with ``SMARTS_`` (e.g. ``[core] logging`` can be configured with ``SMARTS_CORE_LOGGING``)
+All settings demonstrated as environment variables are formatted to ``UPPERCASE`` and prefixed with ``SMARTS_`` (e.g. ``[core] logging`` can be configured with ``SMARTS_CORE_LOGGING``)
 
 These settings are as follows:
 
