@@ -100,9 +100,7 @@ class RoadMap:
         """Find a feature in this road map that has the given identifier."""
         raise NotImplementedError()
 
-    def dynamic_features_near(
-        self, point: Point, radius: float
-    ) -> List[Tuple[RoadMap.Feature, float]]:
+    def dynamic_features_near(self, point: Point, radius: float) -> List[Tuple[RoadMap.Feature, float]]:
         """Find features within radius meters of the given point."""
         result = []
         for feat in self.dynamic_features:
@@ -111,9 +109,7 @@ class RoadMap:
                 result.append((feat, dist))
         return result
 
-    def nearest_surfaces(
-        self, point: Point, radius: Optional[float] = None
-    ) -> List[Tuple[RoadMap.Surface, float]]:
+    def nearest_surfaces(self, point: Point, radius: Optional[float] = None) -> List[Tuple[RoadMap.Surface, float]]:
         """Find surfaces (lanes, roads, etc.) on this road map that are near the given point."""
         raise NotImplementedError()
 
@@ -124,9 +120,7 @@ class RoadMap:
         Returns a list of tuples of lane and distance, sorted by distance."""
         raise NotImplementedError()
 
-    def nearest_lane(
-        self, point: Point, radius: Optional[float] = None, include_junctions=True
-    ) -> RoadMap.Lane:
+    def nearest_lane(self, point: Point, radius: Optional[float] = None, include_junctions=True) -> RoadMap.Lane:
         """Find the nearest lane on this road map to the given point."""
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
@@ -227,9 +221,7 @@ class RoadMap:
             """The features on this surface near the given pose."""
             raise NotImplementedError()
 
-        def shape(
-            self, buffer_width: float = 0.0, default_width: Optional[float] = None
-        ) -> Polygon:
+        def shape(self, buffer_width: float = 0.0, default_width: Optional[float] = None) -> Polygon:
             """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
             where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
             also specify a `default_width`, in which case the returned polygon should have a convex shape where the
@@ -373,9 +365,7 @@ class RoadMap:
             a width estimate with no confidence."""
             raise NotImplementedError()
 
-        def project_along(
-            self, start_offset: float, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        def project_along(self, start_offset: float, distance: float) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at start_offset along the lane, project locations (lane, offset tuples)
             reachable within distance, not including lane changes."""
             result = set()
@@ -442,9 +432,7 @@ class RoadMap:
             orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
             return Pose(position=position, orientation=orientation)
 
-        def curvature_radius_at_offset(
-            self, offset: float, lookahead: int = 5
-        ) -> float:
+        def curvature_radius_at_offset(self, offset: float, lookahead: int = 5) -> float:
             """lookahead (in meters) is the size of the window to use
             to compute the curvature, which must be at least 1 to make sense.
             This may return math.inf if the lane is straight."""
@@ -462,9 +450,7 @@ class RoadMap:
                 heading_rad = vec_to_radians(vec[:2])
                 if prev_heading_rad is not None:
                     # XXX: things like S curves can cancel out here
-                    heading_deltas += min_angles_difference_signed(
-                        heading_rad, prev_heading_rad
-                    )
+                    heading_deltas += min_angles_difference_signed(heading_rad, prev_heading_rad)
                 prev_heading_rad = heading_rad
             return i / heading_deltas if heading_deltas else math.inf
 
@@ -676,25 +662,19 @@ class RoadMap:
             """Distance along route between two points."""
             raise NotImplementedError()
 
-        def project_along(
-            self, start: RoutePoint, distance: float
-        ) -> Set[Tuple[RoadMap.Lane, float]]:
+        def project_along(self, start: RoutePoint, distance: float) -> Set[Tuple[RoadMap.Lane, float]]:
             """Starting at point on the route, returns a set of possible
             locations (lane and offset pairs) further along the route that
             are distance away, not including lane changes."""
             raise NotImplementedError()
 
-        def distance_from(
-            self, cur_lane: RouteLane, route_road: Optional[RoadMap.Road] = None
-        ) -> Optional[float]:
+        def distance_from(self, cur_lane: RouteLane, route_road: Optional[RoadMap.Road] = None) -> Optional[float]:
             """Returns the distance along the route from the beginning of the current lane
             to the beginning of the next occurrence of route_road, or if route_road is None,
             then to the end of the route."""
             raise NotImplementedError()
 
-        def next_junction(
-            self, cur_lane: RouteLane, offset: float
-        ) -> Optional[Tuple[RoadMap.Lane, float]]:
+        def next_junction(self, cur_lane: RouteLane, offset: float) -> Optional[Tuple[RoadMap.Lane, float]]:
             """Returns a lane within the next junction along the route from beginning
             of the current lane to the returned lane it connects with in the junction,
             and the distance to it from this offset, or (None, inf) if there aren't any."""
@@ -756,9 +736,7 @@ class Waypoint:
         Returns:
             float: Relative heading in [-pi, pi].
         """
-        assert isinstance(
-            h, Heading
-        ), "Heading h ({}) must be an instance of smarts.core.coordinates.Heading".format(
+        assert isinstance(h, Heading), "Heading h ({}) must be an instance of smarts.core.coordinates.Heading".format(
             type(h)
         )
         return self.heading.relative_to(h)
@@ -821,9 +799,7 @@ class RoadMapWithCaches(RoadMap):
         @lru_cache(maxsize=1024)
         def to_lane_coord(self, world_point: Point) -> RefLinePoint:
             lc = RefLinePoint(s=self.offset_along_lane(world_point))
-            offcenter_vector = (
-                world_point.as_np_array - self.from_lane_coord(lc).as_np_array
-            )
+            offcenter_vector = world_point.as_np_array - self.from_lane_coord(lc).as_np_array
             t_sign = np.sign(np.dot(offcenter_vector, self._normal_at_offset(lc.s)))
             return lc._replace(t=np.linalg.norm(offcenter_vector) * t_sign)
 
@@ -867,10 +843,8 @@ class RoadMapWithCaches(RoadMap):
                 """For a reference-line point in/along this segment, converts it to a world point."""
                 offset = lane_pt.s - self.offset
                 return Point(
-                    self.x
-                    + (offset * self.dx - lane_pt.t * self.dy) / self.dist_to_next,
-                    self.y
-                    + (offset * self.dy + lane_pt.t * self.dx) / self.dist_to_next,
+                    self.x + (offset * self.dx - lane_pt.t * self.dy) / self.dist_to_next,
+                    self.y + (offset * self.dy + lane_pt.t * self.dx) / self.dist_to_next,
                 )
 
         class _OffsetWrapper:
@@ -907,9 +881,7 @@ class RoadMapWithCaches(RoadMap):
                 segi -= 1
             return segs[segi]
 
-        def _cache_lane_info(
-            self, lane: RoadMapWithCaches.Lane
-        ) -> List[RoadMapWithCaches._SegmentCache.Segment]:
+        def _cache_lane_info(self, lane: RoadMapWithCaches.Lane) -> List[RoadMapWithCaches._SegmentCache.Segment]:
             segs = self._lane_cache.get(lane.lane_id)
             if segs is not None:
                 return segs
