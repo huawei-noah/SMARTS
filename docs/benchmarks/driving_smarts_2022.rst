@@ -26,14 +26,12 @@ This benchmark allows ego agents to use any one of the following action spaces.
 + :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
 + :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
 
-Compatible zoo agents
----------------------
-
-A list of SMARTS zoo agents which are compatible with this benchmark is
-provided at :ref:`Agent Zoo <agent_zoo>`. A compatible zoo agent can be run as follows.
+See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. A compatible zoo agent can be run as follows.
 
 .. code-block:: bash
 
     $ cd <path>/SMARTS
-    $ scl zoo install <full agent path>
+    $ scl zoo install <agent path>
+    # e.g., scl zoo install zoo/policies/interaction_aware_motion_prediction
     $ scl benchmark run driving_smarts==0.0 <agent_locator> --auto_install
+    # e.g., scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install

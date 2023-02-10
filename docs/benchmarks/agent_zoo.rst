@@ -3,16 +3,15 @@
 Agent Zoo
 =========
 
-Contributed agents are hosted at `Agent Zoo <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_ .
-
-These agents should be installed prior to being used in SMARTS environments.
+Numerous prebuilt and trained agents are hosted at `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_ . 
+These agents should be installed prior to being used in SMARTS environments or benchmarks.
 
 .. code-block:: bash
 
     $ cd <path>/SMARTS
     # Install a zoo agent.
-    $ scl zoo install <agent>
-    # e.g. scl zoo install zoo/policies/interaction_aware_motion_prediction
+    $ scl zoo install <agent path>
+    # e.g., scl zoo install zoo/policies/interaction_aware_motion_prediction
 
 .. note::
 
@@ -20,8 +19,8 @@ These agents should be installed prior to being used in SMARTS environments.
 
     .. code-block:: bash
 
-        $ scl zoo build <agent>
-        # e.g. scl zoo build zoo/policies/interaction_aware_motion_prediction
+        $ scl zoo build <agent path>
+        # e.g., scl zoo build zoo/policies/interaction_aware_motion_prediction
 
 Contribute agents
 -----------------
@@ -29,35 +28,30 @@ Contribute agents
 .. note::
     This section is only for contributing to the agent zoo.
 
-First, add the new agent to `Agent Zoo <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_. It should contain 
+First, add the new agent to `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_. It should contain 
 
 * package setup file,
-* inference code with trained model, and
-* algorithm explanation. 
+* inference code with prebuilt model, and
+* algorithm explanation.
 
-Then, register the newly added zoo agent in ``SMARTS/zoo/policies/__init__.py``.
+Then, register the newly added zoo agent in `zoo/policies/__init__.py <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/__init__.py>`_.
 
-Available agents
-----------------
+Available zoo agents
+--------------------
 
-+-----------------------------------------------------------+-------------------------------------------------------------+---------------------+---------------------------------------------------------+
-| Zoo agent (locator)                                       | Action space                                                | Benchmark (if any)  | Agent path                                              |
-+===========================================================+=============================================================+=====================+=========================================================+
-| zoo.policies:interaction-aware-motion-prediction-agent-v0 | :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose` | driving_smarts==0.0 | <path>/zoo/policies/interaction_aware_motion_prediction |
-+-----------------------------------------------------------+-------------------------------------------------------------+---------------------+---------------------------------------------------------+
-|                                                           |                                                             |                     |                                                         |
-+-----------------------------------------------------------+-------------------------------------------------------------+---------------------+---------------------------------------------------------+
+.. _available_zoo_agents:
+.. list-table::
+   :header-rows: 1
 
-Interaction-aware motion prediction
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-* Contributed as part of NeurIPS2022 Driving SMARTS competition.
-* Source: `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`_.
-* Run as follows:
-
-.. code-block:: bash
-
-    $ cd <path>/SMARTS
-    # Install a zoo agent.
-    $ scl zoo install zoo/policies/interaction_aware_motion_prediction
-    $ scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
+   * - Zoo agent locator
+     - Benchmark or Env
+     - Action space
+     - Agent path
+     - Source
+     - Remarks
+   * - zoo.policies:interaction-aware-motion-prediction-agent-v0
+     - driving_smarts==0.0
+     - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
+     - zoo/policies/interaction_aware_motion_prediction
+     - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`__
+     - Contributed as part of NeurIPS 2022 Driving SMARTS competition.
