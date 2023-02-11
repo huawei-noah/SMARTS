@@ -6,8 +6,6 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
 
-from .control_and_supervised_learning.policy import Policy as CASLAgent
-from .interaction_aware_motion_prediction.policy import Policy as IAMPAgent
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
 from .waypoint_tracking_agent import WaypointTrackingAgent

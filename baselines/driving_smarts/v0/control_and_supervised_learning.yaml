@@ -1,7 +1,0 @@
-agent:
-  interface:
-    action_space: "TargetPose" # we can only allow `RelativeTargetPose` and `TargetPose`
-    img_meters: 64 # Observation image area size in meters.
-    img_pixels: 256 # Observation image size in pixels.
-    observation_options: "unformatted"
-  locator: "zoo.policies:control-and-supervised-learning-agent-v0"
