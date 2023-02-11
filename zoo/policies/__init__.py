@@ -133,3 +133,19 @@ def entry_point_iamp(**kwargs):
 register(
     locator="interaction-aware-motion-prediction-agent-v0", entry_point=entry_point_iamp
 )
+
+def entry_point_dsac(**kwargs):
+    pkg = "discrete_soft_actor_critic"
+    module = ".policy"
+    lib = _verify_installation(pkg=pkg, module=module)
+
+    return AgentSpec(
+        interface=AgentInterface(
+            action=ActionSpaceType.TargetPose,
+        ),
+        agent_builder=lib.Policy,
+    )
+
+register(
+    locator="discrete-soft-actor-critic-agent-v0", entry_point=entry_point_dsac
+)
