@@ -53,7 +53,7 @@ Available zoo agents
      - driving_smarts==0.0
      - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
      - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`__
-     - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ competition.
+     - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.
    * - | zoo.policies:control-and-supervised-learning-agent-v0
        | zoo/policies/control_and_supervised_learning
      - driving_smarts==0.0
@@ -65,4 +65,4 @@ Available zoo agents
      - driving_smarts==0.0
      - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
      - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/discrete_soft_actor_critic>`__
-     - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ competition.
+     - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.
