@@ -38,7 +38,7 @@ extensions = [
     "sphinx.ext.coverage",  # to generate documentation coverage reports
     "sphinx.ext.extlinks",  # shorten external links
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
-    "sphinx.ext.todo", # support for todo items
+    "sphinx.ext.todo",  # support for todo items
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx_click",  # extract documentation from a `click` application

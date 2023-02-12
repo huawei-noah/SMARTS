@@ -135,6 +135,25 @@ register(
 )
 
 
+def entry_point_casl(**kwargs):
+    pkg = "control_and_supervised_learning"
+    module = ".policy"
+    lib = _verify_installation(pkg=pkg, module=module)
+
+    return AgentSpec(
+        interface=AgentInterface(
+            action=ActionSpaceType.TargetPose,
+        ),
+        agent_builder=lib.Policy,
+    )
+
+
+register(
+    locator="control-and-supervised-learning-agent-v0",
+    entry_point=entry_point_casl,
+)
+
+
 def entry_point_dsac(**kwargs):
     pkg = "discrete_soft_actor_critic"
     module = ".policy"
