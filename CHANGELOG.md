@@ -23,6 +23,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added NGSIM documentation.
 - Added a zoo agent, named Interaction-aware Motion Prediction, from NeurIPS2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 - Added Agent Zoo documentation in ReadTheDocs.
+- Added a zoo agent, named Discrete Soft Actor Critic, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 ### Changed
 - Made changes in the docs to reflect `master` branch as the main development branch.
 - Enabled supplying agent locator directly to benchmark runner and removed the need for an intermediary config file. Updated benchmark docs to reflect this.
