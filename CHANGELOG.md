@@ -12,6 +12,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added a zoo agent, named Control-and-Supervised-Learning, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 - Added a zoo agent, named Discrete Soft Actor Critic, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
+- Added `"driving_smarts_full==0.0"` benchmark to the set of available benchmarks.
+- Added `"driving-smarts-competition-bubble-env-v0"` to the set of available environments. This requires installing `bubble_env` in order to run.
 ### Changed
 ### Deprecated
 ### Fixed
@@ -31,6 +33,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Individualised the agent instances in the `benchmark_runner_v0.py`.
 - Made driving_smarts_competition_v0 env configurable through supply of `AgentInterface`.
 - Observation of driving_smarts_competition_v0 env was fixed to be of type `ObservationOptions.unformatted`.
+- The V0 benchmark runner now uses `load_config` from the benchmarks module.
 ### Deprecated
 ### Fixed
 - Fixed an exit error that occurs when envision attempts to close down.

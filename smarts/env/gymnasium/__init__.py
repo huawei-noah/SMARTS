@@ -32,6 +32,12 @@ try:
         entry_point="smarts.env.gymnasium.driving_smarts_competition_env:driving_smarts_competition_v0_env",
         disable_env_checker=True,
     )
+
+    register(
+        id="driving-smarts-competition-bubble-env-v0",
+        entry_point="smarts.env.gymnasium.driving_smarts_bubble_env:checked_bubble_env_v0",
+        disable_env_checker=True,
+    )
 except ModuleNotFoundError:
     import warnings
 
