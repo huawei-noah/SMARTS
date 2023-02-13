@@ -1,5 +1,5 @@
 absl-py==1.4.0
-aiohttp==3.8.3
+aiohttp==3.8.4
 aiohttp-cors==0.7.0
 aioredis==2.0.1
 aiosignal==1.3.1
@@ -13,7 +13,7 @@ blessed==1.20.0
 cached-property==1.5.2
 cachetools==5.3.0
 certifi==2022.12.7
-charset-normalizer==2.1.1
+charset-normalizer==3.0.1
 click==8.1.3
 cloudpickle==1.6.0
 colorama==0.4.6
@@ -62,7 +62,7 @@ lz4==4.3.2
 Markdown==3.4.1
 markdown-it-py==2.1.0
 MarkupSafe==2.1.2
-matplotlib==3.6.3
+matplotlib==3.7.0
 mdurl==0.1.2
 msgpack==1.0.4
 multidict==6.0.4
@@ -98,8 +98,8 @@ pyrsistent==0.19.3
 pytest==7.2.1
 pytest-benchmark==4.0.0
 pytest-cov==4.0.0
-pytest-forked==1.4.0
-pytest-xdist==3.1.0
+pytest-forked==1.6.0
+pytest-xdist==3.2.0
 python-dateutil==2.8.2
 pytz==2022.7.1
 PyYAML==6.0
@@ -111,7 +111,7 @@ rich==13.3.1
 rsa==4.9
 Rtree==1.0.1
 scipy==1.10.0
-sh==1.14.3
+sh==2.0.2
 shapely==2.0.1
 Shimmy==0.2.0
 six==1.16.0
@@ -121,7 +121,7 @@ tabulate==0.9.0
 tensorboard==2.11.2
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
-tensorboardX==2.5.1
+tensorboardX==2.6
 tensorflow==2.11.0
 tensorflow-estimator==2.11.0
 tensorflow-io-gcs-filesystem==0.30.0
@@ -134,12 +134,12 @@ trimesh==3.9.29
 Twisted==22.10.0
 typing_extensions==4.4.0
 urllib3==1.26.14
-visdom==0.2.3
+visdom==0.2.4
 wcwidth==0.2.6
 websocket-client==1.5.1
 Werkzeug==2.2.2
 wrapt==1.14.1
 yarl==1.8.2
 yattag==1.15.0
-zipp==3.12.1
+zipp==3.13.0
 zope.interface==5.5.2
