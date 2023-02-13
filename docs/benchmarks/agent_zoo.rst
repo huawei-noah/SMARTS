@@ -60,3 +60,9 @@ Available zoo agents
      - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
      - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/control_and_supervised_learning>`__
      - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.
+   * - | zoo.policies:discrete-soft-actor-critic-agent-v0
+       | zoo/policies/discrete_soft_actor_critic
+     - driving_smarts==0.0
+     - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
+     - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/discrete_soft_actor_critic>`__
+     - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.
