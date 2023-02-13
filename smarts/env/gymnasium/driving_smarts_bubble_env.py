@@ -21,12 +21,11 @@
 # THE SOFTWARE.
 import gymnasium as gym
 
+from smarts.core.agent_interface import AgentInterface
+
 
 def checked_bubble_env_v0(
-    traffic_mode="traffic_A",
-    action_space="Direct",
-    img_meters: int = 64,
-    img_pixels: int = 256,
+    agent_interface: AgentInterface,
     headless: bool = True,
     seed: int = 42,
     **kwargs,
@@ -74,11 +73,8 @@ def checked_bubble_env_v0(
 
     env = gym.make(
         "bubble_env_contrib:bubble_env-v1",
-        action_space=action_space,
-        img_meters=img_meters,
-        img_pixels=img_pixels,
+        agent_interface=agent_interface,
         headless=headless,
         seed=seed,
-        traffic_mode=traffic_mode,
     )
     return env
