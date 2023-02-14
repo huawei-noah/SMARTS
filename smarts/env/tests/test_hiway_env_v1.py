@@ -78,6 +78,7 @@ def test_hiway_env_v1_unformatted(env: HiWayEnvV1):
             # Ensure that it is infact a delta and not total distance travelled
             # since this bug has appeared a few times. Verify by ensuring the
             # reward does not grow unbounded.
+            assert isinstance(rewards, dict)
             assert all(
                 [-3 < reward < 3 for reward in rewards.values()]
             ), f"Expected bounded reward per timestep, but got {rewards}."
