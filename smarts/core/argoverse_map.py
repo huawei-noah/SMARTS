@@ -8,12 +8,12 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import BoundingBox, Point, Pose
-from smarts.core.road_map import RoadMap
+from smarts.core.coordinates import BoundingBox, Point, Pose, RefLinePoint
+from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.utils.glb import make_map_glb
 from smarts.sstudio.types import MapSpec
 from av2.map.map_api import ArgoverseStaticMap
-from av2.map.lane_segment import LaneMarkType
+from av2.map.lane_segment import LaneMarkType, LaneSegment
 import av2.geometry.polyline_utils as polyline_utils
 import av2.rendering.vector as vector_plotting_utils
 from shapely.geometry import Polygon
@@ -67,10 +67,15 @@ class ArgoverseMap(RoadMap):
                 cur_seg = lane_seg
                 while True:
                     left = cur_seg.left_lane_marking.mark_type
-                    if cur_seg.left_neighbor_id is not None and left == LaneMarkType.DASHED_WHITE:
+                    if (
+                        cur_seg.left_neighbor_id is not None
+                        and left == LaneMarkType.DASHED_WHITE
+                    ):
                         # There is a valid lane to the left, so add it and continue
                         neighbours.append(cur_seg.left_neighbor_id)
-                        cur_seg = self._avm.vector_lane_segments[cur_seg.left_neighbor_id]
+                        cur_seg = self._avm.vector_lane_segments[
+                            cur_seg.left_neighbor_id
+                        ]
                     else:
                         break  # This is the leftmost lane in the road, so stop
 
@@ -81,7 +86,7 @@ class ArgoverseMap(RoadMap):
                     road_id += f"-{seg_id}"
                     lane_id = f"lane-{seg_id}"
                     seg = self._avm.vector_lane_segments[seg_id]
-                    lane = ArgoverseMap.Lane(lane_id, seg.polygon_boundary[:, :2], index)
+                    lane = ArgoverseMap.Lane(self, lane_id, seg, index)
                     assert lane_id not in self._lanes
                     self._lanes[lane_id] = lane
                     processed_ids.add(seg_id)
@@ -101,7 +106,7 @@ class ArgoverseMap(RoadMap):
             road_id = f"road-{lane_seg.id}"
             lane_id = f"lane-{lane_seg.id}"
 
-            lane = ArgoverseMap.Lane(lane_id, lane_seg.polygon_boundary[:, :2], 0)
+            lane = ArgoverseMap.Lane(self, lane_id, lane_seg, 0)
             road = ArgoverseMap.Road(road_id, [lane])
             lane._road = road
 
@@ -109,6 +114,19 @@ class ArgoverseMap(RoadMap):
             assert lane_id not in self._lanes
             self._roads[road_id] = road
             self._lanes[lane_id] = lane
+
+        # Patch in incoming/outgoing lanes now that all lanes have been created
+        for lane in self._lanes.values():
+            lane._incoming_lanes = [
+                self.lane_by_id(f"lane-{seg_id}")
+                for seg_id in lane.lane_seg.predecessors
+                if seg_id in all_ids
+            ]
+            lane._outgoing_lanes = [
+                self.lane_by_id(f"lane-{seg_id}")
+                for seg_id in lane.lane_seg.successors
+                if seg_id in all_ids
+            ]
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -132,10 +150,9 @@ class ArgoverseMap(RoadMap):
         )
 
     def is_same_map(self, map_spec) -> bool:
-        """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
-        raise NotImplementedError()
+        return map_spec.source == self._map_spec.source
 
-    def _compute_lane_polygons(self):
+    def to_glb(self, glb_dir):
         polygons = []
         for lane_id, lane in self._lanes.items():
             metadata = {
@@ -144,20 +161,17 @@ class ArgoverseMap(RoadMap):
                 # "lane_index": lane.index, TODO
             }
             polygons.append((lane.shape(), metadata))
-        return polygons
 
-    def to_glb(self, glb_dir):
-        polygons = self._compute_lane_polygons()
         # lane_dividers, edge_dividers = self._compute_traffic_dividers()
-
-        map_glb = make_map_glb(polygons, self.bounding_box, [], [])
-        map_glb.write_glb(Path(glb_dir) / "map.glb")
 
         # road_lines_glb = self._make_road_line_glb(edge_dividers)
         # road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
 
         # lane_lines_glb = self._make_road_line_glb(lane_dividers)
         # lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
+
+        map_glb = make_map_glb(polygons, self.bounding_box, [], [])
+        map_glb.write_glb(Path(glb_dir) / "map.glb")
 
     class Surface(RoadMap.Surface):
         def __init__(self, surface_id: str):
@@ -175,12 +189,21 @@ class ArgoverseMap(RoadMap):
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMap.Lane, Surface):
-        def __init__(self, lane_id: str, polygon, index: int):
+        def __init__(
+            self, map: "ArgoverseMap", lane_id: str, lane_seg: LaneSegment, index: int
+        ):
             super().__init__(lane_id)
+            self._map = map
             self._lane_id = lane_id
-            self._polygon = polygon
+            self.lane_seg = lane_seg
+            self._polygon = lane_seg.polygon_boundary[:, :2]
+            self._centerline = self._map._avm.get_lane_segment_centerline(lane_seg.id)[
+                :, :2
+            ]
             self._index = index
             self._road = None
+            self._incoming_lanes = None
+            self._outgoing_lanes = None
 
         def __hash__(self) -> int:
             return hash(self.lane_id)
@@ -197,73 +220,107 @@ class ArgoverseMap(RoadMap):
         def speed_limit(self) -> Optional[float]:
             return None
 
-        @property
+        @cached_property
         def length(self) -> float:
-            """The length of this lane."""
-            raise NotImplementedError()
+            length = 0
+            for p1, p2 in zip(self._centerline, self._centerline[1:]):
+                length += np.linalg.norm(p2 - p1)
+            return length
 
         @property
         def in_junction(self) -> bool:
-            """If this lane is a part of a junction (usually an intersection.)"""
-            raise NotImplementedError()
+            raise self.lane_seg.is_intersection
 
         @property
         def index(self) -> int:
-            """when not in_junction, 0 is outer / right-most (relative to lane heading) lane on road.
-            otherwise, index scheme is implementation-dependent, but must be deterministic."""
-            # TAI:  UK roads
-            raise NotImplementedError()
+            return self._index
 
-        @property
+        @lru_cache(maxsize=4)
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            return Polygon(self._polygon)
+
+        @cached_property
         def lanes_in_same_direction(self) -> List[RoadMap.Lane]:
-            """returns all other lanes on this road where traffic goes
-            in the same direction.  it is currently assumed these will be
-            adjacent to one another.  In junctions, diverging lanes
-            should not be included."""
-            raise NotImplementedError()
+            return [lane for lane in self.road.lanes if lane.lane_id != self.lane_id]
 
-        @property
+        @cached_property
         def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
-            """Note: left is defined as 90 degrees clockwise relative to the lane heading.
-            (I.e., positive `t` in the RefLine coordinate system.)
-            Second result is True if lane is in the same direction as this one
-            In junctions, diverging lanes should not be included."""
-            raise NotImplementedError()
+            result = None
+            for other in self.lanes_in_same_direction:
+                if other.index > self.index and (
+                    not result or other.index < result.index
+                ):
+                    result = other
+            return result, True
 
-        @property
+        @cached_property
         def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
-            """Note: right is defined as 90 degrees counter-clockwise relative to the lane heading.
-            (I.e., negative `t` in the RefLine coordinate system.)
-            Second result is True if lane is in the same direction as this one.
-            In junctions, diverging lanes should not be included."""
-            raise NotImplementedError()
+            result = None
+            for other in self.lanes_in_same_direction:
+                if other.index < self.index and (
+                    not result or other.index > result.index
+                ):
+                    result = other
+            return result, True
 
         @property
         def incoming_lanes(self) -> List[RoadMap.Lane]:
-            """Lanes leading into this lane."""
-            raise NotImplementedError()
+            return self._incoming_lanes
 
         @property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
-            """Lanes leading out of this lane."""
-            raise NotImplementedError()
+            return self._outgoing_lanes
 
+        @lru_cache(maxsize=16)
         def oncoming_lanes_at_offset(self, offset: float) -> List[RoadMap.Lane]:
-            """Returns a list of nearby lanes at offset that are (roughly)
-            parallel to this one but go in the opposite direction."""
-            raise NotImplementedError()
+            result = []
+            radius = 1.1 * self.width_at_offset(offset)[0]
+            pt = self.from_lane_coord(RefLinePoint(offset))
+            nearby_lanes = self._map.nearest_lanes(pt, radius=radius)
+            if not nearby_lanes:
+                return result
+            my_vect = self.vector_at_offset(offset)
+            my_norm = np.linalg.norm(my_vect)
+            if my_norm == 0:
+                return result
+            threshold = -0.995562  # cos(175*pi/180)
+            for lane, _ in nearby_lanes:
+                if lane == self:
+                    continue
+                lane_refline_pt = lane.to_lane_coord(pt)
+                lv = lane.vector_at_offset(lane_refline_pt.s)
+                lv_norm = np.linalg.norm(lv)
+                if lv_norm == 0:
+                    continue
+                lane_angle = np.dot(my_vect, lv) / (my_norm * lv_norm)
+                if lane_angle < threshold:
+                    result.append(lane)
+            return result
 
         @property
         def foes(self) -> List[RoadMap.Lane]:
-            """All lanes that in some ways intersect with (cross) this one,
-            including those that have the same outgoing lane as this one,
-            and so might require right-of-way rules.  This should only
-            ever happen in junctions."""
             raise NotImplementedError()
 
-        @lru_cache(maxsize=4)
-        def shape(self, buffer_width: float = 0.0, default_width: Optional[float] = None) -> Polygon:
-            return Polygon(self._polygon)
+        def waypoint_paths_for_pose(
+            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+        ) -> List[List[Waypoint]]:
+            raise NotImplementedError()
+
+        def waypoint_paths_at_offset(
+            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+        ) -> List[List[Waypoint]]:
+            raise NotImplementedError()
+
+        def offset_along_lane(self, world_point: Point) -> float:
+            raise NotImplementedError()
+
+        def width_at_offset(self, offset: float) -> Tuple[float, float]:
+            raise NotImplementedError()
+
+        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
+            raise NotImplementedError()
 
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
