@@ -295,7 +295,7 @@ class WaymoMap(RoadMapWithCaches):
                 if lane._feature_id == cand_lane._feature_id:
                     continue
                 # Don't check intersection with incoming/outgoing lanes
-                if cand_id in lane.incoming_lanes or cand_id in lane.outgoing_lanes:
+                if cand_lane in lane.incoming_lanes or cand_lane in lane.outgoing_lanes:
                     continue
                 # ... or lanes in same road (TAI?)
                 if lane.road == cand_lane.road:
@@ -1933,7 +1933,8 @@ class WaymoMap(RoadMapWithCaches):
         lp_spacing: float,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, return corresponding
-        Waypoints that may not be evenly spaced (due to lane change) but start at point."""
+        Waypoints that may not be evenly spaced (due to lane change) but start at point.
+        """
 
         continuous_variables = [
             "positions_x",
@@ -1949,7 +1950,6 @@ class WaymoMap(RoadMapWithCaches):
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
         for idx, lanepoint in enumerate(path):
-
             if lanepoint.is_inferred and 0 < idx < len(path) - 1:
                 continue
 

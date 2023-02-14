@@ -4,13 +4,15 @@ import math
 from pathlib import Path
 from cached_property import cached_property
 import time
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
+import rtree
 
 from smarts.core.coordinates import BoundingBox, Point, Pose, RefLinePoint
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.utils.glb import make_map_glb
+from smarts.core.utils.math import line_intersect_vectorized
 from smarts.sstudio.types import MapSpec
 from av2.map.map_api import ArgoverseStaticMap
 from av2.map.lane_segment import LaneMarkType, LaneSegment
@@ -54,6 +56,74 @@ class ArgoverseMap(RoadMap):
         avm = ArgoverseStaticMap.from_json(map_path)
         assert avm.log_id == scenario_id, "Loaded map ID does not match expected ID"
         return cls(map_spec, avm)
+
+    def _compute_lane_intersections(self):
+        intersections: Dict[str, Set[str]] = dict()
+
+        lane_ids_todo = [lane_id for lane_id in self._lanes.keys()]
+
+        # Build rtree
+        lane_rtree = rtree.index.Index()
+        lane_rtree.interleaved = True
+        bboxes = dict()
+        for idx, lane_id in enumerate(lane_ids_todo):
+            lane_pts = self._lanes[lane_id]._centerline
+            bbox = (
+                np.amin(lane_pts[:, 0]),
+                np.amin(lane_pts[:, 1]),
+                np.amax(lane_pts[:, 0]),
+                np.amax(lane_pts[:, 1]),
+            )
+            bboxes[lane_id] = bbox
+            lane_rtree.add(idx, bbox)
+
+        for lane_id in lane_ids_todo:
+            lane = self._lanes[lane_id]
+            lane_intersections = intersections.setdefault(lane_id, set())
+
+            # Filter out any lanes that don't intersect this lane's bbox
+            indicies = lane_rtree.intersection(bboxes[lane_id])
+
+            # Filter out any other lanes we don't want to check against
+            lanes_to_test = []
+            for idx in indicies:
+                cand_id = lane_ids_todo[idx]
+                if cand_id == lane_id:
+                    continue
+                # Skip intersections we've already computed
+                if cand_id in lane_intersections:
+                    continue
+                # ... and sub-lanes of the same original lane
+                cand_lane = self._lanes[cand_id]
+                # Don't check intersection with incoming/outgoing lanes
+                if cand_lane in lane.incoming_lanes or cand_lane in lane.outgoing_lanes:
+                    continue
+                # ... or lanes in same road (TAI?)
+                if lane.road == cand_lane.road:
+                    continue
+                lanes_to_test.append(cand_id)
+            if not lanes_to_test:
+                continue
+
+            # Main loop -- check each segment of the lane polyline against the
+            # polyline of each candidate lane (--> algorithm is O(l^2)
+            line1 = lane._centerline
+            for cand_id in lanes_to_test:
+                line2 = np.array(self._lanes[cand_id]._centerline)
+                C = np.roll(line2, 0, axis=0)[:-1]
+                D = np.roll(line2, -1, axis=0)[:-1]
+                for i in range(len(line1) - 1):
+                    a = line1[i]
+                    b = line1[i + 1]
+                    if line_intersect_vectorized(a, b, C, D):
+                        lane_intersections.add(cand_id)
+                        intersections.setdefault(cand_id, set()).add(lane_id)
+                        break
+
+        for lane_id, intersect_ids in intersections.items():
+            self._lanes[lane_id]._intersections = [
+                self.lane_by_id(id) for id in intersect_ids
+            ]
 
     def _load_map_data(self):
         start = time.time()
@@ -127,6 +197,8 @@ class ArgoverseMap(RoadMap):
                 for seg_id in lane.lane_seg.successors
                 if seg_id in all_ids
             ]
+
+        self._compute_lane_intersections()
 
         end = time.time()
         elapsed = round((end - start) * 1000.0, 3)
@@ -204,6 +276,7 @@ class ArgoverseMap(RoadMap):
             self._road = None
             self._incoming_lanes = None
             self._outgoing_lanes = None
+            self._intersections = None
 
         def __hash__(self) -> int:
             return hash(self.lane_id)
@@ -229,7 +302,7 @@ class ArgoverseMap(RoadMap):
 
         @property
         def in_junction(self) -> bool:
-            raise self.lane_seg.is_intersection
+            return self.lane_seg.is_intersection
 
         @property
         def index(self) -> int:
@@ -299,9 +372,16 @@ class ArgoverseMap(RoadMap):
                     result.append(lane)
             return result
 
-        @property
+        @cached_property
         def foes(self) -> List[RoadMap.Lane]:
-            raise NotImplementedError()
+            foes = set(self._intersections)
+            foes |= {
+                incoming
+                for outgoing in self.outgoing_lanes
+                for incoming in outgoing.incoming_lanes
+                if incoming != self
+            }
+            return list(foes)
 
         def waypoint_paths_for_pose(
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
