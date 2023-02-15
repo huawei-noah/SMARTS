@@ -18,7 +18,7 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from train import env as train_env
 
 # To import submission folder
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "submission"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "inference"))
 import network
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")

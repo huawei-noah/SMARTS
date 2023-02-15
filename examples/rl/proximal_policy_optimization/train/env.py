@@ -67,7 +67,7 @@ def make(
 
     # Create environment
     env = gym.make(
-        "smarts.env:driving-smarts-competition-v0",
+        "smarts.env:platoon",
         scenario=scenario,
         agent_interface=agent_interface,
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.

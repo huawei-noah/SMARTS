@@ -32,6 +32,14 @@ try:
         entry_point="smarts.env.gymnasium.driving_smarts_competition_env:driving_smarts_competition_v0_env",
         disable_env_checker=True,
     )
+
+    register(
+        id="platoon-v0",
+        entry_point="smarts.env.gymnasium.platoon_env:platoon_v0_env",
+        disable_env_checker=True,
+    )
+
+
 except ModuleNotFoundError:
     import warnings
 
