@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Set
+from typing import Dict
 
 import gymnasium as gym
 import pytest
@@ -39,7 +39,7 @@ def agent_interfaces():
 
 
 @pytest.fixture
-def env(agent_interfaces):
+def env(agent_interfaces: Dict[str, AgentInterface]):
     env: HiWayEnvV1 = gym.make(
         "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/loop"],
@@ -63,7 +63,7 @@ def test_hiway_env_v1_type(env: gym.Env):
 
 
 def test_hiway_env_v1_interface_generation(
-    env: HiWayEnvV1, agent_interfaces: Set[AgentInterface]
+    env: HiWayEnvV1, agent_interfaces: Dict[str, AgentInterface]
 ):
     agent_ids = set(agent_interfaces)
     assert agent_ids == set(env.agent_interfaces)
