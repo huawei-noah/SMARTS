@@ -587,8 +587,9 @@ def running_mean(prev_mean: float, prev_step: int, new_val: float) -> Tuple[floa
     return new_mean, new_step
 
 
-def _unique_perm(first, second):
-    """Generates a set of values to the following:
+def _unique_element_combination(first, second):
+    """Generates a combination of set of values result groupings only contain values from unique
+    indices. Only works if len(first_group) <= len(second_group).
     _unique_perm('ab', '123') -> a1 b2 a1 b3 a2 b1 a2 b3 a3 b1 a3 b2
     _unique_perm('abc', '1') -> []
 
@@ -609,9 +610,9 @@ def _unique_perm(first, second):
         )
 
 
-def padded_product(first_group, second_group, default=None):
-    """Generate a product that generates that sets the values. Only works if
-    len(first_group) <= len(second_group).
+def ordered_combinations(first_group, second_group, default=None):
+    """Generate a product that generates that sets the values. If
+    len(first_group) <= len(second_group) the value is padded.
 
     padded_product('ab', '123') -> a1 b2 a1 b3 a2 b1 a2 b3 a3 b1 a3 b2
     padded_product('ab', '1', default="k") -> a1 bk ak b1
@@ -629,10 +630,10 @@ def padded_product(first_group, second_group, default=None):
     if len_second == 0:
         return product(first_group, [default])
     if len_first > len_second:
-        return _unique_perm(
+        return _unique_element_combination(
             first_group,
             list(chain(second_group, repeat(default, len_first - len_second))),
         )
     if len_first <= len_second:
-        return _unique_perm(first_group, second_group)
+        return _unique_element_combination(first_group, second_group)
     return []
