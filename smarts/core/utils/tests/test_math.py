@@ -21,7 +21,11 @@
 # THE SOFTWARE.
 import numpy as np
 
-from smarts.core.utils.math import position_to_ego_frame, world_position_from_ego_frame
+from smarts.core.utils.math import (
+    padded_product,
+    position_to_ego_frame,
+    world_position_from_ego_frame,
+)
 
 
 def test_egocentric_conversion():
@@ -36,3 +40,17 @@ def test_egocentric_conversion():
     p_end = world_position_from_ego_frame(pec, pe, he)
 
     assert np.allclose(p_end, p_start)
+
+
+def test_padded_product():
+
+    assert padded_product("", "") == ((),)
+    assert padded_product("a", "") == (("a", None),)
+    assert padded_product("ab", "123", default=1) == (
+        (("a", "1"), ("b", "2"), ("c", 1)),
+        (("a", "1"), ("b", 1), ("c", "2")),
+        (("a", "2"), ("b", "1"), ("c", 1)),
+        (("a", "2"), ("b", 1), ("c", "1")),
+        (("a", 1), ("b", "1"), ("c", "2")),
+        (("a", 1), ("b", "2"), ("c", "1")),
+    )

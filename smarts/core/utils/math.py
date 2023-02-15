@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import math
 from dataclasses import dataclass
+from itertools import chain, permutations, product, repeat
 from math import factorial
 from typing import Callable, List, Sequence, Tuple, Union
 
@@ -584,3 +585,54 @@ def running_mean(prev_mean: float, prev_step: int, new_val: float) -> Tuple[floa
     new_step = prev_step + 1
     new_mean = prev_mean + (new_val - prev_mean) / new_step
     return new_mean, new_step
+
+
+def _unique_perm(first, second):
+    """Generates a set of values to the following:
+    _unique_perm('ab', '123') -> a1 b2 a1 b3 a2 b1 a2 b3 a3 b1 a3 b2
+    _unique_perm('abc', '1') -> []
+
+    Args:
+        first (Sequence): A sequence of values.
+        second (Sequence): Another sequence of values.
+
+    Yields:
+        Tuple[Tuple[*Any]]: A set of values similar to permutation.
+    """
+    result = [[a] for a in first]
+    sl = len(second)
+    rl = len(first)
+    perms = list(permutations(range(sl), r=rl))
+    for i, p in enumerate(perms):
+        yield tuple(
+            tuple(result[(i * rl + j) % rl] + [second[idx]]) for j, idx in enumerate(p)
+        )
+
+
+def padded_product(first_group, second_group, default=None):
+    """Generate a product that generates that sets the values. Only works if
+    len(first_group) <= len(second_group).
+
+    padded_product('ab', '123') -> a1 b2 a1 b3 a2 b1 a2 b3 a3 b1 a3 b2
+    padded_product('ab', '1', default="k") -> a1 bk ak b1
+
+    Args:
+        first_group (Sequence): A sequence of values.
+        second_group (Sequence): Another sequence of values.
+        default (Any, optional): The default values. Defaults to None.
+
+    Returns:
+        Generator[Tuple[Tuple[Any, ...]], None, None]: Some permutation values.
+    """
+    len_first = len(first_group)
+    len_second = len(second_group)
+    if len_second == 0:
+        return product(first_group, [default])
+    if len_first > len_second:
+        return _unique_perm(
+            first_group,
+            list(chain(second_group, repeat(default, len_first - len_second))),
+        )
+    if len_first <= len_second:
+        return _unique_perm(first_group, second_group)
+    return []
