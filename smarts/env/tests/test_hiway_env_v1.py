@@ -19,24 +19,27 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from typing import Set
+
 import gymnasium as gym
 import pytest
 
 from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.scenario import Scenario
 from smarts.core.utils.episodes import episodes
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
-from smarts.core.scenario import Scenario
 
 AGENT_ID = "Agent-007"
 MAX_EPISODES = 3
 
 
 @pytest.fixture
-def env():
-    agent_interfaces = {
-        AGENT_ID: AgentInterface.from_type(AgentType.Laner, max_episode_steps=100)
-    }
-    agent_ids = set(agent_interfaces)
+def agent_interfaces():
+    return {AGENT_ID: AgentInterface.from_type(AgentType.Laner, max_episode_steps=100)}
+
+
+@pytest.fixture
+def env(agent_interfaces):
     env: HiWayEnvV1 = gym.make(
         "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/loop"],
@@ -48,18 +51,24 @@ def env():
         fixed_timestep_sec=0.01,
         disable_env_checker=True,
     )
-    assert isinstance(env.unwrapped, HiWayEnvV1)
-    assert not (agent_ids - set(env.agent_interfaces))
-    matching_items = [
-        env.agent_interfaces[k] == agent_interfaces[k]
-        for k in env.agent_interfaces
-        if k in agent_interfaces
-    ]
-    assert all(matching_items)
-    assert len(env.agent_interfaces) == len(agent_interfaces)
-    assert not (agent_ids - env.agent_ids)
     yield env
     env.close()
+
+
+def test_hiway_env_v1_type(env: gym.Env):
+    # is base environment (also passes up correct environment)
+    assert isinstance(env.unwrapped, HiWayEnvV1)
+    # inherits gym.Env
+    assert isinstance(env.unwrapped, gym.Env)
+
+
+def test_hiway_env_v1_interface_generation(
+    env: HiWayEnvV1, agent_interfaces: Set[AgentInterface]
+):
+    agent_ids = set(agent_interfaces)
+    assert agent_ids == set(env.agent_interfaces)
+    assert all([env.agent_interfaces[k] == agent_interfaces[k] for k in agent_ids])
+    assert not (agent_ids - env.agent_ids)
 
 
 def test_hiway_env_v1_unformatted(env: HiWayEnvV1):
@@ -91,10 +100,10 @@ def test_hiway_env_v1_unformatted(env: HiWayEnvV1):
 
 
 def test_hiway_env_v1_reset_with_scenario(env: HiWayEnvV1):
-    scenarios = ["scenarios/sumo/loop"]
+    scenarios = ["scenarios/sumo/figure_eight"]
     scenario: Scenario = next(Scenario.scenario_variations(scenarios, [AGENT_ID]))
 
-    env.reset(options={"scenario": scenario, "start_time": 100})
-    assert "loop" in env.scenario.root_filepath
-    assert env.smarts.elapsed_sim_time >= 100
+    env.reset(options={"scenario": scenario, "start_time": 1000})
+    assert "figure_eight" in env.scenario.root_filepath
+    assert env.smarts.elapsed_sim_time >= 1000
     env.step({AGENT_ID: "keep_lane"})
