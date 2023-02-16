@@ -32,8 +32,6 @@ from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
-from smarts.core.simulation_global_constants import SimulationGlobalConstants
-from smarts.core.simulation_global_constants import environ as sgc_environ
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
@@ -53,7 +51,6 @@ from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .observations import Observation
-from .plan import Plan
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
@@ -242,7 +239,7 @@ class SMARTS(ProviderManager):
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
-            if not sgc_environ.DEBUG:
+            if not config()("core", "debug", default=False, cast=bool):
                 self.destroy()
             raise  # re-raise the KeyboardInterrupt
         except Exception as e:
@@ -250,7 +247,7 @@ class SMARTS(ProviderManager):
                 "Simulation crashed with exception. Attempting to cleanly shutdown."
             )
             self._log.exception(e)
-            if not sgc_environ.DEBUG:
+            if not config().get_setting("core", "debug", default=False, cast=bool):
                 self.destroy()
             raise  # re-raise
 
@@ -423,7 +420,7 @@ class SMARTS(ProviderManager):
                 - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
-        tries = sgc_environ.RESET_RETRIES + 1
+        tries = config()("core", "reset_retries", 0, cast=int) + 1
         first_exception = None
         for _ in range(tries):
             try:
@@ -1631,11 +1628,6 @@ class SMARTS(ProviderManager):
         if not self._visdom:
             return
         self._visdom.send(obs)
-
-    @cached_property
-    def global_constants(self):
-        """Generate the constants that should remain for the lifespan of the program."""
-        return SimulationGlobalConstants.from_environment(os.environ)
 
     @cached_property
     def local_constants(self):

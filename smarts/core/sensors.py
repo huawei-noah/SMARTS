@@ -33,8 +33,8 @@ import psutil
 from scipy.spatial.distance import cdist
 
 import smarts.core.serialization.default as serializer
-import smarts.core.simulation_global_constants as sgc
-from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
+from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsAliveDoneCriteria
+from smarts.core import config
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
@@ -211,7 +211,7 @@ class Sensors:
 
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
         used_processes = (
-            min(sgc.environ.OBSERVATION_WORKERS, num_spare_cpus)
+            min(config()("core", "observation_workers", default=128, cast=int), num_spare_cpus)
             if process_count_override == None
             else max(0, process_count_override)
         )

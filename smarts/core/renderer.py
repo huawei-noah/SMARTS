@@ -147,7 +147,10 @@ class _ShowBaseInstance(ShowBase):
         self.__class__.__it__ = None
 
     def __del__(self):
-        self.destroy()
+        try:
+            self.destroy()
+        except TypeError:
+            pass
 
     def setup_sim_root(self, simid: str):
         """Creates the simulation root node in the scene graph."""

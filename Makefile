@@ -2,7 +2,7 @@
 test: build-all-scenarios
 	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
 	# repeatable we fix the seed.
-	PYTHONPATH=$(PWD) SEV_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
+	PYTHONPATH=$(PWD) SMARTS_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
 		--cov=smarts \
 		--doctest-modules \
 		--forked \
@@ -25,7 +25,7 @@ test: build-all-scenarios
 
 .PHONY: sanity-test
 sanity-test: build-sanity-scenarios
-	PYTHONPATH=$(PWD) SEV_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
+	PYTHONPATH=$(PWD) SMARTS_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
