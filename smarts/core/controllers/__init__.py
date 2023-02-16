@@ -246,7 +246,7 @@ class Controllers:
                 motion_action = [
                     action[0] + position[0],
                     action[1] + position[1],
-                    action[2],
+                    action[2] + heading,
                     0.1,
                 ]
             MotionPlannerController.perform_action(

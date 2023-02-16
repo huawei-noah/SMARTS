@@ -58,8 +58,6 @@ from smarts.env.utils.observation_conversion import (
     ObservationSpacesFormatter,
 )
 
-DEFAULT_TIMESTEP = 0.1
-
 
 class ScenarioOrder(IntEnum):
     """Determines the order in which scenarios are served over successive resets."""
@@ -153,7 +151,7 @@ class HiWayEnvV1(gym.Env):
         scenarios_order: bool = True,
         headless: bool = False,
         visdom: bool = False,
-        fixed_timestep_sec: Optional[float] = None,
+        fixed_timestep_sec: float = 0.1,
         seed: int = 42,
         sumo_options: Union[Dict[str, Any], SumoOptions] = SumoOptions(),
         visualization_client_builder: partial = DEFAULT_VISUALIZATION_CLIENT_BUILDER,
@@ -167,11 +165,6 @@ class HiWayEnvV1(gym.Env):
         smarts_seed(seed)
         self._agent_interfaces = agent_interfaces
         self._dones_registered = 0
-        if not fixed_timestep_sec:
-            self._log.warning(
-                "Fixed timestep not specified. Default set to `%ss`", DEFAULT_TIMESTEP
-            )
-            fixed_timestep_sec = DEFAULT_TIMESTEP
 
         scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(

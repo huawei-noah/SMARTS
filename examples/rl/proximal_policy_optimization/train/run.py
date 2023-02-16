@@ -12,7 +12,7 @@ from typing import Any, Dict
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
-from ruamel.yaml import YAML
+import yaml
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train import env as train_env
@@ -24,12 +24,11 @@ import network
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
-yaml = YAML(typ="safe")
 
 
 def main(args: argparse.Namespace):
     # Load config file.
-    config_file = yaml.load(
+    config_file = yaml.safe_load(
         (Path(__file__).resolve().parent / "config.yaml").read_text()
     )
 

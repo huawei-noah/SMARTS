@@ -41,11 +41,13 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.scenario_construction import build_scenario
+from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsListAlive
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
 SUPPORTED_ACTION_TYPES = (
+    ActionSpaceType.ActuatorDynamic,
     ActionSpaceType.RelativeTargetPose,
 )
 MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
@@ -95,14 +97,24 @@ def platoon_v0_env(
         An environment described by the input argument `scenario`.
     """
 
+    # Check for supported action space
+    assert (
+        agent_interface.action in SUPPORTED_ACTION_TYPES
+    ), f"Got unsupported action type `{agent_interface.action}`, which is not " \
+        f"in supported action types `{SUPPORTED_ACTION_TYPES}`."
+
+    # Build scenario
     env_specs = _get_env_specs(scenario)
     build_scenario(scenario=env_specs["scenario"])
 
+    # Resolve agent interface
     resolved_agent_interface = resolve_agent_interface(agent_interface)
     agent_interfaces = {
         f"Agent_{i}": resolved_agent_interface for i in range(env_specs["num_agent"])
     }
-    env_action_space = resolve_env_action_space(agent_interfaces)
+
+    # Resolve action space
+    # env_action_space = resolve_env_action_space(agent_interfaces)
 
     visualization_client_builder = None
     if not headless:
@@ -128,7 +140,7 @@ def platoon_v0_env(
         visualization_client_builder=visualization_client_builder,
         observation_options=ObservationOptions.multi_agent,
     )
-    env.action_space = env_action_space
+
     return env
 
 
@@ -212,29 +224,23 @@ def _get_env_specs(scenario: str):
         raise Exception(f"Unknown scenario {scenario}.")
 
 
-def resolve_agent_action_space(agent_interface: AgentInterface):
-    """Get the competition action space for the given agent interface."""
-    assert (
-        agent_interface.action in SUPPORTED_ACTION_TYPES
-    ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
+# def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
+#     """Get the environment action space for the given set of agent interfaces."""
 
-    if agent_interface.action == ActionSpaceType.RelativeTargetPose:
-        max_dist = MAXIMUM_SPEED_MPS * 0.1  # assumes 0.1 timestep
-        return gym.spaces.Box(
-            low=np.array([-max_dist, -max_dist, -np.pi]),
-            high=np.array([max_dist, max_dist, np.pi]),
-            dtype=np.float32,
-        )
+    # if agent_interface.action == ActionSpaceType.RelativeTargetPose:
+    #     max_dist = MAXIMUM_SPEED_MPS * 0.1  # assumes 0.1 timestep
+    #     return gym.spaces.Box(
+    #         low=np.array([-max_dist, -max_dist, -np.pi]),
+    #         high=np.array([max_dist, max_dist, np.pi]),
+    #         dtype=np.float32,
+    #     )
 
-
-def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
-    """Get the environment action space for the given set of agent interfaces."""
-    return gym.spaces.Dict(
-        {
-            a_id: resolve_agent_action_space(a_inter)
-            for a_id, a_inter in agent_interfaces.items()
-        }
-    )
+    # return gym.spaces.Dict(
+    #     {
+    #         a_id: resolve_agent_action_space(a_inter)
+    #         for a_id, a_inter in agent_interfaces.items()
+    #     }
+    # )
 
 
 def resolve_agent_interface(agent_interface: AgentInterface):
@@ -250,7 +256,13 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         on_shoulder=False,
         wrong_way=False,
         not_moving=False,
-        agents_alive=None,
+        # agents_alive=AgentsAliveDoneCriteria(
+        #     agent_lists_alive=[
+        #         AgentsListAlive(
+        #             agents_list=[""]
+        #         )
+        #     ]
+        # ),
     )
     max_episode_steps = 800
     road_waypoint_horizon = 50

@@ -12,12 +12,13 @@ from smarts.env.wrappers.format_action import FormatAction
 from smarts.env.wrappers.format_obs import FormatObs
 from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.single_agent import SingleAgent
+from smarts.core.agent_interface import AgentInterface
 
 # To import submission folder
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from submission.action import Action as DiscreteAction
-from submission.observation import Concatenate, FilterObs, SaveObs
+from inference.action import Action as DiscreteAction
+from inference.observation import Concatenate, FilterObs, SaveObs
 
 
 def wrappers(config: Dict[str, Any]):
@@ -51,7 +52,7 @@ def wrappers(config: Dict[str, Any]):
 
 
 def make(
-    config: Dict[str, Any], scenario: str, wrappers: List[gym.Wrapper] = []
+    config: Dict[str, Any], agent_interface:AgentInterface, scenario: str, wrappers: List[gym.Wrapper] = []
 ) -> gym.Env:
     """Make environment.
 
@@ -67,7 +68,7 @@ def make(
 
     # Create environment
     env = gym.make(
-        "smarts.env:platoon",
+        "smarts.env:platoon-v0",
         scenario=scenario,
         agent_interface=agent_interface,
         sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
