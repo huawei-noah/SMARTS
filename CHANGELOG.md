@@ -69,12 +69,17 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
 - Added a `SensorManager` which manages placing sensors on actors in the simulations.
+- The `VehicleState` now has the `bounding_box_points` property to get the vehicle minimum bounding box as a set of points.
+- Added engine configuration options for `core:debug`, `core:observation_workers`, and `core:reset_retries`.
 ### Changed
 - Changed the minimum supported Python version from 3.7 to 3.8
 - The `AgentType.Full` now includes `road_waypoints`, `accelerometer`, and `lane_positions`.
 - `ActionSpaceType` has been moved from `controller` to its own file.
 - `VehicleState` has been moved to its own file.
 - Sensors are no longer added and configured in the `agent_manager`. They are instead managed in the `sensor_manager`.
+- Renamed all terminology relating to actor to owner in `VehicleIndex`.
+- Renamed all terminology relating to shadow actor to shadower in `VehicleIndex`.
+- `Collision` has been moved from `smarts.core.observations` to `smarts.core.vehicle_state`.
 ### Deprecated
 ### Fixed
 - Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
@@ -121,8 +126,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `HiWayEnvV1` derived environments now allow an explicit simulation start time through `reset(options["start_time"])`.
 - Exposed `smarts` as a property on `HiWayEnvV1`.
 - Made the heading input relative to the current heading in `RelativeTargetPose` action space.
-- Renamed all terminology relating to actor to owner in `VehicleIndex`.
-- Renamed all terminology relating to shadow actor to shadower in `VehicleIndex`.
 ### Deprecated
 ### Fixed
 - Issue where a 0 length lane caused `envision` to crash.
