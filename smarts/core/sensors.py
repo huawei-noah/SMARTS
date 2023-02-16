@@ -33,24 +33,14 @@ import psutil
 from scipy.spatial.distance import cdist
 
 import smarts.core.serialization.default as serializer
-from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsAliveDoneCriteria
 from smarts.core import config
-from smarts.core.plan import Plan
-from smarts.core.road_map import RoadMap, Waypoint
-from smarts.core.signals import SignalLightState, SignalState
-from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.simulation_local_constants import SimulationLocalConstants
-from smarts.core.utils.file import replace
-from smarts.core.utils.logging import timeit
-from smarts.core.utils.math import squared_dist
-from smarts.core.vehicle_state import VehicleState
-
-from .coordinates import Heading, Point, Pose, RefLinePoint
-from .events import Events
-from .lidar import Lidar
-from .lidar_sensor_params import SensorParams
-from .masks import RenderMasks
-from .observations import (
+from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsAliveDoneCriteria
+from smarts.core.coordinates import Heading, Point, Pose, RefLinePoint
+from smarts.core.events import Events
+from smarts.core.lidar import Lidar
+from smarts.core.lidar_sensor_params import SensorParams
+from smarts.core.masks import RenderMasks
+from smarts.core.observations import (
     DrivableAreaGridMap,
     EgoVehicleObservation,
     GridMapMetadata,
@@ -63,8 +53,15 @@ from .observations import (
     ViaPoint,
     Vias,
 )
-from .plan import Mission, PlanFrame
-from .vehicle_state import VehicleState
+from smarts.core.plan import Mission, Plan, PlanFrame
+from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.signals import SignalLightState, SignalState
+from smarts.core.simulation_frame import SimulationFrame
+from smarts.core.simulation_local_constants import SimulationLocalConstants
+from smarts.core.utils.file import replace
+from smarts.core.utils.logging import timeit
+from smarts.core.utils.math import squared_dist
+from smarts.core.vehicle_state import VehicleState
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +208,10 @@ class Sensors:
 
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
         used_processes = (
-            min(config()("core", "observation_workers", default=128, cast=int), num_spare_cpus)
+            min(
+                config()("core", "observation_workers", default=128, cast=int),
+                num_spare_cpus,
+            )
             if process_count_override == None
             else max(0, process_count_override)
         )
@@ -290,9 +290,7 @@ class Sensors:
             with timeit(f"merging observations", logger.info):
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = replace(
-                        observations[agent_id], **r_obs
-                    )
+                    observations[agent_id] = replace(observations[agent_id], **r_obs)
 
         return observations, dones, updated_sensors
 
