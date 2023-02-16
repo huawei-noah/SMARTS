@@ -365,7 +365,6 @@ class LaneFollowingController:
             vehicle,
             controller_state,
             sensor_state.get_plan(sim.road_map),
-            sim.road_map,
         )
 
     @staticmethod
@@ -442,12 +441,12 @@ class LaneFollowingController:
 
     @staticmethod
     def _update_target_lane_if_reached_end_of_lane(
-        agent_id, vehicle, controller_state, plan, road_map
+        agent_id, vehicle, controller_state, plan
     ):
         # When we reach the end of our target lane, we need to update it
         # to the next best lane along the path
         state = controller_state
-        lane = road_map.lane_by_id(state.target_lane_id)
+        lane = plan.road_map.lane_by_id(state.target_lane_id)
         paths = lane.waypoint_paths_for_pose(
             vehicle.pose, lookahead=2, route=plan.route
         )
