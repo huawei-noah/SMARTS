@@ -1,4 +1,4 @@
-# https://github.com/vwxyzjn/ppo-implementation-details/blob/main/ppo_multidiscrete.py
+# https://github.com/vwxyzjn/ppo-implementation-details/blob/main/ppo_atari.py
 
 import argparse
 import os
@@ -6,8 +6,7 @@ import random
 import time
 from distutils.util import strtobool
 
-import gymnasium as gym
-# import gym_microrts  # noqa
+import gym
 import numpy as np
 import torch
 import torch.nn as nn
@@ -15,19 +14,27 @@ import torch.optim as optim
 from torch.distributions.categorical import Categorical
 from torch.utils.tensorboard import SummaryWriter
 
+from stable_baselines3.common.atari_wrappers import (  # isort:skip
+    ClipRewardEnv,
+    EpisodicLifeEnv,
+    FireResetEnv,
+    MaxAndSkipEnv,
+    NoopResetEnv,
+)
+
 
 def parse_args():
     # fmt: off
     parser = argparse.ArgumentParser()
     parser.add_argument("--exp-name", type=str, default=os.path.basename(__file__).rstrip(".py"),
         help="the name of this experiment")
-    parser.add_argument("--gym-id", type=str, default="MicrortsMining-v1",
+    parser.add_argument("--gym-id", type=str, default="BreakoutNoFrameskip-v4",
         help="the id of the gym environment")
     parser.add_argument("--learning-rate", type=float, default=2.5e-4,
         help="the learning rate of the optimizer")
     parser.add_argument("--seed", type=int, default=1,
         help="seed of the experiment")
-    parser.add_argument("--total-timesteps", type=int, default=2000000,
+    parser.add_argument("--total-timesteps", type=int, default=10000000,
         help="total timesteps of the experiments")
     parser.add_argument("--torch-deterministic", type=lambda x: bool(strtobool(x)), default=True, nargs="?", const=True,
         help="if toggled, `torch.backends.cudnn.deterministic=False`")
@@ -87,6 +94,15 @@ def make_env(gym_id, seed, idx, capture_video, run_name):
         if capture_video:
             if idx == 0:
                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+        env = NoopResetEnv(env, noop_max=30)
+        env = MaxAndSkipEnv(env, skip=4)
+        env = EpisodicLifeEnv(env)
+        if "FIRE" in env.unwrapped.get_action_meanings():
+            env = FireResetEnv(env)
+        env = ClipRewardEnv(env)
+        env = gym.wrappers.ResizeObservation(env, (84, 84))
+        env = gym.wrappers.GrayScaleObservation(env)
+        env = gym.wrappers.FrameStack(env, 4)
         env.seed(seed)
         env.action_space.seed(seed)
         env.observation_space.seed(seed)
@@ -101,45 +117,33 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     return layer
 
 
-class Transpose(nn.Module):
-    def __init__(self, permutation):
-        super().__init__()
-        self.permutation = permutation
-
-    def forward(self, x):
-        return x.permute(self.permutation)
-
-
 class Agent(nn.Module):
     def __init__(self, envs):
         super(Agent, self).__init__()
         self.network = nn.Sequential(
-            Transpose((0, 3, 1, 2)),
-            layer_init(nn.Conv2d(27, 16, kernel_size=3, stride=2)),
+            layer_init(nn.Conv2d(4, 32, 8, stride=4)),
             nn.ReLU(),
-            layer_init(nn.Conv2d(16, 32, kernel_size=2)),
+            layer_init(nn.Conv2d(32, 64, 4, stride=2)),
+            nn.ReLU(),
+            layer_init(nn.Conv2d(64, 64, 3, stride=1)),
             nn.ReLU(),
             nn.Flatten(),
-            layer_init(nn.Linear(32 * 3 * 3, 128)),
+            layer_init(nn.Linear(64 * 7 * 7, 512)),
             nn.ReLU(),
         )
-        self.nvec = envs.single_action_space.nvec
-        self.actor = layer_init(nn.Linear(128, self.nvec.sum()), std=0.01)
-        self.critic = layer_init(nn.Linear(128, 1), std=1)
+        self.actor = layer_init(nn.Linear(512, envs.single_action_space.n), std=0.01)
+        self.critic = layer_init(nn.Linear(512, 1), std=1)
 
     def get_value(self, x):
-        return self.critic(self.network(x))
+        return self.critic(self.network(x / 255.0))
 
     def get_action_and_value(self, x, action=None):
-        hidden = self.network(x)
+        hidden = self.network(x / 255.0)
         logits = self.actor(hidden)
-        split_logits = torch.split(logits, self.nvec.tolist(), dim=1)
-        multi_categoricals = [Categorical(logits=logits) for logits in split_logits]
+        probs = Categorical(logits=logits)
         if action is None:
-            action = torch.stack([categorical.sample() for categorical in multi_categoricals])
-        logprob = torch.stack([categorical.log_prob(a) for a, categorical in zip(action, multi_categoricals)])
-        entropy = torch.stack([categorical.entropy() for categorical in multi_categoricals])
-        return action.T, logprob.sum(0), entropy.sum(0), self.critic(hidden)
+            action = probs.sample()
+        return action, probs.log_prob(action), probs.entropy(), self.critic(hidden)
 
 
 if __name__ == "__main__":
@@ -175,7 +179,7 @@ if __name__ == "__main__":
     envs = gym.vector.SyncVectorEnv(
         [make_env(args.gym_id, args.seed + i, i, args.capture_video, run_name) for i in range(args.num_envs)]
     )
-    assert isinstance(envs.single_action_space, gym.spaces.MultiDiscrete), "only MultiDiscrete action space is supported"
+    assert isinstance(envs.single_action_space, gym.spaces.Discrete), "only discrete action space is supported"
 
     agent = Agent(envs).to(device)
     optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
@@ -271,7 +275,7 @@ if __name__ == "__main__":
                 end = start + args.minibatch_size
                 mb_inds = b_inds[start:end]
 
-                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds].T)
+                _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds])
                 logratio = newlogprob - b_logprobs[mb_inds]
                 ratio = logratio.exp()
 
