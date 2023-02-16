@@ -40,6 +40,7 @@ from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
+from smarts.core.utils.file import replace
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState
@@ -289,7 +290,7 @@ class Sensors:
             with timeit(f"merging observations", logger.info):
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = dataclasses.replace(
+                    observations[agent_id] = replace(
                         observations[agent_id], **r_obs
                     )
 

@@ -386,7 +386,7 @@ class Vehicle:
             sensor = NeighborhoodVehiclesSensor(
                 radius=agent_interface.neighborhood_vehicle_states.radius,
             )
-            vehicle.attach_neighborhood_vehicles_sensor(sensor)
+            vehicle.attach_neighborhood_vehicle_states_sensor(sensor)
 
         if agent_interface.accelerometer:
             sensor = AccelerometerSensor()

@@ -107,8 +107,6 @@ class RoadWaypoints(NamedTuple):
 class GridMapMetadata(NamedTuple):
     """Map grid metadata."""
 
-    created_at: int
-    """Time at which the map was loaded."""
     resolution: float
     """Map resolution in world-space-distance/cell."""
     width: int
@@ -210,28 +208,21 @@ class Observation(NamedTuple):
     """Dynamic evenly-spaced points on the road ahead of the vehicle, showing potential routes ahead."""
     distance_travelled: float
     """Road distance driven by the vehicle."""
-    # TODO: Convert to `NamedTuple` or only return point cloud.
-    lidar_point_cloud: Optional[
-        Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
-    ]
-    """Lidar point cloud consisting of [points, hits, (ray_origin, ray_vector)]. 
-    Points missed (i.e., not hit) have `inf` value."""
-    drivable_area_grid_map: Optional[DrivableAreaGridMap]
-    """Drivable area map."""
-    occupancy_grid_map: Optional[OccupancyGridMap]
-    """Occupancy map."""
-    top_down_rgb: Optional[TopDownRGB]
-    """RGB camera observation."""
     road_waypoints: Optional[RoadWaypoints]
     """Per-road waypoints information."""
     via_data: Vias
     """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
+    # TODO: Convert to `NamedTuple` or only return point cloud.
+    lidar_point_cloud: Optional[
+        Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
+    ] = None
+    """Lidar point cloud consisting of [points, hits, (ray_origin, ray_vector)]. 
+    Points missed (i.e., not hit) have `inf` value."""
+    drivable_area_grid_map: Optional[DrivableAreaGridMap] = None
+    """Drivable area map."""
+    occupancy_grid_map: Optional[OccupancyGridMap] = None
+    """Occupancy map."""
+    top_down_rgb: Optional[TopDownRGB] = None
+    """RGB camera observation."""
     signals: Optional[List[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this timestep."""
-
-
-class Collision(NamedTuple):
-    """Represents a collision by an ego vehicle with another vehicle."""
-
-    # XXX: This might not work for boid agents
-    collidee_id: str
