@@ -349,12 +349,12 @@ class Sensors:
         vehicle_state = sim_frame.vehicle_states[vehicle_id]
         plan = sensor_state.get_plan(sim_local_constants.road_map)
         neighborhood_vehicle_states = None
-        neighborhood_vehicles_sensor = vehicle_sensors.get(
-            "neighborhood_vehicles_sensor"
+        neighborhood_vehicle_states_sensor = vehicle_sensors.get(
+            "neighborhood_vehicle_states_sensor"
         )
-        if neighborhood_vehicles_sensor:
+        if neighborhood_vehicle_states_sensor:
             neighborhood_vehicle_states = []
-            for nv in neighborhood_vehicles_sensor(
+            for nv in neighborhood_vehicle_states_sensor(
                 vehicle_state, sim_frame.vehicle_states.values()
             ):
                 veh_obs = _make_vehicle_observation(sim_local_constants.road_map, nv)
