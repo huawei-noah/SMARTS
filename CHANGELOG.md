@@ -68,8 +68,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [1.0.8] # 2023-03-10
 ### Added
 - Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
+- Added a `SensorManager` which manages placing sensors on actors in the simulations.
 ### Changed
 - Changed the minimum supported Python version from 3.7 to 3.8
+- The `AgentType.Full` now includes `road_waypoints`, `accelerometer`, and `lane_positions`.
+- `ActionSpaceType` has been moved from `controller` to its own file.
+- `VehicleState` has been moved to its own file.
+- Sensors are no longer added and configured in the `agent_manager`. They are instead managed in the `sensor_manager`.
 ### Deprecated
 ### Fixed
 - Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
@@ -93,6 +98,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Agent to mission padding warning now occurs when there are less missions than agents rather than when there are the same number of agents as missions.
 - Agent manager should no longer de-synchronize vehicle ids with the vehicle index.
 ### Removed
+- Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
 ### Security
 
 ## [1.0.6] # 2023-02-26
@@ -122,7 +128,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Issue where a 0 length lane caused `envision` to crash.
 - Fixed an issue where `Feature.type_specific_info` was calling a non-existant method.
 ### Removed
-- Removed camera observation `created_at` attribute to make observation completely reproducible.
 ### Security
 
 ## [1.0.4] # 2023-02-10
