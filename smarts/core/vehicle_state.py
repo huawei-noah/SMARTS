@@ -27,6 +27,8 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
+from scipy.spatial.distance import cdist
+
 from .actor import ActorState
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -161,3 +163,25 @@ class VehicleState(ActorState):
             pos.y + half_len,
         )
         return shapely_rotate(poly, self.pose.heading, use_radians=True)
+    
+def neighborhood_vehicles_around_vehicle(
+    vehicle_state, vehicle_states, radius: Optional[float] = None
+):
+    """Determines what vehicles are within the radius (if given)."""
+    other_states = [
+        v for v in vehicle_states if v.actor_id != vehicle_state.actor_id
+    ]
+    if radius is None:
+        return other_states
+
+    other_positions = [state.pose.position for state in other_states]
+    if not other_positions:
+        return []
+
+    # calculate euclidean distances
+    distances = cdist(
+        other_positions, [vehicle_state.pose.position], metric="euclidean"
+    ).reshape(-1)
+
+    indices = np.argwhere(distances <= radius).flatten()
+    return [other_states[i] for i in indices]

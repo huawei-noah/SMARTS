@@ -68,7 +68,7 @@ from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
-from .vehicle_state import Collision, VehicleState
+from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle
 
 logging.basicConfig(
     format="%(asctime)s.%(msecs)03d %(levelname)s: {%(module)s} %(message)s",
@@ -1384,7 +1384,7 @@ class SMARTS(ProviderManager):
         from smarts.core.sensors import Sensors
 
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-        return Sensors.neighborhood_vehicles_around_vehicle(
+        return neighborhood_vehicles_around_vehicle(
             vehicle.state, self._vehicle_states, radius
         )
 
