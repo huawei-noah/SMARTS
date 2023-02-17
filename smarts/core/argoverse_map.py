@@ -18,8 +18,7 @@ from smarts.core.utils.math import line_intersect_vectorized
 from smarts.sstudio.types import MapSpec
 from av2.map.map_api import ArgoverseStaticMap
 from av2.map.lane_segment import LaneMarkType, LaneSegment
-import av2.geometry.polyline_utils as polyline_utils
-import av2.rendering.vector as vector_plotting_utils
+from av2.geometry.interpolate import interp_arc
 from shapely.geometry import Polygon
 from shapely.geometry import Point as SPoint
 
@@ -275,15 +274,25 @@ class ArgoverseMap(RoadMapWithCaches):
             self._map = map
             self._lane_id = lane_id
             self.lane_seg = lane_seg
-            self._polygon = lane_seg.polygon_boundary[:, :2]
-            self._centerline = self._map._avm.get_lane_segment_centerline(lane_seg.id)[
-                :, :2
-            ]
             self._index = index
             self._road = None
             self._incoming_lanes = None
             self._outgoing_lanes = None
             self._intersections = None
+
+            self._polygon = lane_seg.polygon_boundary[:, :2]
+            self._centerline = self._map._avm.get_lane_segment_centerline(lane_seg.id)[
+                :, :2
+            ]
+
+            # Compute equally-spaced points for lane boundaries by interpolating
+            n = len(self._centerline)
+            self.left_pts = interp_arc(
+                n, points=self.lane_seg.left_lane_boundary.xyz[:, :2]
+            )
+            self.right_pts = interp_arc(
+                n, points=self.lane_seg.right_lane_boundary.xyz[:, :2]
+            )
 
         def __hash__(self) -> int:
             return hash(self.lane_id)
@@ -299,6 +308,19 @@ class ArgoverseMap(RoadMapWithCaches):
         @property
         def speed_limit(self) -> Optional[float]:
             return ArgoverseMap.DEFAULT_LANE_SPEED
+
+        @lru_cache(maxsize=1024)
+        def width_at_offset(self, lane_point_s: float) -> Tuple[float, float]:
+            world_point = self.from_lane_coord(
+                RefLinePoint(lane_point_s, 0)
+            ).as_np_array[:2]
+            deltas = self._centerline - world_point
+            dists = np.linalg.norm(deltas, axis=1)
+            closest_index = np.argmin(dists)
+            p1 = self.left_pts[closest_index]
+            p2 = self.right_pts[closest_index]
+            width = np.linalg.norm(p2 - p1)
+            return width, 1.0
 
         @cached_property
         def length(self) -> float:
