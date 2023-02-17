@@ -2,6 +2,7 @@ from functools import lru_cache
 import logging
 import math
 from pathlib import Path
+import random
 from cached_property import cached_property
 import time
 from typing import Dict, List, Optional, Sequence, Set, Tuple
@@ -10,7 +11,8 @@ import numpy as np
 import rtree
 
 from smarts.core.coordinates import BoundingBox, Point, Pose, RefLinePoint
-from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
+from smarts.core.route_cache import RouteWithCache
 from smarts.core.utils.glb import make_map_glb
 from smarts.core.utils.math import line_intersect_vectorized
 from smarts.sstudio.types import MapSpec
@@ -19,12 +21,16 @@ from av2.map.lane_segment import LaneMarkType, LaneSegment
 import av2.geometry.polyline_utils as polyline_utils
 import av2.rendering.vector as vector_plotting_utils
 from shapely.geometry import Polygon
+from shapely.geometry import Point as SPoint
 
 
-class ArgoverseMap(RoadMap):
+class ArgoverseMap(RoadMapWithCaches):
     """A road map for an Argoverse 2 scenario."""
 
+    DEFAULT_LANE_SPEED = 16.67  # m/s
+
     def __init__(self, map_spec: MapSpec, avm: ArgoverseStaticMap):
+        super().__init__()
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(logging.INFO)
         self._avm = avm
@@ -34,6 +40,7 @@ class ArgoverseMap(RoadMap):
         self._lanes: Dict[str, ArgoverseMap.Lane] = dict()
         self._roads: Dict[str, ArgoverseMap.Road] = dict()
         self._features = dict()
+        self._lane_rtree = None
         self._load_map_data()
         # self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
         # self._lanepoints = None
@@ -245,8 +252,8 @@ class ArgoverseMap(RoadMap):
         map_glb = make_map_glb(polygons, self.bounding_box, [], [])
         map_glb.write_glb(Path(glb_dir) / "map.glb")
 
-    class Surface(RoadMap.Surface):
-        def __init__(self, surface_id: str):
+    class Surface(RoadMapWithCaches.Surface):
+        def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
 
         @property
@@ -260,11 +267,11 @@ class ArgoverseMap(RoadMap):
     def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
         return self._surfaces.get(surface_id)
 
-    class Lane(RoadMap.Lane, Surface):
+    class Lane(RoadMapWithCaches.Lane, Surface):
         def __init__(
             self, map: "ArgoverseMap", lane_id: str, lane_seg: LaneSegment, index: int
         ):
-            super().__init__(lane_id)
+            super().__init__(lane_id, map)
             self._map = map
             self._lane_id = lane_id
             self.lane_seg = lane_seg
@@ -291,7 +298,7 @@ class ArgoverseMap(RoadMap):
 
         @property
         def speed_limit(self) -> Optional[float]:
-            return None
+            return ArgoverseMap.DEFAULT_LANE_SPEED
 
         @cached_property
         def length(self) -> float:
@@ -299,6 +306,10 @@ class ArgoverseMap(RoadMap):
             for p1, p2 in zip(self._centerline, self._centerline[1:]):
                 length += np.linalg.norm(p2 - p1)
             return length
+
+        @cached_property
+        def center_polyline(self) -> List[Point]:
+            return [Point(p[0], p[1]) for p in self._centerline]
 
         @property
         def in_junction(self) -> bool:
@@ -383,33 +394,58 @@ class ArgoverseMap(RoadMap):
             }
             return list(foes)
 
-        def waypoint_paths_for_pose(
-            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
-        ) -> List[List[Waypoint]]:
-            raise NotImplementedError()
-
-        def waypoint_paths_at_offset(
-            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
-        ) -> List[List[Waypoint]]:
-            raise NotImplementedError()
-
-        def offset_along_lane(self, world_point: Point) -> float:
-            raise NotImplementedError()
-
-        def width_at_offset(self, offset: float) -> Tuple[float, float]:
-            raise NotImplementedError()
-
-        def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
-            raise NotImplementedError()
-
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
         assert lane, f"ArgoverseMap got request for unknown lane_id: '{lane_id}'"
         return lane
 
-    class Road(RoadMap.Road, Surface):
+    def _build_lane_r_tree(self):
+        result = rtree.index.Index()
+        result.interleaved = True
+        for idx, lane in enumerate(self._lanes.values()):
+            xs = lane._polygon[:, 0]
+            ys = lane._polygon[:, 1]
+            bounding_box = (
+                np.amin(xs),
+                np.amin(ys),
+                np.amax(xs),
+                np.amax(ys),
+            )
+            result.add(idx, bounding_box)
+        return result
+
+    def _get_neighboring_lanes(
+        self, x: float, y: float, r: float = 0.1
+    ) -> List[Tuple[RoadMapWithCaches.Lane, float]]:
+        neighboring_lanes = []
+        if self._lane_rtree is None:
+            self._lane_rtree = self._build_lane_r_tree()
+
+        spt = SPoint(x, y)
+        lanes = list(self._lanes.values())
+        for i in self._lane_rtree.intersection((x - r, y - r, x + r, y + r)):
+            lane = lanes[i]
+            d = lane.shape().distance(spt)
+            if d < r:
+                neighboring_lanes.append((lane, d))
+        return neighboring_lanes
+
+    @lru_cache(maxsize=1024)
+    def nearest_lanes(
+        self,
+        point: Point,
+        radius: Optional[float] = None,
+        include_junctions: bool = False,
+    ) -> List[Tuple[RoadMapWithCaches.Lane, float]]:
+        if radius is None:
+            radius = 5
+        candidate_lanes = self._get_neighboring_lanes(point[0], point[1], r=radius)
+        candidate_lanes.sort(key=lambda lane_dist_tup: lane_dist_tup[1])
+        return candidate_lanes
+
+    class Road(RoadMapWithCaches.Road, Surface):
         def __init__(self, road_id: str, lanes: List[RoadMap.Lane]):
-            super().__init__(road_id)
+            super().__init__(road_id, None)
             self._road_id = road_id
             self._lanes = lanes
 
@@ -445,23 +481,29 @@ class ArgoverseMap(RoadMap):
 
         @property
         def is_junction(self) -> bool:
-            """Note that a junction can be an intersection ('+') or a 'T', 'Y', 'L', etc."""
-            raise NotImplementedError()
+            return False
 
-        @property
+        @cached_property
         def length(self) -> float:
-            """The length of this road."""
-            raise NotImplementedError()
+            # Neighbouring lanes in Argoverse can be different lengths. Since this is
+            # just used for routes, we take the average lane length in this road.
+            return sum([lane.length for lane in self.lanes]) / len(self.lanes)
 
         @property
         def incoming_roads(self) -> List[RoadMap.Road]:
-            """All roads that lead into this road."""
-            raise NotImplementedError()
+            return list(
+                {in_lane.road for lane in self.lanes for in_lane in lane.incoming_lanes}
+            )
 
         @property
         def outgoing_roads(self) -> List[RoadMap.Road]:
-            """All roads that lead out of this road."""
-            raise NotImplementedError()
+            return list(
+                {
+                    out_lane.road
+                    for lane in self.lanes
+                    for out_lane in lane.outgoing_lanes
+                }
+            )
 
         def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
             """Returns a list of nearby roads to point that are (roughly)
@@ -479,10 +521,55 @@ class ArgoverseMap(RoadMap):
             return self._lanes
 
         def lane_at_index(self, index: int) -> RoadMap.Lane:
-            """Gets the lane with the given index."""
-            raise NotImplementedError()
+            return self.lanes[index]
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
         assert road, f"ArgoverseMap got request for unknown road_id: '{road_id}'"
         return road
+
+    class Route(RouteWithCache):
+        def __init__(self, road_map):
+            super().__init__(road_map)
+            self._roads = []
+            self._length = 0
+
+        @property
+        def roads(self) -> List[RoadMap.Road]:
+            return self._roads
+
+        @property
+        def road_length(self) -> float:
+            return self._length
+
+        def add_road(self, road: RoadMap.Road):
+            """Add a road to this route."""
+            self._length += road.length
+            self._roads.append(road)
+
+        @cached_property
+        def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
+            return [list(road.shape(0.0).exterior.coords) for road in self.roads]
+
+    def random_route(
+        self,
+        max_route_len: int = 10,
+        starting_road: Optional[RoadMap.Road] = None,
+        only_drivable: bool = True,
+    ) -> RoadMap.Route:
+        assert not starting_road or not only_drivable or starting_road.is_drivable
+        route = ArgoverseMap.Route(self)
+        next_roads = [starting_road] if starting_road else list(self._roads.values())
+        if only_drivable:
+            next_roads = [r for r in next_roads if r.is_drivable]
+        while next_roads and len(route.roads) < max_route_len:
+            cur_road = random.choice(next_roads)
+            route.add_road(cur_road)
+            next_roads = list(cur_road.outgoing_roads)
+        return route
+
+    def empty_route(self) -> RoadMap.Route:
+        return ArgoverseMap.Route(self)
+
+    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+        return ArgoverseMap.Route.from_road_ids(self, road_ids)

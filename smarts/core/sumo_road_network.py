@@ -41,7 +41,8 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
-from .utils.geometry import buffered_shape, generate_meshes_from_polygons
+from .utils.geometry import buffered_shape
+from .utils.glb import make_map_glb
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
@@ -284,7 +285,7 @@ class SumoRoadNetwork(RoadMap):
     def to_glb(self, glb_dir):
         lane_dividers, edge_dividers = self._compute_traffic_dividers()
         polys = self._compute_road_polygons()
-        map_glb = self._make_glb_from_polys(polys, lane_dividers, edge_dividers)
+        map_glb = make_map_glb(polys, self.bounding_box, [], [])
         map_glb.write_glb(Path(glb_dir) / "map.glb")
 
         road_lines_glb = self._make_road_line_glb(edge_dividers)
@@ -1473,7 +1474,8 @@ class SumoRoadNetwork(RoadMap):
         lp_spacing: float,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, that may not be evenly spaced,
-        returns the same number of Waypoints that are evenly spaced and start at point."""
+        returns the same number of Waypoints that are evenly spaced and start at point.
+        """
 
         continuous_variables = [
             "positions_x",

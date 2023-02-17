@@ -42,7 +42,9 @@ class GLBData:
             f.write(self._bytes)
 
 
-def _generate_meshes_from_polygons(polygons: List[Tuple[Polygon, Dict[str, Any]]]) -> List[trimesh.Trimesh]:
+def _generate_meshes_from_polygons(
+    polygons: List[Tuple[Polygon, Dict[str, Any]]]
+) -> List[trimesh.Trimesh]:
     """Creates a mesh out of a list of polygons."""
     meshes = []
 
@@ -64,7 +66,9 @@ def _generate_meshes_from_polygons(polygons: List[Tuple[Polygon, Dict[str, Any]]
                 current_point_index += 1
         triangles = triangulate_polygon(poly)
         for triangle in triangles:
-            face = np.array([point_dict.get((x, y, 0), -1) for x, y in triangle.exterior.coords])
+            face = np.array(
+                [point_dict.get((x, y, 0), -1) for x, y in triangle.exterior.coords]
+            )
             # Add face if not invalid
             if -1 not in face:
                 faces.append(face)
@@ -76,12 +80,19 @@ def _generate_meshes_from_polygons(polygons: List[Tuple[Polygon, Dict[str, Any]]
 
         # Trimesh doesn't support a coordinate-system="z-up" configuration, so we
         # have to apply the transformation manually.
-        mesh.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0]))
+        mesh.apply_transform(
+            trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
+        )
         meshes.append(mesh)
     return meshes
 
 
-def make_map_glb(polygons, bbox: BoundingBox, lane_dividers, edge_dividers) -> GLBData:
+def make_map_glb(
+    polygons: List[Tuple[Polygon, Dict[str, Any]]],
+    bbox: BoundingBox,
+    lane_dividers,
+    edge_dividers,
+) -> GLBData:
     scene = trimesh.Scene()
 
     # Attach additional information for rendering as metadata in the map glb
@@ -98,7 +109,9 @@ def make_map_glb(polygons, bbox: BoundingBox, lane_dividers, edge_dividers) -> G
 
     meshes = _generate_meshes_from_polygons(polygons)
     for mesh in meshes:
-        mesh.visual = trimesh.visual.TextureVisuals(material=trimesh.visual.material.PBRMaterial())
+        mesh.visual = trimesh.visual.TextureVisuals(
+            material=trimesh.visual.material.PBRMaterial()
+        )
 
         road_id = mesh.metadata["road_id"]
         lane_id = mesh.metadata.get("lane_id")
@@ -114,6 +127,8 @@ def make_road_line_glb(lines: List[List[Tuple[float, float]]]) -> GLBData:
     for line_pts in lines:
         vertices = [(*pt, 0.1) for pt in line_pts]
         point_cloud = trimesh.PointCloud(vertices=vertices)
-        point_cloud.apply_transform(trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0]))
+        point_cloud.apply_transform(
+            trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
+        )
         scene.add_geometry(point_cloud)
     return GLBData(gltf.export_glb(scene))
