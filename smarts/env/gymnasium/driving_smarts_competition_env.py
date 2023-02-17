@@ -79,7 +79,7 @@ def driving_smarts_competition_v0_env(
            +------------------------------------+-------------+-------+
            | Δy-coordinate                      | [-2.8, 2.8] | m     |
            +------------------------------------+-------------+-------+
-           | Heading with respect to map's axes | [-π, π]     | rad   |
+           | Δheading                           | [-π, π]     | rad   |
            +------------------------------------+-------------+-------+
 
         (ii) :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
@@ -89,7 +89,7 @@ def driving_smarts_competition_v0_env(
             +====================================+===============+=======+
             | Next x-coordinate                  | [-1e10, 1e10] | m     |
             +------------------------------------+---------------+-------+
-            |  Next y-coordinate                 | [-1e10, 1e10] | m     |
+            | Next y-coordinate                  | [-1e10, 1e10] | m     |
             +------------------------------------+---------------+-------+
             | Heading with respect to map's axes | [-π, π]       | rad   |
             +------------------------------------+---------------+-------+
