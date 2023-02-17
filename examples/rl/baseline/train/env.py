@@ -1,6 +1,6 @@
 from typing import Any, Dict, List
 
-import gym
+import gymnasium as gym
 import sys
 from pathlib import Path
 from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
@@ -52,7 +52,7 @@ def wrappers(config: Dict[str, Any]):
 
 
 def make(
-    config: Dict[str, Any], agent_interface:AgentInterface, scenario: str, wrappers: List[gym.Wrapper] = []
+    config, agent_interface:AgentInterface, scenario: str, wrappers: List[gym.Wrapper] = []
 ) -> gym.Env:
     """Make environment.
 
@@ -68,11 +68,12 @@ def make(
 
     # Create environment
     env = gym.make(
-        "smarts.env:platoon-v0",
+        config.env_id,
         scenario=scenario,
         agent_interface=agent_interface,
-        sumo_headless=not config["sumo_gui"],  # If False, enables sumo-gui display.
-        headless=not config["head"],  # If False, enables Envision display.
+        seed=config.seed,
+        sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
+        headless=not config.head,  # If False, enables Envision display.
     )
 
     # Wrap the environment

@@ -56,8 +56,8 @@ MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 def platoon_v0_env(
     scenario: str,
     agent_interface: AgentInterface,
-    headless: bool = True,
     seed: int = 42,
+    headless: bool = True,
     visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
@@ -134,7 +134,6 @@ def platoon_v0_env(
         sim_name="Platoon",
         headless=headless,
         visdom=visdom,
-        fixed_timestep_sec=0.1,
         seed=seed,
         sumo_options=SumoOptions(headless=sumo_headless),
         visualization_client_builder=visualization_client_builder,

@@ -1,12 +1,10 @@
 # https://github.com/vwxyzjn/ppo-implementation-details/blob/main/ppo_atari.py
 
-import argparse
 import os
 import random
 import time
-from distutils.util import strtobool
 
-import gym
+import gymnasium as gym
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,8 +14,13 @@ from torch.utils.tensorboard import SummaryWriter
 
 import sys
 from pathlib import Path
+# Important to load inference module
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "inference"))
 from utils import objdict
+
+# from env import make as make_env
+from smarts.zoo import registry
+
 
 # from stable_baselines3.common.atari_wrappers import (  # isort:skip
 #     ClipRewardEnv,
@@ -91,15 +94,14 @@ from pathlib import Path
 
 
 if __name__ == "__main__":
-    # Load config file.
+    # Load config file
     parent_dir = Path(__file__).resolve().parent
-    config_file = yaml.safe_load(
-        (parent_dir / "config.yaml").read_text()
-    )
+    config_file = yaml.safe_load((parent_dir / "config.yaml").read_text())
     config = objdict(config_file["smarts"])
     config.batch_size = int(config.num_envs * config.num_steps)
     config.minibatch_size = int(config.batch_size // config.num_minibatches)
 
+    # Tensorboard
     run_name = f"{config.env_id}__{config.exp_name}__{config.seed}__{int(time.time())}"
     writer = SummaryWriter(f"{parent_dir}/logs/{run_name}")
     writer.add_text(
@@ -107,19 +109,47 @@ if __name__ == "__main__":
         "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(config).items()])),
     )
 
-    # TRY NOT TO MODIFY: seeding
+    # Seeding
     random.seed(config.seed)
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
     torch.backends.cudnn.deterministic = config.torch_deterministic
 
+    # Torch device
     device = torch.device("cuda" if torch.cuda.is_available() and config.cuda else "cpu")
 
-    # # env setup
+    f = registry.agent_registry.all()
+    print(f,"sssssssssssssssssssssssssss")
+
+    # Create env
+    agent_interface=registry.make(locator=config.agent_locator).interface
+    env = gym.make(
+        config.env_id,
+        scenario=config.scenario[0],
+        agent_interface=agent_interface,
+        seed=config.seed,
+        sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
+        headless=not config.head,  # If False, enables Envision display.
+    )
+
+    # # Wrap the environment
+    # for wrapper in wrappers:
+    #     env = wrapper(env)
+    # env = make_env(config, agent_interface=)
+
+    # Make agent
+    agents = {
+        agent_id: registry.make_agent(locator=config.agent_locator)
+        for agent_id in env.agent_ids
+    }
+
+
+
+    # Env setup
     # envs = gym.vector.SyncVectorEnv(
-    #     [make_env(args.env_id, args.seed + i, i, args.capture_video, run_name) for i in range(args.num_envs)]
+    #     [make_env(config.env_id, config.seed + i, i, config.capture_video, run_name) for i in range(config.num_envs)]
     # )
-    # assert isinstance(envs.single_action_space, gym.spaces.Discrete), "only discrete action space is supported"
+    # assert isinstance(envs.single_action_space, gym.spaces.Discrete), "Only discrete action space is supported."
 
     # agent = Agent(envs).to(device)
     # optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
