@@ -60,7 +60,11 @@ from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import ordered_combinations, radians_to_vec, vec_to_radians
+from smarts.core.utils.math import (
+    combination_pairs_with_unique_indices,
+    radians_to_vec,
+    vec_to_radians,
+)
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
@@ -229,7 +233,7 @@ class Scenario:
             # `or [None]` so that product(...) will not return an empty result
             # but insted a [(..., `None`), ...].
             agent_missions = agent_missions or [None]
-            mission_agent_groups = ordered_combinations(
+            mission_agent_groups = combination_pairs_with_unique_indices(
                 agents_to_be_briefed, agent_missions
             )
             social_agents = social_agents or [None]
