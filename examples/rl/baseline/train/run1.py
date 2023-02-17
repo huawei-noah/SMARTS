@@ -1,6 +1,5 @@
 # https://github.com/vwxyzjn/ppo-implementation-details/blob/main/ppo_atari.py
 
-import os
 import random
 import time
 
@@ -14,9 +13,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 import sys
 from pathlib import Path
-# Important to load inference module
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "inference"))
-from utils import objdict
+# Required to load inference module
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# Load inference module to register agent
+import inference
+from contrib_policy.utils import objdict
 
 # from env import make as make_env
 from smarts.zoo import registry
@@ -122,14 +123,21 @@ if __name__ == "__main__":
     print(f,"sssssssssssssssssssssssssss")
 
     # Create env
-    agent_interface=registry.make(locator=config.agent_locator).interface
+    # agent_interface=registry.make(locator=config.agent_locator).interface
+    # print(agent_interface,"ffffffffffffffffffffff")
+    
+    # env = gym.make(
+    #     "smarts.env:driving-smarts-competition-v0",
+    #     scenario="3lane_merge_multi_agent",
+    #     agent_interface=agent_interface,
+    # )
+
+
+    agent_interface=registry.make(locator="smarts.zoo:random-relative-target-pose-agent-v0").interface
     env = gym.make(
-        config.env_id,
-        scenario=config.scenario[0],
-        agent_interface=agent_interface,
-        seed=config.seed,
-        sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
-        headless=not config.head,  # If False, enables Envision display.
+        "smarts.env:driving-smarts-competition-v0",
+        scenario = "1_to_2lane_left_turn_c",
+        agent_interface = agent_interface,
     )
 
     # # Wrap the environment
@@ -138,10 +146,10 @@ if __name__ == "__main__":
     # env = make_env(config, agent_interface=)
 
     # Make agent
-    agents = {
-        agent_id: registry.make_agent(locator=config.agent_locator)
-        for agent_id in env.agent_ids
-    }
+    # agents = {
+    #     agent_id: registry.make_agent(locator=config.agent_locator)
+    #     for agent_id in env.agent_ids
+    # }
 
 
 

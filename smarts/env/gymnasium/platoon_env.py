@@ -128,19 +128,21 @@ def platoon_v0_env(
             ),
         )
 
-    env = HiWayEnvV1(
-        scenarios=[env_specs["scenario"]],
-        agent_interfaces=agent_interfaces,
-        sim_name="Platoon",
-        headless=headless,
-        visdom=visdom,
-        seed=seed,
-        sumo_options=SumoOptions(headless=sumo_headless),
-        visualization_client_builder=visualization_client_builder,
-        observation_options=ObservationOptions.multi_agent,
-    )
+    print("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq")
 
-    return env
+    # env = HiWayEnvV1(
+    #     scenarios=[env_specs["scenario"]],
+    #     agent_interfaces=agent_interfaces,
+        # sim_name="Platoon",
+        # headless=headless,
+        # visdom=visdom,
+        # seed=seed,
+        # sumo_options=SumoOptions(headless=sumo_headless),
+        # visualization_client_builder=visualization_client_builder,
+        # observation_options=ObservationOptions.multi_agent,
+    # )
+
+    # return env
 
 
 def _get_env_specs(scenario: str):

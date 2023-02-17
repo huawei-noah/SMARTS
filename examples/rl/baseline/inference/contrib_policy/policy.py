@@ -1,6 +1,5 @@
 import sys
 from pathlib import Path
-import gym
 import numpy as np
 from smarts.core.agent import Agent
 from smarts.core.observations import Observation

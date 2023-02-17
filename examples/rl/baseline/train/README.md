@@ -1,5 +1,15 @@
 # Track-1
 
+
+$ cd <path>/SMARTS/examples/rl/baseline
+$ python3.8 -m venv ./.venv
+$ source ./.venv/bin/activate
+$ pip install --upgrade pip
+$ pip install -e ./../../../.[camera_obs,dev,doc]
+$ pip install -e ./inference/
+$ python3.8 train/run1.py 
+
+
 ## Objective
 Objective is to develop a single policy capable of controlling single-agent or multi-agent to complete different driving scenarios in the `multi-scenario-v0` environment. A `TargetPose` action space must be used for each agent. Refer below for `multi-scenario-v0` environment [details](#environment).
 
