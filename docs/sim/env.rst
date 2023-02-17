@@ -9,15 +9,15 @@ Base environments
 SMARTS environment module is defined in :mod:`~smarts.env` package. Currently SMARTS provides two kinds of training 
 environments, namely:
 
-+ ``HiwayEnv`` utilising ``gym.env`` style interface 
++ ``HiWayEnv`` utilising ``gym.env`` style interface 
 + ``RLlibHiwayEnv`` customized for `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_ training
 
 .. image:: ../_static/env.png
 
-HiwayEnv
+HiWayEnv
 ^^^^^^^^
 
-``HiwayEnv`` inherits class ``gym.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
+``HiWayEnv`` inherits class ``gym.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
 Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
 
 .. code-block:: python
@@ -44,10 +44,10 @@ Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
     # Close env.
     env.close()
 
-HiwayEnvV1
+HiWayEnvV1
 ^^^^^^^^^^
 
-``HiwayEnvV1`` inherits class ``gymnasium.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
+``HiWayEnvV1`` inherits class ``gymnasium.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
 This version has two configurations of observation output: `ObservationOptions.full` which provides padded agents in the observations which
 exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent` which provides only agents as are currently active. Refer to
 :class:`~smarts.env.gymnasium.hiway_env_v1.HiWayEnvV1` for more details.
@@ -66,7 +66,8 @@ exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent
         )
 
     # Reset env and build agent.
-    observations, infos = env.reset()
+    ## `reset(options) forwards "scenario" and "start_time" to `smarts.reset()`
+    observations, infos = env.reset() 
     agent = agent_spec.build_agent()
 
     # Step env.

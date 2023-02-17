@@ -58,8 +58,6 @@ from smarts.env.utils.observation_conversion import (
     ObservationSpacesFormatter,
 )
 
-DEFAULT_TIMESTEP = 0.1
-
 
 class ScenarioOrder(IntEnum):
     """Determines the order in which scenarios are served over successive resets."""
@@ -153,7 +151,7 @@ class HiWayEnvV1(gym.Env):
         scenarios_order: bool = True,
         headless: bool = False,
         visdom: bool = False,
-        fixed_timestep_sec: Optional[float] = None,
+        fixed_timestep_sec: float = 0.1,
         seed: int = 42,
         sumo_options: Union[Dict[str, Any], SumoOptions] = SumoOptions(),
         visualization_client_builder: partial = DEFAULT_VISUALIZATION_CLIENT_BUILDER,
@@ -167,11 +165,6 @@ class HiWayEnvV1(gym.Env):
         smarts_seed(seed)
         self._agent_interfaces = agent_interfaces
         self._dones_registered = 0
-        if not fixed_timestep_sec:
-            self._log.warning(
-                "Fixed timestep not specified. Default set to `%ss`", DEFAULT_TIMESTEP
-            )
-            fixed_timestep_sec = DEFAULT_TIMESTEP
 
         scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
@@ -338,7 +331,9 @@ class HiWayEnvV1(gym.Env):
                 If you pass an integer, the PRNG will be reset even if it already exists.
                 Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
             options (optional dict): Additional information to specify how the environment is reset (optional,
-                depending on the specific environment)
+                depending on the specific environment). Forwards to :meth:`~smarts.core.smarts.SMARTS.reset`.
+                - "scenario" (smarts.sstudio.Scenario): An explicit scenario to reset to. The default is a scenario from the scenario iter.
+                - "start_time" (float): Forwards the start time of the current scenario. The default is 0.
 
         Returns:
             observation (dict): Observation of the initial state. This will be an element of :attr:`observation_space`
@@ -347,10 +342,15 @@ class HiWayEnvV1(gym.Env):
                 the ``info`` returned by :meth:`step`.
         """
         super().reset(seed=seed, options=options)
-        scenario = next(self._scenarios_iterator)
+        options = options or {}
+        scenario = options.get("scenario")
+        if scenario is None:
+            scenario = next(self._scenarios_iterator)
 
         self._dones_registered = 0
-        observations = self._smarts.reset(scenario)
+        observations = self._smarts.reset(
+            scenario, start_time=options.get("start_time", 0)
+        )
         info = {"map_source": self._smarts.scenario.road_map.source}
 
         if self._env_renderer is not None:
@@ -497,3 +497,12 @@ class HiWayEnvV1(gym.Env):
             scenario.Scenario: Current simulated scenario.
         """
         return self._smarts.scenario
+
+    @property
+    def smarts(self):
+        """Gives access to the underlying simulator. Use this carefully.
+
+        Returns:
+            smarts.core.smarts.SMARTS: The smarts simulator instance.
+        """
+        return self._smarts
