@@ -104,25 +104,229 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
     )
 
 
-class Sensors:
-    """Sensor related utilities"""
+class SensorState:
+    """Sensor state information"""
 
-    _log = logging.getLogger("Sensors")
-    _instance = None
-    _sim_local_constants: SimulationLocalConstants = None
+    def __init__(self, max_episode_steps: int, plan_frame: PlanFrame):
+        self._max_episode_steps = max_episode_steps
+        self._plan_frame = plan_frame
+        self._step = 0
+        self._seen_interest_actors = False
 
-    def __init__(self):
+    def step(self):
+        """Update internal state."""
+        self._step += 1
+
+    @property
+    def seen_interest_actors(self) -> bool:
+        """If a relevant actor has been spotted before."""
+        return self._seen_interest_actors
+
+    @seen_interest_actors.setter
+    def seen_interest_actors(self, value: bool):
+        self._seen_interest_actors = value
+
+    @property
+    def reached_max_episode_steps(self) -> bool:
+        """Inbuilt sensor information that describes if episode step limit has been reached."""
+        if self._max_episode_steps is None:
+            return False
+
+        return self._step >= self._max_episode_steps
+
+    def get_plan(self, road_map: RoadMap):
+        """Get the current plan for the actor."""
+        return Plan.from_frame(self._plan_frame, road_map)
+
+    @property
+    def steps_completed(self) -> int:
+        """Get the number of steps where this sensor has been updated."""
+        return self._step
+
+
+class SensorResolver:
+    """An interface describing sensor observation and update systems."""
+
+    # TODO: Remove renderer and bullet client from the arguments
+    def observe(
+        self,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids: Set[str],
+        renderer,
+        bullet_client,
+    ):
+        raise NotImplementedError()
+
+    def step(self, sim_frame, sensor_states):
+        """Step the sensor state."""
+        raise NotImplementedError()
+
+
+class LocalSensorResolver(SensorResolver):
+    """This implementation of the sensor resolver completes observations serially."""
+
+    def observe(
+        self,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids: Set[str],
+        renderer,
+        bullet_client,
+    ):
+        with timeit("serial run", logger.info):
+            (
+                observations,
+                dones,
+                updated_sensors,
+            ) = Sensors.observe_serializable_sensor_batch(
+                sim_frame,
+                sim_local_constants,
+                agent_ids,
+            )
+
+        # While observation processes are operating do rendering
+        with timeit("rendering", logger.info):
+            rendering = {}
+            for agent_id in agent_ids:
+                for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
+                    rendering[agent_id] = Sensors.process_serialization_unsafe_sensors(
+                        sim_frame,
+                        sim_local_constants,
+                        agent_id,
+                        sim_frame.sensor_states[vehicle_id],
+                        vehicle_id,
+                        renderer,
+                        bullet_client,
+                    )
+
+        with timeit(f"merging observations", logger.info):
+            # Merge sensor information
+            for agent_id, r_obs in rendering.items():
+                observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
+
+    def step(self, sim_frame, sensor_states):
+        """Step the sensor state."""
+        for sensor_state in sensor_states:
+            sensor_state.step()
+
+
+class ParallelSensorResolver(SensorResolver):
+    """This implementation of the sensor resolver completes observations in parallel."""
+
+    def __init__(self, process_count_override=None) -> None:
+        super().__init__()
+        self._logger = logging.getLogger("Sensors")
+        self._sim_local_constants: SimulationLocalConstants = None
         self._workers: List[SensorsWorker] = []
+        self._process_count_override = process_count_override
 
-    @classmethod
-    def instance(cls) -> "Sensors":
-        """Get the current sensors instance."""
-        if not cls._instance:
-            cls._instance = cls()
-        return cls._instance
+    def observe(
+        self,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids: Set[str],
+        renderer,
+        bullet_client,
+    ):
+        """Runs observations in parallel where possible.
+        Args:
+            sim_frame (SimulationFrame):
+                The current state from the simulation.
+            sim_local_constants (SimulationLocalConstants):
+                The values that should stay the same for a simulation over a reset.
+            agent_ids ({str, ...}):
+                The agent ids to process.
+            renderer (Optional[Renderer]):
+                The renderer (if any) that should be used.
+            bullet_client (bc.BulletClient):
+                The physics client.
+        """
+        observations, dones, updated_sensors = {}, {}, {}
+
+        num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
+        used_processes = (
+            min(
+                config()("core", "observation_workers", default=128, cast=int),
+                num_spare_cpus,
+            )
+            if self._process_count_override == None
+            else max(1, self._process_count_override)
+        )
+
+        workers: List[SensorsWorker] = self.get_workers(
+            used_processes, sim_local_constants=sim_local_constants
+        )
+        used_workers: List[SensorsWorker] = []
+        with timeit(
+            f"parallizable observations with {len(agent_ids)} and {len(workers)}",
+            logger.info,
+        ):
+            agent_ids_for_grouping = list(agent_ids)
+            agent_groups = [
+                agent_ids_for_grouping[i::used_processes] for i in range(used_processes)
+            ]
+            worker_args = WorkerKwargs(sim_frame=sim_frame)
+            for i, agent_group in enumerate(agent_groups):
+                if not agent_group:
+                    break
+                with timeit(f"submitting {len(agent_group)} agents", logger.info):
+                    workers[i].send(
+                        SensorsWorker.Request(
+                            SensorsWorkerRequestId.SIMULATION_FRAME,
+                            worker_args.merged(WorkerKwargs(agent_ids=agent_group)),
+                        )
+                    )
+                    used_workers.append(workers[i])
+
+            # While observation processes are operating do rendering
+            with timeit("rendering", logger.info):
+                rendering = {}
+                for agent_id in agent_ids:
+                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
+                        rendering[
+                            agent_id
+                        ] = Sensors.process_serialization_unsafe_sensors(
+                            sim_frame,
+                            sim_local_constants,
+                            agent_id,
+                            sim_frame.sensor_states[vehicle_id],
+                            vehicle_id,
+                            renderer,
+                            bullet_client,
+                        )
+
+            # Collect futures
+            with timeit("waiting for observations", logger.info):
+                if used_workers:
+                    while agent_ids != set(observations):
+                        assert all(
+                            w.running for w in used_workers
+                        ), "A process worker crashed."
+                        for result in mp.connection.wait(
+                            [worker.connection for worker in used_workers], timeout=5
+                        ):
+                            # pytype: disable=attribute-error
+                            obs, ds, u_sens = result.recv()
+                            # pytype: enable=attribute-error
+                            observations.update(obs)
+                            dones.update(ds)
+                            updated_sensors.update(u_sens)
+
+            with timeit(f"merging observations", logger.info):
+                # Merge sensor information
+                for agent_id, r_obs in rendering.items():
+                    observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
 
     def __del__(self):
-        self.stop_all_workers()
+        try:
+            self.stop_all_workers()
+        except AttributeError:
+            pass
 
     def stop_all_workers(self):
         """Stop all current workers and clear reference to them."""
@@ -162,6 +366,27 @@ class Sensors:
             self.generate_workers(count, self._workers, worker_kwargs)
         return self._workers[:count]
 
+    def step(self, sim_frame, sensor_states):
+        """Step the sensor state."""
+        for sensor_state in sensor_states:
+            sensor_state.step()
+
+    @property
+    def process_count_override(self):
+        return self._process_count_override
+
+    @process_count_override.setter
+    def process_count_override(self, count):
+        self._process_count_override = count
+
+
+class Sensors:
+    """Sensor related utilities"""
+
+    _log = logging.getLogger("Sensors")
+    _instance = None
+    _sim_local_constants: SimulationLocalConstants = None
+
     @classmethod
     def observe_serializable_sensor_batch(
         cls,
@@ -189,123 +414,8 @@ class Sensors:
                 )
         return observations, dones, updated_sensors
 
-    @classmethod
-    def observe_parallel(
-        cls,
-        sim_frame: SimulationFrame,
-        sim_local_constants: SimulationLocalConstants,
-        agent_ids: Set[str],
-        renderer,
-        bullet_client,
-        process_count_override: Optional[int] = None,
-    ):
-        """Runs observations in parallel where possible.
-        Args:
-            sim_frame (SimulationFrame):
-                The current state from the simulation.
-            sim_local_constants (SimulationLocalConstants):
-                The values that should stay the same for a simulation over a reset.
-            agent_ids ({str, ...}):
-                The agent ids to process.
-            renderer (Optional[Renderer]):
-                The renderer (if any) that should be used.
-            bullet_client (bc.BulletClient):
-                The physics client.
-            process_count_override (Optional[int]):
-                Overrides the number of processes that should be used.
-        """
-        observations, dones, updated_sensors = {}, {}, {}
-
-        num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
-        used_processes = (
-            min(
-                config()("core", "observation_workers", default=128, cast=int),
-                num_spare_cpus,
-            )
-            if process_count_override == None
-            else max(0, process_count_override)
-        )
-
-        instance = cls.instance()
-        workers: List[SensorsWorker] = instance.get_workers(
-            used_processes, sim_local_constants=sim_local_constants
-        )
-        used_workers: List[SensorsWorker] = []
-        with timeit(
-            f"parallizable observations with {len(agent_ids)} and {len(workers)}",
-            logger.info,
-        ):
-            if len(workers) >= 1:
-                agent_ids_for_grouping = list(agent_ids)
-                agent_groups = [
-                    agent_ids_for_grouping[i::used_processes]
-                    for i in range(used_processes)
-                ]
-                worker_args = WorkerKwargs(sim_frame=sim_frame)
-                for i, agent_group in enumerate(agent_groups):
-                    if not agent_group:
-                        break
-                    with timeit(f"submitting {len(agent_group)} agents", logger.info):
-                        workers[i].send(
-                            SensorsWorker.Request(
-                                SensorsWorkerRequestId.SIMULATION_FRAME,
-                                worker_args.merged(WorkerKwargs(agent_ids=agent_group)),
-                            )
-                        )
-                        used_workers.append(workers[i])
-            else:
-                with timeit("serial run", logger.info):
-                    (
-                        observations,
-                        dones,
-                        updated_sensors,
-                    ) = cls.observe_serializable_sensor_batch(
-                        sim_frame,
-                        sim_local_constants,
-                        agent_ids,
-                    )
-
-            # While observation processes are operating do rendering
-            with timeit("rendering", logger.info):
-                rendering = {}
-                for agent_id in agent_ids:
-                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        rendering[agent_id] = cls.process_serialize_unsafe_sensors(
-                            sim_frame,
-                            sim_local_constants,
-                            agent_id,
-                            sim_frame.sensor_states[vehicle_id],
-                            vehicle_id,
-                            renderer,
-                            bullet_client,
-                        )
-
-            # Collect futures
-            with timeit("waiting for observations", logger.info):
-                if used_workers:
-                    while agent_ids != set(observations):
-                        assert all(
-                            w.running for w in used_workers
-                        ), "A process worker crashed."
-                        for result in mp.connection.wait(
-                            [worker.connection for worker in used_workers], timeout=5
-                        ):
-                            # pytype: disable=attribute-error
-                            obs, ds, u_sens = result.recv()
-                            # pytype: enable=attribute-error
-                            observations.update(obs)
-                            dones.update(ds)
-                            updated_sensors.update(u_sens)
-
-            with timeit(f"merging observations", logger.info):
-                # Merge sensor information
-                for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = replace(observations[agent_id], **r_obs)
-
-        return observations, dones, updated_sensors
-
     @staticmethod
-    def process_serialize_unsafe_sensors(
+    def process_serialization_unsafe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_id,
@@ -552,7 +662,7 @@ class Sensors:
         )
 
     @classmethod
-    def observe(
+    def observe_vehicle(
         cls,
         sim_frame: SimulationFrame,
         sim_local_constants,
@@ -567,14 +677,9 @@ class Sensors:
         base_obs, dones, updated_sensors = cls.process_serialization_safe_sensors(*args)
         complete_obs = dataclasses.replace(
             base_obs,
-            **cls.process_serialize_unsafe_sensors(*args, renderer, bullet_client),
+            **cls.process_serialization_unsafe_sensors(*args, renderer, bullet_client),
         )
         return (complete_obs, dones, updated_sensors)
-
-    @staticmethod
-    def step(sim_frame, sensor_state):
-        """Step the sensor state."""
-        return sensor_state.step()
 
     @classmethod
     def _agents_alive_done_check(
@@ -847,46 +952,6 @@ class Sensors:
         if lane_to_check.in_junction:
             return False
         return cls._vehicle_is_wrong_way(vehicle_state, lane_to_check)
-
-
-class SensorState:
-    """Sensor state information"""
-
-    def __init__(self, max_episode_steps: int, plan_frame: PlanFrame):
-        self._max_episode_steps = max_episode_steps
-        self._plan_frame = plan_frame
-        self._step = 0
-        self._seen_interest_actors = False
-
-    def step(self):
-        """Update internal state."""
-        self._step += 1
-
-    @property
-    def seen_interest_actors(self) -> bool:
-        """If a relevant actor has been spotted before."""
-        return self._seen_interest_actors
-
-    @seen_interest_actors.setter
-    def seen_interest_actors(self, value: bool):
-        self._seen_interest_actors = value
-
-    @property
-    def reached_max_episode_steps(self) -> bool:
-        """Inbuilt sensor information that describes if episode step limit has been reached."""
-        if self._max_episode_steps is None:
-            return False
-
-        return self._step >= self._max_episode_steps
-
-    def get_plan(self, road_map: RoadMap):
-        """Get the current plan for the actor."""
-        return Plan.from_frame(self._plan_frame, road_map)
-
-    @property
-    def steps_completed(self) -> int:
-        """Get the number of steps where this sensor has been updated."""
-        return self._step
 
 
 class WorkerKwargs:

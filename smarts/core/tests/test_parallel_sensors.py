@@ -27,12 +27,11 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import Sensors
+from smarts.core.sensors import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import diff_unpackable
 
 SimulationState = SimulationFrame
 SensorState = Any
@@ -100,29 +99,29 @@ def test_sensor_parallelization(
     simulation_frame: SimulationFrame = sim.cached_frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
 
-    def observe_with_processes(processes):
+    def observe_with_processes(sensors_resolver: ParallelSensorResolver, processes):
         start_time = time.monotonic()
-        obs, dones = sim.sensor_manager.observe(
+        sensors_resolver.process_count_override = processes
+        obs, dones, updated_sensors = sensors_resolver.observe(
             sim_frame=simulation_frame,
             sim_local_constants=simulation_local_constants,
             agent_ids=simulation_frame.agent_ids,
-            renderer_ref=sim.renderer,
-            physics_ref=sim.bc,
-            process_count_override=processes,
+            renderer=sim.renderer,
+            bullet_client=sim.bc,
         )
         assert len(obs) > 0
         return time.monotonic() - start_time
 
-    sensors_instance = Sensors.instance()
-    sensors_instance.get_workers(4, sim_local_constants=sim.local_constants)
+    sensors_resolver = ParallelSensorResolver()
+    sensors_resolver.get_workers(4, sim_local_constants=sim.local_constants)
 
     time.sleep(0.5)
 
-    serial_total = observe_with_processes(0)
-    parallel_1_total = observe_with_processes(1)
-    parallel_2_total = observe_with_processes(2)
-    parallel_3_total = observe_with_processes(3)
-    parallel_4_total = observe_with_processes(5)
+    serial_total = observe_with_processes(sensors_resolver, 0)
+    parallel_1_total = observe_with_processes(sensors_resolver, 1)
+    parallel_2_total = observe_with_processes(sensors_resolver, 2)
+    parallel_3_total = observe_with_processes(sensors_resolver, 3)
+    parallel_4_total = observe_with_processes(sensors_resolver, 5)
 
     assert (
         serial_total > parallel_1_total

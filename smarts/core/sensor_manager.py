@@ -22,8 +22,16 @@
 import logging
 from collections import Counter
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from smarts.core import config
 
-from smarts.core.sensors import Observation, Sensor, Sensors, SensorState
+from smarts.core.sensors import (
+    LocalSensorResolver,
+    Observation,
+    ParallelSensorResolver,
+    Sensor,
+    Sensors,
+    SensorState,
+)
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 
@@ -45,11 +53,18 @@ class SensorManager:
         self._sensor_references = Counter()
         # {sensor_id, ...}
         self._discarded_sensors: Set[str] = set()
+        observation_workers = config()(
+            "core", "observation_workers", default=0, cast=int
+        )
+        self._sensor_resolver = (
+            ParallelSensorResolver()
+            if observation_workers > 0
+            else LocalSensorResolver()
+        )
 
     def step(self, sim_frame: SimulationFrame, renderer):
         """Update sensor values based on the new simulation state."""
-        for sensor_state in self._sensor_states.values():
-            Sensors.step(sim_frame, sensor_state)
+        self._sensor_resolver.step(sim_frame, self._sensor_states.values())
 
         for sensor in self._sensors.values():
             sensor.step(sim_frame=sim_frame, renderer=renderer)
@@ -61,9 +76,8 @@ class SensorManager:
         agent_ids,
         renderer_ref,
         physics_ref,
-        process_count_override: Optional[int] = None,
     ):
-        """Runs observations in parallel where possible and updates sensor states afterwards.
+        """Runs observations and updates the sensor states.
         Args:
             sim_frame (SimulationFrame):
                 The current state from the simulation.
@@ -78,13 +92,12 @@ class SensorManager:
             process_count_override (Optional[int]):
                 Overrides the number of processes that should be used.
         """
-        observations, dones, updated_sensors = Sensors.observe_parallel(
+        observations, dones, updated_sensors = self._sensor_resolver.observe(
             sim_frame,
             sim_local_constants,
             agent_ids,
             renderer_ref,
             physics_ref,
-            process_count_override,
         )
         for actor_id, sensors in updated_sensors.items():
             for sensor_name, sensor in sensors.items():
@@ -116,7 +129,7 @@ class SensorManager:
                 observations[vehicle_id],
                 dones[vehicle_id],
                 updated_sensors,
-            ) = Sensors.observe(
+            ) = Sensors.observe_vehicle(
                 sim_frame,
                 sim_local_constants,
                 agent_id,

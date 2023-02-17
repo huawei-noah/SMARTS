@@ -21,10 +21,10 @@
 # THE SOFTWARE.
 import logging
 import sys
+from collections import deque
 from dataclasses import dataclass
 from functools import lru_cache
 from typing import List, Optional, Tuple
-from collections import deque
 
 import numpy as np
 
@@ -45,9 +45,9 @@ from smarts.core.observations import (
     ViaPoint,
     Vias,
 )
-from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.signals import SignalState
 from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
 
