@@ -218,6 +218,15 @@ class Provider:
         of all ActorState objects created/managed by this Provider."""
         return self.__class__.__name__
 
+    @property
+    def actor_ids(self) -> Sequence[str]:
+        """Indicate the agents that this provider currently manages.
+
+        Returns:
+            Sequence[str]: A set of agents that this provider manages.
+        """
+        raise NotImplementedError
+
     def manages_actor(self, actor_id: str) -> bool:
         """Returns True iff the actor referenced by actor_id is managed by this Provider."""
         raise NotImplementedError

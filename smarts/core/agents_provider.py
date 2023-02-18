@@ -205,6 +205,15 @@ class AgentsProvider(Provider):
     def manages_actor(self, actor_id: str) -> bool:
         return self._agent_for_vehicle(actor_id) is not None
 
+    @property
+    def actor_ids(self) -> Sequence[str]:
+        """The set of actors that this provider manages.
+
+        Returns:
+            Sequence[str]: The actors this provider manages.
+        """
+        return set(vs.actor_id for vss in self._my_agent_actors.values() for vs in vss)
+
     def stop_managing(self, actor_id: str):
         agent_tup = self._agent_for_vehicle(actor_id)
         if agent_tup:

@@ -132,3 +132,12 @@ class ExternalProvider(Provider):
             if vs.actor_id == actor_id:
                 return True
         return False
+
+    @property
+    def actor_ids(self) -> Sequence[str]:
+        """A set of actors that this provider manages.
+
+        Returns:
+            Sequence[str]: The actors this provider manages.
+        """
+        return set(vs.actor_id for vs in self._ext_vehicle_states)

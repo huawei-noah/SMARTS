@@ -99,6 +99,10 @@ class MockProvider(Provider):
     def manages_actor(self, actor_id: str) -> bool:
         return True
 
+    @property
+    def actor_ids(self) -> Sequence[str]:
+        return set(vs.actor_id for vs in self._next_provider_state.actors)
+
     def stop_managing(self, actor_id: str):
         pass
 

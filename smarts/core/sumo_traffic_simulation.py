@@ -173,6 +173,15 @@ class SumoTrafficSimulation(TrafficProvider):
         """Does not show TraCI visualization."""
         return self._headless
 
+    @property
+    def actor_ids(self) -> Sequence[str]:
+        """The vehicles that sumo manages.
+
+        Returns:
+            Sequence[str]: Sumo vehicle ids.
+        """
+        return self._sumo_vehicle_ids
+
     def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool
         # the retries are to deal with port collisions
