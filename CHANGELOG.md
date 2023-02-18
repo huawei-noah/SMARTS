@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `HiWayEnvV1` derived environments now allow an explicit scenario through `reset(options["scenario"])`.
 - `HiWayEnvV1` derived environments now allow an explicit simulation start time through `reset(options["start_time"])`.
 - Exposed `smarts` as a property on `HiWayEnvV1`.
+- Made the heading input relative to the current heading in `RelativeTargetPose` action space.
 ### Deprecated
 ### Fixed
 ### Removed
