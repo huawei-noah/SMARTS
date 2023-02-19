@@ -178,7 +178,7 @@ class SumoTrafficSimulation(TrafficProvider):
         """The vehicles that sumo manages.
 
         Returns:
-            Sequence[str]: Sumo vehicle ids.
+            Iterable[str]: Sumo vehicle ids.
         """
         return self._sumo_vehicle_ids
 

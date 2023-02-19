@@ -223,7 +223,7 @@ class Provider:
         """Indicate the agents that this provider currently manages.
 
         Returns:
-            Sequence[str]: A set of agents that this provider manages.
+            Iterable[str]: A set of agents that this provider manages.
         """
         raise NotImplementedError
 

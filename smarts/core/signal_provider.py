@@ -112,6 +112,6 @@ class SignalProvider(Provider):
         """A set of actors that this provider manages.
 
         Returns:
-            Sequence[str]: The actors this provider manages.
+            Iterable[str]: The actors this provider manages.
         """
         return set(vs.actor_id for vs in self._my_signals.values())
