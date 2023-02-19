@@ -12,7 +12,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added a zoo agent, named Control-and-Supervised-Learning, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 - Added a zoo agent, named Discrete Soft Actor Critic, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
-- Added basic tests for `hiway-v1` resetting and unformatted observations and actions. 
+- Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
+- Added `actor_ids` as a provider interface to check the actors that the provider is currently in charge of.
 ### Changed
 - `HiWayEnvV1` derived environments now allow an explicit scenario through `reset(options["scenario"])`.
 - `HiWayEnvV1` derived environments now allow an explicit simulation start time through `reset(options["start_time"])`.
