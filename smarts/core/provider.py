@@ -20,7 +20,7 @@
 import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
@@ -219,7 +219,7 @@ class Provider:
         return self.__class__.__name__
 
     @property
-    def actor_ids(self) -> Sequence[str]:
+    def actor_ids(self) -> Iterable[str]:
         """Indicate the agents that this provider currently manages.
 
         Returns:

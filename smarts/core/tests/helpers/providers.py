@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Optional, Sequence, Set
+from typing import Iterable, Optional, Sequence, Set
 
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.controllers import ActionSpaceType
@@ -100,7 +100,7 @@ class MockProvider(Provider):
         return True
 
     @property
-    def actor_ids(self) -> Sequence[str]:
+    def actor_ids(self) -> Iterable[str]:
         return set(vs.actor_id for vs in self._next_provider_state.actors)
 
     def stop_managing(self, actor_id: str):

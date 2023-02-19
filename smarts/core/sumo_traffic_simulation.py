@@ -23,7 +23,7 @@ import random
 import time
 import weakref
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -174,7 +174,7 @@ class SumoTrafficSimulation(TrafficProvider):
         return self._headless
 
     @property
-    def actor_ids(self) -> Sequence[str]:
+    def actor_ids(self) -> Iterable[str]:
         """The vehicles that sumo manages.
 
         Returns:

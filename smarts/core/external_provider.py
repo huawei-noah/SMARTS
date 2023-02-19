@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import weakref
-from typing import List, Sequence, Set
+from typing import Iterable, List, Sequence, Set
 
 import numpy as np
 
@@ -134,7 +134,7 @@ class ExternalProvider(Provider):
         return False
 
     @property
-    def actor_ids(self) -> Sequence[str]:
+    def actor_ids(self) -> Iterable[str]:
         """A set of actors that this provider manages.
 
         Returns:

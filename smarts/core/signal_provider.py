@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Dict, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
@@ -108,7 +108,7 @@ class SignalProvider(Provider):
             del self._my_signals[actor_id]
 
     @property
-    def actor_ids(self) -> Sequence[str]:
+    def actor_ids(self) -> Iterable[str]:
         """A set of actors that this provider manages.
 
         Returns:
