@@ -1508,13 +1508,11 @@ class SMARTS(ProviderManager):
                 if self._agent_manager.is_ego(agent_id):
                     actor_type = envision_types.TrafficActorType.Agent
                     if filter.actor_data_filter["mission_route_geometry"].enabled:
-                        mission_route_geometry = [
-                            geo
-                            for geo in self._vehicle_index.sensor_state_for_vehicle_id(
+                        mission_route_geometry = (
+                            self._vehicle_index.sensor_state_for_vehicle_id(
                                 v.actor_id
                             ).plan.route.geometry
-                            if len(geo)
-                        ]
+                        )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
 
