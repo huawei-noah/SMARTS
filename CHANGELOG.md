@@ -20,6 +20,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Made the heading input relative to the current heading in `RelativeTargetPose` action space.
 ### Deprecated
 ### Fixed
+- Issue where a 0 length lane caused `envision` to crash.
+- Fixed an issue where `Feature.type_specific_info` was calling a non-existant method.
 ### Removed
 ### Security
 
