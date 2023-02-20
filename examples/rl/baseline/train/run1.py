@@ -120,15 +120,17 @@ if __name__ == "__main__":
     # Create env
     agent_interface=registry.make(locator=config.agent_locator).interface
     env = gym.make(
-        "smarts.env:platoon-v0",
-        scenario="3lane_merge_multi_agent",
+        config.env_id,
+        scenario=config.scenarios[0],
         agent_interface=agent_interface,
+        seed=config.seed,
+        sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
+        headless=not config.head,  # If False, enables Envision display.
     ) 
  
     # # Wrap the environment
     # for wrapper in wrappers:
     #     env = wrapper(env)
-    # env = make_env(config, agent_interface=)
 
     # Make agent
     agents = {

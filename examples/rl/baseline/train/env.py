@@ -49,35 +49,3 @@
 #     # fmt: on
 
 #     return wrappers
-
-
-# def make(
-#     config, agent_interface:AgentInterface, scenario: str, wrappers: List[gym.Wrapper] = []
-# ) -> gym.Env:
-#     """Make environment.
-
-#     Args:
-#         config (Dict[str, Any]): A dictionary of config parameters.
-#         scenario (str): Scenario
-#         wrappers (List[gym.Wrapper], optional): Sequence of gym environment wrappers.
-#             Defaults to empty list [].
-
-#     Returns:
-#         gym.Env: Environment corresponding to the `scenario`.
-#     """
-
-#     # Create environment
-#     env = gym.make(
-#         config.env_id,
-#         scenario=scenario,
-#         agent_interface=agent_interface,
-#         seed=config.seed,
-#         sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
-#         headless=not config.head,  # If False, enables Envision display.
-#     )
-
-#     # Wrap the environment
-#     for wrapper in wrappers:
-#         env = wrapper(env)
-
-#     return env

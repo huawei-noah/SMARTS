@@ -56,6 +56,8 @@ class Policy(Agent):
         # model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
 
+        print("Agent being initialised")
+
     def act(self, obs: Observation):
         """Act function to be implemented by user.
 
