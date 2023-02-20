@@ -17,6 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # Load inference module to register agent
 import inference
+# `contrib_policy` package is accessed from pip installed packages
 from contrib_policy.utils import objdict
 
 # from env import make as make_env
@@ -123,21 +124,19 @@ if __name__ == "__main__":
         scenario="3lane_merge_multi_agent",
         agent_interface=agent_interface,
     ) 
-    
-    env.close()
-
-
+ 
     # # Wrap the environment
     # for wrapper in wrappers:
     #     env = wrapper(env)
     # env = make_env(config, agent_interface=)
 
     # Make agent
-    # agents = {
-    #     agent_id: registry.make_agent(locator=config.agent_locator)
-    #     for agent_id in env.agent_ids
-    # }
+    agents = {
+        agent_id: registry.make_agent(locator=config.agent_locator)
+        for agent_id in env.agent_ids
+    }
 
+    env.close()
 
 
     # Env setup
