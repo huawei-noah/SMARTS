@@ -45,7 +45,6 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     import warnings
 
     warnings.filterwarnings("ignore")
-
     env = gym.make(
         env_config["env"],
         scenario=env_config["scenario"],
