@@ -21,7 +21,8 @@ from contrib_policy.utils import objdict
 
 # from env import make as make_env
 from smarts.zoo import registry
-
+import yaml
+from pathlib import Path
 
 # from stable_baselines3.common.atari_wrappers import (  # isort:skip
 #     ClipRewardEnv,
@@ -30,10 +31,6 @@ from smarts.zoo import registry
 #     MaxAndSkipEnv,
 #     NoopResetEnv,
 # )
-
-import yaml
-from pathlib import Path
-
 
 # def make_env(env_id, seed, idx, capture_video, run_name):
 #     def thunk():
@@ -119,26 +116,16 @@ if __name__ == "__main__":
     # Torch device
     device = torch.device("cuda" if torch.cuda.is_available() and config.cuda else "cpu")
 
-    f = registry.agent_registry.all()
-    print(f,"sssssssssssssssssssssssssss")
-
     # Create env
-    # agent_interface=registry.make(locator=config.agent_locator).interface
-    # print(agent_interface,"ffffffffffffffffffffff")
-    
-    # env = gym.make(
-    #     "smarts.env:driving-smarts-competition-v0",
-    #     scenario="3lane_merge_multi_agent",
-    #     agent_interface=agent_interface,
-    # )
-
-
-    agent_interface=registry.make(locator="smarts.zoo:random-relative-target-pose-agent-v0").interface
+    agent_interface=registry.make(locator=config.agent_locator).interface
     env = gym.make(
-        "smarts.env:driving-smarts-competition-v0",
-        scenario = "1_to_2lane_left_turn_c",
-        agent_interface = agent_interface,
-    )
+        "smarts.env:platoon-v0",
+        scenario="3lane_merge_multi_agent",
+        agent_interface=agent_interface,
+    ) 
+    
+    env.close()
+
 
     # # Wrap the environment
     # for wrapper in wrappers:
