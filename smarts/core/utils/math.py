@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 import math
 from dataclasses import dataclass
+from itertools import chain, permutations, product, repeat
 from math import factorial
 from typing import Callable, List, Sequence, Tuple, Union
 
@@ -584,3 +585,67 @@ def running_mean(prev_mean: float, prev_step: int, new_val: float) -> Tuple[floa
     new_step = prev_step + 1
     new_mean = prev_mean + (new_val - prev_mean) / new_step
     return new_mean, new_step
+
+
+def _unique_element_combination(first, second):
+    """Generates a combination of set of values result groupings only contain values from unique
+    indices. Only works if len(first_group) <= len(second_group).
+    _unique_element_combination('ab', '123') -> (a1 b2) (a1 b3) (a2 b1) (a2 b3) (a3 b1) (a3 b2)
+    _unique_element_combination('abc', '1') -> []
+
+    Args:
+        first (Sequence): A sequence of values.
+        second (Sequence): Another sequence of values.
+
+    Yields:
+        Tuple[Tuple[Any, Any], ...]:
+            A set of index to index combinations. [] if len(first) > len(second)
+    """
+    result = [[a] for a in first]
+    sl = len(second)
+    rl = len(first)
+    perms = list(permutations(range(sl), r=rl))
+    for i, p in enumerate(perms):
+        yield tuple(
+            tuple(result[(i * rl + j) % rl] + [second[idx]]) for j, idx in enumerate(p)
+        )
+
+
+def combination_pairs_with_unique_indices(
+    first_group, second_group, second_group_default=None
+):
+    """Generates sets of combinations that use up all of the first group and at least as many of
+    the second group. If len(first_group) > len(second_group) the second group is padded. Groups
+    are combined using only unique indices per result. The value at an index in one group is
+    matched to the value at an index in from the second group. Duplicate results only appear when
+    element values repeat one of the base groups.
+
+    ordered_combinations('ab', '123') -> (a1 b2) (a1 b3) (a2 b1) (a2 b3) (a3 b1) (a3 b2)
+    ordered_combinations('ab', '1', default="k") -> (a1 bk) (ak b1)
+
+    Args:
+        first_group (Sequence): A sequence of values.
+        second_group (Sequence): Another sequence of values which may be padded.
+        default (Any, optional): The default used to pad the second group. Defaults to None.
+
+    Returns:
+        Generator[Tuple[Tuple[Any, Any], ...], None, None]:
+            Unique index to index pairings using up all elements of the first group and as many of
+            the second group.
+    """
+    len_first = len(first_group)
+    len_second = len(second_group)
+    if len_second == 0:
+        return product(first_group, [second_group_default])
+    if len_first > len_second:
+        return _unique_element_combination(
+            first_group,
+            list(
+                chain(
+                    second_group, repeat(second_group_default, len_first - len_second)
+                )
+            ),
+        )
+    if len_first <= len_second:
+        return _unique_element_combination(first_group, second_group)
+    return []
