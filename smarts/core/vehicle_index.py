@@ -483,6 +483,7 @@ class VehicleIndex:
         v_index = self._controlled_by["shadow_actor_id"] == shadower_id
         if vehicle_id:
             vehicle_id = _2id(vehicle_id)
+            # This multiplication finds overlap of "shadow_actor_id" and "vehicle_id"
             v_index = (self._controlled_by["vehicle_id"] == vehicle_id) * v_index
 
         for entity in self._controlled_by[v_index]:
