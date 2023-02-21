@@ -20,7 +20,7 @@ import inference
 # `contrib_policy` package is accessed from pip installed packages
 from contrib_policy.utils import objdict
 
-# from env import make as make_env
+from action import Action
 from smarts.zoo import registry
 import yaml
 from pathlib import Path
@@ -33,28 +33,37 @@ from pathlib import Path
 #     NoopResetEnv,
 # )
 
-# def make_env(env_id, seed, idx, capture_video, run_name):
-#     def thunk():
-#         env = gym.make(env_id)
-#         env = gym.wrappers.RecordEpisodeStatistics(env)
-#         if capture_video:
-#             if idx == 0:
-#                 env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
-#         env = NoopResetEnv(env, noop_max=30)
-#         env = MaxAndSkipEnv(env, skip=4)
-#         env = EpisodicLifeEnv(env)
-#         if "FIRE" in env.unwrapped.get_action_meanings():
-#             env = FireResetEnv(env)
-#         env = ClipRewardEnv(env)
-#         env = gym.wrappers.ResizeObservation(env, (84, 84))
-#         env = gym.wrappers.GrayScaleObservation(env)
-#         env = gym.wrappers.FrameStack(env, 4)
-#         env.seed(seed)
-#         env.action_space.seed(seed)
-#         env.observation_space.seed(seed)
-#         return env
+def make_env(env_id, scenario, config, seed, idx, capture_video, run_name):
+    def thunk():
+        agent_interface=registry.make(locator=config.agent_locator).interface
+        env = gym.make(
+            env_id,
+            scenario=scenario,
+            agent_interface=agent_interface,
+            seed=seed,
+            sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
+            headless=not config.head,  # If False, enables Envision display.
+        )
+        env = gym.wrappers.RecordEpisodeStatistics(env)
+        if config.capture_video:
+            if idx == 0:
+                env = gym.wrappers.RecordVideo(env, f"{parent_dir}/videos/{run_name}")
 
-#     return thunk
+        # env = NoopResetEnv(env, noop_max=30)
+        # env = MaxAndSkipEnv(env, skip=4)
+        # env = EpisodicLifeEnv(env)
+        # if "FIRE" in env.unwrapped.get_action_meanings():
+            # env = FireResetEnv(env)
+        # env = ClipRewardEnv(env)
+
+        env = Action(env)
+        # env = gym.wrappers.ResizeObservation(env, (84, 84))
+        # env = gym.wrappers.GrayScaleObservation(env)
+        # env = gym.wrappers.FrameStack(env, 4)
+
+        return env
+
+    return thunk
 
 
 # def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
@@ -108,44 +117,33 @@ if __name__ == "__main__":
         "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(config).items()])),
     )
 
-    # Seeding
-    random.seed(config.seed)
-    np.random.seed(config.seed)
+    # Torch seeding
     torch.manual_seed(config.seed)
     torch.backends.cudnn.deterministic = config.torch_deterministic
 
     # Torch device
     device = torch.device("cuda" if torch.cuda.is_available() and config.cuda else "cpu")
 
-    # Create env
-    agent_interface=registry.make(locator=config.agent_locator).interface
-    env = gym.make(
-        config.env_id,
-        scenario=config.scenarios[0],
-        agent_interface=agent_interface,
-        seed=config.seed,
-        sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
-        headless=not config.head,  # If False, enables Envision display.
-    ) 
- 
-    # # Wrap the environment
-    # for wrapper in wrappers:
-    #     env = wrapper(env)
+    # Env setup
+    scenario = config.scenarios[0]
+    envs = gym.vector.SyncVectorEnv(
+        [make_env(
+            env_id = config.env_id, 
+            scenario = scenario, 
+            config = config, 
+            seed = config.seed + i, 
+            idx = i, 
+            capture_video=config.capture_video, 
+            run_name=run_name) 
+        for i in range(config.num_envs)]
+    )
+    # assert isinstance(envs.single_action_space, gym.spaces.Discrete), "Only discrete action space is supported."
 
     # Make agent
     agents = {
         agent_id: registry.make_agent(locator=config.agent_locator)
-        for agent_id in env.agent_ids
+        for agent_id in envs.agent_ids
     }
-
-    env.close()
-
-
-    # Env setup
-    # envs = gym.vector.SyncVectorEnv(
-    #     [make_env(config.env_id, config.seed + i, i, config.capture_video, run_name) for i in range(config.num_envs)]
-    # )
-    # assert isinstance(envs.single_action_space, gym.spaces.Discrete), "Only discrete action space is supported."
 
     # agent = Agent(envs).to(device)
     # optimizer = optim.Adam(agent.parameters(), lr=args.learning_rate, eps=1e-5)
@@ -303,5 +301,5 @@ if __name__ == "__main__":
     #     print("SPS:", int(global_step / (time.time() - start_time)))
     #     writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
-    # envs.close()
-    # writer.close()
+    envs.close()
+    writer.close()

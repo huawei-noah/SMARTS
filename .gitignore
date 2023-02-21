@@ -120,6 +120,7 @@ build.db
 
 # run logs
 **/examples/**/logs
+**/examples/**/videos
 _run_logs
 results
 supervisord.log

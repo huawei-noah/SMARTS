@@ -7,7 +7,7 @@ from contrib_policy.policy import Policy
 
 def entry_point(**kwargs):
     interface = AgentInterface(
-        action=ActionSpaceType.RelativeTargetPose,
+        action=ActionSpaceType.ActuatorDynamic,
         top_down_rgb=RGB(
             width = 112,
             height = 112,
