@@ -197,7 +197,7 @@ class Observation(NamedTuple):
     steps_completed: int
     """Number of steps this agent has taken within SMARTS."""
     elapsed_sim_time: float
-    """Amout of simulation time elapsed for the current scenario."""
+    """Amount of simulation time elapsed for the current scenario."""
     events: Events
     """Classified observations that can trigger agent done status."""
     ego_vehicle_state: EgoVehicleObservation
