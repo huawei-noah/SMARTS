@@ -470,10 +470,17 @@ class VehicleIndex:
         return vehicle
 
     @clear_cache
-    def stop_shadowing(self, actor_id, vehicle_id=None):
-        actor_id = _2id(actor_id)
+    def stop_shadowing(self, shadower_id: str, vehicle_id: Optional[str] = None):
+        """Ends the shadowing by an a shadowing observer.
 
-        v_index = self._controlled_by["shadow_actor_id"] == actor_id
+        Args:
+            shadower_id (str): Removes this shadowing observer from all vehicles.
+            vehicle_id (str, optional):
+                If given this method removes shadowing from a specific vehicle. Defaults to None.
+        """
+        shadower_id = _2id(shadower_id)
+
+        v_index = self._controlled_by["shadow_actor_id"] == shadower_id
         if vehicle_id:
             vehicle_id = _2id(vehicle_id)
             v_index = self._controlled_by[v_index]["vehicle_id"] == vehicle_id
