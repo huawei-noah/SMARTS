@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added a math utility for generating combination groups out of two sequences with unique index use per group. This is intended for use to generate the combinations needed to give a unique agent-mission set per reset.
 - Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
+- Added `"steps_completed"` to observation formatter.
 ### Changed
 ### Deprecated
 ### Fixed
