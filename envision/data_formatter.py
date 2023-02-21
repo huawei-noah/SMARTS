@@ -280,6 +280,8 @@ def _format_traffic_actor(obj, data_formatter: EnvisionDataFormatter):
     for l_point in data_formatter.layer(obj.point_cloud):
         data_formatter.add(l_point, op=Operation.FLATTEN)
     for geo in data_formatter.layer(obj.mission_route_geometry):
+        if len(geo) == 0:
+            continue
         for route_point in data_formatter.layer(geo):
             data_formatter.add(route_point, op=Operation.FLATTEN)
     assert type(obj.actor_type) is TrafficActorType
