@@ -917,7 +917,7 @@ class ObservationSpacesFormatter:
                     AgentInterface, else absent. shape=(3,). dtype=np.float32.
                 "linear_velocity":
                     Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
-                "pos":
+                "position":
                     Coordinate of the center of the vehicle bounding box's bottom plane.
                     shape=(3,). dtype=np.float64.
                 "speed":
@@ -969,7 +969,7 @@ class ObservationSpacesFormatter:
 
             Mission details for the ego agent.
             "mission": dict({
-                "goal_pos":
+                "goal_position":
                     Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
                     for no mission. shape=(3,). dtype=np.float64.
             })

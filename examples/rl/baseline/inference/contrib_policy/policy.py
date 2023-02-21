@@ -1,13 +1,17 @@
 import sys
 from pathlib import Path
+# To import contrib_policy folder
+sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
+from contrib_policy.observation import FilterObs
+
 import numpy as np
 from smarts.core.agent import Agent
-from smarts.core.observations import Observation
 from typing import Any, Callable, Dict, Tuple
 
-# To import submission folder
-sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
-
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.distributions.categorical import Categorical
 
 # def submitted_wrappers():
 #     """Return environment wrappers for wrapping the evaluation environment.
@@ -41,24 +45,31 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
 #     return wrappers
 
 
+
+
+
+
+
 class Policy(Agent):
     """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
 
-    def __init__(self):
+    def __init__(self, config, model, device, input_shape, output_shape):
         """All policy initialization matters, including loading of model, is
         performed here. To be implemented by the user.
         """
 
-        # import stable_baselines3 as sb3lib
-        # import network
-
         # model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
 
+        self.model=model
+        self.reset()
+        self.filter_obs = FilterObs(output_shape)
+        print(self.filter_obs.observation_space,"xxxxxxxxxxxxxx")
+
         print("Agent being initialised")
 
-    def act(self, obs: Observation):
+    def act(self, obs):
         """Act function to be implemented by user.
 
         Args:
@@ -67,6 +78,11 @@ class Policy(Agent):
         Returns:
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
+        # Reset memory because episode was reset.
+        if obs["steps_completed"] == 1:
+            self.reset()
+
+        filtered_obs = self.filter_obs.filter(obs)
 
         # action, _ = self.model.predict(observation=obs, deterministic=True)
         # processed_act = action
@@ -75,53 +91,48 @@ class Policy(Agent):
         
         return [0.1, 0.1, 0.1] #processed_act
 
+    def reset(self, num_steps, num_envs, device):
+        # Storage setup
+        # self.obs = torch.zeros((config.num_steps, config.num_envs) + envs.single_observation_space.shape).to(device)
+        # self.actions = torch.zeros((config.num_steps, config.num_envs) + envs.single_action_space.shape).to(device)
+        self.logprobs = torch.zeros((num_steps, num_envs)).to(device)
+        self.rewards = torch.zeros((num_steps, num_envs)).to(device)
+        self.dones = torch.zeros((num_steps, num_envs)).to(device)
+        self.values = torch.zeros((num_steps, num_envs)).to(device)
 
 
-# def _discrete() -> Tuple[Callable[[Dict[str, int], Dict[str, Any]], Dict[str, np.ndarray]], gym.Space]:
-#     space = gym.spaces.Discrete(n=4)
 
-#     time_delta = 0.1  # Time, in seconds, between steps.
-#     angle = 5 / 180 * np.pi  # Turning angle in radians
-#     speed = 30  # Speed in km/h
-#     dist = (
-#         speed * 1000 / 3600 * time_delta
-#     )  # Distance, in meter, travelled in time_delta seconds
 
-#     action_map = {
-#         # key: [magnitude, angle]
-#         0: [0, 0],  # slow_down
-#         1: [dist, 0],  # keep_direction
-#         2: [dist, angle],  # turn_left
-#         3: [dist, -angle],  # turn_right
-#     }
+def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
+    torch.nn.init.orthogonal_(layer.weight, std)
+    torch.nn.init.constant_(layer.bias, bias_const)
+    return layer
 
-#     def wrapper(
-#         action: Dict[str, int], saved_obs: Dict[str, Any]
-#     ) -> Dict[str, np.ndarray]:
-#         wrapped_obs = {}
-#         for agent_id, agent_action in action.items():
-#             new_heading = saved_obs[agent_id]["heading"] + action_map[agent_action][1]
-#             new_heading = (new_heading + np.pi) % (2 * np.pi) - np.pi
 
-#             magnitude = action_map[agent_action][0]
-#             cur_coord = (
-#                 saved_obs[agent_id]["pos"][0] + 1j * saved_obs[agent_id]["pos"][1]
-#             )
-#             # Note: On the map, angle is zero at positive y axis, and increases anti-clockwise.
-#             #       In np.exp(), angle is zero at positive x axis, and increases anti-clockwise.
-#             #       Hence, numpy_angle = map_angle + π/2
-#             new_pos = cur_coord + magnitude * np.exp(1j * (new_heading + np.pi / 2))
-#             x_coord = np.real(new_pos)
-#             y_coord = np.imag(new_pos)
+class Model(nn.Module):
+    def __init__(self, output_dim):
+        super(Model, self).__init__()
+        self.network = nn.Sequential(
+            layer_init(nn.Conv2d(4, 32, 8, stride=4)),
+            nn.ReLU(),
+            layer_init(nn.Conv2d(32, 64, 4, stride=2)),
+            nn.ReLU(),
+            layer_init(nn.Conv2d(64, 64, 3, stride=1)),
+            nn.ReLU(),
+            nn.Flatten(),
+            layer_init(nn.Linear(64 * 7 * 7, 512)),
+            nn.ReLU(),
+        )
+        self.actor = layer_init(nn.Linear(512, output_dim), std=0.01)
+        self.critic = layer_init(nn.Linear(512, 1), std=1)
 
-#             wrapped_obs.update(
-#                 {
-#                     agent_id: np.array(
-#                         [x_coord, y_coord, new_heading, time_delta], dtype=np.float32
-#                     )
-#                 }
-#             )
+    def get_value(self, x):
+        return self.critic(self.network(x / 255.0))
 
-#         return wrapped_obs
-
-#     return wrapper, space
+    def get_action_and_value(self, x, action=None):
+        hidden = self.network(x / 255.0)
+        logits = self.actor(hidden)
+        probs = Categorical(logits=logits)
+        if action is None:
+            action = probs.sample()
+        return action, probs.log_prob(action), probs.entropy(), self.critic(hidden)

@@ -34,20 +34,20 @@ from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
     AgentInterface,
     DoneCriteria,
-    RoadWaypoints,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.scenario_construction import build_scenario
-from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsListAlive
+from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsListAlive, NeighborhoodVehicles
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
 SUPPORTED_ACTION_TYPES = (
     ActionSpaceType.ActuatorDynamic,
+    ActionSpaceType.Continuous,
     ActionSpaceType.RelativeTargetPose,
 )
 MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
@@ -279,18 +279,20 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         # ),
     )
     max_episode_steps = 800
-    road_waypoint_horizon = 50
     waypoints_lookahead = 50
+    neighborhood_radius = 50
     return AgentInterface(
         accelerometer=True,
         action=agent_interface.action,
         done_criteria=done_criteria,
         drivable_area_grid_map=agent_interface.drivable_area_grid_map,
-        lidar_point_cloud=True,
+        lane_positions=agent_interface.lane_positions,
+        lidar_point_cloud=agent_interface.lidar_point_cloud,
         max_episode_steps=max_episode_steps,
-        neighborhood_vehicle_states=True,
+        neighborhood_vehicle_states=NeighborhoodVehicles(radius=neighborhood_radius),
         occupancy_grid_map=agent_interface.occupancy_grid_map,
         top_down_rgb=agent_interface.top_down_rgb,
-        road_waypoints=RoadWaypoints(horizon=road_waypoint_horizon),
+        road_waypoints=agent_interface.road_waypoints,
         waypoint_paths=Waypoints(lookahead=waypoints_lookahead),
+        signals=agent_interface.signals,
     )
