@@ -615,7 +615,7 @@ def combination_pairs_with_unique_indices(
     first_group, second_group, second_group_default=None
 ):
     """Generates sets of combinations that use up all of the first group and at least as many of
-    the second group. If len(first_group) <= len(second_group) the second group is padded. Groups
+    the second group. If len(first_group) > len(second_group) the second group is padded. Groups
     are combined using only unique indices per result. The value at an index in one group is
     matched to the value at an index in from the second group. Duplicate results only appear when
     element values repeat one of the base groups.

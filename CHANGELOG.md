@@ -12,7 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added a zoo agent, named Control-and-Supervised-Learning, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 - Added a zoo agent, named Discrete Soft Actor Critic, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
-- Added a math utility for generating combination groups out of two  with unique index use per group. This is intended for use to generate the combinations needed to give a unique agent-mission set per reset.
+- Added a math utility for generating combination groups out of two sequences with unique index use per group. This is intended for use to generate the combinations needed to give a unique agent-mission set per reset.
 - Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
 ### Changed
 - `HiWayEnvV1` derived environments now allow an explicit scenario through `reset(options["scenario"])`.
