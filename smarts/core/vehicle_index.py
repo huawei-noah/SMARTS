@@ -238,6 +238,22 @@ class VehicleIndex:
         return None
 
     @cache
+    def shadower_ids_from_vehicle_id(self, vehicle_id) -> Optional[str]:
+        """Find the first actor watching a vehicle."""
+        vehicle_id = _2id(vehicle_id)
+
+        shadow_actor_ids = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["shadow_actor_id"]
+
+        if shadow_actor_ids:
+            return [
+                self._2id_to_id[shadow_actor_id] for shadow_actor_id in shadow_actor_ids
+            ]
+
+        return []
+
+    @cache
     def vehicle_position(self, vehicle_id):
         """Find the position of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
@@ -452,6 +468,19 @@ class VehicleIndex:
         )
 
         return vehicle
+
+    @clear_cache
+    def stop_shadowing(self, actor_id, vehicle_id=None):
+        actor_id = _2id(actor_id)
+
+        v_index = self._controlled_by["shadow_actor_id"] == actor_id
+        if vehicle_id:
+            vehicle_id = _2id(vehicle_id)
+            v_index = self._controlled_by[v_index]["vehicle_id"] == vehicle_id
+
+        for entity in self._controlled_by[v_index]:
+            entity = _ControlEntity(*entity)
+            self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=b""))
 
     @clear_cache
     def stop_agent_observation(self, vehicle_id):

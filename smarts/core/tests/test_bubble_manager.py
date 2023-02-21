@@ -32,6 +32,7 @@ from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.tests.helpers.providers import MockProvider
 from smarts.sstudio import gen_scenario
 
@@ -76,7 +77,7 @@ def mock_provider():
 
 
 @pytest.fixture
-def smarts(scenarios, mock_provider, time_resolution):
+def smarts_with_traffic_sim(scenarios, mock_provider, time_resolution):
     smarts_ = SMARTS(
         agent_interfaces={},
         traffic_sims=[
@@ -91,27 +92,61 @@ def smarts(scenarios, mock_provider, time_resolution):
     smarts_.destroy()
 
 
-def test_bubble_manager_state_change(smarts, mock_provider):
+@pytest.fixture
+def smarts(scenarios, mock_provider, time_resolution):
+    smarts_ = SMARTS(
+        agent_interfaces={},
+    )
+    smarts_.add_provider(mock_provider)
+    smarts_.reset(next(scenarios))
+    yield smarts_
+    smarts_.destroy()
+
+
+def test_bubble_manager_state_change(smarts: SMARTS, mock_provider):
     index = smarts.vehicle_index
 
     vehicle_id = "vehicle"
-    state_at_position = {
+    state_at_position = (
         # Outside airlock and bubble
-        (92, 0, 0): (False, False),
-        (93, 0, 0): (False, False),  # need a step for new route to "take"
+        ((92, 0, 0), (False, False)),
+        ((93, 0, 0), (False, False)),  # need a step for new route to "take"
         # Inside airlock, begin collecting experiences, but don't hijack
-        (94, 0, 0): (True, False),
+        ((94, 0, 0), (True, False)),
         # Entered bubble, now hijack
-        (100, 0, 0): (False, True),
+        ((100, 0, 0), (False, True)),
         # Leave bubble into exiting airlock
-        (106, 0, 0): (False, True),
+        ((106, 0, 0), (False, True)),
         # Exit bubble and airlock, now relinquish
-        (108, 0, 0): (False, False),
-    }
+        ((108, 0, 0), (False, False)),
+        # Check reentry should take a step to airlock
+        ((93, 0, 0), (False, False)),
+        # Inside airlock, begin collecting experiences, but don't hijack
+        ((94, 0, 0), (True, False)),
+        # Entered bubble, now hijack
+        ((100, 0, 0), (False, True)),
+        # Exit bubble and airlock, now relinquish
+        ((108, 0, 0), (False, False)),
+        # Dropped into middle of bubble shadow
+        ((100, 0, 0), (True, False)),
+        # Step has been taken, now hijack
+        ((100, 0, 0), (False, True)),
+        # Exit bubble and airlock, now relinquish
+        ((108, 0, 0), (False, False)),
+        # Dropped into airlock
+        ((93, 0, 0), (False, False)),  # need a step for new route to "take"
+        ((93.1, 0, 0), (True, False)),  # inside airlock
+        # Outside airlock and bubble
+        ((92, 0, 0), (False, False)),
+        # Dropped into airlock
+        ((93, 0, 0), (False, False)),  # need a step for new route to "take"
+        # Exit bubble and airlock, now relinquish again
+        ((108, 0, 0), (False, False)),
+    )
 
     route = smarts.road_map.route_from_road_ids(["west", "east"])
 
-    for position, (shadowed, hijacked) in state_at_position.items():
+    for position, (shadowed, hijacked) in state_at_position:
         mock_provider.override_next_provider_state(
             vehicles=[
                 (vehicle_id, Pose.from_center(position, Heading(-math.pi / 2)), 10)
@@ -129,13 +164,6 @@ def test_bubble_manager_state_change(smarts, mock_provider):
                 smarts.step({})
         else:
             smarts.step({})
-
-            # XXX: this is necessary because the bubble manager doesn't know
-            # XXX: what route to give the agent when it hijacks vehicle.
-            # XXX: note this doesn't update the plan.route for the agent stored in sensor_state,
-            # XXX: so the agent will be marked off-route and done as soon as it crosses from
-            # XXX: "west" to "east".
-            smarts.traffic_sims[0].update_route_for_vehicle(vehicle_id, route)
 
         got_shadowed = index.vehicle_is_shadowed(vehicle_id)
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)
