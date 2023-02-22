@@ -11,11 +11,17 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 import numpy as np
 import rtree
 
-from smarts.core.coordinates import BoundingBox, Point, Pose, RefLinePoint
+from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from smarts.core.lanepoints import LanePoints, LinkedLanePoint
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
 from smarts.core.utils.glb import make_map_glb
-from smarts.core.utils.math import line_intersect_vectorized
+from smarts.core.utils.math import (
+    inplace_unwrap,
+    line_intersect_vectorized,
+    radians_to_vec,
+    vec_2d,
+)
 from smarts.sstudio.types import MapSpec
 from av2.map.map_api import ArgoverseStaticMap
 from av2.map.lane_segment import LaneMarkType, LaneSegment
@@ -42,12 +48,12 @@ class ArgoverseMap(RoadMapWithCaches):
         self._features = dict()
         self._lane_rtree = None
         self._load_map_data()
-        # self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
-        # self._lanepoints = None
-        # if map_spec.lanepoint_spacing is not None:
-        #     assert map_spec.lanepoint_spacing > 0
-        #     # XXX: this should be last here since LanePoints() calls road_network methods immediately
-        #     self._lanepoints = LanePoints.from_sumo(self, spacing=map_spec.lanepoint_spacing)
+        self._waypoints_cache = ArgoverseMap._WaypointsCache()
+        if map_spec.lanepoint_spacing is not None:
+            assert map_spec.lanepoint_spacing > 0
+            self._lanepoints = LanePoints.from_argoverse(
+                self, spacing=map_spec.lanepoint_spacing
+            )
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
@@ -435,6 +441,43 @@ class ArgoverseMap(RoadMapWithCaches):
                 return self.shape().contains(point.as_shapely)
             return False
 
+        def waypoint_paths_for_pose(
+            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+        ) -> List[List[Waypoint]]:
+            if not self.is_drivable:
+                return []
+            road_ids = [road.road_id for road in route.roads] if route else None
+            return self._waypoint_paths_at(pose.point, lookahead, road_ids)
+
+        def waypoint_paths_at_offset(
+            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+        ) -> List[List[Waypoint]]:
+            if not self.is_drivable:
+                return []
+            wp_start = self.from_lane_coord(RefLinePoint(offset))
+            road_ids = [road.road_id for road in route.roads] if route else None
+            return self._waypoint_paths_at(wp_start, lookahead, road_ids)
+
+        def _waypoint_paths_at(
+            self,
+            point: Point,
+            lookahead: int,
+            filter_road_ids: Optional[Sequence[str]] = None,
+        ) -> List[List[Waypoint]]:
+            if not self.is_drivable:
+                return []
+            closest_linked_lp = (
+                self._map._lanepoints.closest_linked_lanepoint_on_lane_to_point(
+                    point, self._lane_id
+                )
+            )
+            return self._map._waypoints_starting_at_lanepoint(
+                closest_linked_lp,
+                lookahead,
+                tuple(filter_road_ids) if filter_road_ids else (),
+                point,
+            )
+
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
         assert lane, f"ArgoverseMap got request for unknown lane_id: '{lane_id}'"
@@ -719,3 +762,269 @@ class ArgoverseMap(RoadMapWithCaches):
 
     def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
         return ArgoverseMap.Route.from_road_ids(self, road_ids)
+
+    class _WaypointsCache:
+        def __init__(self):
+            self.lookahead = 0
+            self.point = Point(0, 0)
+            self.filter_road_ids = ()
+            self._starts = {}
+
+        # XXX:  all vehicles share this cache now (as opposed to before
+        # when it was in Plan.py and each vehicle had its own cache).
+        # TODO: probably need to add vehicle_id to the key somehow (or just make it bigger)
+        def _match(self, lookahead, point, filter_road_ids) -> bool:
+            return (
+                lookahead <= self.lookahead
+                and point[0] == self.point[0]
+                and point[1] == self.point[1]
+                and filter_road_ids == self.filter_road_ids
+            )
+
+        def update(
+            self,
+            lookahead: int,
+            point: Point,
+            filter_road_ids: tuple,
+            llp,
+            paths: List[List[Waypoint]],
+        ):
+            """Update the current cache if not already cached."""
+            if not self._match(lookahead, point, filter_road_ids):
+                self.lookahead = lookahead
+                self.point = point
+                self.filter_road_ids = filter_road_ids
+                self._starts = {}
+            self._starts[llp.lp.lane.index] = paths
+
+        def query(
+            self,
+            lookahead: int,
+            point: Point,
+            filter_road_ids: tuple,
+            llp,
+        ) -> Optional[List[List[Waypoint]]]:
+            """Attempt to find previously cached waypoints"""
+            if self._match(lookahead, point, filter_road_ids):
+                hit = self._starts.get(llp.lp.lane.index, None)
+                if hit:
+                    # consider just returning all of them (not slicing)?
+                    return [path[: (lookahead + 1)] for path in hit]
+                return None
+
+    def waypoint_paths(
+        self,
+        pose: Pose,
+        lookahead: int,
+        within_radius: float = 5,
+        route: RoadMap.Route = None,
+    ) -> List[List[Waypoint]]:
+        road_ids = []
+        if route and route.roads:
+            road_ids = [road.road_id for road in route.roads]
+        if road_ids:
+            return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
+        closest_lps = self._lanepoints.closest_lanepoints(
+            [pose], within_radius=within_radius
+        )
+        closest_lane = closest_lps[0].lane
+        waypoint_paths = []
+        for lane in closest_lane.road.lanes:
+            waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
+        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+
+    def _waypoint_paths_along_route(
+        self, point: Point, lookahead: int, route: Sequence[str]
+    ) -> List[List[Waypoint]]:
+        """finds the closest lane to vehicle's position that is on its route,
+        then gets waypoint paths from all lanes in its road there."""
+        assert len(route) > 0, f"Expected at least 1 road in the route, got: {route}"
+        closest_llp_on_each_route_road = [
+            self._lanepoints.closest_linked_lanepoint_on_road(point, road)
+            for road in route
+        ]
+        closest_linked_lp = min(
+            closest_llp_on_each_route_road,
+            key=lambda l_lp: np.linalg.norm(
+                vec_2d(l_lp.lp.pose.position) - vec_2d(point)
+            ),
+        )
+        closest_lane = closest_linked_lp.lp.lane
+        waypoint_paths = []
+        for lane in closest_lane.road.lanes:
+            waypoint_paths += lane._waypoint_paths_at(point, lookahead, route)
+
+        return sorted(waypoint_paths, key=len, reverse=True)
+
+    @staticmethod
+    def _equally_spaced_path(
+        path: Sequence[LinkedLanePoint],
+        point: Point,
+        lp_spacing: float,
+    ) -> List[Waypoint]:
+        """given a list of LanePoints starting near point, return corresponding
+        Waypoints that may not be evenly spaced (due to lane change) but start at point.
+        """
+
+        continuous_variables = [
+            "positions_x",
+            "positions_y",
+            "headings",
+            "lane_width",
+            "speed_limit",
+            "lane_offset",
+        ]
+        discrete_variables = ["lane_id", "lane_index"]
+
+        ref_lanepoints_coordinates = {
+            parameter: [] for parameter in (continuous_variables + discrete_variables)
+        }
+        for idx, lanepoint in enumerate(path):
+            if lanepoint.is_inferred and 0 < idx < len(path) - 1:
+                continue
+
+            ref_lanepoints_coordinates["positions_x"].append(
+                lanepoint.lp.pose.position[0]
+            )
+            ref_lanepoints_coordinates["positions_y"].append(
+                lanepoint.lp.pose.position[1]
+            )
+            ref_lanepoints_coordinates["headings"].append(
+                lanepoint.lp.pose.heading.as_bullet
+            )
+            ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane.lane_id)
+            ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane.index)
+
+            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane_width)
+
+            ref_lanepoints_coordinates["lane_offset"].append(
+                lanepoint.lp.lane.offset_along_lane(lanepoint.lp.pose.point)
+            )
+
+            ref_lanepoints_coordinates["speed_limit"].append(
+                lanepoint.lp.lane.speed_limit
+            )
+
+        ref_lanepoints_coordinates["headings"] = inplace_unwrap(
+            ref_lanepoints_coordinates["headings"]
+        )
+        first_lp_heading = ref_lanepoints_coordinates["headings"][0]
+        lp_position = path[0].lp.pose.point.as_np_array[:2]
+        vehicle_pos = point.as_np_array[:2]
+        heading_vec = radians_to_vec(first_lp_heading)
+        projected_distant_lp_vehicle = np.inner(
+            (vehicle_pos - lp_position), heading_vec
+        )
+
+        ref_lanepoints_coordinates["positions_x"][0] = (
+            lp_position[0] + projected_distant_lp_vehicle * heading_vec[0]
+        )
+        ref_lanepoints_coordinates["positions_y"][0] = (
+            lp_position[1] + projected_distant_lp_vehicle * heading_vec[1]
+        )
+
+        cumulative_path_dist = np.cumsum(
+            np.sqrt(
+                np.ediff1d(ref_lanepoints_coordinates["positions_x"], to_begin=0) ** 2
+                + np.ediff1d(ref_lanepoints_coordinates["positions_y"], to_begin=0) ** 2
+            )
+        )
+
+        if len(cumulative_path_dist) <= lp_spacing:
+            lp = path[0].lp
+
+            return [
+                Waypoint(
+                    pos=lp.pose.position[:2],
+                    heading=lp.pose.heading,
+                    lane_width=lp.lane.width_at_offset(0)[0],
+                    speed_limit=lp.lane.speed_limit,
+                    lane_id=lp.lane.lane_id,
+                    lane_index=lp.lane.index,
+                    lane_offset=lp.lane.offset_along_lane(lp.pose.point),
+                )
+            ]
+
+        evenly_spaced_cumulative_path_dist = np.linspace(
+            0, cumulative_path_dist[-1], len(path)
+        )
+
+        evenly_spaced_coordinates = {}
+        for variable in continuous_variables:
+            evenly_spaced_coordinates[variable] = np.interp(
+                evenly_spaced_cumulative_path_dist,
+                cumulative_path_dist,
+                ref_lanepoints_coordinates[variable],
+            )
+
+        for variable in discrete_variables:
+            ref_coordinates = ref_lanepoints_coordinates[variable]
+            evenly_spaced_coordinates[variable] = []
+            jdx = 0
+            for idx in range(len(path)):
+                while (
+                    jdx + 1 < len(cumulative_path_dist)
+                    and evenly_spaced_cumulative_path_dist[idx]
+                    > cumulative_path_dist[jdx + 1]
+                ):
+                    jdx += 1
+
+                evenly_spaced_coordinates[variable].append(ref_coordinates[jdx])
+            evenly_spaced_coordinates[variable].append(ref_coordinates[-1])
+
+        waypoint_path = []
+        for idx in range(len(path)):
+            waypoint_path.append(
+                Waypoint(
+                    pos=np.array(
+                        [
+                            evenly_spaced_coordinates["positions_x"][idx],
+                            evenly_spaced_coordinates["positions_y"][idx],
+                        ]
+                    ),
+                    heading=Heading(evenly_spaced_coordinates["headings"][idx]),
+                    lane_width=evenly_spaced_coordinates["lane_width"][idx],
+                    speed_limit=evenly_spaced_coordinates["speed_limit"][idx],
+                    lane_id=evenly_spaced_coordinates["lane_id"][idx],
+                    lane_index=evenly_spaced_coordinates["lane_index"][idx],
+                    lane_offset=evenly_spaced_coordinates["lane_offset"][idx],
+                )
+            )
+
+        return waypoint_path
+
+    def _waypoints_starting_at_lanepoint(
+        self,
+        lanepoint: LinkedLanePoint,
+        lookahead: int,
+        filter_road_ids: tuple,
+        point: Point,
+    ) -> List[List[Waypoint]]:
+        """computes equally-spaced Waypoints for all lane paths starting at lanepoint
+        up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""
+
+        # The following acts sort of like lru_cache(1), but it allows
+        # for lookahead to be <= to the cached value...
+        cache_paths = self._waypoints_cache.query(
+            lookahead, point, filter_road_ids, lanepoint
+        )
+        if cache_paths:
+            return cache_paths
+
+        lanepoint_paths = self._lanepoints.paths_starting_at_lanepoint(
+            lanepoint, lookahead, filter_road_ids
+        )
+        result = [
+            ArgoverseMap._equally_spaced_path(
+                path,
+                point,
+                self._map_spec.lanepoint_spacing,
+            )
+            for path in lanepoint_paths
+        ]
+
+        self._waypoints_cache.update(
+            lookahead, point, filter_road_ids, lanepoint, result
+        )
+
+        return result
