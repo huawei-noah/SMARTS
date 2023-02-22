@@ -20,7 +20,7 @@
 import logging
 from copy import copy, deepcopy
 from io import StringIO
-from typing import FrozenSet, Iterator, NamedTuple, Optional, Set, Tuple, Union
+from typing import FrozenSet, Iterator, NamedTuple, Optional, Set, Sequence, Tuple, Union
 
 import numpy as np
 import tableprint as tp
@@ -238,7 +238,7 @@ class VehicleIndex:
         return None
 
     @cache
-    def shadower_ids_from_vehicle_id(self, vehicle_id) -> Optional[str]:
+    def shadower_ids_from_vehicle_id(self, vehicle_id) -> Sequence[str]:
         """Find the first actor watching a vehicle."""
         vehicle_id = _2id(vehicle_id)
 
