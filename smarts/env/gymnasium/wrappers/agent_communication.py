@@ -21,7 +21,10 @@
 # THE SOFTWARE.
 from typing import Any, Dict, NamedTuple, Optional, Tuple
 
+import gymnasium as gym
 import numpy as np
+
+from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 
 
 class Transmitter(NamedTuple):
@@ -39,14 +42,12 @@ class Receiver(NamedTuple):
 class MessagePasser(gym.Wrapper):
     """This wrapper augments the observations and actions to require passing messages from agents."""
 
-    def __init__(self, env: gym.Env, message_size_bytes=125000):
+    def __init__(self, env: gym.Env, message_size=125000):
         super().__init__(env)
         assert isinstance(env, HiWayEnvV1)
         o_action_space: gym.spaces.Dict = self.env.action_space
         msg_space = (
-            gym.spaces.Box(
-                low=0, high=256, shape=(message_size_bytes,), dtype=np.uint8
-            ),
+            gym.spaces.Box(low=0, high=256, shape=(message_size,), dtype=np.uint8),
         )
         self.action_space = gym.spaces.Dict(
             {
