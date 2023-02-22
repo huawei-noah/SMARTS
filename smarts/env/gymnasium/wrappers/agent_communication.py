@@ -1,17 +1,17 @@
 # MIT License
-# 
+#
 # Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,7 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any, Dict, NamedTuple, Optional, Tuple
+from typing import Any, Dict, NamedTuple, Optional, Sequence, Tuple
+from enum import Enum
 
 import gymnasium as gym
 import numpy as np
@@ -27,16 +28,33 @@ import numpy as np
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 
 
+class Sensitivity(Enum):
+    LOW = 0
+    STANDARD = 1
+    HIGH = 2
+
+
 class Transmitter(NamedTuple):
     """A configuration utility to set up agents to transmit messages."""
 
-    pass
+    # TODO MTA: move this to agent interface.
+
+    bands: Sequence[int]
+    range: float
+    mission: bool
+    position: bool
+    heading: bool
+    breaking: bool
+    throttle: bool
+    steering: bool
 
 
 class Receiver(NamedTuple):
     """A configuratoin utility to set up agent to receive messages."""
 
-    pass
+    # TODO MTA: move this to agent interface.
+    bands: Sequence[int]
+    sensitivity: Sensitivity = Sensitivity.HIGH
 
 
 class MessagePasser(gym.Wrapper):
