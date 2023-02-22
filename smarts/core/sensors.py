@@ -156,6 +156,15 @@ class SensorResolver:
         renderer,
         bullet_client,
     ):
+        """Generate observations
+
+        Args:
+            sim_frame (SimulationFrame): The simulation frame.
+            sim_local_constants (SimulationLocalConstants): Constraints defined by the local simulator.
+            agent_ids (Set[str]): The agents to run.
+            renderer (Renderer): The renderer to use.
+            bullet_client (Any): The bullet client. This parameter is likely to be removed.
+        """
         raise NotImplementedError()
 
     def step(self, sim_frame, sensor_states):
@@ -216,7 +225,7 @@ class LocalSensorResolver(SensorResolver):
 class ParallelSensorResolver(SensorResolver):
     """This implementation of the sensor resolver completes observations in parallel."""
 
-    def __init__(self, process_count_override=None) -> None:
+    def __init__(self, process_count_override: int = None) -> None:
         super().__init__()
         self._logger = logging.getLogger("Sensors")
         self._sim_local_constants: SimulationLocalConstants = None
@@ -373,6 +382,11 @@ class ParallelSensorResolver(SensorResolver):
 
     @property
     def process_count_override(self):
+        """The number of processes this implementation should run.
+
+        Returns:
+            int: Number of processes.
+        """
         return self._process_count_override
 
     @process_count_override.setter
