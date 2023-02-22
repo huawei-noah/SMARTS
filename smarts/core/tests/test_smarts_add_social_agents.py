@@ -42,7 +42,7 @@ from smarts.core.provider import Provider
 
 
 @pytest.fixture
-def scenarios():
+def scenario():
     mission = Mission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
@@ -52,7 +52,7 @@ def scenarios():
         traffic_specs=["scenarios/sumo/loop/build/traffic/basic.rou.xml"],
         missions={"Agent-007": mission},
     )
-    return cycle([scenario])
+    return scenario
 
 
 @pytest.fixture
@@ -75,9 +75,8 @@ def smarts():
 
 
 def test_smarts_control_actors_with_social_agents(
-    smarts: SMARTS, scenarios: Iterator[Scenario]
+    smarts: SMARTS, scenario: Scenario
 ):
-    scenario = next(scenarios)
     smarts.reset(scenario)
 
     for _ in range(10):
