@@ -47,6 +47,7 @@ class Transmitter(NamedTuple):
     breaking: bool
     throttle: bool
     steering: bool
+    custom_message_blob_size: int
 
 
 class Receiver(NamedTuple):
