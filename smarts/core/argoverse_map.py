@@ -1,4 +1,5 @@
 from functools import lru_cache
+import heapq
 import logging
 import math
 from pathlib import Path
@@ -73,6 +74,7 @@ class ArgoverseMap(RoadMapWithCaches):
         lane_rtree.interleaved = True
         bboxes = dict()
         for idx, lane_id in enumerate(lane_ids_todo):
+            # Using the centerline here is much faster than using the lane polygon
             lane_pts = self._lanes[lane_id]._centerline
             bbox = (
                 np.amin(lane_pts[:, 0]),
@@ -285,6 +287,13 @@ class ArgoverseMap(RoadMapWithCaches):
                 :, :2
             ]
 
+            xs = self._polygon[:, 0]
+            ys = self._polygon[:, 1]
+            self._bbox = BoundingBox(
+                min_pt=Point(x=np.amin(xs), y=np.amin(ys)),
+                max_pt=Point(x=np.amax(xs), y=np.amax(ys)),
+            )
+
             # Compute equally-spaced points for lane boundaries by interpolating
             n = len(self._centerline)
             self.left_pts = interp_arc(
@@ -416,6 +425,16 @@ class ArgoverseMap(RoadMapWithCaches):
             }
             return list(foes)
 
+        @lru_cache(maxsize=8)
+        def contains_point(self, point: Point) -> bool:
+            assert type(point) == Point
+            if (
+                self._bbox.min_pt.x <= point[0] <= self._bbox.max_pt.x
+                and self._bbox.min_pt.y <= point[1] <= self._bbox.max_pt.y
+            ):
+                return self.shape().contains(point.as_shapely)
+            return False
+
     def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
         lane = self._lanes.get(lane_id)
         assert lane, f"ArgoverseMap got request for unknown lane_id: '{lane_id}'"
@@ -465,11 +484,31 @@ class ArgoverseMap(RoadMapWithCaches):
         candidate_lanes.sort(key=lambda lane_dist_tup: lane_dist_tup[1])
         return candidate_lanes
 
+    @lru_cache(maxsize=16)
+    def road_with_point(self, point: Point) -> RoadMap.Road:
+        radius = 5
+        for nl, dist in self.nearest_lanes(point, radius):
+            if nl.contains_point(point):
+                return nl.road
+        return None
+
     class Road(RoadMapWithCaches.Road, Surface):
         def __init__(self, road_id: str, lanes: List[RoadMap.Lane]):
             super().__init__(road_id, None)
             self._road_id = road_id
             self._lanes = lanes
+
+            x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
+            for lane in self._lanes:
+                x_mins.append(lane._bbox.min_pt.x)
+                y_mins.append(lane._bbox.min_pt.y)
+                x_maxs.append(lane._bbox.max_pt.x)
+                y_maxs.append(lane._bbox.max_pt.y)
+
+            self._bbox = BoundingBox(
+                min_pt=Point(x=min(x_mins), y=min(y_mins)),
+                max_pt=Point(x=max(x_maxs), y=max(y_maxs)),
+            )
 
         def __hash__(self) -> int:
             return hash(self.road_id)
@@ -545,6 +584,17 @@ class ArgoverseMap(RoadMapWithCaches):
         def lane_at_index(self, index: int) -> RoadMap.Lane:
             return self.lanes[index]
 
+        @lru_cache(maxsize=8)
+        def contains_point(self, point: Point) -> bool:
+            if (
+                self._bbox.min_pt.x <= point[0] <= self._bbox.max_pt.x
+                and self._bbox.min_pt.y <= point[1] <= self._bbox.max_pt.y
+            ):
+                for lane in self._lanes:
+                    if lane.contains_point(point):
+                        return True
+            return False
+
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
         assert road, f"ArgoverseMap got request for unknown road_id: '{road_id}'"
@@ -564,7 +614,7 @@ class ArgoverseMap(RoadMapWithCaches):
         def road_length(self) -> float:
             return self._length
 
-        def add_road(self, road: RoadMap.Road):
+        def _add_road(self, road: RoadMap.Road):
             """Add a road to this route."""
             self._length += road.length
             self._roads.append(road)
@@ -572,6 +622,80 @@ class ArgoverseMap(RoadMapWithCaches):
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
             return [list(road.shape(0.0).exterior.coords) for road in self.roads]
+
+    @staticmethod
+    def _shortest_route(start: RoadMap.Road, end: RoadMap.Road) -> List[RoadMap.Road]:
+        queue = [(start.length, start.road_id, start)]
+        came_from = dict()
+        came_from[start] = None
+        cost_so_far = dict()
+        cost_so_far[start] = start.length
+        current = None
+
+        # Dijkstra’s Algorithm
+        while queue:
+            (_, _, current) = heapq.heappop(queue)
+            current: RoadMap.Road
+            if current == end:
+                break
+            for out_road in current.outgoing_roads:
+                new_cost = cost_so_far[current] + out_road.length
+                if out_road not in cost_so_far or new_cost < cost_so_far[out_road]:
+                    cost_so_far[out_road] = new_cost
+                    came_from[out_road] = current
+                    heapq.heappush(queue, (new_cost, out_road.road_id, out_road))
+
+        # This means we couldn't find a valid route since the queue is empty
+        if current != end:
+            return []
+
+        # Reconstruct path
+        current = end
+        path = []
+        while current != start:
+            path.append(current)
+            current = came_from[current]
+        path.append(start)
+        path.reverse()
+        return path
+
+    def generate_routes(
+        self,
+        start_road: RoadMap.Road,
+        end_road: RoadMap.Road,
+        via: Optional[Sequence[RoadMap.Road]] = None,
+        max_to_gen: int = 1,
+    ) -> List[RoadMap.Route]:
+        assert (
+            max_to_gen == 1
+        ), "multiple route generation not yet supported for Argoverse"
+        new_route = ArgoverseMap.Route(self)
+        result = [new_route]
+
+        roads = [start_road]
+        if via:
+            roads += via
+        if end_road != start_road:
+            roads.append(end_road)
+
+        route_roads = []
+        for cur_road, next_road in zip(roads, roads[1:] + [None]):
+            if not next_road:
+                route_roads.append(cur_road)
+                break
+            sub_route = ArgoverseMap._shortest_route(cur_road, next_road) or []
+            if len(sub_route) < 2:
+                self._log.warning(
+                    f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
+                )
+                return result
+            # The sub route includes the boundary roads (cur_road, next_road).
+            # We clip the latter to prevent duplicates
+            route_roads.extend(sub_route[:-1])
+
+        for road in route_roads:
+            new_route._add_road(road)
+        return result
 
     def random_route(
         self,
@@ -586,7 +710,7 @@ class ArgoverseMap(RoadMapWithCaches):
             next_roads = [r for r in next_roads if r.is_drivable]
         while next_roads and len(route.roads) < max_route_len:
             cur_road = random.choice(next_roads)
-            route.add_road(cur_road)
+            route._add_road(cur_road)
             next_roads = list(cur_road.outgoing_roads)
         return route
 
