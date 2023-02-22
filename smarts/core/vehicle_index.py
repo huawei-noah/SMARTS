@@ -20,7 +20,16 @@
 import logging
 from copy import copy, deepcopy
 from io import StringIO
-from typing import FrozenSet, Iterator, NamedTuple, Optional, Set, Sequence, Tuple, Union
+from typing import (
+    FrozenSet,
+    Iterator,
+    NamedTuple,
+    Optional,
+    Set,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import tableprint as tp
@@ -461,7 +470,7 @@ class VehicleIndex:
             entity._replace(
                 actor_role=actor_role,
                 actor_id=agent_id,
-                shadow_actor_id=_2id(""),
+                shadow_actor_id=b"",
                 is_boid=boid,
                 is_hijacked=hijacking,
             )
@@ -488,9 +497,7 @@ class VehicleIndex:
 
         for entity in self._controlled_by[v_index]:
             entity = _ControlEntity(*entity)
-            self._controlled_by[v_index] = tuple(
-                entity._replace(shadow_actor_id=_2id(""))
-            )
+            self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=b""))
 
     @clear_cache
     def stop_agent_observation(self, vehicle_id):
@@ -506,7 +513,7 @@ class VehicleIndex:
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
-        self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=_2id("")))
+        self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=b""))
 
         return vehicle
 
@@ -538,8 +545,8 @@ class VehicleIndex:
         self._controlled_by[v_index] = tuple(
             entity._replace(
                 actor_role=ActorRole.Social,
-                actor_id=_2id(""),
-                shadow_actor_id=_2id(""),
+                actor_id=b"",
+                shadow_actor_id=b"",
                 is_boid=False,
                 is_hijacked=False,
             )
@@ -717,7 +724,7 @@ class VehicleIndex:
             vehicle_id=vehicle_id,
             actor_id=agent_id,
             actor_role=actor_role,
-            shadow_actor_id=_2id(""),
+            shadow_actor_id=b"",
             is_boid=boid,
             is_hijacked=hijacking,
             position=vehicle.position,
@@ -753,7 +760,7 @@ class VehicleIndex:
             vehicle_id=vehicle_id,
             actor_id=actor_id,
             actor_role=actor_role,
-            shadow_actor_id=_2id(""),
+            shadow_actor_id=b"",
             is_boid=False,
             is_hijacked=False,
             position=np.asarray(vehicle.position),
