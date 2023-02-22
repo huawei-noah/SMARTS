@@ -225,7 +225,7 @@ class LocalSensorResolver(SensorResolver):
 class ParallelSensorResolver(SensorResolver):
     """This implementation of the sensor resolver completes observations in parallel."""
 
-    def __init__(self, process_count_override: int = None) -> None:
+    def __init__(self, process_count_override: Optional[int] = None) -> None:
         super().__init__()
         self._logger = logging.getLogger("Sensors")
         self._sim_local_constants: SimulationLocalConstants = None
@@ -381,7 +381,7 @@ class ParallelSensorResolver(SensorResolver):
             sensor_state.step()
 
     @property
-    def process_count_override(self):
+    def process_count_override(self) -> Optional[int]:
         """The number of processes this implementation should run.
 
         Returns:
@@ -390,7 +390,7 @@ class ParallelSensorResolver(SensorResolver):
         return self._process_count_override
 
     @process_count_override.setter
-    def process_count_override(self, count):
+    def process_count_override(self, count: Optional[int]):
         self._process_count_override = count
 
 
