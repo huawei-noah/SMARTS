@@ -37,7 +37,7 @@
 #         DiscreteAction,
 #         # Used to filter only the selected observation parameters.
 #         FilterObs,
-#         # Used to stack sequential observations to include temporal information. 
+#         # Used to stack sequential observations to include temporal information.
 #         lambda env: FrameStack(env=env, num_stack=config["num_stack"]),
 #         # Concatenates stacked dictionaries into numpy arrays.
 #         lambda env: Concatenate(env=env, channels_order="first"),

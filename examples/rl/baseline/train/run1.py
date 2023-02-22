@@ -1,6 +1,13 @@
 # https://github.com/vwxyzjn/ppo-implementation-details/blob/main/ppo_atari.py
 
+import sys
 import time
+from pathlib import Path
+# Required to load inference module
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from pathlib import Path
+# Load inference module to register agent
+import inference
 
 import gymnasium as gym
 import numpy as np
@@ -8,21 +15,16 @@ import torch
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 
-import sys
-from pathlib import Path
-# Required to load inference module
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-# Load inference module to register agent
-import inference
+import yaml
+from action import Action
+from contrib_policy.observation import FilterObs
+from contrib_policy.policy import Model
+
 # `contrib_policy` package is accessed from pip installed packages
 from contrib_policy.utils import objdict
 
-from action import Action
+from smarts.core.agent_interface import RGB
 from smarts.zoo import registry
-import yaml
-from pathlib import Path
-
-from contrib_policy.policy import Model
 
 # from stable_baselines3.common.atari_wrappers import (  # isort:skip
 #     ClipRewardEnv,
@@ -32,9 +34,11 @@ from contrib_policy.policy import Model
 #     NoopResetEnv,
 # )
 
-def make_env(env_id, scenario, config, seed, idx, capture_video, run_name):
+
+def make_env(
+    env_id, scenario, agent_interface, config, seed, idx, capture_video, run_name
+):
     def thunk():
-        agent_interface=registry.make(locator=config.agent_locator).interface
         env = gym.make(
             env_id,
             scenario=scenario,
@@ -43,7 +47,7 @@ def make_env(env_id, scenario, config, seed, idx, capture_video, run_name):
             sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
             headless=not config.head,  # If False, enables Envision display.
         )
-        # env = gym.wrappers.RecordEpisodeStatistics(env)
+        env = gym.wrappers.RecordEpisodeStatistics(env)
         # if config.capture_video:
         #     if idx == 0:
         #         env = gym.wrappers.RecordVideo(env, f"{parent_dir}/videos/{run_name}")
@@ -52,7 +56,7 @@ def make_env(env_id, scenario, config, seed, idx, capture_video, run_name):
         # env = MaxAndSkipEnv(env, skip=4)
         # env = EpisodicLifeEnv(env)
         # if "FIRE" in env.unwrapped.get_action_meanings():
-            # env = FireResetEnv(env)
+        # env = FireResetEnv(env)
         # env = ClipRewardEnv(env)
 
         env = Action(env)
@@ -64,8 +68,6 @@ def make_env(env_id, scenario, config, seed, idx, capture_video, run_name):
         return env
 
     return thunk
-
-
 
 
 if __name__ == "__main__":
@@ -81,62 +83,63 @@ if __name__ == "__main__":
     writer = SummaryWriter(f"{parent_dir}/logs/{run_name}")
     writer.add_text(
         "hyperparameters",
-        "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(config).items()])),
+        "|param|value|\n|-|-|\n%s"
+        % ("\n".join([f"|{key}|{value}|" for key, value in vars(config).items()])),
     )
 
-    # Torch seeding
+    # Torch seeding and device
     torch.manual_seed(config.seed)
     torch.backends.cudnn.deterministic = config.torch_deterministic
+    config.device = torch.device(
+        "cuda" if torch.cuda.is_available() and config.cuda else "cpu"
+    )
 
-    # Torch device
-    device = torch.device("cuda" if torch.cuda.is_available() and config.cuda else "cpu")
+    # Build model
+    config.action_space = gym.spaces.Discrete(n=4)
+    model = Model(config.action_space.n).to(config.device)
+    optimizer = optim.Adam(model.parameters(), lr=config.learning_rate, eps=1e-5)
+
+    # Make agent specification
+    agent_spec = registry.make(
+        locator=config.agent_locator,
+        agent_params={
+            "config": config,
+            "model": model,
+        },
+    )
 
     # Env setup
     scenario = config.scenarios[0]
     envs = make_env(
-        env_id = config.env_id,
-        scenario = scenario,
-        config = config,
-        seed = config.seed + 1,
-        idx = 1,
+        env_id=config.env_id,
+        scenario=scenario,
+        agent_interface=agent_spec.interface,
+        config=config,
+        seed=config.seed + 1,
+        idx=1,
         capture_video=config.capture_video,
         run_name=run_name,
-    )() 
-    assert isinstance(envs.action_space, gym.spaces.Discrete), "Only discrete action space is supported."
+    )()
+    assert isinstance(
+        envs.action_space, gym.spaces.Discrete
+    ), "Only discrete action space is supported."
 
-    # Torch device
-    device = torch.device("cuda" if torch.cuda.is_available() and config.cuda else "cpu")
-    print(envs.action_space)
-    print(envs.action_space.shape,"qqqqqqqqqqqqqqqqqqqq")
-
-    # Build model
-    # input_shape = envs.
-    output_shape = envs.action_space.n
-    model = Model(output_shape).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=config.learning_rate, eps=1e-5)
-
-    # Make agent
-    # agents = {
-    #     agent_id: registry.make_agent(
-    #         locator=config.agent_locator, 
-    #         agent_params={
-    #             "config":config,
-    #             "model":model,
-    #             "device":device,
-    #             "input_shape":(2),
-    #             "agent_interface":output_shape,
-    #         }
-    #     )
-    #     for agent_id in envs.agent_ids
-    # }
-
+    # Build agents
+    agents = {agent_id: agent_spec.build_agent() for agent_id in envs.agent_ids}
 
     obs, info = envs.reset()
-    FilterObs()
-    obs = filter_obs(obs)
+    # top_down_rgb = RGB(
+    #     width=112,
+    #     height=112,
+    #     resolution=50 / 112,
+    # )
+    # f = FilterObs(top_down_rgb)
+    # obs = f.filter(obs["Agent_0"])
 
-    # print(type(obs),obs.shape, "OUTPUT AFTER FILTER OBS")
+    # from matplotlib import pyplot as plt
 
+    # plt.imshow(obs)
+    # plt.show()
 
     # # Start driving
     # global_step = 0
@@ -144,8 +147,6 @@ if __name__ == "__main__":
     # next_obs = torch.Tensor(envs.reset()).to(device)
     # next_done = torch.zeros(config.num_envs).to(device)
     # num_updates = config.total_timesteps // config.batch_size
-
-
 
     # for update in range(1, num_updates + 1):
     #     # Annealing the rate if instructed to do so.

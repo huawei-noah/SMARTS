@@ -33,14 +33,16 @@ from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
     AgentInterface,
+    AgentsAliveDoneCriteria,
+    AgentsListAlive,
     DoneCriteria,
+    NeighborhoodVehicles,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.scenario_construction import build_scenario
-from smarts.core.agent_interface import AgentsAliveDoneCriteria, AgentsListAlive, NeighborhoodVehicles
 
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
@@ -98,10 +100,10 @@ def platoon_v0_env(
     """
 
     # Check for supported action space
-    assert (
-        agent_interface.action in SUPPORTED_ACTION_TYPES
-    ), f"Got unsupported action type `{agent_interface.action}`, which is not " \
+    assert agent_interface.action in SUPPORTED_ACTION_TYPES, (
+        f"Got unsupported action type `{agent_interface.action}`, which is not "
         f"in supported action types `{SUPPORTED_ACTION_TYPES}`."
+    )
 
     # Build scenario
     env_specs = _get_env_specs(scenario)

@@ -1,17 +1,19 @@
 import sys
 from pathlib import Path
+
 # To import contrib_policy folder
 sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
-from contrib_policy.observation import FilterObs
-
-import numpy as np
-from smarts.core.agent import Agent
 from typing import Any, Callable, Dict, Tuple
 
+import gymnasium as gym
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from contrib_policy.observation import FilterObs
 from torch.distributions.categorical import Categorical
+
+from smarts.core.agent import Agent
 
 # def submitted_wrappers():
 #     """Return environment wrappers for wrapping the evaluation environment.
@@ -45,16 +47,11 @@ from torch.distributions.categorical import Categorical
 #     return wrappers
 
 
-
-
-
-
-
 class Policy(Agent):
     """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
 
-    def __init__(self, config, model, device, input_shape, output_shape):
+    def __init__(self, config, model, top_down_rgb):
         """All policy initialization matters, including loading of model, is
         performed here. To be implemented by the user.
         """
@@ -62,12 +59,12 @@ class Policy(Agent):
         # model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
 
-        self.model=model
+        self.model = model
+        self.config = config
+        self.filter_obs = FilterObs(top_down_rgb)
+        self.config.observation_space = self.filter_obs.observation_space
         self.reset()
-        self.filter_obs = FilterObs(output_shape)
-        print(self.filter_obs.observation_space,"xxxxxxxxxxxxxx")
-
-        print("Agent being initialised")
+        print("Policy initialised.")
 
     def act(self, obs):
         """Act function to be implemented by user.
@@ -88,19 +85,19 @@ class Policy(Agent):
         # processed_act = action
 
         # wrapped_act = action_wrapper._discrete(action, self.saved_obs)
-        
-        return [0.1, 0.1, 0.1] #processed_act
 
-    def reset(self, num_steps, num_envs, device):
+        return [0.1, 0.1, 0.1]  # processed_act
+
+    def reset(self):
+        # fmt: off
         # Storage setup
-        # self.obs = torch.zeros((config.num_steps, config.num_envs) + envs.single_observation_space.shape).to(device)
-        # self.actions = torch.zeros((config.num_steps, config.num_envs) + envs.single_action_space.shape).to(device)
-        self.logprobs = torch.zeros((num_steps, num_envs)).to(device)
-        self.rewards = torch.zeros((num_steps, num_envs)).to(device)
-        self.dones = torch.zeros((num_steps, num_envs)).to(device)
-        self.values = torch.zeros((num_steps, num_envs)).to(device)
-
-
+        self.obs = torch.zeros((self.config.num_steps, self.config.num_envs) + self.config.observation_space.shape).to(self.config.device)
+        self.actions = torch.zeros((self.config.num_steps, self.config.num_envs) + self.config.action_space.shape).to(self.config.device)
+        self.logprobs = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
+        self.rewards = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
+        self.dones = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
+        self.values = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
+        # fmt: on
 
 
 def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
