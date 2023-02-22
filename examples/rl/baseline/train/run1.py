@@ -128,18 +128,10 @@ if __name__ == "__main__":
     agents = {agent_id: agent_spec.build_agent() for agent_id in envs.agent_ids}
 
     obs, info = envs.reset()
-    # top_down_rgb = RGB(
-    #     width=112,
-    #     height=112,
-    #     resolution=50 / 112,
-    # )
-    # f = FilterObs(top_down_rgb)
-    # obs = f.filter(obs["Agent_0"])
-
-    # from matplotlib import pyplot as plt
-
-    # plt.imshow(obs)
-    # plt.show()
+    f = agents["Agent_0"].filter_obs.filter(obs["Agent_0"])
+    from matplotlib import pyplot as plt
+    plt.imshow(f)
+    plt.show()
 
     # # Start driving
     # global_step = 0

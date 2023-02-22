@@ -1,11 +1,12 @@
 import copy
 import math
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 import gymnasium as gym
 import numpy as np
 
 from smarts.core.agent_interface import RGB
+from smarts.core.colors import Colors, SceneColors
 
 # class SaveObs(gym.ObservationWrapper):
 #     """Saves several selected observation parameters."""
@@ -67,8 +68,6 @@ class FilterObs:
         #         ),
         #     }
         # )
-        from smarts.core.colors import Colors, SceneColors
-
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
@@ -117,8 +116,8 @@ class FilterObs:
         # Ego's heading with respect to the map's coordinate system.
         # Note: All angles returned by smarts is with respect to the map's coordinate system.
         #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
-        ego_heading = (obs["ego"]["heading"] + np.pi) % (2 * np.pi) - np.pi
-        ego_pos = obs["ego"]["position"]
+        ego_heading = (obs["ego_vehicle_state"]["heading"] + np.pi) % (2 * np.pi) - np.pi
+        ego_pos = obs["ego_vehicle_state"]["position"]
 
         # Goal's angle with respect to the ego's position.
         # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
@@ -136,8 +135,8 @@ class FilterObs:
         # Get rgb image, remove road, and replace other egos (if any) as background vehicles
         rgb = obs["top_down_rgb"]
         h, w, _ = rgb.shape
-        rgb_noroad = replace_color(rgb=rgb, old_color=self._road_color, new_color=np.zeros((3,)))
-        rgb_ego = replace_color(rgb=rgb_noroad, old_color=self._ego_color, new_color=self._traffic_color, mask=self._rgb_mask)
+        rgb_noroad = replace_color(rgb=rgb, old_color=[self._road_color, self._lane_divider_color, self._edge_divider_color], new_color=np.zeros((3,)))
+        rgb_ego = replace_color(rgb=rgb_noroad, old_color=[self._ego_color], new_color=self._traffic_color, mask=self._rgb_mask)
 
         # Superimpose waypoints onto rgb image
         wps = obs["waypoint_paths"]["position"][0:3, 3:, 0:3]
@@ -175,7 +174,7 @@ class FilterObs:
 
 def replace_color(
     rgb: np.ndarray,
-    old_color: np.ndarray,
+    old_color: Sequence[np.ndarray],
     new_color: np.ndarray,
     mask: np.ndarray = np.ma.nomask,
 ) -> np.ndarray:
@@ -184,7 +183,7 @@ def replace_color(
 
     Args:
         rgb (np.ndarray): RGB image. Shape = (m,n,3).
-        old_color (np.ndarray): Old color to be removed from the RGB image. Shape = (3,).
+        old_color (Sequence[np.ndarray]): List of old colors to be removed from the RGB image. Shape = (3,).
         new_color (np.ndarray): New color to be added to the RGB image. Shape = (3,).
         mask (np.ndarray, optional): Valid regions for color replacement. Shape = (m,n,3).
             Defaults to np.ma.nomask .
@@ -194,18 +193,22 @@ def replace_color(
             within the masked region. Shape = (m,n,3).
     """
     # fmt: off
-    assert old_color.shape == (3,), (
-        f"Expected old_color to be of shape (3,), but got {old_color.shape}.")
+    assert all(color.shape == (3,) for color in old_color), (
+        f"Expected old_color to be of shape (3,), but got {[color.shape for color in old_color]}.")
     assert new_color.shape == (3,), (
         f"Expected new_color to be of shape (3,), but got {new_color.shape}.")
-    # fmt: on
 
-    oc = old_color.reshape((1, 1, 3))
     nc = new_color.reshape((1, 1, 3))
     nc_array = np.full_like(rgb, nc)
     rgb_masked = np.ma.MaskedArray(data=rgb, mask=mask)
-    result = np.ma.where((rgb_masked == oc).all(axis=-1)[..., None], nc_array, rgb)
+
+    rgb_condition = rgb_masked
+    result = rgb
+    for color in old_color:
+        result = np.ma.where((rgb_condition == color.reshape((1, 1, 3))).all(axis=-1)[..., None], nc_array, result)
+
     return result
+    # fmt: on
 
 
 def wps_to_pixels(
