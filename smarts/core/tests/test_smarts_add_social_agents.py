@@ -80,6 +80,7 @@ def test_smarts_control_actors_with_social_agents(smarts: SMARTS, scenario: Scen
         smarts.step({})
 
     provider: Optional[Provider] = smarts.get_provider_by_type(SumoTrafficSimulation)
+    assert provider
     assert provider.actor_ids
     vehicle_ids = set(list(provider.actor_ids)[:5] + ["Agent-007"])
     original_social_agent_vehicle_ids = smarts.vehicle_index.agent_vehicle_ids()
