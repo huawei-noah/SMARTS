@@ -65,7 +65,7 @@ def smarts():
     agents = {"Agent-007": buddha}
     smarts = SMARTS(
         agents,
-        traffic_sims=[SumoTrafficSimulation(headless=False, auto_start=False)],
+        traffic_sims=[SumoTrafficSimulation(headless=True, auto_start=False)],
         envision=None,
     )
 
