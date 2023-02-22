@@ -74,9 +74,7 @@ def smarts():
     smarts.destroy()
 
 
-def test_smarts_control_actors_with_social_agents(
-    smarts: SMARTS, scenario: Scenario
-):
+def test_smarts_control_actors_with_social_agents(smarts: SMARTS, scenario: Scenario):
     smarts.reset(scenario)
 
     for _ in range(10):

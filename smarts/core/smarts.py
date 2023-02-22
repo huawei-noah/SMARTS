@@ -651,18 +651,13 @@ class SMARTS(ProviderManager):
                 is_boid=False,
                 is_boid_keep_alive=False,
                 agent_locator=locator,
-                policy_kwargs=(),
+                policy_kwargs={},
                 # initial_speed=10,
             )
             self._agent_manager.start_social_agent(
                 agent_id, social_agent, social_agent_data_model
             )
-            try:
-                agent_interface = self.agent_manager.agent_interface_for_agent_id(
-                    agent_id
-                )
-            except KeyError:
-                return
+            agent_interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
             vehicle = self.vehicle_index.switch_control_to_agent(
                 self,
                 vehicle_id,
