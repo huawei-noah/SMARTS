@@ -88,7 +88,7 @@ class Policy(Agent):
             self._frame_stack.reset()
 
         processed_obs = self.process(obs)
-        tensor_obs = torch.Tensor(processed_obs).to(self._config.device)
+        tensor_obs = torch.Tensor(np.expand_dims(processed_obs,0)).to(self._config.device)
         hidden = self._model.network(tensor_obs / 255.0)
         logits = self._model.actor(hidden)
         probs = Categorical(logits=logits)
@@ -129,6 +129,7 @@ class Policy(Agent):
 class Model(nn.Module):
     def __init__(self, in_channels, out_actions):
         super(Model, self).__init__()
+        # self._cnn = nn.Sequential(
         self.network = nn.Sequential(
             layer_init(nn.Conv2d(in_channels, 32, 8, stride=4)),
             nn.ReLU(),
@@ -137,16 +138,41 @@ class Model(nn.Module):
             layer_init(nn.Conv2d(64, 64, 3, stride=1)),
             nn.ReLU(),
             nn.Flatten(),
-            layer_init(nn.Linear(64 * 7 * 7, 512)),
+            layer_init(nn.Linear(9216, 512)),
             nn.ReLU(),
         )
+
+        # # Compute shape by doing one forward pass
+        # temp_space = gym.spaces.Box(
+        #     low=0,
+        #     high=255,
+        #     shape=(9,128,128),
+        #     dtype=np.uint8,
+        # )
+        # with torch.no_grad():
+        #     n_flatten = self._cnn(torch.as_tensor(temp_space.sample()[None]).float()).shape[1]
+
+        # self._linear = nn.Sequential(layer_init(nn.Linear(n_flatten, 512)), nn.ReLU())
+        # self.network = nn.Sequential(self._cnn, self._linear)
+
         self.actor = layer_init(nn.Linear(512, out_actions), std=0.01)
         self.critic = layer_init(nn.Linear(512, 1), std=1)
+
+    def forward(self, obs: torch.Tensor) -> torch.Tensor:
+        return self.actor(self.network(obs))
 
     def get_value(self, x):
         return self.critic(self.network(x / 255.0))
 
     def get_action_and_value(self, x, action=None):
+
+        # from contrib_policy.util import plotter3d
+        # print("-----------------------------")
+        # print(type(x), x.shape)
+        # c = x.cpu().numpy()
+        # plotter3d(obs=c,rgb_gray=3,channel_order="first",pause=0)
+        # print("-----------------------------")
+
         hidden = self.network(x / 255.0)
         logits = self.actor(hidden)
         probs = Categorical(logits=logits)

@@ -18,6 +18,7 @@ import yaml
 from torch.utils.tensorboard import SummaryWriter
 
 # `contrib_policy` package is accessed from pip installed packages
+from contrib_policy.format_action import FormatAction
 from contrib_policy.policy import Model
 from contrib_policy.utils import objdict
 from smarts.zoo import registry
@@ -35,7 +36,7 @@ def make_env(
             sumo_headless=not config.sumo_gui,  # If False, enables sumo-gui display.
             headless=not config.head,  # If False, enables Envision display.
         )
-        env = gym.wrappers.RecordEpisodeStatistics(env)
+        # env = gym.wrappers.RecordEpisodeStatistics(env)
         # if config.capture_video:
         #     if idx == 0:
         #         env = gym.wrappers.RecordVideo(env, f"{parent_dir}/videos/{run_name}")
@@ -80,7 +81,7 @@ if __name__ == "__main__":
     )
 
     # Build model
-    config.action_space = gym.spaces.Discrete(n=4)
+    config.action_space = FormatAction().action_space
     model = Model(in_channels=config.num_stack*3, out_actions=config.action_space.n).to(config.device)
     optimizer = optim.Adam(model.parameters(), lr=config.learning_rate, eps=1e-5)
 
@@ -93,6 +94,10 @@ if __name__ == "__main__":
         },
     )
 
+    # Print model summary
+    from torchsummary import summary
+    summary(model, (config.num_stack*3,agent_spec.interface.top_down_rgb.height,agent_spec.interface.top_down_rgb.width))
+    
     # Env setup
     scenario = config.scenarios[0]
     envs = make_env(
@@ -125,7 +130,7 @@ if __name__ == "__main__":
     next_obs = {}
     next_done = {}
     for agent_id, agent_obs in obs.items():
-        next_obs[agent_id] = torch.Tensor(agents[agent_id].process(agent_obs)).to(config.device)
+        next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
         next_done[agent_id] = torch.zeros(config.num_envs).to(config.device)
     num_updates = config.total_timesteps // config.batch_size
 
@@ -153,19 +158,17 @@ if __name__ == "__main__":
                 
                 agents[agent_id].store("actions",step,action)
                 agents[agent_id].store("logprobs",step,logprob)
-                actions[agent_id] = agents[agent_id].format_action.format(action.cpu().numpy())
+                actions[agent_id] = agents[agent_id].format_action.format(action.cpu().numpy()[0])
 
             # TRY NOT TO MODIFY: execute the game and log data.
             next_done = {}
             next_obs, reward, terminated, truncated, info = envs.step(actions)
 
-            print(info.keys(),"sssssssssssssss")
-
             for agent_id, agent_obs in next_obs.items():
                 agent_reward_tensor = torch.tensor(reward[agent_id]).to(config.device).view(-1)
                 agents[agent_id].store("rewards",step,agent_reward_tensor) 
-                next_obs[agent_id] = torch.Tensor(agents[agent_id].process(agent_obs)).to(config.device)
-                next_done[agent_id] = torch.Tensor(terminated[agent_id]).to(config.device)  
+                next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
+                next_done[agent_id] = torch.Tensor([terminated[agent_id]=="True"]).to(config.device)  
 
             for item in info:
                 if "episode" in item.keys():

@@ -8,7 +8,7 @@ class FormatAction:
     def __init__(self):
         self._wrapper, self.action_space = _discrete()
 
-    def process(self, action):
+    def format(self, action):
         """Adapts the action input to the wrapped environment.
 
         Note: Users should not directly call this method.
