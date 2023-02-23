@@ -15,7 +15,7 @@ from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePo
 from smarts.core.lanepoints import LanePoints, LinkedLanePoint
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
-from smarts.core.utils.glb import make_map_glb
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 from smarts.core.utils.math import (
     inplace_unwrap,
     line_intersect_vectorized,
@@ -34,6 +34,29 @@ class ArgoverseMap(RoadMapWithCaches):
     """A road map for an Argoverse 2 scenario."""
 
     DEFAULT_LANE_SPEED = 16.67  # m/s
+
+    LANE_MARKINGS = frozenset(
+        {
+            LaneMarkType.DASH_SOLID_WHITE,
+            LaneMarkType.DASHED_WHITE,
+            LaneMarkType.DOUBLE_SOLID_WHITE,
+            LaneMarkType.DOUBLE_DASH_WHITE,
+            LaneMarkType.SOLID_WHITE,
+            LaneMarkType.SOLID_DASH_WHITE,
+        }
+    )
+
+    ROAD_MARKINGS = frozenset(
+        {
+            LaneMarkType.DASH_SOLID_YELLOW,
+            LaneMarkType.DASHED_YELLOW,
+            LaneMarkType.DOUBLE_SOLID_YELLOW,
+            LaneMarkType.DOUBLE_DASH_YELLOW,
+            LaneMarkType.SOLID_YELLOW,
+            LaneMarkType.SOLID_DASH_YELLOW,
+            LaneMarkType.SOLID_BLUE,
+        }
+    )
 
     def __init__(self, map_spec: MapSpec, avm: ArgoverseStaticMap):
         super().__init__()
@@ -238,26 +261,56 @@ class ArgoverseMap(RoadMapWithCaches):
     def is_same_map(self, map_spec) -> bool:
         return map_spec.source == self._map_spec.source
 
+    def _compute_traffic_dividers(self) -> Tuple[List, List]:
+        lane_dividers = []  # divider between lanes with same traffic direction
+        road_dividers = []  # divider between roads with opposite traffic direction
+        processed_ids = []
+
+        for lane_seg in self._avm.get_scenario_lane_segments():
+            if lane_seg.id in processed_ids:
+                continue
+            if lane_seg.right_neighbor_id is None:
+                cur_seg = lane_seg
+                while True:
+                    if cur_seg.left_neighbor_id is None or cur_seg.id in processed_ids:
+                        break  # This is the leftmost lane in the road, so stop
+                    else:
+                        left_mark = cur_seg.left_lane_marking.mark_type
+                        lane = self.lane_by_id(f"lane-{cur_seg.id}")
+                        left_boundary = [(p[0], p[1]) for p in lane.left_pts]
+                        if left_mark in ArgoverseMap.LANE_MARKINGS:
+                            lane_dividers.append(left_boundary)
+                        elif left_mark in ArgoverseMap.ROAD_MARKINGS:
+                            road_dividers.append(left_boundary)
+                        processed_ids.append(cur_seg.id)
+                        cur_seg = self._avm.vector_lane_segments[
+                            cur_seg.left_neighbor_id
+                        ]
+
+        return lane_dividers, road_dividers
+
     def to_glb(self, glb_dir):
         polygons = []
         for lane_id, lane in self._lanes.items():
             metadata = {
                 "road_id": lane.road.road_id,
                 "lane_id": lane_id,
-                # "lane_index": lane.index, TODO
+                "lane_index": lane.index,
             }
             polygons.append((lane.shape(), metadata))
 
-        # lane_dividers, edge_dividers = self._compute_traffic_dividers()
+        lane_dividers, edge_dividers = self._compute_traffic_dividers()
 
-        # road_lines_glb = self._make_road_line_glb(edge_dividers)
-        # road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
-
-        # lane_lines_glb = self._make_road_line_glb(lane_dividers)
-        # lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
-
-        map_glb = make_map_glb(polygons, self.bounding_box, [], [])
+        map_glb = make_map_glb(
+            polygons, self.bounding_box, lane_dividers, edge_dividers
+        )
         map_glb.write_glb(Path(glb_dir) / "map.glb")
+
+        road_lines_glb = make_road_line_glb(edge_dividers)
+        road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
+
+        lane_lines_glb = make_road_line_glb(lane_dividers)
+        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     class Surface(RoadMapWithCaches.Surface):
         def __init__(self, surface_id: str, road_map):
