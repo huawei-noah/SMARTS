@@ -126,12 +126,15 @@ if __name__ == "__main__":
     # Start driving
     global_step = 0
     start_time = time.time()
-    obs, info = envs.reset()   
-    next_obs = {}
-    next_done = {}
-    for agent_id, agent_obs in obs.items():
-        next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
-        next_done[agent_id] = torch.zeros(config.num_envs).to(config.device)
+    next_obs, info = envs.reset()
+    next_done = {
+        agent_id: False 
+        for agent_id in next_obs.keys()
+    }   
+
+    # for agent_id, agent_obs in obs.items():
+    #     next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
+    #     next_done[agent_id] = torch.zeros(config.num_envs).to(config.device)
     num_updates = config.total_timesteps // config.batch_size
 
     for update in range(1, num_updates + 1):
@@ -148,31 +151,33 @@ if __name__ == "__main__":
             # Store            
             actions = {}
             for agent_id, agent_obs in next_obs.items():
-                agents[agent_id].store("obs",step,agent_obs)
-                agents[agent_id].store("dones",step,next_done[agent_id])
+                agents[agent_id].store_next_obs_done(agent_obs)
 
                 # ALGO LOGIC: action logic
                 with torch.no_grad():
-                    action, logprob, _, value = model.get_action_and_value(x=agent_obs)
-                    agents[agent_id].store("values",step,value.flatten())
+                    action, logprob, _, value = model.get_action_and_value(x=agents[agent_id].get_next_obs())
+                    agents[agent_id].store_value(value.flatten())
                 
-                agents[agent_id].store("actions",step,action)
-                agents[agent_id].store("logprobs",step,logprob)
+                agents[agent_id].store_action_logprob(action,logprob)
                 actions[agent_id] = agents[agent_id].format_action.format(action.cpu().numpy()[0])
 
             # TRY NOT TO MODIFY: execute the game and log data.
             next_done = {}
             next_obs, reward, terminated, truncated, info = envs.step(actions)
 
+            for agent_id, agent_reward in reward.items():
+                agents[agent_id].store_rewards(agent_reward) 
+
             # CHECK EPISODE RESET OPERATION !!!!!!!!!!!!!!!!!!!!!!!!
             # Reset on episode done
-            if terminated["__all__"]:
+            if terminated["__all__"] or truncated["__all__"]:
                 next_obs, info = envs.reset()
 
+            # Different agents dies at different time so the agent next_obs and next_done
+            # does not match. !!!!!!!!
+
             for agent_id, agent_obs in next_obs.items():
-                agent_reward_tensor = torch.tensor(reward[agent_id]).to(config.device).view(-1)
-                agents[agent_id].store("rewards",step,agent_reward_tensor) 
-                next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
+                next_obs[agent_id] = 
                 next_done[agent_id] = torch.Tensor([int(terminated[agent_id])]).to(config.device)  
 
             # for item in info:

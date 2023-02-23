@@ -71,7 +71,22 @@ class Policy(Agent):
         )
         self._config.observation_space = self._frame_stack.observation_space
         self.format_action = FormatAction()
-        self.reset()
+
+        # fmt: off
+        self._frame_stack.reset()
+        # Storage setup
+        self.obs = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.observation_space.shape).to(self._config.device)
+        self.actions = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.action_space.shape).to(self._config.device)
+        self.logprobs = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self.rewards = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self.dones = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self.values = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        # fmt: on
+
+        self.next_obs = None
+        self.global_step = -1
+        self.next_rollout()
+
         print("Policy initialised.")
 
     def act(self, obs):
@@ -103,27 +118,44 @@ class Policy(Agent):
     def process(self, obs):
         obs = self._filter_obs.filter(obs)
         obs = self._frame_stack.stack(obs)
+        obs = torch.Tensor(np.expand_dims(obs,0)).to(self._config.device)
         return obs
 
-    def store(self,name,step,value):
-        assert name in ["obs","actions","logprobs","rewards","dones","values"]
-        assert type(step) == int and step >= 0
-        attr = getattr(self, name)
-        attr[step] = value
+    def store_next_obs_done(self, obs):
+        self.step = self.step + 1
+        self.global_step = self.global_step + 1
+        if obs["steps_completed"] == 1:
+            self._frame_stack.reset()
+            if self.global_step == 0:
+                done = False
+            else:
+                done = True
+        else:
+            done = False
+    
+        self.next_obs = self.process(obs)
+        self.obs[self.step] = self.next_obs
+        self.dones[self.step] = torch.Tensor([int(done)]).to(self._config.device) 
+
+    def get_next_obs(self):
+        return self.next_obs
+
+    def store_value(self, value):
+        self.values[self.step] = value
+
+    def store_action_logprob(self, action, logprob):
+        self.actions[self.step] = action
+        self.logprobs[self.step] = logprob
+
+    def store_reward(self,reward):
+        reward_tensor = torch.tensor(reward).to(self._config.device).view(-1)
+        self.rewards[self.step]= reward_tensor 
 
     def reset(self):
-        # fmt: off
         self._frame_stack.reset()
-        # Storage setup
-        self.obs = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.observation_space.shape).to(self._config.device)
-        self.actions = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.action_space.shape).to(self._config.device)
-        self.logprobs = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        self.rewards = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        self.dones = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        self.values = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        # fmt: on
 
-
+    def next_rollout(self):
+        self.step=-1
 
 
 class Model(nn.Module):
