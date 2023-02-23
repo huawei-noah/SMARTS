@@ -33,6 +33,8 @@ from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 
 @unique
 class Bands(IntFlag):
+    """Communcation bands."""
+
     L0 = enum.auto()
     L1 = enum.auto()
     L2 = enum.auto()
@@ -103,12 +105,14 @@ class V2XReceiver(NamedTuple):
     bands: Bands
     aliases: List[str]
     whitelist_channels: Optional[List[str]] = None
-    blacklist_channels: Set[str] = {}
+    blacklist_channels: Set[str] = set()
     sensitivity: Sensitivity = Sensitivity.STANDARD
 
 
 class MessagePasser(gym.Wrapper):
-    """This wrapper augments the observations and actions to require passing messages from agents."""
+    """This wrapper augments the observations and actions to require passing messages from agents.
+
+    It assumes that the underlying environment is :class:`HiWayEnvV1`"""
 
     def __init__(
         self,
@@ -116,6 +120,7 @@ class MessagePasser(gym.Wrapper):
         message_config: Dict[str, Tuple[V2XTransmitter, V2XReceiver]],
         max_message_bytes=125000,
     ):
+        """"""
         super().__init__(env)
         self._message_config = message_config
         # map alias to agent ids (multiple agents can be under the same alias)
@@ -172,15 +177,17 @@ class MessagePasser(gym.Wrapper):
 
     @lru_cache
     def resolve_alias(self, alias):
+        """Resolve the alias to agent ids."""
         return set(self._alias_mapping[alias])
 
     def step(self, action):
-        # step
+        """Steps the environment using the given action."""
         std_actions = {a_id: act for a_id, (act, _) in action}
         observations, rewards, terms, truncs, infos = self.env.step(std_actions)
 
         msgs = defaultdict(list)
 
+        # pytype: disable=wrong-arg-types
         # filter recipients for active
         cached_active_filter = lru_cache(lambda a: a.intersection(observations.keys()))
 
@@ -208,6 +215,7 @@ class MessagePasser(gym.Wrapper):
                 r for r in recipients if accepts_channel(channel, r)
             )
         )
+        # pytype: enable=wrong-arg-types
 
         ## filter recipients by distance
         ## Includes all
@@ -268,6 +276,7 @@ class MessagePasser(gym.Wrapper):
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
     ) -> Tuple[Any, Dict[str, Any]]:
+        """Resets the environment."""
         observations, info = super().reset(seed=seed, options=options)
         obs_with_msgs = {
             a_id: dict(**obs, transmissions=self._transmission_space.sample(0))
