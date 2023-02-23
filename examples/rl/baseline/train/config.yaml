@@ -7,7 +7,6 @@ smarts:
     - 3lane_merge_multi_agent
   num_stack: 3 # Number of frames to stack as input to policy network.
 
-
   # Args
   exp_name: PPO
     # type=str, default=os.path.basename(__file__).rstrip(".py"),

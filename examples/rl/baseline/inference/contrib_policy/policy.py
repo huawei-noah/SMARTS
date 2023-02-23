@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.optim as optim
 from contrib_policy.filter_obs import FilterObs
 from contrib_policy.frame_stack import FrameStack
+from contrib_policy.format_action import FormatAction
 from torch.distributions.categorical import Categorical
 
 from smarts.core.agent import Agent
@@ -69,6 +70,7 @@ class Policy(Agent):
             stack_axis=0
         )
         self._config.observation_space = self._frame_stack.observation_space
+        self.format_action = FormatAction()
         self.reset()
         print("Policy initialised.")
 
@@ -82,16 +84,17 @@ class Policy(Agent):
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
         # Reset memory because episode was reset.
-        # if obs["steps_completed"] == 1:
-        #     self.reset()
+        if obs["steps_completed"] == 1:
+            self._frame_stack.reset()
 
         processed_obs = self.process(obs)
         tensor_obs = torch.Tensor(processed_obs).to(self._config.device)
         hidden = self._model.network(tensor_obs / 255.0)
         logits = self._model.actor(hidden)
         probs = Categorical(logits=logits)
-        action = probs.mode() 
-        return action.cpu().numpy()
+        action_mode = probs.mode() 
+        formatted_action = self.format_action.format(action_mode.cpu().numpy())
+        return formatted_action
 
         # hide mission
         # assign random route mission
@@ -99,7 +102,7 @@ class Policy(Agent):
 
     def process(self, obs):
         obs = self._filter_obs.filter(obs)
-        obs = self._frame_stack.step(obs)
+        obs = self._frame_stack.stack(obs)
         return obs
 
     def store(self,name,step,value):

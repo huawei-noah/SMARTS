@@ -4,12 +4,11 @@ import gymnasium as gym
 import numpy as np
 
 
-class Action(gym.ActionWrapper):
-    def __init__(self, env: gym.Env):
-        super().__init__(env)
+class FormatAction:
+    def __init__(self):
         self._wrapper, self.action_space = _discrete()
 
-    def action(self, action):
+    def process(self, action):
         """Adapts the action input to the wrapped environment.
 
         Note: Users should not directly call this method.

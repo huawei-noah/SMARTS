@@ -36,7 +36,7 @@ class FrameStack:
             dtype=np.uint8,
         )
 
-    def _stack_obs(self, obs: np.ndarray) -> np.ndarray:
+    def _stack(self, obs: np.ndarray) -> np.ndarray:
         """Update and return frames stack with given latest single frame."""
 
         self._frames.appendleft(obs)
@@ -46,7 +46,7 @@ class FrameStack:
         new_frames = copy.deepcopy(frames_seq)
         return np.concatenate(new_frames, axis=self._stack_axis)
 
-    def step(self, obs: np.ndarray) -> np.ndarray:
+    def stack(self, obs: np.ndarray) -> np.ndarray:
         """Stacks the latest obs with num_stack-1 past obs.
 
         Args:
@@ -55,7 +55,7 @@ class FrameStack:
         Returns:
             np.ndarray: Stacked observation.
         """
-        return self._stack_obs(obs)
+        return self._stack(obs)
 
     def reset(self):
         """Resets the stacked obs.
