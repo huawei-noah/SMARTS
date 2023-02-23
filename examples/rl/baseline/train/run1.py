@@ -164,6 +164,11 @@ if __name__ == "__main__":
             next_done = {}
             next_obs, reward, terminated, truncated, info = envs.step(actions)
 
+            # CHECK EPISODE RESET OPERATION !!!!!!!!!!!!!!!!!!!!!!!!
+            # Reset on episode done
+            if terminated["__all__"]:
+                next_obs, info = envs.reset()
+
             for agent_id, agent_obs in next_obs.items():
                 agent_reward_tensor = torch.tensor(reward[agent_id]).to(config.device).view(-1)
                 agents[agent_id].store("rewards",step,agent_reward_tensor) 
