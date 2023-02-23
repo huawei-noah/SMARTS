@@ -168,14 +168,14 @@ if __name__ == "__main__":
                 agent_reward_tensor = torch.tensor(reward[agent_id]).to(config.device).view(-1)
                 agents[agent_id].store("rewards",step,agent_reward_tensor) 
                 next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
-                next_done[agent_id] = torch.Tensor([terminated[agent_id]=="True"]).to(config.device)  
+                next_done[agent_id] = torch.Tensor([int(terminated[agent_id])]).to(config.device)  
 
-            for item in info:
-                if "episode" in item.keys():
-                    print(f"global_step={global_step}, episodic_return={item['episode']['r']}")
-                    writer.add_scalar("charts/episodic_return", item["episode"]["r"], global_step)
-                    writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
-                    break
+            # for item in info:
+            #     if "episode" in item.keys():
+            #         print(f"global_step={global_step}, episodic_return={item['episode']['r']}")
+            #         writer.add_scalar("charts/episodic_return", item["episode"]["r"], global_step)
+            #         writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
+            #         break
 
         # # bootstrap value if not done
         # with torch.no_grad():
