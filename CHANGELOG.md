@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 - Ensured that `hiwayenv.reset` provides unique agent-mission sets per reset.
+- Fixed an issue where `sstudio.types.Via` was not hashable.
 ### Removed
 ### Security
 
