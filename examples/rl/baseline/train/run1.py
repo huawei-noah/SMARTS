@@ -127,11 +127,11 @@ if __name__ == "__main__":
     # Build agents
     agents = {agent_id: agent_spec.build_agent() for agent_id in envs.agent_ids}
 
-    obs, info = envs.reset()
-    f = agents["Agent_0"].filter_obs.filter(obs["Agent_0"])
-    from matplotlib import pyplot as plt
-    plt.imshow(f)
-    plt.show()
+    # obs, info = envs.reset()
+    # f = agents["Agent_0"].filter_obs.filter(obs["Agent_0"])
+    # from matplotlib import pyplot as plt
+    # plt.imshow(f)
+    # plt.show()
 
     # # Start driving
     # global_step = 0

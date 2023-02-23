@@ -10,7 +10,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from contrib_policy.observation import FilterObs
+from contrib_policy.filter_obs import FilterObs
+from contrib_policy.frame_stack import FrameStack
 from torch.distributions.categorical import Categorical
 
 from smarts.core.agent import Agent
@@ -59,10 +60,15 @@ class Policy(Agent):
         # model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         # self.model = sb3lib.PPO.load(model_path)
 
-        self.model = model
-        self.config = config
-        self.filter_obs = FilterObs(top_down_rgb)
-        self.config.observation_space = self.filter_obs.observation_space
+        self._model = model
+        self._config = config
+        self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
+        self._frame_stack = FrameStack(
+            input_space=self._filter_obs.observation_space,
+            num_stack=config.num_stack,
+            stack_axis=0
+        )
+        self._config.observation_space = self._frame_stack.observation_space
         self.reset()
         print("Policy initialised.")
 
@@ -76,41 +82,52 @@ class Policy(Agent):
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
         # Reset memory because episode was reset.
-        if obs["steps_completed"] == 1:
-            self.reset()
+        # if obs["steps_completed"] == 1:
+        #     self.reset()
 
-        filtered_obs = self.filter_obs.filter(obs)
+        processed_obs = self.process(obs)
+        tensor_obs = torch.Tensor(processed_obs).to(self._config.device)
+        hidden = self._model.network(tensor_obs / 255.0)
+        logits = self._model.actor(hidden)
+        probs = Categorical(logits=logits)
+        action = probs.mode() 
+        return action.cpu().numpy()
 
-        # action, _ = self.model.predict(observation=obs, deterministic=True)
-        # processed_act = action
+        # hide mission
+        # assign random route mission
+        # Tell the agent who is the leader
 
-        # wrapped_act = action_wrapper._discrete(action, self.saved_obs)
+    def process(self, obs):
+        obs = self._filter_obs.filter(obs)
+        obs = self._frame_stack.step(obs)
+        return obs
 
-        return [0.1, 0.1, 0.1]  # processed_act
+    def store(self,name,step,value):
+        assert name in ["obs","actions","logprobs","rewards","dones","values"]
+        assert type(step) == int and step >= 0
+        attr = getattr(self, name)
+        attr[step] = value
 
     def reset(self):
         # fmt: off
+        self._frame_stack.reset()
         # Storage setup
-        self.obs = torch.zeros((self.config.num_steps, self.config.num_envs) + self.config.observation_space.shape).to(self.config.device)
-        self.actions = torch.zeros((self.config.num_steps, self.config.num_envs) + self.config.action_space.shape).to(self.config.device)
-        self.logprobs = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
-        self.rewards = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
-        self.dones = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
-        self.values = torch.zeros((self.config.num_steps, self.config.num_envs)).to(self.config.device)
+        self.obs = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.observation_space.shape).to(self._config.device)
+        self.actions = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.action_space.shape).to(self._config.device)
+        self.logprobs = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self.rewards = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self.dones = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self.values = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
         # fmt: on
 
 
-def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
-    torch.nn.init.orthogonal_(layer.weight, std)
-    torch.nn.init.constant_(layer.bias, bias_const)
-    return layer
 
 
 class Model(nn.Module):
-    def __init__(self, output_dim):
+    def __init__(self, in_channels, out_actions):
         super(Model, self).__init__()
         self.network = nn.Sequential(
-            layer_init(nn.Conv2d(4, 32, 8, stride=4)),
+            layer_init(nn.Conv2d(in_channels, 32, 8, stride=4)),
             nn.ReLU(),
             layer_init(nn.Conv2d(32, 64, 4, stride=2)),
             nn.ReLU(),
@@ -120,7 +137,7 @@ class Model(nn.Module):
             layer_init(nn.Linear(64 * 7 * 7, 512)),
             nn.ReLU(),
         )
-        self.actor = layer_init(nn.Linear(512, output_dim), std=0.01)
+        self.actor = layer_init(nn.Linear(512, out_actions), std=0.01)
         self.critic = layer_init(nn.Linear(512, 1), std=1)
 
     def get_value(self, x):
@@ -133,3 +150,9 @@ class Model(nn.Module):
         if action is None:
             action = probs.sample()
         return action, probs.log_prob(action), probs.entropy(), self.critic(hidden)
+
+
+def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
+    torch.nn.init.orthogonal_(layer.weight, std)
+    torch.nn.init.constant_(layer.bias, bias_const)
+    return layer

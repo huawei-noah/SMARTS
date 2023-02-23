@@ -1,4 +1,3 @@
-import copy
 import math
 from typing import Any, Dict, Sequence
 
@@ -8,70 +7,14 @@ import numpy as np
 from smarts.core.agent_interface import RGB
 from smarts.core.colors import Colors, SceneColors
 
-# class SaveObs(gym.ObservationWrapper):
-#     """Saves several selected observation parameters."""
-
-#     def __init__(self, env: gym.Env):
-#         """
-#         Args:
-#             env (gym.Env): Environment to be wrapped.
-#         """
-#         super().__init__(env)
-#         self.saved_obs: Dict[str, Dict[str, Any]]
-
-#     def observation(self, obs: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-#         """Saves the wrapped environment's observation.
-
-#         Note: Users should not directly call this method.
-#         """
-
-#         obs_data = {}
-#         for agent_id, agent_obs in obs.items():
-#             obs_data.update(
-#                 {
-#                     agent_id: {
-#                         "pos": copy.deepcopy(agent_obs["ego"]["pos"]),
-#                         "heading": copy.deepcopy(agent_obs["ego"]["heading"]),
-#                     }
-#                 }
-#             )
-#         self.saved_obs = obs_data
-
-#         return obs
-
-
 class FilterObs:
     """Filter only the selected observation parameters."""
 
     def __init__(self, top_down_rgb: RGB):
-        # self.observation_space = gym.spaces.Dict(
-        #     {
-        #         "rgb": gym.spaces.Box(
-        #             low=0,
-        #             high=255,
-        #             shape=(agent_interface.top_down_rgb.height,
-        #                 agent_interface.top_down_rgb.width,
-        #                 3),
-        #             dtype=np.uint8,
-        #         ),
-        #         "goal_distance": gym.spaces.Box(
-        #             low=-1e10,
-        #             high=+1e10,
-        #             shape=(1, 1),
-        #             dtype=np.float32,
-        #         ),
-        #         "goal_heading": gym.spaces.Box(
-        #             low=-np.pi,
-        #             high=np.pi,
-        #             shape=(1, 1),
-        #             dtype=np.float32,
-        #         ),
-        #     }
-        # )
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=(top_down_rgb.height, top_down_rgb.width, 3),
+            shape=(3, top_down_rgb.height, top_down_rgb.width),
             dtype=np.uint8,
         )
 
@@ -159,13 +102,8 @@ class FilterObs:
                 rgb_ego[img_y, img_x, :] = self._wps_color
 
         # Channel first rgb
-        # rgb_ego = rgb_ego.transpose(2, 0, 1)
+        rgb_ego = rgb_ego.transpose(2, 0, 1)
 
-        # filtered_obs = {
-        #     "rgb": np.uint8(rgb_ego),
-        #     "goal_distance": goal_distance,
-        #     "goal_heading": goal_heading,
-        # }
         filtered_obs = np.uint8(rgb_ego)
 
         return filtered_obs
@@ -261,61 +199,3 @@ def rotate_axes(points: np.ndarray, theta: float) -> np.ndarray:
     rotated_points = (R.dot(points.T)).T
     return rotated_points
     # fmt: on
-
-
-# class Concatenate(gym.ObservationWrapper):
-#     """Concatenates data from stacked dictionaries. Only works with nested gym.spaces.Box .
-#     Dimension to stack over is determined by `channels_order`.
-#     """
-
-#     def __init__(self, env: gym.Env, channels_order: str = "first"):
-#         """
-#         Args:
-#             env (gym.Env): Environment to be wrapped.
-#             channels_order (str): A string, either "first" or "last", specifying
-#                 the dimension over which to stack each observation.
-#         """
-#         super().__init__(env)
-
-#         self._repeat_axis = {
-#             "first": 0,
-#             "last": -1,
-#         }.get(channels_order)
-
-#         for agent_name, agent_space in env.observation_space.spaces.items():
-#             for subspaces in agent_space:
-#                 for key, space in subspaces.spaces.items():
-#                     assert isinstance(space, gym.spaces.Box), (
-#                         f"Concatenate only works with nested gym.spaces.Box. "
-#                         f"Got agent {agent_name} with key {key} and space {space}."
-#                     )
-
-#         _, agent_space = next(iter(env.observation_space.spaces.items()))
-#         self._num_stack = len(agent_space)
-#         self._keys = agent_space[0].spaces.keys()
-
-#         obs_space = {}
-#         for agent_name, agent_space in env.observation_space.spaces.items():
-#             subspaces = {}
-#             for key, space in agent_space[0].spaces.items():
-#                 low = np.repeat(space.low, self._num_stack, axis=self._repeat_axis)
-#                 high = np.repeat(space.high, self._num_stack, axis=self._repeat_axis)
-#                 subspaces[key] = gym.spaces.Box(low=low, high=high, dtype=space.dtype)
-#             obs_space.update({agent_name: gym.spaces.Dict(subspaces)})
-#         self.observation_space = gym.spaces.Dict(obs_space)
-
-#     def observation(self, obs):
-#         """Adapts the wrapped environment's observation.
-
-#         Note: Users should not directly call this method.
-#         """
-
-#         wrapped_obs = {}
-#         for agent_id, agent_obs in obs.items():
-#             stacked_obs = {}
-#             for key in self._keys:
-#                 val = [obs[key] for obs in agent_obs]
-#                 stacked_obs[key] = np.concatenate(val, axis=self._repeat_axis)
-#             wrapped_obs.update({agent_id: stacked_obs})
-
-#         return wrapped_obs

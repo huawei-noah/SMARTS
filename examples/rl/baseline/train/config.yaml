@@ -5,17 +5,7 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   scenarios:
     - 3lane_merge_multi_agent
-
-  # # Training
-  # epochs: 5_000 # Number of training loops.
-
-  # # Training per scenario
-  # train_steps: 5_000
-  # checkpoint_freq: 2_500 # Save a model every checkpoint_freq calls to env.step().
-  # eval_eps: 10 # Number of evaluation epsiodes.
-  # eval_freq: 2_500 # Evaluate the trained model every eval_freq steps and save the best model.
-
-  # num_stack: 3 # Number of frames to stack as input to policy network.
+  num_stack: 3 # Number of frames to stack as input to policy network.
 
 
   # Args
