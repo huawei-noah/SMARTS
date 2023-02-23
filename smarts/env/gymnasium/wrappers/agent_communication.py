@@ -128,11 +128,17 @@ class MessagePasser(gym.Wrapper):
         for a_id, (_, receiver) in message_config.items():
             for alias in receiver.aliases:
                 self._alias_mapping[alias].append(a_id)
+            self._alias_mapping[a_id].append(a_id)
+            self._alias_mapping["__all__"].append(a_id)
 
-        assert isinstance(env, HiWayEnvV1)
+        assert isinstance(env.unwrapped, HiWayEnvV1)
         o_action_space: gym.spaces.Dict = self.env.action_space
-        msg_space = (
-            gym.spaces.Box(low=0, high=256, shape=(max_message_bytes,), dtype=np.uint8),
+        msg_space = gym.spaces.Tuple(
+            (
+                gym.spaces.Box(
+                    low=0, high=256, shape=(max_message_bytes,), dtype=np.uint8
+                ),
+            )
         )
         self.action_space = gym.spaces.Dict(
             {
@@ -182,19 +188,21 @@ class MessagePasser(gym.Wrapper):
 
     def step(self, action):
         """Steps the environment using the given action."""
-        std_actions = {a_id: act for a_id, (act, _) in action}
+        std_actions = {a_id: act for a_id, (act, _) in action.items()}
         observations, rewards, terms, truncs, infos = self.env.step(std_actions)
 
         msgs = defaultdict(list)
 
         # pytype: disable=wrong-arg-types
         # filter recipients for active
-        cached_active_filter = lru_cache(lambda a: a.intersection(observations.keys()))
+        cached_active_filter = lru_cache(
+            lambda a: frozenset(a.intersection(observations.keys()))
+        )
 
         # filter recipients by band
         ## compare transmitter
         cached_band_filter = lru_cache(
-            lambda sender, recipients: (
+            lambda sender, recipients: frozenset(
                 r
                 for r in recipients
                 if self._message_config[sender][0].bands
@@ -211,7 +219,7 @@ class MessagePasser(gym.Wrapper):
             and channel not in self._message_config[recipient][1].blacklist_channels
         )
         cached_channel_filter = lru_cache(
-            lambda channel, recipients: (
+            lambda channel, recipients: frozenset(
                 r for r in recipients if accepts_channel(channel, r)
             )
         )
@@ -231,7 +239,9 @@ class MessagePasser(gym.Wrapper):
             for recipients in map(self.resolve_alias, initial_recipients)
             for cc in cached_channel_filter(
                 header.channel,
-                cached_band_filter(header.sender, cached_active_filter(recipients)),
+                cached_band_filter(
+                    header.sender, cached_active_filter(frozenset(recipients))
+                ),
             )
         )
 
@@ -243,8 +253,8 @@ class MessagePasser(gym.Wrapper):
                 message: Message = message
 
                 # expand the recipients
-                cc_recipients = set(general_filter(header, header.cc))
-                bcc_recipients = set(general_filter(header, header.bcc))
+                cc_recipients = set(general_filter(header, frozenset(header.cc)))
+                bcc_recipients = set(general_filter(header, frozenset(header.bcc)))
                 cc_header = header._replace(cc=cc_recipients)
 
                 # associate the messages to the recipients
@@ -279,7 +289,7 @@ class MessagePasser(gym.Wrapper):
         """Resets the environment."""
         observations, info = super().reset(seed=seed, options=options)
         obs_with_msgs = {
-            a_id: dict(**obs, transmissions=self._transmission_space.sample(0))
+            a_id: dict(**obs, transmissions=self._transmission_space.sample((0, ())))
             for a_id, obs in observations.items()
         }
         return obs_with_msgs, info
