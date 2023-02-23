@@ -100,7 +100,6 @@ class V2XTransmitter(NamedTuple):
 class V2XReceiver(NamedTuple):
     """A configuratoin utility to set up agent to receive messages."""
 
-    # TODO MTA: move this to agent interface.
     bands: Bands
     aliases: List[str]
     whitelist_channels: Optional[List[str]] = None
