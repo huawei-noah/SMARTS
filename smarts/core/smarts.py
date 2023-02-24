@@ -604,12 +604,14 @@ class SMARTS(ProviderManager):
 
         rejected_vehicle_ids = []
         agent_ids = []
-        for vehicle_id in vehicle_ids:
+        current_agent_vehicle_ids = self.vehicle_index.agent_vehicle_ids()
+        current_vehicle_ids = self.vehicle_index.vehicle_ids()
+        for vehicle_id in set(vehicle_ids):
             # TODO MTA: ensure that vehicle_id cache is not worthless due to inserts
             if (
                 self.vehicle_index.vehicle_is_hijacked(vehicle_id)
-                or vehicle_id in self.vehicle_index.agent_vehicle_ids()
-                or vehicle_id not in self.vehicle_index.vehicle_ids()
+                or vehicle_id in current_agent_vehicle_ids
+                or vehicle_id not in current_vehicle_ids
             ):
                 rejected_vehicle_ids.append(vehicle_id)
                 continue
