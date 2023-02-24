@@ -97,3 +97,19 @@ def test_smarts_control_actors_with_social_agents(smarts: SMARTS, scenario: Scen
 
     for _ in range(10):
         smarts.step({})
+
+
+def test_smarts_shadow_with_social_agent(smarts: SMARTS, scenario: Scenario):
+    pass
+
+
+def test_smarts_promote_social_agent_to_actor_owner(smarts: SMARTS, scenario: Scenario):
+    pass
+
+
+def test_smarts_remove_social_agent(smarts: SMARTS, scenario: Scenario):
+    pass
+
+
+def test_smarts_add_social_boid_agent(smarts: SMARTS, scenario: Scenario):
+    pass
