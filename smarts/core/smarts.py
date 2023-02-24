@@ -29,6 +29,7 @@ from scipy.spatial.distance import cdist
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
 from smarts import VERSION
+from smarts.core.data_model import SocialAgent
 from smarts.core.plan import Plan
 from smarts.core.utils.logging import timeit
 
@@ -58,7 +59,7 @@ from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
-from .utils.id import Id
+from .utils.id import Id, SocialAgentId
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
@@ -580,6 +581,98 @@ class SMARTS(ProviderManager):
         )
 
         return vehicle
+
+    def control_actors_with_social_agents(
+        self, locator, vehicle_ids
+    ) -> Tuple[Set[str], Set[str]]:
+        """Take over control of the specified vehicles with a social agent.
+
+        Args:
+            locator (str): The agent locator string that points to a valid social agent.
+            vehicle_ids (Iterable[str]): The vehicles for the social agent to take over
+
+        Returns:
+            Tuple[Set[str], Set[str]]: The new agent ids and the rejected vehicle ids.
+        """
+        from smarts.zoo.registry import make
+        from smarts.core.plan import (
+            EndlessGoal,
+            PlanningError,
+            PositionalGoal,
+            Start,
+        )
+
+        rejected_vehicle_ids = []
+        agent_ids = []
+        current_agent_vehicle_ids = self.vehicle_index.agent_vehicle_ids()
+        current_vehicle_ids = self.vehicle_index.vehicle_ids()
+        for vehicle_id in set(vehicle_ids):
+            # TODO MTA: ensure that vehicle_id cache is not worthless due to inserts
+            if (
+                self.vehicle_index.vehicle_is_hijacked(vehicle_id)
+                or vehicle_id in current_agent_vehicle_ids
+                or vehicle_id not in current_vehicle_ids
+            ):
+                rejected_vehicle_ids.append(vehicle_id)
+                continue
+
+            agent_id = BubbleManager._make_social_agent_id(vehicle_id)
+            social_agent = make(
+                locator=locator,
+            )
+            interface = social_agent.interface
+            plan = Plan(self.road_map, None, find_route=False)
+            vehicle = self.vehicle_index.start_agent_observation(
+                self,
+                vehicle_id,
+                agent_id,
+                interface,
+                plan,
+                boid=False,
+            )
+            dest_road_id = None
+            for traffic_sim in self.traffic_sims:
+                if traffic_sim.manages_actor(vehicle.id):
+                    dest_road_id = traffic_sim.vehicle_dest_road(vehicle.id)
+                    if dest_road_id is not None:
+                        break
+            if dest_road_id:
+                goal = PositionalGoal.from_road(dest_road_id, self.scenario.road_map)
+            else:
+                goal = EndlessGoal()
+            mission = Mission(
+                start=Start(vehicle.position[:2], vehicle.heading), goal=goal
+            )
+            try:
+                plan.create_route(mission)
+            except PlanningError:
+                plan.route = self.road_map.empty_route()
+            social_agent_data_model = SocialAgent(
+                id=SocialAgentId.new(agent_id),
+                name=agent_id,
+                is_boid=False,
+                is_boid_keep_alive=False,
+                agent_locator=locator,
+                policy_kwargs={},
+                # initial_speed=10,
+            )
+            self._agent_manager.start_social_agent(
+                agent_id, social_agent, social_agent_data_model
+            )
+            agent_interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
+            vehicle = self.vehicle_index.switch_control_to_agent(
+                self,
+                vehicle_id,
+                agent_id,
+                boid=False,
+                hijacking=True,
+                recreate=False,
+                agent_interface=agent_interface,
+            )
+            self.create_vehicle_in_providers(vehicle, agent_id)
+            agent_ids.append(agent_id)
+
+        return set(agent_ids), set(rejected_vehicle_ids)
 
     def _provider_for_actor(self, actor_id: str) -> Optional[Provider]:
         for provider in self.providers:
