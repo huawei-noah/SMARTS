@@ -19,6 +19,7 @@ class MakeDict:
             obs (np.ndarray): Numpy array input.
 
         Returns:
-            np.ndarray: Stacked observation.
+            dict[str, np.ndarray]: A dictionary with key (string) corresponding
+                to input obs (np.ndarray).
         """
         return {"rgb":obs}

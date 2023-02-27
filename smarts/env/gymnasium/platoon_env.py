@@ -115,11 +115,6 @@ def platoon_v0_env(
         f"Agent_{i}": resolved_agent_interface for i in range(env_specs["num_agent"])
     }
 
-    # env_action_space = resolve_env_action_space(agent_interfaces)
-
-    # Resolve action space
-    # env_action_space = resolve_env_action_space(agent_interfaces)
-
     visualization_client_builder = None
     if not headless:
         visualization_client_builder = partial(
@@ -143,7 +138,6 @@ def platoon_v0_env(
         visualization_client_builder=visualization_client_builder,
         observation_options=ObservationOptions.multi_agent,
     )
-    # env.action_space = env_action_space
 
     return env
 
@@ -226,38 +220,6 @@ def _get_env_specs(scenario: str):
         }
     else:
         raise Exception(f"Unknown scenario {scenario}.")
-
-
-# def resolve_agent_action_space(agent_interface: AgentInterface):
-#     """Get the competition action space for the given agent interface."""
-#     assert (
-#         agent_interface.action in SUPPORTED_ACTION_TYPES
-#     ), f"Unsupported action type `{agent_interface.action}` not in supported actions `{SUPPORTED_ACTION_TYPES}`"
-
-#     if agent_interface.action == ActionSpaceType.RelativeTargetPose:
-#         max_dist = MAXIMUM_SPEED_MPS * 0.1  # assumes 0.1 timestep
-#         return gym.spaces.Box(
-#             low=np.array([-max_dist, -max_dist, -np.pi]),
-#             high=np.array([max_dist, max_dist, np.pi]),
-#             dtype=np.float32,
-#         )
-#     if agent_interface.action == ActionSpaceType.TargetPose:
-#         return gym.spaces.Box(
-#             low=np.array([-1e10, -1e10, -np.pi, 0.1]),
-#             high=np.array([1e10, 1e10, np.pi, 0.1]),
-#             dtype=np.float32,
-#         )
-
-
-# def resolve_env_action_space(agent_interfaces: Dict[str, AgentInterface]):
-#     """Get the environment action space for the given set of agent interfaces."""
-#     return gym.spaces.Dict(
-#         {
-#             a_id: resolve_agent_action_space(a_inter)
-#             for a_id, a_inter in agent_interfaces.items()
-#         }
-#     )
-
 
 def resolve_agent_interface(agent_interface: AgentInterface):
     """Resolve the agent interface for a given environment. Some interface

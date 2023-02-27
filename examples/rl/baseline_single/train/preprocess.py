@@ -1,5 +1,3 @@
-from typing import Any, Dict, Optional
-
 import gym
 
 from contrib_policy.filter_obs import FilterObs
@@ -20,7 +18,7 @@ class Preprocess(gym.Wrapper):
         self._frame_stack.reset()
         self._make_dict = MakeDict(input_space=self._frame_stack.observation_space)
 
-        self.observation_space = self._frame_stack.observation_space
+        self.observation_space = self._make_dict.observation_space
 
         self._format_action = FormatAction()
         self.action_space = self._format_action.action_space
@@ -35,16 +33,14 @@ class Preprocess(gym.Wrapper):
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
         formatted_action = self._format_action.format(action)
-        obs, reward, terminated, truncated, info = self.env.step(formatted_action)
+        obs, reward, done, info = self.env.step(formatted_action)
         obs = self._process(obs)
-        return obs, reward, terminated, truncated, info
+        return obs, reward, done, info
 
-    def reset(
-        self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
-    ):
+    def reset(self):
         """Uses the :meth:`reset` of the :attr:`env` that can be overwritten to change the returned data."""
 
         self._frame_stack.reset()
-        obs, info = self.env.reset(seed=seed, options=options)
+        obs = self.env.reset()
         obs = self._process(obs)
-        return obs, info
+        return obs

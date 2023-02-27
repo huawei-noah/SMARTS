@@ -5,20 +5,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import gymnasium as gym
-from stable_baselines3.common.vec_env import DummyVecEnv, VecMonitor
-from train.reward import Reward
-
-# def wrappers(config: Dict[str, Any]):
-#     Info,
-#     lambda env: DummyVecEnv([lambda: env]),
-#     lambda env: VecMonitor(venv=env, filename=str(config["logdir"]), info_keywords=("is_success",))
-
 
 def make_env(env_id, scenario, agent_interface, config, seed):
     from preprocess import Preprocess
 
     from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.wrappers.single_agent import SingleAgent
+    from train.reward import Reward
 
     env = gym.make(
         env_id,
@@ -32,8 +25,5 @@ def make_env(env_id, scenario, agent_interface, config, seed):
     env = Api021Reversion(env)
     env = SingleAgent(env)
     env = Preprocess(env, config, agent_interface.top_down_rgb)
-
-    # env = DummyVecEnv([lambda: env]),
-    # env = VecMonitor(venv=env, filename=str(config.logdir), info_keywords=("is_success",))
 
     return env
