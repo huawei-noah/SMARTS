@@ -29,9 +29,10 @@ def make_env(env_id, scenario, agent_interface, config, seed):
         headless=not config.head,  # If False, enables Envision display.
     )
     env = Reward(env)
-    env = Preprocess(env, config, agent_interface.top_down_rgb)
     env = Api021Reversion(env)
     env = SingleAgent(env)
+    env = Preprocess(env, config, agent_interface.top_down_rgb)
+
     # env = DummyVecEnv([lambda: env]),
     # env = VecMonitor(venv=env, filename=str(config.logdir), info_keywords=("is_success",))
 

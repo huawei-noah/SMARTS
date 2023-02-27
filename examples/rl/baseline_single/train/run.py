@@ -88,6 +88,9 @@ def main(args: argparse.Namespace):
             seed=config.seed,
         )
 
+    print("observation space: ",envs_train["3lane_merge_single_agent"].observation_space)
+    print("action_space: ",envs_train["3lane_merge_single_agent"].action_space)
+
     # Run training or evaluation.
     run(envs_train=envs_train, envs_eval=envs_eval, config=config)
 
