@@ -12,6 +12,7 @@ import inference
 import gymnasium as gym
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.optim as optim
 import yaml
 
@@ -124,7 +125,6 @@ if __name__ == "__main__":
     # plt.show()
 
     # Start driving
-    global_step = 0
     start_time = time.time()
     next_obs, info = envs.reset()
     next_done = {
@@ -138,6 +138,9 @@ if __name__ == "__main__":
     num_updates = config.total_timesteps // config.batch_size
 
     for update in range(1, num_updates + 1):
+        for agent in agents:
+            agent.next_rollout()
+
         # Annealing the rate if instructed to do so.
         if config.anneal_lr:
             frac = 1.0 - (update - 1.0) / num_updates
@@ -145,40 +148,34 @@ if __name__ == "__main__":
             optimizer.param_groups[0]["lr"] = lrnow
 
         # Rollout
-        for step in range(0, config.num_steps):
-            global_step += 1 * config.num_envs
-
-            # Store            
+        for step in range(0, config.num_steps):  
+        # while agent
             actions = {}
             for agent_id, agent_obs in next_obs.items():
-                agents[agent_id].store_next_obs_done(agent_obs)
+                agents[agent_id].increment_step()
+                agents[agent_id].obs(agent_obs)
+                agents[agent_id].dones(next_done[agent_id], agent_obs)
 
                 # ALGO LOGIC: action logic
                 with torch.no_grad():
                     action, logprob, _, value = model.get_action_and_value(x=agents[agent_id].get_next_obs())
-                    agents[agent_id].store_value(value.flatten())
+                    agents[agent_id].values(value.flatten())
                 
-                agents[agent_id].store_action_logprob(action,logprob)
+                agents[agent_id].actions(action)
+                agents[agent_id].logprobs(logprob)
                 actions[agent_id] = agents[agent_id].format_action.format(action.cpu().numpy()[0])
 
-            # TRY NOT TO MODIFY: execute the game and log data.
+            # Step the env and log data.
             next_done = {}
             next_obs, reward, terminated, truncated, info = envs.step(actions)
 
             for agent_id, agent_reward in reward.items():
-                agents[agent_id].store_rewards(agent_reward) 
+                agents[agent_id].rewards(agent_reward) 
+                next_done[agent_id] = terminated[agent_id] or truncated[agent_id]
 
-            # CHECK EPISODE RESET OPERATION !!!!!!!!!!!!!!!!!!!!!!!!
             # Reset on episode done
             if terminated["__all__"] or truncated["__all__"]:
                 next_obs, info = envs.reset()
-
-            # Different agents dies at different time so the agent next_obs and next_done
-            # does not match. !!!!!!!!
-
-            for agent_id, agent_obs in next_obs.items():
-                next_obs[agent_id] = 
-                next_done[agent_id] = torch.Tensor([int(terminated[agent_id])]).to(config.device)  
 
             # for item in info:
             #     if "episode" in item.keys():
@@ -187,112 +184,112 @@ if __name__ == "__main__":
             #         writer.add_scalar("charts/episodic_length", item["episode"]["l"], global_step)
             #         break
 
-        # # bootstrap value if not done
-        # with torch.no_grad():
-        #     next_value = agent.get_value(next_obs).reshape(1, -1)
-        #     if config.gae:
-        #         advantages = torch.zeros_like(rewards).to(config.device)
-        #         lastgaelam = 0
-        #         for t in reversed(range(config.num_steps)):
-        #             if t == config.num_steps - 1:
-        #                 nextnonterminal = 1.0 - next_done
-        #                 nextvalues = next_value
-        #             else:
-        #                 nextnonterminal = 1.0 - dones[t + 1]
-        #                 nextvalues = values[t + 1]
-        #             delta = rewards[t] + config.gamma * nextvalues * nextnonterminal - values[t]
-        #             advantages[t] = lastgaelam = delta + config.gamma * config.gae_lambda * nextnonterminal * lastgaelam
-        #         returns = advantages + values
-        #     else:
-        #         returns = torch.zeros_like(rewards).to(config.device)
-        #         for t in reversed(range(config.num_steps)):
-        #             if t == config.num_steps - 1:
-        #                 nextnonterminal = 1.0 - next_done
-        #                 next_return = next_value
-        #             else:
-        #                 nextnonterminal = 1.0 - dones[t + 1]
-        #                 next_return = returns[t + 1]
-        #             returns[t] = rewards[t] + config.gamma * nextnonterminal * next_return
-        #         advantages = returns - values
+        # bootstrap value if not done
+        with torch.no_grad():
+            next_value = model.get_value(next_obs).reshape(1, -1)
+            if config.gae:
+                advantages = torch.zeros_like(rewards).to(config.device)
+                lastgaelam = 0
+                for t in reversed(range(config.num_steps)):
+                    if t == config.num_steps - 1:
+                        nextnonterminal = 1.0 - next_done
+                        nextvalues = next_value
+                    else:
+                        nextnonterminal = 1.0 - dones[t + 1]
+                        nextvalues = values[t + 1]
+                    delta = rewards[t] + config.gamma * nextvalues * nextnonterminal - values[t]
+                    advantages[t] = lastgaelam = delta + config.gamma * config.gae_lambda * nextnonterminal * lastgaelam
+                returns = advantages + values
+            else:
+                returns = torch.zeros_like(rewards).to(config.device)
+                for t in reversed(range(config.num_steps)):
+                    if t == config.num_steps - 1:
+                        nextnonterminal = 1.0 - next_done
+                        next_return = next_value
+                    else:
+                        nextnonterminal = 1.0 - dones[t + 1]
+                        next_return = returns[t + 1]
+                    returns[t] = rewards[t] + config.gamma * nextnonterminal * next_return
+                advantages = returns - values
 
-        # # flatten the batch
-        # b_obs = obs.reshape((-1,) + envs.single_observation_space.shape)
-        # b_logprobs = logprobs.reshape(-1)
-        # b_actions = actions.reshape((-1,) + envs.single_action_space.shape)
-        # b_advantages = advantages.reshape(-1)
-        # b_returns = returns.reshape(-1)
-        # b_values = values.reshape(-1)
+        # flatten the batch
+        b_obs = obs.reshape((-1,) + envs.single_observation_space.shape)
+        b_logprobs = logprobs.reshape(-1)
+        b_actions = actions.reshape((-1,) + envs.single_action_space.shape)
+        b_advantages = advantages.reshape(-1)
+        b_returns = returns.reshape(-1)
+        b_values = values.reshape(-1)
 
-        # # Optimizing the policy and value network
-        # b_inds = np.arange(config.batch_size)
-        # clipfracs = []
-        # for epoch in range(config.update_epochs):
-        #     np.random.shuffle(b_inds)
-        #     for start in range(0, config.batch_size, config.minibatch_size):
-        #         end = start + config.minibatch_size
-        #         mb_inds = b_inds[start:end]
+        # Optimizing the policy and value network
+        b_inds = np.arange(config.batch_size)
+        clipfracs = []
+        for epoch in range(config.update_epochs):
+            np.random.shuffle(b_inds)
+            for start in range(0, config.batch_size, config.minibatch_size):
+                end = start + config.minibatch_size
+                mb_inds = b_inds[start:end]
 
-        #         _, newlogprob, entropy, newvalue = agent.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds])
-        #         logratio = newlogprob - b_logprobs[mb_inds]
-        #         ratio = logratio.exp()
+                _, newlogprob, entropy, newvalue = model.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds])
+                logratio = newlogprob - b_logprobs[mb_inds]
+                ratio = logratio.exp()
 
-        #         with torch.no_grad():
-        #             # calculate approx_kl http://joschu.net/blog/kl-approx.html
-        #             old_approx_kl = (-logratio).mean()
-        #             approx_kl = ((ratio - 1) - logratio).mean()
-        #             clipfracs += [((ratio - 1.0).abs() > config.clip_coef).float().mean().item()]
+                with torch.no_grad():
+                    # calculate approx_kl http://joschu.net/blog/kl-approx.html
+                    old_approx_kl = (-logratio).mean()
+                    approx_kl = ((ratio - 1) - logratio).mean()
+                    clipfracs += [((ratio - 1.0).abs() > config.clip_coef).float().mean().item()]
 
-        #         mb_advantages = b_advantages[mb_inds]
-        #         if config.norm_adv:
-        #             mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+                mb_advantages = b_advantages[mb_inds]
+                if config.norm_adv:
+                    mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
 
-        #         # Policy loss
-        #         pg_loss1 = -mb_advantages * ratio
-        #         pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - config.clip_coef, 1 + config.clip_coef)
-        #         pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+                # Policy loss
+                pg_loss1 = -mb_advantages * ratio
+                pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - config.clip_coef, 1 + config.clip_coef)
+                pg_loss = torch.max(pg_loss1, pg_loss2).mean()
 
-        #         # Value loss
-        #         newvalue = newvalue.view(-1)
-        #         if config.clip_vloss:
-        #             v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
-        #             v_clipped = b_values[mb_inds] + torch.clamp(
-        #                 newvalue - b_values[mb_inds],
-        #                 -config.clip_coef,
-        #                 config.clip_coef,
-        #             )
-        #             v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
-        #             v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
-        #             v_loss = 0.5 * v_loss_max.mean()
-        #         else:
-        #             v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
+                # Value loss
+                newvalue = newvalue.view(-1)
+                if config.clip_vloss:
+                    v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
+                    v_clipped = b_values[mb_inds] + torch.clamp(
+                        newvalue - b_values[mb_inds],
+                        -config.clip_coef,
+                        config.clip_coef,
+                    )
+                    v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
+                    v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
+                    v_loss = 0.5 * v_loss_max.mean()
+                else:
+                    v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
 
-        #         entropy_loss = entropy.mean()
-        #         loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef
+                entropy_loss = entropy.mean()
+                loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef
 
-        #         optimizer.zero_grad()
-        #         loss.backward()
-        #         nn.utils.clip_grad_norm_(agent.parameters(), config.max_grad_norm)
-        #         optimizer.step()
+                optimizer.zero_grad()
+                loss.backward()
+                nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
+                optimizer.step()
 
-        #     if config.target_kl is not None:
-        #         if approx_kl > config.target_kl:
-        #             break
+            if config.target_kl is not None:
+                if approx_kl > config.target_kl:
+                    break
 
-        # y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
-        # var_y = np.var(y_true)
-        # explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
+        y_pred, y_true = b_values.cpu().numpy(), b_returns.cpu().numpy()
+        var_y = np.var(y_true)
+        explained_var = np.nan if var_y == 0 else 1 - np.var(y_true - y_pred) / var_y
 
-        # # TRY NOT TO MODIFY: record rewards for plotting purposes
-        # writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
-        # writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
-        # writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
-        # writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
-        # writer.add_scalar("losses/old_approx_kl", old_approx_kl.item(), global_step)
-        # writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
-        # writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
-        # writer.add_scalar("losses/explained_variance", explained_var, global_step)
-        # print("SPS:", int(global_step / (time.time() - start_time)))
-        # writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
+        # TRY NOT TO MODIFY: record rewards for plotting purposes
+        writer.add_scalar("charts/learning_rate", optimizer.param_groups[0]["lr"], global_step)
+        writer.add_scalar("losses/value_loss", v_loss.item(), global_step)
+        writer.add_scalar("losses/policy_loss", pg_loss.item(), global_step)
+        writer.add_scalar("losses/entropy", entropy_loss.item(), global_step)
+        writer.add_scalar("losses/old_approx_kl", old_approx_kl.item(), global_step)
+        writer.add_scalar("losses/approx_kl", approx_kl.item(), global_step)
+        writer.add_scalar("losses/clipfrac", np.mean(clipfracs), global_step)
+        writer.add_scalar("losses/explained_variance", explained_var, global_step)
+        print("SPS:", int(global_step / (time.time() - start_time)))
+        writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
 
     envs.close()
     writer.close()

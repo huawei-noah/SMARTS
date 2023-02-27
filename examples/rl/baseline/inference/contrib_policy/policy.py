@@ -17,36 +17,6 @@ from torch.distributions.categorical import Categorical
 
 from smarts.core.agent import Agent
 
-# def submitted_wrappers():
-#     """Return environment wrappers for wrapping the evaluation environment.
-#     Each wrapper is of the form: Callable[[env], env]. Use of wrappers is
-#     optional. If wrappers are not used, return empty list [].
-
-#     Returns:
-#         List[wrappers]: List of wrappers. Default is empty list [].
-#     """
-
-#     from action import Action as DiscreteAction
-#     from observation import Concatenate, FilterObs, SaveObs
-
-#     from smarts.core.controllers import ActionSpaceType
-#     from smarts.env.wrappers.format_action import FormatAction
-#     from smarts.env.wrappers.format_obs import FormatObs
-#     from smarts.env.wrappers.frame_stack import FrameStack
-
-#     # fmt: off
-#     wrappers = [
-#         FormatObs,
-#         lambda env: FormatAction(env=env, space=ActionSpaceType["TargetPose"]),
-#         SaveObs,
-#         DiscreteAction,
-#         FilterObs,
-#         lambda env: FrameStack(env=env, num_stack=3),
-#         lambda env: Concatenate(env=env, channels_order="first"),
-#     ]
-#     # fmt: on
-
-#     return wrappers
 
 
 class Policy(Agent):
@@ -75,15 +45,14 @@ class Policy(Agent):
         # fmt: off
         self._frame_stack.reset()
         # Storage setup
-        self.obs = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.observation_space.shape).to(self._config.device)
-        self.actions = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.action_space.shape).to(self._config.device)
-        self.logprobs = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        self.rewards = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        self.dones = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
-        self.values = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self._obs = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.observation_space.shape).to(self._config.device)
+        self._actions = torch.zeros((self._config.num_steps, self._config.num_envs) + self._config.action_space.shape).to(self._config.device)
+        self._logprobs = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self._rewards = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self._dones = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
+        self._values = torch.zeros((self._config.num_steps, self._config.num_envs)).to(self._config.device)
         # fmt: on
 
-        self.next_obs = None
         self.global_step = -1
         self.next_rollout()
 
@@ -98,13 +67,8 @@ class Policy(Agent):
         Returns:
             Dict[str, Any]: A dictionary of actions for each ego agent.
         """
-        # Reset memory because episode was reset.
-        if obs["steps_completed"] == 1:
-            self._frame_stack.reset()
-
-        processed_obs = self.process(obs)
-        tensor_obs = torch.Tensor(np.expand_dims(processed_obs,0)).to(self._config.device)
-        hidden = self._model.network(tensor_obs / 255.0)
+        processed_obs = self._process(obs)
+        hidden = self._model.network(processed_obs / 255.0)
         logits = self._model.actor(hidden)
         probs = Categorical(logits=logits)
         action_mode = probs.mode() 
@@ -115,48 +79,78 @@ class Policy(Agent):
         # assign random route mission
         # Tell the agent who is the leader
 
-    def process(self, obs):
+    def _process(self, obs):
+        if obs["steps_completed"] == 1:
+            # Reset memory because episode was reset.
+            self._frame_stack.reset()
         obs = self._filter_obs.filter(obs)
         obs = self._frame_stack.stack(obs)
         obs = torch.Tensor(np.expand_dims(obs,0)).to(self._config.device)
         return obs
 
-    def store_next_obs_done(self, obs):
-        self.step = self.step + 1
-        self.global_step = self.global_step + 1
-        if obs["steps_completed"] == 1:
-            self._frame_stack.reset()
-            if self.global_step == 0:
-                done = False
-            else:
-                done = True
-        else:
-            done = False
-    
-        self.next_obs = self.process(obs)
-        self.obs[self.step] = self.next_obs
-        self.dones[self.step] = torch.Tensor([int(done)]).to(self._config.device) 
-
-    def get_next_obs(self):
-        return self.next_obs
-
-    def store_value(self, value):
-        self.values[self.step] = value
-
-    def store_action_logprob(self, action, logprob):
-        self.actions[self.step] = action
-        self.logprobs[self.step] = logprob
-
-    def store_reward(self,reward):
-        reward_tensor = torch.tensor(reward).to(self._config.device).view(-1)
-        self.rewards[self.step]= reward_tensor 
-
-    def reset(self):
-        self._frame_stack.reset()
-
     def next_rollout(self):
         self.step=-1
 
+    def increment_step(self):
+        self.step += 1
+        self.global_step += 1
+
+    @property
+    def obs(self):
+        return self._obs
+
+    @obs.setter
+    def obs(self, x):  
+        self._obs[self.step] = self._process(x)
+
+    @property
+    def dones(self):
+        return self._dones
+
+    @dones.setter
+    def dones(self, x:bool, obs):  
+        if obs["steps_completed"] == 1:
+            if self.global_step == 0:
+                assert x == False
+            else:
+                assert x == True
+        else:
+            assert x == False
+        self._dones[self.step] = torch.Tensor([int(x)]).to(self._config.device) 
+
+    @property
+    def values(self):
+        return self._values
+
+    @values.setter
+    def values(self, x):
+        self._values[self.step]= x
+
+    @property
+    def actions(self):
+        return self._actions
+    
+    @actions.setter
+    def actions(self, x):
+        self._actions[self.step]= x
+
+    @property
+    def logprobs(self):
+        return self._logprobs
+    
+    @logprobs.setter
+    def logprobs(self, x):
+        self._logprobs[self.step]= x
+
+    @property
+    def rewards(self):
+        return self._rewards
+    
+    @rewards.setter
+    def rewards(self, x):
+        tensor = torch.tensor(x).to(self._config.device).view(-1)
+        self._rewards[self.step]= tensor 
+ 
 
 class Model(nn.Module):
     def __init__(self, in_channels, out_actions):
@@ -217,3 +211,96 @@ def layer_init(layer, std=np.sqrt(2), bias_const=0.0):
     torch.nn.init.orthogonal_(layer.weight, std)
     torch.nn.init.constant_(layer.bias, bias_const)
     return layer
+
+
+def optimize(model, config, agent):
+    # bootstrap value if not done
+    with torch.no_grad():
+        next_value = model.get_value(next_obs).reshape(1, -1)
+        if config.gae:
+            advantages = torch.zeros_like(agent.rewards).to(config.device)
+            lastgaelam = 0
+            for t in reversed(range(config.num_steps)):
+                if t == config.num_steps - 1:
+                    nextnonterminal = 1.0 - next_done
+                    nextvalues = next_value
+                else:
+                    nextnonterminal = 1.0 - dones[t + 1]
+                    nextvalues = values[t + 1]
+                delta = rewards[t] + config.gamma * nextvalues * nextnonterminal - values[t]
+                advantages[t] = lastgaelam = delta + config.gamma * config.gae_lambda * nextnonterminal * lastgaelam
+            returns = advantages + values
+        else:
+            returns = torch.zeros_like(rewards).to(config.device)
+            for t in reversed(range(config.num_steps)):
+                if t == config.num_steps - 1:
+                    nextnonterminal = 1.0 - next_done
+                    next_return = next_value
+                else:
+                    nextnonterminal = 1.0 - dones[t + 1]
+                    next_return = returns[t + 1]
+                returns[t] = rewards[t] + config.gamma * nextnonterminal * next_return
+            advantages = returns - values
+
+    # flatten the batch
+    b_obs = obs.reshape((-1,) + envs.single_observation_space.shape)
+    b_logprobs = logprobs.reshape(-1)
+    b_actions = actions.reshape((-1,) + envs.single_action_space.shape)
+    b_advantages = advantages.reshape(-1)
+    b_returns = returns.reshape(-1)
+    b_values = values.reshape(-1)
+
+    # Optimizing the policy and value network
+    b_inds = np.arange(config.batch_size)
+    clipfracs = []
+    for epoch in range(config.update_epochs):
+        np.random.shuffle(b_inds)
+        for start in range(0, config.batch_size, config.minibatch_size):
+            end = start + config.minibatch_size
+            mb_inds = b_inds[start:end]
+
+            _, newlogprob, entropy, newvalue = model.get_action_and_value(b_obs[mb_inds], b_actions.long()[mb_inds])
+            logratio = newlogprob - b_logprobs[mb_inds]
+            ratio = logratio.exp()
+
+            with torch.no_grad():
+                # calculate approx_kl http://joschu.net/blog/kl-approx.html
+                old_approx_kl = (-logratio).mean()
+                approx_kl = ((ratio - 1) - logratio).mean()
+                clipfracs += [((ratio - 1.0).abs() > config.clip_coef).float().mean().item()]
+
+            mb_advantages = b_advantages[mb_inds]
+            if config.norm_adv:
+                mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
+
+            # Policy loss
+            pg_loss1 = -mb_advantages * ratio
+            pg_loss2 = -mb_advantages * torch.clamp(ratio, 1 - config.clip_coef, 1 + config.clip_coef)
+            pg_loss = torch.max(pg_loss1, pg_loss2).mean()
+
+            # Value loss
+            newvalue = newvalue.view(-1)
+            if config.clip_vloss:
+                v_loss_unclipped = (newvalue - b_returns[mb_inds]) ** 2
+                v_clipped = b_values[mb_inds] + torch.clamp(
+                    newvalue - b_values[mb_inds],
+                    -config.clip_coef,
+                    config.clip_coef,
+                )
+                v_loss_clipped = (v_clipped - b_returns[mb_inds]) ** 2
+                v_loss_max = torch.max(v_loss_unclipped, v_loss_clipped)
+                v_loss = 0.5 * v_loss_max.mean()
+            else:
+                v_loss = 0.5 * ((newvalue - b_returns[mb_inds]) ** 2).mean()
+
+            entropy_loss = entropy.mean()
+            loss = pg_loss - config.ent_coef * entropy_loss + v_loss * config.vf_coef
+
+            optimizer.zero_grad()
+            loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), config.max_grad_norm)
+            optimizer.step()
+
+        if config.target_kl is not None:
+            if approx_kl > config.target_kl:
+                break
