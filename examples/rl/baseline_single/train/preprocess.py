@@ -1,9 +1,9 @@
 import gym
-
 from contrib_policy.filter_obs import FilterObs
 from contrib_policy.format_action import FormatAction
 from contrib_policy.frame_stack import FrameStack
 from contrib_policy.make_dict import MakeDict
+
 
 class Preprocess(gym.Wrapper):
     def __init__(self, env: gym.Env, config, top_down_rgb):
@@ -11,10 +11,10 @@ class Preprocess(gym.Wrapper):
 
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
         self._frame_stack = FrameStack(
-                input_space=self._filter_obs.observation_space,
-                num_stack=config.num_stack,
-                stack_axis=0,
-            )
+            input_space=self._filter_obs.observation_space,
+            num_stack=config.num_stack,
+            stack_axis=0,
+        )
         self._frame_stack.reset()
         self._make_dict = MakeDict(input_space=self._frame_stack.observation_space)
 

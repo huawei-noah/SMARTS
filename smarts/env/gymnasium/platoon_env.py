@@ -18,16 +18,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import copy
 import logging
-import math
 import os
 import pathlib
 from functools import partial
-from typing import Any, Dict, Optional, Tuple
-
-import gymnasium as gym
-import numpy as np
+from typing import Optional
 
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
@@ -220,6 +215,7 @@ def _get_env_specs(scenario: str):
         }
     else:
         raise Exception(f"Unknown scenario {scenario}.")
+
 
 def resolve_agent_interface(agent_interface: AgentInterface):
     """Resolve the agent interface for a given environment. Some interface

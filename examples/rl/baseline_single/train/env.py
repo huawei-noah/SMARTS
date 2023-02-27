@@ -6,12 +6,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import gymnasium as gym
 
+
 def make_env(env_id, scenario, agent_interface, config, seed):
     from preprocess import Preprocess
+    from train.reward import Reward
 
     from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.wrappers.single_agent import SingleAgent
-    from train.reward import Reward
 
     env = gym.make(
         env_id,
