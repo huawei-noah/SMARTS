@@ -118,7 +118,6 @@ def run(
         )
         
         # Print model summary
-        # import numpy as np
         # from torchinfo import summary
         # td = {"rgb":th.zeros(1,9,112,112)}
         # summary(model.policy, input_data=[td], depth=5)   
