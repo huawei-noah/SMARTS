@@ -153,29 +153,9 @@ def _get_env_specs(scenario: str):
                 pathlib.Path(__file__).absolute().parents[2]
                 / "scenarios"
                 / "intersection"
-                / "1_to_2lane_left_turn_c"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "1_to_2lane_left_turn_t":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "intersection"
                 / "1_to_2lane_left_turn_t"
             ),
             "num_agent": 1,
-        }
-    elif scenario == "3lane_merge_multi_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "merge"
-                / "3lane_multi_agent"
-            ),
-            "num_agent": 2,
         }
     elif scenario == "3lane_merge_single_agent":
         return {
@@ -186,16 +166,6 @@ def _get_env_specs(scenario: str):
                 / "3lane_single_agent"
             ),
             "num_agent": 1,
-        }
-    elif scenario == "3lane_cruise_multi_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "straight"
-                / "3lane_cruise_multi_agent"
-            ),
-            "num_agent": 3,
         }
     elif os.path.isdir(scenario):
         import re

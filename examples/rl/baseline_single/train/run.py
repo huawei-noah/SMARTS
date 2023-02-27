@@ -73,16 +73,17 @@ def main(args: argparse.Namespace):
     envs_train = {}
     envs_eval = {}
     for scenario in config.scenarios:
+        scenario_path = str(Path(__file__).resolve.parents[4]/"scenarios"/"sumo"/"platoon"/""+scenario)
         envs_train[f"{scenario}"] = make_env(
             env_id=config.env_id,
-            scenario=scenario,
+            scenario=scenario_path,
             agent_interface=agent_spec.interface,
             config=config,
             seed=config.seed,
         )
         envs_eval[f"{scenario}"] = make_env(
             env_id=config.env_id,
-            scenario=scenario,
+            scenario=scenario_path,
             agent_interface=agent_spec.interface,
             config=config,
             seed=config.seed,

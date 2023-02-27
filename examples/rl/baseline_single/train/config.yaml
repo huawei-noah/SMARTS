@@ -7,7 +7,7 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0  
   scenarios: 
-    - "3lane_merge_single_agent"
+    - "no_traffic_agents_1"
 
   # Training
   epochs: 2 # 5_000 # Number of training loops.
