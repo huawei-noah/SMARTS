@@ -28,6 +28,8 @@ from smarts.core.provider import (
     ProviderState,
 )
 from smarts.core.road_map import RoadMap
+from smarts.core.scenario import Scenario
+from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
@@ -55,7 +57,7 @@ class MockProvider(Provider):
     def clear_next_provider_state(self):
         self._next_provider_state = None
 
-    def setup(self, provider_actions) -> ProviderState:
+    def setup(self, scenario: Scenario) -> ProviderState:
         return ProviderState()
 
     @property
@@ -104,3 +106,40 @@ class MockProvider(Provider):
 
     def can_accept_vehicle(self, state: VehicleState) -> bool:
         return False
+
+
+class MockTrafficProvider(TrafficProvider):
+    def setup(self, scenario: Scenario) -> ProviderState:
+        return super().setup(scenario)
+
+    def teardown(self):
+        return super().teardown()
+
+    def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
+        return super().step(actions, dt, elapsed_sim_time)
+
+    def sync(self, provider_state: ProviderState):
+        return super().sync(provider_state)
+
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return super().recovery_flags
+
+    def manages_actor(self, actor_id: str) -> bool:
+        return super().manages_actor(actor_id)
+
+    def can_accept_actor(self, state: ActorState) -> bool:
+        return super().can_accept_actor(state)
+
+    def stop_managing(self, actor_id: str):
+        return super().stop_managing(actor_id)
+
+    def can_accept_actor(self, state: ActorState) -> bool:
+        return super().can_accept_actor(state)
+
+    def reset(self):
+        return super().reset()
+
+    def add_actor(
+        self, provider_actor: ActorState, from_provider: Optional["Provider"] = None
+    ):
+        return super().add_actor(provider_actor, from_provider)

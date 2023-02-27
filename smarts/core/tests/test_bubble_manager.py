@@ -34,7 +34,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.local_traffic_provider import LocalTrafficProvider
-from smarts.core.tests.helpers.providers import MockProvider
+from smarts.core.tests.helpers.providers import MockProvider, MockTrafficProvider
 from smarts.sstudio import gen_scenario
 
 HEADING_CONSTANT = Heading(-math.pi / 2)
@@ -55,8 +55,8 @@ def bubble_limits(request):
 
 
 @pytest.fixture
-def social_actor(state_at_position, request):
-    arg = getattr(request, "param", "keep-pose")
+def social_actor(transition_cases):
+    _, _, arg = transition_cases
     from functools import partial
 
     social_actor_part = partial(t.SocialAgentActor, name="zoo-car")
@@ -66,7 +66,7 @@ def social_actor(state_at_position, request):
         return social_actor_part(
             agent_locator="smarts.core.tests.helpers.agent_prefabs:keep-pose-v0"
         )
-    elif isinstance(arg, int):
+    elif isinstance(arg, (int, float)):
         return social_actor_part(
             agent_locator="smarts.core.tests.helpers.agent_prefabs:move-to-target-pose-v0",
             policy_kwargs=dict(
@@ -76,11 +76,13 @@ def social_actor(state_at_position, request):
 
 
 @pytest.fixture
-def bubble(bubble_limits: t.BubbleLimits, social_actor: t.SocialAgentActor, request):
+def bubble(
+    bubble_limits: t.BubbleLimits, social_actor: t.SocialAgentActor, transition_cases
+):
     """
     |(93)  |(95)     (100)     (105)|  (107)|
     """
-    margin = getattr(request, "param", 2)
+    _, margin, _ = transition_cases
     return t.Bubble(
         zone=t.PositionalZone(pos=(100, 0), size=(10, 10)),
         margin=margin,
@@ -100,8 +102,12 @@ def scenarios(bubble: t.Bubble):
 
 
 @pytest.fixture
-def mock_provider():
-    return MockProvider()
+def mock_provider(request):
+    provider_type = getattr(request, "params", "mock_provider")
+    if provider_type == "mock_provider":
+        return MockProvider()
+    elif provider_type == "mock_traffic_provider":
+        return MockTrafficProvider()
 
 
 @pytest.fixture
@@ -140,103 +146,157 @@ def smarts(
 
 
 @pytest.fixture()
-def state_at_position(request):
+def transition_cases(request):
     # o outside
     # a airlock
     # b bubble
     p = getattr(request, "param", "oabao")
+    margin = 2 if "a" in p else 0  # margin not needed if no airlock
 
     if p == "oabao":
         return (
-            # Outside airlock and bubble
-            ((92, 0, 0), (False, False)),
-            # Inside airlock, begin collecting experiences, but don't hijack
-            ((94, 0, 0), (True, False)),
-            # Entered bubble, now hijack
-            ((100, 0, 0), (False, True)),
-            # Leave bubble into exiting airlock
-            ((105.01, 0, 0), (False, True)),
-            # Exit bubble and airlock, now relinquish
-            ((107.01, 0, 0), (False, False)),
-        ), "keep-pose"
+            (
+                # Outside airlock and bubble
+                ((92, 0, 0), (False, False)),
+                # Inside airlock, begin collecting experiences, but don't hijack
+                ((94, 0, 0), (True, False)),
+                # Entered bubble, now hijack
+                ((100, 0, 0), (False, True)),
+                # Leave bubble into exiting airlock
+                ((105.01, 0, 0), (False, True)),
+                # Exit bubble and airlock, now relinquish
+                ((107.01, 0, 0), (False, False)),
+            ),
+            margin,
+            "keep-pose",
+        )
     elif p == "obbao":
         return (
-            # Outside airlock and bubble
-            ((92, 0, 0), (False, False)),
-            # Dropped into middle of bubble shadow
-            ((100, 0, 0), (True, False)),
-            # Step has been taken, now hijack
-            ((100, 0, 0), (False, True)),
-            # Exit bubble and airlock, now relinquish
-            ((108, 0, 0), (False, False)),
-        ), "keep-pose"
+            (
+                # Outside airlock and bubble
+                ((92, 0, 0), (False, False)),
+                # Dropped into middle of bubble shadow
+                ((100, 0, 0), (True, False)),
+                # Step has been taken, now hijack
+                ((100, 0, 0), (False, True)),
+                # Exit bubble and airlock, now relinquish
+                ((108, 0, 0), (False, False)),
+            ),
+            margin,
+            108,
+        )
     elif p == "oaoao":
         return (
-            # Outside airlock and bubble
-            ((92, 0, 0), (False, False)),
-            # Dropped into airlock
-            ((94, 0, 0), (True, False)),  # inside airlock
-            # Outside airlock and bubble
-            ((92, 0, 0), (False, False)),
-            # Dropped into airlock
-            ((94, 0, 0), (True, False)),  # inside airlock
-            # Outside airlock and bubble
-            ((92, 0, 0), (False, False)),
-        ), 92
+            (
+                # Outside airlock and bubble
+                ((92, 0, 0), (False, False)),
+                # Dropped into airlock
+                ((94, 0, 0), (True, False)),  # inside airlock
+                # Outside airlock and bubble
+                ((92, 0, 0), (False, False)),
+                # Dropped into airlock
+                ((94, 0, 0), (True, False)),  # inside airlock
+                # Outside airlock and bubble
+                ((92, 0, 0), (False, False)),
+            ),
+            margin,
+            92,
+        )
     elif p == "aa":
         return (
-            ((94, 0, 0), (False, False)),  # inside airlock
-            ((94, 0, 0), (True, False)),  # inside airlock
-        ), "keep-pose"
+            (
+                ((94, 0, 0), (False, False)),  # inside airlock
+                ((94, 0, 0), (True, False)),  # inside airlock
+            ),
+            margin,
+            94,
+        )
+    elif p == "oa":
+        return (
+            (
+                ((94, 0, 0), (False, False)),  # inside airlock
+                ((94, 0, 0), (True, False)),  # inside airlock
+            ),
+            margin,
+            94,
+        )
     elif p == "bbb":
         return (
-            ((100, 0, 0), (False, False)),  # inside bubble
-            ((100, 0, 0), (True, False)),  # inside bubble
-            ((100, 0, 0), (False, True)),  # inside bubble
-        ), 100
+            (
+                ((100, 0, 0), (False, False)),  # inside bubble
+                ((100, 0, 0), (True, False)),  # inside bubble
+                ((100, 0, 0), (False, True)),  # inside bubble
+            ),
+            margin,
+            100,
+        )
+    elif p == "obb":
+        return (
+            (
+                ((92, 0, 0), (False, False)),  # inside bubble
+                ((100, 0, 0), (True, False)),  # inside bubble
+                ((100, 0, 0), (False, True)),  # inside bubble
+            ),
+            margin,
+            100,
+        )
     elif p == "obbob":
         return (
-            ((105.001, 0, 0), (False, False)),  # outside bubble
-            ((104.9, 0, 0), (True, False)),  # inside
-            ((104.9, 0, 0), (False, True)),  # inside
-            ((105.001, 0, 0), (False, False)),  # outside
-            ((104.9, 0, 0), (True, False)),  # inside
-        ), 105.01
+            (
+                ((105.001, 0, 0), (False, False)),  # outside bubble
+                ((104.9, 0, 0), (True, False)),  # inside
+                ((104.9, 0, 0), (False, True)),  # inside
+                ((105.001, 0, 0), (False, False)),  # outside
+                ((104.9, 0, 0), (True, False)),  # inside
+            ),
+            margin,
+            105.01,
+        )
+    elif p == "obobo":
+        return (
+            (
+                ((105.001, 0, 0), (False, False)),  # outside bubble
+                ((104.9, 0, 0), (True, False)),  # inside
+                ((105.001, 0, 0), (False, False)),  # outside
+                ((104.9, 0, 0), (True, False)),  # inside
+            ),
+            margin,
+            105.01,
+        )
 
 
-@pytest.mark.parametrize("social_actor", ["keep-pose"], indirect=True)
+@pytest.mark.parametrize("mock_provider", ["mock_provider"], indirect=True)
 @pytest.mark.parametrize(
-    "state_at_position,bubble",
-    [("oabao", 2), ("obbao", 2), ("oaoao", 2), ("aa", 2), ("bbb", 2), ("obbob", 0)],
+    "transition_cases",
+    [
+        "oa",
+        "aa",  # behavior for first step entry
+        "obb",
+        "bbb",  # behavior for first step entry
+        "oabao",
+        "oaoao",
+        "obbao",
+        "obbob",
+        "obobo",
+    ],
     indirect=True,
 )
 def test_bubble_manager_state_change(
     smarts: SMARTS,
     mock_provider: MockProvider,
-    state_at_position: Sequence[Tuple[Tuple[float, float, float], bool, bool]],
+    transition_cases: Sequence[Tuple[Tuple[float, float, float], bool, bool]],
 ):
-    state_at_position, _ = state_at_position
+    state_at_position, _, _ = transition_cases
     index = smarts.vehicle_index
 
     vehicle_id = "vehicle"
     route = smarts.road_map.route_from_road_ids(["west", "east"])
 
-    class ObservationState:
-        def __init__(self) -> None:
-            self.last_observations: Dict[str, Observation] = {}
-
-        def observation_callback(self, obs: Observation):
-            self.last_observations = obs
-
-    obs_state = ObservationState()
-
-    smarts.agent_manager.add_social_agent_observations_callback(
-        obs_state.observation_callback, "bubble_watcher"
-    )
-
-    for (position, (shadowed, hijacked)) in state_at_position:
+    for (next_position, (shadowed, hijacked)) in state_at_position:
         mock_provider.override_next_provider_state(
-            vehicles=[(vehicle_id, Pose.from_center(position, HEADING_CONSTANT), 10)]
+            vehicles=[
+                (vehicle_id, Pose.from_center(next_position, HEADING_CONSTANT), 10)
+            ]
         )
 
         # Providers must be disjoint
@@ -246,16 +306,13 @@ def test_bubble_manager_state_change(
             interface = smarts.agent_manager.agent_interface_for_agent_id(agent_id)
             while (
                 index.vehicle_is_hijacked(vehicle_id)
-                and index.vehicle_position(vehicle_id)[0] < position[0]
+                and index.vehicle_position(vehicle_id)[0] < next_position[0]
             ):
-                try:
-                    if interface.action == ActionSpaceType.TargetPose:
-                        smarts.agent_manager.reserve_social_agent_action(
-                            agent_id,
-                            (position[0], position[1], HEADING_CONSTANT, 0.1),
-                        )
-                except:
-                    pass
+                if interface.action == ActionSpaceType.TargetPose:
+                    smarts.agent_manager.reserve_social_agent_action(
+                        agent_id,
+                        (next_position[0], next_position[1], HEADING_CONSTANT, 0.1),
+                    )
                 smarts.step({})
 
         else:
@@ -264,7 +321,7 @@ def test_bubble_manager_state_change(
         got_shadowed = index.vehicle_is_shadowed(vehicle_id)
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)
         assert_msg = (
-            f"position={position}\n"
+            f"position={next_position}\n"
             f"\t(expected: shadowed={shadowed}, hijacked={hijacked})\n"
             f"\t(received: shadowed={got_shadowed}, hijacked={got_hijacked})"
         )
