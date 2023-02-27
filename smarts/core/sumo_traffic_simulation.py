@@ -70,9 +70,6 @@ class SumoTrafficSimulation(TrafficProvider):
             start on sumo-gui.
         allow_reload:
             Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
-        remove_agents_only_mode:
-            Remove only agent vehicles used by SMARTS and not delete other SUMO
-            vehicles when the traffic simulation calls teardown
     """
 
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -86,9 +83,7 @@ class SumoTrafficSimulation(TrafficProvider):
         auto_start: bool = True,
         allow_reload: bool = True,
         debug: bool = True,
-        remove_agents_only_mode: bool = False,
     ):
-        self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
 
         self._debug = debug
@@ -390,26 +385,13 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traci_conn.close_traci_and_pipes()
         self._handling_error = False
 
-    def _remove_vehicles(self):
-        vehicles_to_remove = None
-        if self._remove_agents_only_mode:
-            vehicles_to_remove = self._non_sumo_vehicle_ids
-        else:
-            vehicles_to_remove = self._non_sumo_vehicle_ids.union(
-                self._sumo_vehicle_ids
-            )
+    def _remove_all_sumo_vehicles(self):
+        vehicles_to_remove = self._sumo_vehicle_ids
         sim = self._sim()
         for vehicle_id in vehicles_to_remove:
             if sim:
                 # Call for immediate removal of the vehicle
                 sim.provider_removing_actor(self, vehicle_id)
-            try:
-                self._traci_conn.vehicle.remove(vehicle_id)
-            except traci.exceptions.FatalTraCIError as err:
-                self._handle_traci_exception(err, actors_relinquishable=False)
-                raise
-            except traci.exceptions.TraCIException as err:
-                self._handle_traci_exception(err, actors_relinquishable=False)
 
     def teardown(self):
         self._log.debug("Tearing down SUMO traffic sim %s", self)
@@ -420,10 +402,7 @@ class SumoTrafficSimulation(TrafficProvider):
         assert self._is_setup
 
         if self.connected:
-            try:
-                self._remove_vehicles()
-            except traci.exceptions.FatalTraCIError:
-                pass
+            self._remove_all_sumo_vehicles()
 
         if self._allow_reload:
             self._cumulative_sim_seconds = 0
