@@ -73,7 +73,7 @@ class MockProvider(Provider):
 
     @property
     def actions(self) -> Set[ActionSpaceType]:
-        return {}
+        return set()
 
     def sync(self, provider_state):
         pass
@@ -104,42 +104,102 @@ class MockProvider(Provider):
     def stop_managing(self, actor_id: str):
         pass
 
-    def can_accept_vehicle(self, state: VehicleState) -> bool:
-        return False
-
 
 class MockTrafficProvider(TrafficProvider):
+    def __init__(self) -> None:
+        self._next_provider_state = None
+        self._recovery_flags = super().recovery_flags
+        self._ignore = set()
+
+    def override_next_provider_state(self, vehicles: Sequence):
+        self._next_provider_state = ProviderState(
+            actors=[
+                VehicleState(
+                    actor_id=vehicle_id,
+                    vehicle_config_type="passenger",
+                    pose=pose,
+                    dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
+                    speed=speed,
+                    source=self.source_str,
+                    role=ActorRole.Social,
+                )
+                for vehicle_id, pose, speed in vehicles
+            ],
+        )
+
+    def clear_next_provider_state(self):
+        pass
+
     def setup(self, scenario: Scenario) -> ProviderState:
-        return super().setup(scenario)
+        return ProviderState()
 
     def teardown(self):
-        return super().teardown()
+        self._next_provider_state = None
+
+    def destroy(self):
+        pass
 
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
-        return super().step(actions, dt, elapsed_sim_time)
+        if self._next_provider_state is None:
+            return ProviderState(actors=[])
+
+        return ProviderState(
+            actors=[
+                a
+                for a in self._next_provider_state.actors
+                if a.actor_id not in self._ignore
+            ]
+        )
 
     def sync(self, provider_state: ProviderState):
-        return super().sync(provider_state)
-
-    def recovery_flags(self) -> ProviderRecoveryFlags:
-        return super().recovery_flags
-
-    def manages_actor(self, actor_id: str) -> bool:
-        return super().manages_actor(actor_id)
-
-    def can_accept_actor(self, state: ActorState) -> bool:
-        return super().can_accept_actor(state)
-
-    def stop_managing(self, actor_id: str):
-        return super().stop_managing(actor_id)
-
-    def can_accept_actor(self, state: ActorState) -> bool:
-        return super().can_accept_actor(state)
+        pass
 
     def reset(self):
-        return super().reset()
+        pass
+
+    def set_manager(self, manager: ProviderManager):
+        pass
+
+    @property
+    def recovery_flags(self) -> ProviderRecoveryFlags:
+        return self._recovery_flags
+
+    @recovery_flags.setter
+    def recovery_flags(self, flags: ProviderRecoveryFlags):
+        self._recovery_flags = flags
+
+    def manages_actor(self, actor_id: str) -> bool:
+        return actor_id not in self._ignore and any(
+            filter(lambda a: a.actor_id == actor_id, self._next_provider_state.actors)
+        )
+
+    def can_accept_actor(self, state: ActorState) -> bool:
+        return True
+
+    @property
+    def actions(self) -> Set[ActionSpaceType]:
+        return set()
+
+    def stop_managing(self, actor_id: str):
+        self._ignore.add(actor_id)
 
     def add_actor(
         self, provider_actor: ActorState, from_provider: Optional["Provider"] = None
     ):
-        return super().add_actor(provider_actor, from_provider)
+        self._ignore.discard(provider_actor.actor_id)
+
+    def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
+        return None
+
+    def update_route_for_vehicle(self, vehicle_id: str, new_route: RoadMap.Route):
+        pass
+
+    def vehicle_collided(self, vehicle_id: str):
+        pass
+
+    def reserve_traffic_location_for_vehicle(
+        self,
+        vehicle_id: str,
+        reserved_location,
+    ):
+        pass

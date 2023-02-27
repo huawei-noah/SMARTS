@@ -19,8 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from functools import partial
 import math
-from typing import Dict, Sequence, Tuple
+from typing import Any, Sequence, Tuple
 
 import pytest
 from helpers.scenario import temp_scenario
@@ -57,8 +58,6 @@ def bubble_limits(request):
 @pytest.fixture
 def social_actor(transition_cases):
     _, _, arg = transition_cases
-    from functools import partial
-
     social_actor_part = partial(t.SocialAgentActor, name="zoo-car")
     if arg == "keep-lane":
         return social_actor_part(agent_locator="zoo.policies:keep-lane-agent-v0")
@@ -103,31 +102,11 @@ def scenarios(bubble: t.Bubble):
 
 @pytest.fixture
 def mock_provider(request):
-    provider_type = getattr(request, "params", "mock_provider")
+    provider_type = getattr(request, "param", "mock_provider")
     if provider_type == "mock_provider":
         return MockProvider()
     elif provider_type == "mock_traffic_provider":
         return MockTrafficProvider()
-
-
-@pytest.fixture
-def smarts_with_traffic_sim(
-    scenarios: Scenario,
-    mock_provider: MockProvider,
-    time_resolution: float,
-):
-    smarts_ = SMARTS(
-        agent_interfaces={},
-        traffic_sims=[
-            SumoTrafficSimulation(
-                time_resolution=time_resolution,
-            )
-        ],
-    )
-    smarts_.add_provider(mock_provider)
-    smarts_.reset(next(scenarios))
-    yield smarts_
-    smarts_.destroy()
 
 
 @pytest.fixture
@@ -136,10 +115,13 @@ def smarts(
     mock_provider: MockProvider,
     time_resolution: float,
 ):
-    smarts_ = SMARTS(
-        agent_interfaces={},
-    )
-    smarts_.add_provider(mock_provider)
+    smarts_partial = partial(SMARTS, agent_interfaces={})
+    if isinstance(mock_provider, MockTrafficProvider):
+        smarts_ = smarts_partial(traffic_sims=[mock_provider])
+    elif isinstance(mock_provider, MockProvider):
+        smarts_ = smarts_partial()
+
+        smarts_.add_provider(mock_provider)
     smarts_.reset(next(scenarios))
     yield smarts_
     smarts_.destroy()
@@ -265,7 +247,9 @@ def transition_cases(request):
         )
 
 
-@pytest.mark.parametrize("mock_provider", ["mock_provider"], indirect=True)
+@pytest.mark.parametrize(
+    "mock_provider", ["mock_provider", "mock_traffic_provider"], indirect=True
+)
 @pytest.mark.parametrize(
     "transition_cases",
     [
@@ -284,13 +268,14 @@ def transition_cases(request):
 def test_bubble_manager_state_change(
     smarts: SMARTS,
     mock_provider: MockProvider,
-    transition_cases: Sequence[Tuple[Tuple[float, float, float], bool, bool]],
+    transition_cases: Tuple[
+        Sequence[Tuple[Tuple[float, float, float], bool, bool]], int, Any
+    ],
 ):
     state_at_position, _, _ = transition_cases
     index = smarts.vehicle_index
 
     vehicle_id = "vehicle"
-    route = smarts.road_map.route_from_road_ids(["west", "east"])
 
     for (next_position, (shadowed, hijacked)) in state_at_position:
         mock_provider.override_next_provider_state(
