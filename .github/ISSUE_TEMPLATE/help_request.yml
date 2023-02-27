@@ -1,0 +1,30 @@
+
+name: Help request
+description: Ask for help about SMARTS
+title: "[Help Request] Help request title"
+labels: ["help wanted"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: High Level Description
+      description: Describe what your goal is.
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Version
+      description: Desired SMARTS version
+    validations:
+      required: true
+  - type: textarea
+    id: system
+    attributes:
+      label: Operating System
+      description: The system you wish to use. (macOS Mojave, ubuntu 20.04... windows 97)
+  - type: textarea
+    id: problems
+    attributes:
+      label: Problems
+      description: Describe in detail the problems you are facing

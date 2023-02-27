@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2   
         with:
-          ref: develop 
+          ref: master 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -33,6 +33,6 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           add: 'utils/setup/mac_requirements.txt'
-          branch: develop
+          branch: master
           default_author: user_info 
           message: 'GitHub Actions: Update mac_requirements.txt'

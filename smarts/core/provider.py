@@ -20,7 +20,7 @@
 import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import Iterable, List, Optional, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
@@ -217,6 +217,15 @@ class Provider:
         """This property should be used to fill in the source field
         of all ActorState objects created/managed by this Provider."""
         return self.__class__.__name__
+
+    @property
+    def actor_ids(self) -> Iterable[str]:
+        """Indicate the agents that this provider currently manages.
+
+        Returns:
+            Iterable[str]: A set of agents that this provider manages.
+        """
+        raise NotImplementedError
 
     def manages_actor(self, actor_id: str) -> bool:
         """Returns True iff the actor referenced by actor_id is managed by this Provider."""

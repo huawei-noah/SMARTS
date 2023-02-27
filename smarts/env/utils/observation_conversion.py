@@ -63,6 +63,7 @@ _UNSIGNED_RADIANS_FLOAT32_SPACE = gym.spaces.Box(
     low=0, high=2 * math.pi, shape=(), dtype=np.float32
 )
 _UNSIGNED_INT8_SPACE = gym.spaces.Box(low=0, high=127, shape=(), dtype=np.int8)
+_UNSIGNED_INT64_SPACE = gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.int64)
 _DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
 _LANE_ID_SPACE = gym.spaces.Text(_WAYPOINT_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET)
 
@@ -673,7 +674,6 @@ neighborhood_vehicle_states_space_format = StandardSpaceFormat(
     lambda obs: _format_neighborhood_vehicle_states(obs.neighborhood_vehicle_states),
     lambda agent_interface: bool(agent_interface.neighborhood_vehicle_states),
     "neighborhood_vehicle_states",
-    # MTA TODO: add lidar configuration
     gym.spaces.Dict(
         {
             "box": gym.spaces.Box(
@@ -798,6 +798,13 @@ enabled_space_format = StandardSpaceFormat(
     _DISCRETE2_SPACE,
 )
 
+steps_completed_space_format = StandardSpaceFormat(
+    lambda obs: np.int64(obs.steps_completed),
+    lambda _: True,
+    "steps_completed",
+    _UNSIGNED_INT64_SPACE,
+)
+
 ego_vehicle_state_space_format = StandardCompoundSpaceFormat(
     space_generators=[
         # required
@@ -843,6 +850,7 @@ events_space_format = StandardCompoundSpaceFormat(
 observation_space_format = StandardCompoundSpaceFormat(
     space_generators=[
         enabled_space_format,
+        steps_completed_space_format,
         distance_travelled_space_format,
         ego_vehicle_state_space_format,
         events_space_format,
@@ -887,6 +895,9 @@ class ObservationSpacesFormatter:
 
             Total distance travelled in meters.
             "distance_travelled": np.float32
+
+            The number of steps taken by the agent
+            "steps_completed": np.float32
 
             Ego vehicle state, with the following attributes.
             "ego_vehicle_state": dict({
