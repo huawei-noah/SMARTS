@@ -11,12 +11,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from contrib_policy.filter_obs import FilterObs
-from contrib_policy.frame_stack import FrameStack
 from contrib_policy.format_action import FormatAction
+from contrib_policy.frame_stack import FrameStack
 from torch.distributions.categorical import Categorical
 
 from smarts.core.agent import Agent
-
 
 
 class Policy(Agent):
@@ -37,7 +36,7 @@ class Policy(Agent):
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=config.num_stack,
-            stack_axis=0
+            stack_axis=0,
         )
         self._config.observation_space = self._frame_stack.observation_space
         self.format_action = FormatAction()
@@ -71,7 +70,7 @@ class Policy(Agent):
         hidden = self._model.network(processed_obs / 255.0)
         logits = self._model.actor(hidden)
         probs = Categorical(logits=logits)
-        action_mode = probs.mode() 
+        action_mode = probs.mode()
         formatted_action = self.format_action.format(action_mode.cpu().numpy())
         return formatted_action
 
@@ -85,11 +84,11 @@ class Policy(Agent):
             self._frame_stack.reset()
         obs = self._filter_obs.filter(obs)
         obs = self._frame_stack.stack(obs)
-        obs = torch.Tensor(np.expand_dims(obs,0)).to(self._config.device)
+        obs = torch.Tensor(np.expand_dims(obs, 0)).to(self._config.device)
         return obs
 
     def next_rollout(self):
-        self.step=-1
+        self.step = -1
 
     def increment_step(self):
         self.step += 1
@@ -100,7 +99,7 @@ class Policy(Agent):
         return self._obs
 
     @obs.setter
-    def obs(self, x):  
+    def obs(self, x):
         self._obs[self.step] = self._process(x)
 
     @property
@@ -108,7 +107,7 @@ class Policy(Agent):
         return self._dones
 
     @dones.setter
-    def dones(self, x:bool, obs):  
+    def dones(self, x: bool, obs):
         if obs["steps_completed"] == 1:
             if self.global_step == 0:
                 assert x == False
@@ -116,7 +115,7 @@ class Policy(Agent):
                 assert x == True
         else:
             assert x == False
-        self._dones[self.step] = torch.Tensor([int(x)]).to(self._config.device) 
+        self._dones[self.step] = torch.Tensor([int(x)]).to(self._config.device)
 
     @property
     def values(self):
@@ -124,33 +123,33 @@ class Policy(Agent):
 
     @values.setter
     def values(self, x):
-        self._values[self.step]= x
+        self._values[self.step] = x
 
     @property
     def actions(self):
         return self._actions
-    
+
     @actions.setter
     def actions(self, x):
-        self._actions[self.step]= x
+        self._actions[self.step] = x
 
     @property
     def logprobs(self):
         return self._logprobs
-    
+
     @logprobs.setter
     def logprobs(self, x):
-        self._logprobs[self.step]= x
+        self._logprobs[self.step] = x
 
     @property
     def rewards(self):
         return self._rewards
-    
+
     @rewards.setter
     def rewards(self, x):
         tensor = torch.tensor(x).to(self._config.device).view(-1)
-        self._rewards[self.step]= tensor 
- 
+        self._rewards[self.step] = tensor
+
 
 class Model(nn.Module):
     def __init__(self, in_channels, out_actions):

@@ -108,6 +108,7 @@ def plotter3d(
 
 def load_pkl(file):
     import pickle
+
     from util import plotter3d
 
     file = open(

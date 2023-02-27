@@ -13,9 +13,11 @@ from train.reward import Reward
 #     lambda env: DummyVecEnv([lambda: env]),
 #     lambda env: VecMonitor(venv=env, filename=str(config["logdir"]), info_keywords=("is_success",))
 
+
 def make_env(env_id, scenario, agent_interface, config, seed):
-    from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from preprocess import Preprocess
+
+    from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.wrappers.single_agent import SingleAgent
 
     env = gym.make(
@@ -29,8 +31,8 @@ def make_env(env_id, scenario, agent_interface, config, seed):
     env = Reward(env)
     env = Preprocess(env, config, agent_interface.top_down_rgb)
     env = Api021Reversion(env)
-    env = SingleAgent(env),
+    env = SingleAgent(env)
     # env = DummyVecEnv([lambda: env]),
     # env = VecMonitor(venv=env, filename=str(config.logdir), info_keywords=("is_success",))
- 
+
     return env

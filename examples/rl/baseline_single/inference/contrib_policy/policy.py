@@ -6,6 +6,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
 
 from smarts.core.agent import Agent
 
+
 class Policy(Agent):
     """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
@@ -17,29 +18,30 @@ class Policy(Agent):
 
         import stable_baselines3 as sb3lib
         from contrib_policy import network
-        from contrib_policy.utils import objdict 
         from contrib_policy.filter_obs import FilterObs
-        from contrib_policy.frame_stack import FrameStack
         from contrib_policy.format_action import FormatAction
+        from contrib_policy.frame_stack import FrameStack
+        from contrib_policy.utils import objdict
+
         from smarts.core.agent_interface import RGB
 
         model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         self.model = sb3lib.PPO.load(model_path)
 
         if config == None:
-            config = objdict({"num_stack":3})
+            config = objdict({"num_stack": 3})
         if top_down_rgb == None:
             top_down_rgb = RGB(
-                width = 112,
-                height = 112,
-                resolution = 50 / 112, # m/pixels
+                width=112,
+                height=112,
+                resolution=50 / 112,  # m/pixels
             )
 
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=config.num_stack,
-            stack_axis=0
+            stack_axis=0,
         )
         self.observation_space = self._frame_stack.observation_space
         self.format_action = FormatAction()
@@ -47,8 +49,7 @@ class Policy(Agent):
         print("Policy initialised.")
 
     def act(self, obs):
-        """Act function to be implemented by user.
-        """
+        """Act function to be implemented by user."""
         processed_obs = self._process(obs)
         action, _ = self.model.predict(observation=processed_obs, deterministic=True)
         formatted_action = self.format_action.format(action)

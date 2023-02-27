@@ -16,9 +16,9 @@ def entry_point(**kwargs):
         road_waypoints=False,
         signals=False,
         top_down_rgb=RGB(
-            width = 128,
-            height = 128,
-            resolution = 50 / 128, # m/pixels
+            width=128,
+            height=128,
+            resolution=50 / 128,  # m/pixels
         ),
     )
 

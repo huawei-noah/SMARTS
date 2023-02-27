@@ -1,9 +1,10 @@
-import gymnasium as gym
-
-from contrib_policy.filter_obs import FilterObs
-from contrib_policy.frame_stack import FrameStack
-from contrib_policy.format_action import FormatAction
 from typing import Any, Dict, Optional
+
+import gymnasium as gym
+from contrib_policy.filter_obs import FilterObs
+from contrib_policy.format_action import FormatAction
+from contrib_policy.frame_stack import FrameStack
+
 
 class Preprocess(gym.Wrapper):
     def __init__(self, env: gym.Env, config, top_down_rgb):
@@ -13,7 +14,7 @@ class Preprocess(gym.Wrapper):
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=config.num_stack,
-            stack_axis=0
+            stack_axis=0,
         )
         self._frame_stack.reset()
 
@@ -30,7 +31,7 @@ class Preprocess(gym.Wrapper):
 
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
-        formatted_action = { 
+        formatted_action = {
             agent_id: self._format_action.format(agent_action)
             for agent_id, agent_action in action.items()
         }
@@ -41,7 +42,9 @@ class Preprocess(gym.Wrapper):
         }
         return obs, reward, terminated, truncated, info
 
-    def reset(self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None):
+    def reset(
+        self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
+    ):
         """Uses the :meth:`reset` of the :attr:`env` that can be overwritten to change the returned data."""
 
         self._frame_stack.reset()

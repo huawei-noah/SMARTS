@@ -7,6 +7,7 @@ import numpy as np
 from smarts.core.agent_interface import RGB
 from smarts.core.colors import Colors, SceneColors
 
+
 class FilterObs:
     """Filter only the selected observation parameters."""
 
@@ -178,6 +179,7 @@ def wps_to_pixels(
     wps_valid = wps_rint[(wps_rint[:,0] >= 0) & (wps_rint[:,0] < w) & (wps_rint[:,1] >= 0) & (wps_rint[:,1] < h)] 
     return wps_valid
     # fmt: on
+
 
 def rotate_axes(points: np.ndarray, theta: float) -> np.ndarray:
     """A counterclockwise rotation of the x-y axes by an angle theta θ about

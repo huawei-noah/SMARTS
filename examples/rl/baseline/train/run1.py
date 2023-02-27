@@ -15,13 +15,12 @@ import torch.nn as nn
 import torch.optim as optim
 import yaml
 
-from torch.utils.tensorboard import SummaryWriter
-
 # `contrib_policy` package is accessed from pip installed packages
 from contrib_policy.format_action import FormatAction
 from contrib_policy.policy import Model
 from contrib_policy.utils import objdict
 from smarts.zoo import registry
+from torch.utils.tensorboard import SummaryWriter
 
 
 def make_env(
@@ -126,10 +125,7 @@ if __name__ == "__main__":
     # Start driving
     start_time = time.time()
     next_obs, info = envs.reset()
-    next_done = {
-        agent_id: False 
-        for agent_id in next_obs.keys()
-    }   
+    next_done = {agent_id: False for agent_id in next_obs.keys()}
 
     # for agent_id, agent_obs in obs.items():
     #     next_obs[agent_id] = torch.Tensor(np.expand_dims(agents[agent_id].process(agent_obs),0)).to(config.device)
@@ -147,8 +143,8 @@ if __name__ == "__main__":
             optimizer.param_groups[0]["lr"] = lrnow
 
         # Rollout
-        for step in range(0, config.num_steps):  
-        # while agent
+        for step in range(0, config.num_steps):
+            # while agent
             actions = {}
             for agent_id, agent_obs in next_obs.items():
                 agents[agent_id].increment_step()
@@ -159,7 +155,7 @@ if __name__ == "__main__":
                 with torch.no_grad():
                     action, logprob, _, value = model.get_action_and_value(x=agents[agent_id].get_next_obs())
                     agents[agent_id].values(value.flatten())
-                
+
                 agents[agent_id].actions(action)
                 agents[agent_id].logprobs(logprob)
                 actions[agent_id] = agents[agent_id].format_action.format(action.cpu().numpy()[0])
@@ -169,7 +165,7 @@ if __name__ == "__main__":
             next_obs, reward, terminated, truncated, info = envs.step(actions)
 
             for agent_id, agent_reward in reward.items():
-                agents[agent_id].rewards(agent_reward) 
+                agents[agent_id].rewards(agent_reward)
                 next_done[agent_id] = terminated[agent_id] or truncated[agent_id]
 
             # Reset on episode done

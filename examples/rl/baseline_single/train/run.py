@@ -8,9 +8,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # Load inference module to register agent
 import inference
 from contrib_policy import network
+from contrib_policy.utils import objdict
 
 import argparse
 import warnings
+import yaml
 from datetime import datetime
 from itertools import cycle
 from typing import Any, Dict
@@ -18,18 +20,14 @@ from typing import Any, Dict
 import gym
 import stable_baselines3 as sb3lib
 import torch as th
+from smarts.zoo import registry
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train.env import make_env
-from contrib_policy.utils import objdict
-from smarts.zoo import registry
-
-# To import submission folder
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
-import yaml
 
 
 def main(args: argparse.Namespace):
@@ -61,7 +59,7 @@ def main(args: argparse.Namespace):
         # Begin training.
         pass
     else:
-        raise KeyError(f'Expected \'train\' or \'evaluate\', but got {config.mode}.')
+        raise KeyError(f"Expected 'train' or 'evaluate', but got {config.mode}.")
 
     # Make agent specification
     agent_spec = registry.make(
@@ -80,14 +78,14 @@ def main(args: argparse.Namespace):
             scenario=scenario,
             agent_interface=agent_spec.interface,
             config=config,
-            seed=config.seed
+            seed=config.seed,
         )
         envs_eval[f"{scenario}"] = make_env(
             env_id=config.env_id,
             scenario=scenario,
             agent_interface=agent_spec.interface,
             config=config,
-            seed=config.seed
+            seed=config.seed,
         )
 
     # Run training or evaluation.
@@ -140,9 +138,7 @@ def run(
 
     if config.mode == "evaluate":
         print("\nEvaluate policy.\n")
-        model = sb3lib.PPO.load(
-            config.model, print_system_info=True
-        )
+        model = sb3lib.PPO.load(config.model, print_system_info=True)
         for env_name, env_eval in envs_eval.items():
             print(f"\nEvaluating env {env_name}.")
             mean_reward, std_reward = evaluate_policy(

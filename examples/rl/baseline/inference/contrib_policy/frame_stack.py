@@ -1,7 +1,8 @@
 import copy
+from collections import deque
+
 import gymnasium as gym
 import numpy as np
-from collections import deque
 
 
 class FrameStack:
@@ -13,7 +14,7 @@ class FrameStack:
         for large frames and large num_stack values.
     """
 
-    def __init__(self, input_space:gym.Space, num_stack: int = 3, stack_axis:int=0):
+    def __init__(self, input_space: gym.Space, num_stack: int = 3, stack_axis: int = 0):
         """
         Args:
             num_stack (int, optional): Number of frames to be stacked. Defaults to 3.
@@ -23,8 +24,8 @@ class FrameStack:
         assert num_stack > 1, f"Expected num_stack > 1, but got {num_stack}."
         self._num_stack = num_stack
         self._frames = deque(maxlen=self._num_stack)
-        assert stack_axis >=0 and stack_axis<len(input_space.shape)
-        self._stack_axis=stack_axis
+        assert stack_axis >= 0 and stack_axis < len(input_space.shape)
+        self._stack_axis = stack_axis
 
         dim_multiplier = np.ones_like(input_space.shape)
         dim_multiplier[stack_axis] = num_stack
@@ -58,7 +59,5 @@ class FrameStack:
         return self._stack(obs)
 
     def reset(self):
-        """Resets the stacked obs.
-        """
+        """Resets the stacked obs."""
         self._frames.clear()
-
