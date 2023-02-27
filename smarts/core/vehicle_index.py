@@ -25,8 +25,8 @@ from typing import (
     Iterator,
     NamedTuple,
     Optional,
-    Set,
     Sequence,
+    Set,
     Tuple,
     Union,
 )
