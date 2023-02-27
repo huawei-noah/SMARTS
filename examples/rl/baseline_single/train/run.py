@@ -88,8 +88,8 @@ def main(args: argparse.Namespace):
             seed=config.seed,
         )
 
-    print("observation space: ",envs_train["3lane_merge_single_agent"].observation_space)
-    print("action_space: ",envs_train["3lane_merge_single_agent"].action_space)
+    # print("observation space: ",envs_train["3lane_merge_single_agent"].observation_space)
+    # print("action_space: ",envs_train["3lane_merge_single_agent"].action_space)
 
     # Run training or evaluation.
     run(envs_train=envs_train, envs_eval=envs_eval, config=config)
@@ -116,6 +116,14 @@ def run(
             tensorboard_log=config.logdir / "tensorboard",
             **network.combined_extractor(config),
         )
+        
+        # Print model summary
+        # import numpy as np
+        # from torchinfo import summary
+        # td = {"rgb":th.zeros(1,9,112,112)}
+        # summary(model.policy, input_data=[td], depth=5)   
+        # input("Press any key to continue ...")
+
         for index in range(config.epochs):
             scen = next(scenarios_iter)
             env_train = envs_train[scen]
