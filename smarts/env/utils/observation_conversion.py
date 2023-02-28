@@ -222,7 +222,7 @@ def _format_neighborhood_vehicle_states(
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
-    vehicle_id = tuple(vehicle_id + [""] * pad_shp)
+    vehicle_id = tuple(vehicle_id + ("",) * pad_shp)
     # fmt: on
 
     return {
