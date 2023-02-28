@@ -73,7 +73,7 @@ def main(args: argparse.Namespace):
     envs_train = {}
     envs_eval = {}
     for scenario in config.scenarios:
-        scenario_path = str(Path(__file__).resolve.parents[4]/"scenarios"/"sumo"/"platoon"/""+scenario)
+        scenario_path = str(Path(__file__).resolve().parents[4]/"scenarios"/"sumo"/"platoon"/scenario)
         envs_train[f"{scenario}"] = make_env(
             env_id=config.env_id,
             scenario=scenario_path,
@@ -94,6 +94,8 @@ def main(args: argparse.Namespace):
 
     # Run training or evaluation.
     run(envs_train=envs_train, envs_eval=envs_eval, config=config)
+
+    print("Finished training ...")
 
     # Close all environments
     for env in envs_train.values():

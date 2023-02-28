@@ -12,33 +12,39 @@ from smarts.sstudio.types import (
 )
 
 
-ego_missions = [EndlessMission(begin=("E0", 1, 5), start_time=0.5)]
+ego_missions = [EndlessMission(begin=("E0", 1, 5))]
 
 
 leader_mission = [
     Mission(
         route=Route(
             begin=("E0", 1, 20),
-            end=("E1", 0, "max"),
+            end=("E0", 0, "max"),
         ),
         via=(
             Via(
                 "E0",
-                lane_offset=40,
+                lane_offset=30,
                 lane_index=1,
-                required_speed=15,
+                required_speed=10,
             ),
             Via(
                 "E0",
-                lane_offset=70,
+                lane_offset=100,
                 lane_index=0,
-                required_speed=20,
+                required_speed=18,
             ),
             Via(
-                "E1",
-                lane_offset=50,
+                "E0",
+                lane_offset=170,
                 lane_index=1,
-                required_speed=7,
+                required_speed=13,
+            ),
+            Via(
+                "E0",
+                lane_offset=240,
+                lane_index=0,
+                required_speed=13,
             ),
         ),
     ),
