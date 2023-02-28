@@ -322,7 +322,7 @@ class TrafficGenerator:
                 "vehicle",
                 id="{}".format(trip.vehicle_name),
                 type=actor.id,
-                route=route.id,
+                route=route.id + "trip",
                 depart=trip.depart,
                 departLane=route.begin[1],
                 departPos=route.begin[2],
