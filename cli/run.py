@@ -24,9 +24,10 @@ import sys
 import time
 import webbrowser
 from contextlib import contextmanager
-from cli.studio import build_scenarios
 
 import click
+
+from cli.studio import build_scenarios
 
 
 @contextmanager
