@@ -127,8 +127,8 @@ class AgentsProvider(Provider):
         agents_without_actors = agent_actions.keys() - self._my_agent_actors.keys()
         if agents_without_actors:
             warnings.warn(
-                "actions specified for an agent without an actor: %s.",
-                agents_without_actors,
+                "actions specified for an agent without an actor: %s."
+                % agents_without_actors,
             )
 
         agent_manager = self._agent_manager
