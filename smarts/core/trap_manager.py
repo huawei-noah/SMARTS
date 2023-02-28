@@ -246,7 +246,7 @@ class TrapManager:
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
                 vehicle = sim.switch_control_to_agent(
-                    vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
+                    vehicle_id, agent_id, mission, is_hijacked=False
                 )
             elif trap.patience_expired(sim.elapsed_sim_time):
                 # Make sure there is not a vehicle in the same location

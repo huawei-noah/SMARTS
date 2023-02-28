@@ -393,7 +393,6 @@ class VehicleIndex:
         agent_id,
         boid=False,
         hijacking=False,
-        recreate=False,
         agent_interface=None,
     ):
         """Give control of the specified vehicle to the specified agent.
@@ -416,13 +415,6 @@ class VehicleIndex:
         self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
 
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
-        if recreate:
-            # XXX: Recreate is presently broken for bubbles because it impacts the
-            #      sumo traffic sim sync(...) logic in how it detects a vehicle as
-            #      being hijacked vs joining. Presently it's still used for trapping.
-            return self._switch_control_to_agent_recreate(
-                sim, vehicle_id, agent_id, boid, hijacking
-            )
 
         vehicle = self._vehicles[vehicle_id]
         chassis = None
@@ -522,76 +514,6 @@ class VehicleIndex:
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action, vehicle.pose, sim
         )
-
-    def _switch_control_to_agent_recreate(
-        self, sim, vehicle_id, agent_id, boid, hijacking
-    ):
-        # XXX: vehicle_id and agent_id are already fixed-length as this is an internal
-        #      method.
-        agent_id = self._2id_to_id[agent_id]
-
-        # TODO: There existed a SUMO connection error bug
-        #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occurred
-        #       during lane changing when we hijacked/trapped a SUMO vehicle. Forcing
-        #       vehicle recreation seems to address the problem. Ideally we discover
-        #       the underlaying problem and can go back to the preferred implementation
-        #       of simply swapping control of a persistent vehicle.
-        # Get the old state values from the shadowed vehicle
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        assert (
-            agent_interface is not None
-        ), f"Missing agent_interface for agent_id={agent_id}"
-        vehicle = self._vehicles[vehicle_id]
-        sensor_state = self._sensor_states[vehicle_id]
-        controller_state = self._controller_states[vehicle_id]
-        plan = sensor_state.plan
-
-        # Create a new vehicle to replace the old one
-        new_vehicle = Vehicle.build_agent_vehicle(
-            sim,
-            vehicle.id,
-            agent_interface,
-            plan,
-            sim.scenario.vehicle_filepath,
-            sim.scenario.tire_parameters_filepath,
-            not hijacking,
-            sim.scenario.surface_patches,
-        )
-
-        # Apply the physical values from the old vehicle chassis to the new one
-        new_vehicle.chassis.inherit_physical_values(vehicle.chassis)
-
-        # Reserve space inside the traffic sim
-        for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_actor(vehicle.id):
-                traffic_sim.reserve_traffic_location_for_vehicle(
-                    vehicle.id, vehicle.chassis.to_polygon
-                )
-
-        # Remove the old vehicle
-        self.teardown_vehicles_by_vehicle_ids([vehicle.id])
-        # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
-        for traffic_sim in sim.traffic_sims:
-            if traffic_sim.manages_actor(vehicle.id):
-                # TAI:  we probably should call "remove_vehicle(vehicle.id)" here instead,
-                # and then call "add_vehicle(new_vehicle.state)", but since
-                # the old and new vehicle-id and state are supposed to be the same
-                # we take this short-cut.
-                traffic_sim.stop_managing(vehicle.id)
-
-        # Take control of the new vehicle
-        self._enfranchise_actor(
-            sim,
-            agent_id,
-            agent_interface,
-            new_vehicle,
-            controller_state,
-            sensor_state,
-            boid,
-            hijacking,
-        )
-
-        return new_vehicle
 
     def build_agent_vehicle(
         self,

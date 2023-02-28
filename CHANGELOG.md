@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 ### Removed
+- `recreate` is removed as an option for `SMARTS.switch_control_to_agent()` and `VehicleIndex.switch_control_to_agent()` because it was used to prevent crashes in `SUMO` but complicates the vehicle management. We take the stance that if `SUMO` crashes we should handle the issue locally.
 ### Security
 
 ## [1.0.6] # 2023-02-26

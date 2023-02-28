@@ -688,7 +688,6 @@ class BubbleManager:
             agent_id,
             boid=bubble.is_boid,
             hijacking=True,
-            recreate=False,
             agent_interface=agent_interface,
         )
         sim.create_vehicle_in_providers(vehicle, agent_id)

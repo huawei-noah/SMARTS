@@ -53,6 +53,7 @@ import traci.constants as tc  # isort:skip
 
 
 class AgentRemovalMode(IntEnum):
+    """Options for removing vehicles from the traffic sim on teardown."""
     KEEP = 0
     REMOVE_AGENTS = 1
     REMOVE_ALL = 2
@@ -67,7 +68,7 @@ class SumoTrafficSimulation(TrafficProvider):
             SUMO simulation occurs in discrete `time_resolution`-second steps
             WARNING:
                 Since our interface(TRACI) to SUMO is delayed by one simulation step,
-                setting a higher time resolution may lead to unexpected artifacts
+                setting too high a time resolution may lead to unexpected behavior.
         num_external_sumo_clients:
             Block and wait on the specified number of other clients to connect to SUMO.
         sumo_port:
@@ -79,7 +80,7 @@ class SumoTrafficSimulation(TrafficProvider):
             Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
         remove_agents_only_mode:
             Remove only agent vehicles used by SMARTS and not delete other SUMO
-            vehicles when the traffic simulation calls teardown
+            vehicles when the traffic simulation calls teardown.
     """
 
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -406,7 +407,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 self._sumo_vehicle_ids
             )
         else:
-            vehicles_to_remove = []
+            vehicles_to_remove = set()
         sim = self._sim()
         for vehicle_id in vehicles_to_remove:
             if sim:

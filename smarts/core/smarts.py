@@ -536,7 +536,7 @@ class SMARTS(ProviderManager):
         self._check_valid()
         self.agent_manager.add_ego_agent(agent_id, agent_interface, for_trap=False)
         vehicle = self.switch_control_to_agent(
-            vehicle_id, agent_id, mission, recreate=False, is_hijacked=True
+            vehicle_id, agent_id, mission, is_hijacked=True
         )
         self.create_vehicle_in_providers(vehicle, agent_id, True)
 
@@ -547,7 +547,6 @@ class SMARTS(ProviderManager):
         vehicle_id: str,
         agent_id: str,
         mission: Mission,
-        recreate: bool,
         is_hijacked: bool,
     ) -> Vehicle:
         """Give control of the specified vehicle to the given agent.
@@ -574,7 +573,6 @@ class SMARTS(ProviderManager):
             vehicle_id,
             agent_id,
             boid=False,
-            recreate=recreate,
             hijacking=is_hijacked,
             agent_interface=interface,
         )
