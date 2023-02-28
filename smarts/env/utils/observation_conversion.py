@@ -40,10 +40,12 @@ _WAYPOINT_SHP = (4, 20)
 _SIGNALS_SHP = (3,)
 _POSITION_SHP = (3,)
 _WAYPOINT_NAME_LIMIT = 50
+_ID_NAME_LIMIT = _WAYPOINT_NAME_LIMIT
 _TEXT_PAD_CHAR = " "
 _WAYPOINT_CHAR_SET = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=+.,;\"' "
 )
+_ID_CHAR_SET = _WAYPOINT_CHAR_SET
 
 _VEC3_SIGNED_FLOAT32_SPACE = gym.spaces.Box(
     low=-1e10, high=1e10, shape=(3,), dtype=np.float32
@@ -68,15 +70,15 @@ _DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
 _LANE_ID_SPACE = gym.spaces.Text(_WAYPOINT_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET)
 
 
-def _format_lane_id(lane_id: str):
-    lane_name = lane_id.ljust(_WAYPOINT_NAME_LIMIT, _TEXT_PAD_CHAR)
-    if len(lane_name) > _WAYPOINT_NAME_LIMIT:
+def _format_id(lane_id: str, max_length, type_):
+    lane_name = lane_id
+    if len(lane_name) > max_length:
         warnings.warn(
-            f"Lane named `{lane_name}` is more than "
-            f"`{_WAYPOINT_NAME_LIMIT}` characters long. It will be truncated "
+            f"`{type_}` named `{lane_name}` is more than "
+            f"`{max_length}` characters long. It will be truncated "
             "and may cause unintended issues with navigation and lane identification."
         )
-    return lane_name[:_WAYPOINT_NAME_LIMIT]
+    return lane_name[:max_length]
 
 
 def _format_mission(mission: Mission):
@@ -192,6 +194,7 @@ def _format_neighborhood_vehicle_states(
             "lane_index": np.zeros((des_shp,), dtype=np.int8),
             "position": np.zeros((des_shp, 3), dtype=np.float64),
             "speed": np.zeros((des_shp,), dtype=np.float32),
+            "id": [""] * des_shp,
         }
 
     neighborhood_vehicle_states = [
@@ -201,10 +204,11 @@ def _format_neighborhood_vehicle_states(
             nghb.lane_index,
             nghb.position,
             nghb.speed,
+            _format_id(nghb.id, _ID_NAME_LIMIT, "vehicle id"),
         )
         for nghb in neighborhood_vehicle_states[:des_shp]
     ]
-    box, heading, lane_index, pos, speed = zip(*neighborhood_vehicle_states)
+    box, heading, lane_index, pos, speed, vehicle_id = zip(*neighborhood_vehicle_states)
 
     box = np.array(box, dtype=np.float32)
     heading = np.array(heading, dtype=np.float32)
@@ -218,11 +222,11 @@ def _format_neighborhood_vehicle_states(
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
+    vehicle_id = tuple(vehicle_id + ("",) * pad_shp)
     # fmt: on
 
     return {
-        ## TODO MTA: Add in the vehicle ids
-        # "vehicle_id": vehicle_id,
+        "id": vehicle_id,
         "box": box,
         "heading": heading,
         "lane_index": lane_index,
@@ -497,7 +501,7 @@ ego_speed_space_format = StandardSpaceFormat(
 
 
 ego_lane_id_space_format = StandardSpaceFormat(
-    lambda obs: _format_lane_id(obs.ego_vehicle_state.lane_id),
+    lambda obs: _format_id(obs.ego_vehicle_state.lane_id, _WAYPOINT_NAME_LIMIT, "lane"),
     lambda _: True,
     "lane_id",
     _LANE_ID_SPACE,
@@ -676,6 +680,10 @@ neighborhood_vehicle_states_space_format = StandardSpaceFormat(
     "neighborhood_vehicle_states",
     gym.spaces.Dict(
         {
+            "id": gym.spaces.Tuple(
+                (gym.spaces.Text(_ID_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET),)
+                * _NEIGHBOR_SHP
+            ),
             "box": gym.spaces.Box(
                 low=0, high=1e10, shape=(_NEIGHBOR_SHP, 3), dtype=np.float32
             ),
@@ -988,6 +996,9 @@ class ObservationSpacesFormatter:
             Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
             vehicles are insufficient, default feature values are padded.
             "neighborhood_vehicle_states": dict({
+                "id":
+                    The vehicle ids of neighbor vehicles. Defaults to '' per vehicle.
+                    tuple(Text(50)) * 10
                 "box":
                     Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
                     vehicle. shape=(10,3). dtype=np.float32.

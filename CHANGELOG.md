@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Missing neighborhood vehicle ids are now added to the `highway-v1` formatted observations.
 ### Removed
 ### Security
 
