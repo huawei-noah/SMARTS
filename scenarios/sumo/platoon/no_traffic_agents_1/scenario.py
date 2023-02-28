@@ -53,7 +53,7 @@ leader_mission = [
 
 leader_actor = [
     SocialAgentActor(
-        name="Agent_007",
+        name="Leader-007",
         agent_locator="zoo.policies:chase-via-points-agent-v0",
     )
 ]

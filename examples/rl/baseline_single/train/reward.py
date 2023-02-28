@@ -13,23 +13,28 @@ class Reward(gym.Wrapper):
         Note: Users should not directly call this method.
         """
 
-        obs, reward, terminated, truncated, info = self.env.step(action)
+        obs, reward, terminated, truncated, info = self.env.step(action)       
         wrapped_reward = self._reward(obs, reward)
 
         for agent_id, agent_done in terminated.items():
             if agent_id != "__all__" and agent_done == True:
                 if obs[agent_id]["events"]["reached_goal"]:
                     print(f"{agent_id}: Hooray! Reached goal.")
+                    raise Exception(f"{agent_id}: Goal has been leaked to the ego agent!")
                 elif obs[agent_id]["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
                     obs[agent_id]["events"]["collisions"]
                     | obs[agent_id]["events"]["off_road"]
-                    | obs[agent_id]["events"]["off_route"]
-                    | obs[agent_id]["events"]["on_shoulder"]
-                    | obs[agent_id]["events"]["wrong_way"]
+                    # | obs[agent_id]["events"]["off_route"]
+                    # | obs[agent_id]["events"]["on_shoulder"]
+                    # | obs[agent_id]["events"]["wrong_way"]
                 ):
                     pass
+                elif (
+                    obs[agent_id]["events"]["agents_alive_done"]
+                ):
+                    print(f"{agent_id}: Agents alive done triggered.")
                 else:
                     print("Events: ", obs[agent_id]["events"])
                     raise Exception("Episode ended for unknown reason.")
@@ -53,10 +58,10 @@ class Reward(gym.Wrapper):
                 break
 
             # Penalty for driving off route
-            if obs[agent_id]["events"]["off_route"]:
-                reward[agent_id] -= np.float64(10)
-                print(f"{agent_id}: Went off route.")
-                break
+            # if obs[agent_id]["events"]["off_route"]:
+            #     reward[agent_id] -= np.float64(10)
+            #     print(f"{agent_id}: Went off route.")
+            #     break
 
             # Penalty for driving on road shoulder
             # if obs[agent_id]["events"]["on_shoulder"]:
@@ -71,8 +76,8 @@ class Reward(gym.Wrapper):
                 break
 
             # Reward for reaching goal
-            if obs[agent_id]["events"]["reached_goal"]:
-                reward[agent_id] += np.float64(30)
+            # if obs[agent_id]["events"]["reached_goal"]:
+            #     reward[agent_id] += np.float64(30)
 
             # Reward for distance travelled
             reward[agent_id] += np.float64(agent_reward)
