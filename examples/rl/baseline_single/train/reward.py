@@ -41,8 +41,17 @@ class Reward(gym.Wrapper):
 
         return obs, wrapped_reward, terminated, truncated, info
 
+
     def _reward(self, obs, env_reward):
         reward = {agent_id: np.float64(0) for agent_id in env_reward.keys()}
+
+        leader_name = "Leader-007"
+        leader=None
+        for agent_id, agent_obs in obs.items():
+            neighbor_vehicles = _get_neighbor_vehicles(obs=agent_obs, neighbor_name=leader_name)
+            if neighbor_vehicles:
+                leader=neighbor_vehicles[0]
+                break 
 
         for agent_id, agent_reward in env_reward.items():
             # Penalty for colliding
@@ -82,4 +91,30 @@ class Reward(gym.Wrapper):
             # Reward for distance travelled
             reward[agent_id] += np.float64(agent_reward)
 
+            # Reward for being in the same lane as the leader
+            # reward[agent_id] += np.float64(agent_reward)
+
+            ego_lane_idx = obs[agent_id]["ego_vehicle_state"]["lane_index"]
+            leader_lane_idx = leader["lane_index"]
+            if ego_lane_idx == leader_lane_idx:
+                reward[agent_id] += np.float64(1)
+
+            ego_lane_idx = obs[agent_id]["ego_vehicle_state"]["position"]
+            leader_lane_idx = obs[agent_id]["neighborhood_vehicle_states"]["lane_index"]
+            if ego_lane_idx == leader_lane_idx:
+                reward[agent_id] += np.float64(1)
+            
+
         return reward
+
+def _get_neighbor_vehicles(obs, neighbor_name):
+    neighbours = [neighbor for neighbor in zip(
+        obs["neighborhood_vehicle_states"]["id"],
+        obs["neighborhood_vehicle_states"]["heading"],
+        obs["neighborhood_vehicle_states"]["lane_index"],
+        obs["neighborhood_vehicle_states"]["position"],
+        obs["neighborhood_vehicle_states"]["speed"]) if neighbor_name in neighbor[0]]
+
+    print(neighbours)
+    input("dddddddddddddddddddddddddddddddddddd")
+    return neighbours

@@ -82,6 +82,19 @@ class FilterObs:
         rgb_noroad = replace_color(rgb=rgb, old_color=[self._road_color, self._lane_divider_color, self._edge_divider_color], new_color=np.zeros((3,)))
         rgb_ego = replace_color(rgb=rgb_noroad, old_color=[self._ego_color], new_color=self._traffic_color, mask=self._rgb_mask)
 
+        # Recolour the leader
+        def _get_neighbor_vehicles(obs, neighbor_name):
+            neighbours = [neighbor for neighbor in zip(
+                obs["neighborhood_vehicle_states"]["id"],
+                obs["neighborhood_vehicle_states"]["heading"],
+                obs["neighborhood_vehicle_states"]["lane_index"],
+                obs["neighborhood_vehicle_states"]["position"],
+                obs["neighborhood_vehicle_states"]["speed"]) if neighbor_name in neighbor[0]]
+            return neighbours
+
+
+
+
         # Superimpose waypoints onto rgb image
         wps = obs["waypoint_paths"]["position"][0:3, 3:, 0:3]
         for path in wps[:]:

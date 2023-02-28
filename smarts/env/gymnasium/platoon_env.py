@@ -47,7 +47,6 @@ SUPPORTED_ACTION_TYPES = (
     ActionSpaceType.Continuous,
     ActionSpaceType.RelativeTargetPose,
 )
-MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 
 
 def platoon_v0_env(
