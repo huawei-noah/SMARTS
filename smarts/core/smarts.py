@@ -279,6 +279,8 @@ class SMARTS(ProviderManager):
         # 2. Step all providers and harmonize state
         with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
+            exited_actors = self._harmonize_providers(provider_state)
+            self._teardown_vehicles_and_agents(exited_actors)
         self._last_provider_state = provider_state
         with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
@@ -475,7 +477,8 @@ class SMARTS(ProviderManager):
         self._trap_manager = TrapManager()
         self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
 
-        self._harmonize_providers(provider_state)
+        exited_actors = self._harmonize_providers(provider_state)
+        assert not exited_actors, "There should not be any actors exiting at this point"
         self._last_provider_state = provider_state
 
         self._is_setup = True
@@ -1038,11 +1041,6 @@ class SMARTS(ProviderManager):
         # (and needs to remain registered in Traci during this step).
 
     def _pybullet_provider_sync(self, provider_state: ProviderState):
-        current_actor_ids = {v.actor_id for v in provider_state.actors}
-        previous_sv_ids = self._vehicle_index.social_vehicle_ids()
-        exited_actors = previous_sv_ids - current_actor_ids
-        self._teardown_vehicles_and_agents(exited_actors)
-
         # Update our pybullet world given this provider state
         dt = provider_state.dt or self._last_dt
         for vehicle in provider_state.actors:
@@ -1119,15 +1117,24 @@ class SMARTS(ProviderManager):
             provider.teardown()
         self._last_provider_state = None
 
-    def _harmonize_providers(self, provider_state: ProviderState):
+    def _harmonize_providers(self, provider_state: ProviderState) -> Set[str]:
+        # Update core providers
         for provider in self.providers:
             try:
                 provider.sync(provider_state)
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
+
+        # update providers
         self._pybullet_provider_sync(provider_state)
         if self._renderer:
             self._sync_vehicles_to_renderer()
+
+        # catch actors that no longer have a provider
+        current_actor_ids = {v.actor_id for v in provider_state.actors}
+        previous_sv_ids = self._vehicle_index.social_vehicle_ids()
+        exited_actors = previous_sv_ids - current_actor_ids
+        return exited_actors
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -1244,7 +1251,6 @@ class SMARTS(ProviderManager):
 
             accumulated_provider_state.merge(provider_state)
 
-        self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
     @property

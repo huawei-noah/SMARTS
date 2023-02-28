@@ -54,6 +54,7 @@ import traci.constants as tc  # isort:skip
 
 class AgentRemovalMode(IntEnum):
     """Options for removing vehicles from the traffic sim on teardown."""
+
     KEEP = 0
     REMOVE_AGENTS = 1
     REMOVE_ALL = 2
