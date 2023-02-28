@@ -70,15 +70,15 @@ _DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
 _LANE_ID_SPACE = gym.spaces.Text(_WAYPOINT_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET)
 
 
-def _format_lane_id(lane_id: str):
-    lane_name = lane_id.ljust(_WAYPOINT_NAME_LIMIT, _TEXT_PAD_CHAR)
-    if len(lane_name) > _WAYPOINT_NAME_LIMIT:
+def _format_id(lane_id: str, max_length, type_):
+    lane_name = lane_id
+    if len(lane_name) > max_length:
         warnings.warn(
-            f"Lane named `{lane_name}` is more than "
-            f"`{_WAYPOINT_NAME_LIMIT}` characters long. It will be truncated "
+            f"`{type_}` named `{lane_name}` is more than "
+            f"`{max_length}` characters long. It will be truncated "
             "and may cause unintended issues with navigation and lane identification."
         )
-    return lane_name[:_WAYPOINT_NAME_LIMIT]
+    return lane_name[:max_length]
 
 
 def _format_mission(mission: Mission):
@@ -204,7 +204,7 @@ def _format_neighborhood_vehicle_states(
             nghb.lane_index,
             nghb.position,
             nghb.speed,
-            nghb.id[:_WAYPOINT_NAME_LIMIT],
+            _format_id(nghb.id, _ID_NAME_LIMIT, "vehicle id"),
         )
         for nghb in neighborhood_vehicle_states[:des_shp]
     ]
@@ -501,7 +501,7 @@ ego_speed_space_format = StandardSpaceFormat(
 
 
 ego_lane_id_space_format = StandardSpaceFormat(
-    lambda obs: _format_lane_id(obs.ego_vehicle_state.lane_id),
+    lambda obs: _format_id(obs.ego_vehicle_state.lane_id, _WAYPOINT_NAME_LIMIT, "lane"),
     lambda _: True,
     "lane_id",
     _LANE_ID_SPACE,
