@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import math
 from functools import partial
-from typing import Any, Sequence, Tuple
+from typing import Any, Generator, Sequence, Tuple
 
 import pytest
 from helpers.scenario import temp_scenario
@@ -111,7 +111,7 @@ def mock_provider(request):
 
 @pytest.fixture
 def smarts(
-    scenarios: Scenario,
+    scenarios: Generator[Scenario, None, None],
     mock_provider: MockProvider,
     time_resolution: float,
 ):
@@ -269,7 +269,7 @@ def test_bubble_manager_state_change(
     smarts: SMARTS,
     mock_provider: MockProvider,
     transition_cases: Tuple[
-        Sequence[Tuple[Tuple[float, float, float], bool, bool]], int, Any
+        Sequence[Tuple[Tuple[float, float, float], Tuple[bool, bool]]], int, Any
     ],
 ):
     state_at_position, _, _ = transition_cases
