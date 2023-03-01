@@ -68,7 +68,7 @@ def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     # which means it's offset from the ground (min_ has a positive z)
     # if link_index=0 (the chassis link) is used.
     overlapping_objects = bullet_client.getOverlappingObjects(
-        tuple(map(sum, zip(min_, (-LEEWAY, -LEEWAY, -LEEWAY)))),
+        tuple(map(sum, zip(min_, (-LEEWAY, -LEEWAY, 0)))),
         tuple(map(sum, zip(max_, (LEEWAY, LEEWAY, LEEWAY)))),
     )
     # the pairs returned by getOverlappingObjects() appear to be in the form (body_id, link_idx)
