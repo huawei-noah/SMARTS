@@ -140,6 +140,7 @@ def run(
             model.learn(
                 total_timesteps=config.train_steps,
                 callback=[checkpoint_callback],
+                reset_num_timesteps=False
             )
 
         # Save trained model.

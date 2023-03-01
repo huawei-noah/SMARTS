@@ -21,6 +21,7 @@ class Policy(Agent):
         from contrib_policy.filter_obs import FilterObs
         from contrib_policy.format_action import FormatAction
         from contrib_policy.frame_stack import FrameStack
+        from contrib_policy.make_dict import MakeDict
         from contrib_policy.utils import objdict
 
         from smarts.core.agent_interface import RGB
@@ -32,9 +33,9 @@ class Policy(Agent):
             config = objdict({"num_stack": 3})
         if top_down_rgb == None:
             top_down_rgb = RGB(
-                width=112,
-                height=112,
-                resolution=50 / 112,  # m/pixels
+                width=128,
+                height=128,
+                resolution=57 / 128,  # m/pixels
             )
 
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
@@ -43,17 +44,20 @@ class Policy(Agent):
             num_stack=config.num_stack,
             stack_axis=0,
         )
-        self.observation_space = self._frame_stack.observation_space
-        self.format_action = FormatAction()
         self._frame_stack.reset()
+        self._make_dict = MakeDict(input_space=self._frame_stack.observation_space)
+
+        self.observation_space = self._make_dict.observation_space
+
+        self._format_action = FormatAction()
+        self.action_space = self._format_action.action_space
         print("Policy initialised.")
 
     def act(self, obs):
         """Act function to be implemented by user."""
         processed_obs = self._process(obs)
         action, _ = self.model.predict(observation=processed_obs, deterministic=True)
-        formatted_action = self.format_action.format(action)
-
+        formatted_action = self._format_action.format(action)
         return formatted_action
 
     def _process(self, obs):
@@ -62,4 +66,5 @@ class Policy(Agent):
             self._frame_stack.reset()
         obs = self._filter_obs.filter(obs)
         obs = self._frame_stack.stack(obs)
+        obs = self._make_dict.make(obs)
         return obs
