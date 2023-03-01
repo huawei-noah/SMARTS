@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle ids are now added to the `highway-v1` formatted observations.
+- Stopped agent providers from removing social agents when they have no actor.
 - Using `trip` in sstudio traffic generation no longer causes a durouter error.
 ### Removed
 ### Security

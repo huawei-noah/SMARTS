@@ -20,6 +20,7 @@
 
 import logging
 import weakref
+import warnings
 from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
@@ -125,14 +126,10 @@ class AgentsProvider(Provider):
         self._remove_actors_without_actions(agent_actions)
         agents_without_actors = agent_actions.keys() - self._my_agent_actors.keys()
         if agents_without_actors:
-            self._log.error(
-                "actions specified for an agent without an actor: %s. Cleaning up social agents.",
-                agents_without_actors,
+            warnings.warn(
+                "actions specified for an agent without an actor: %s."
+                % agents_without_actors,
             )
-            orphaned_social_agents = (
-                self._agent_manager.social_agent_ids & agents_without_actors
-            )
-            self._agent_manager.teardown_social_agents(orphaned_social_agents)
 
         agent_manager = self._agent_manager
         vehicle_index = self._vehicle_index
