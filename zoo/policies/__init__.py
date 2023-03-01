@@ -1,7 +1,7 @@
 import importlib
 from pathlib import Path
 
-from smarts.core.agent_interface import AgentInterface, AgentType
+from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
@@ -41,8 +41,27 @@ register(
 register(
     locator="chase-via-points-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface=AgentInterface.from_type(
-            AgentType.LanerWithSpeed
+        interface = AgentInterface(
+            action=ActionSpaceType.LaneWithContinuousSpeed,
+            done_criteria=DoneCriteria(
+                collision=True,
+                off_road=True,
+                off_route=True,
+                on_shoulder=False,
+                wrong_way=False,
+                not_moving=False
+            ),
+            accelerometer=False,
+            drivable_area_grid_map=False,
+            lane_positions=False,
+            lidar_point_cloud=False,
+            max_episode_steps=None,
+            neighborhood_vehicle_states=True,
+            occupancy_grid_map=False,
+            top_down_rgb=False,
+            road_waypoints=True,
+            waypoint_paths=True,
+            signals=False,
         ),
         agent_builder=ChaseViaPointsAgent,
     ),
