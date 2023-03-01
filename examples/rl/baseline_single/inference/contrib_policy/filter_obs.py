@@ -19,6 +19,7 @@ class FilterObs:
             dtype=np.uint8,
         )
 
+        self._no_color = np.zeros((3,))
         self._wps_color = np.array(Colors.GreenTransparent.value[0:3]) * 255
         self._traffic_color = np.array(SceneColors.SocialVehicle.value[0:3]) * 255
         self._road_color = np.array(SceneColors.Road.value[0:3]) * 255
@@ -79,20 +80,10 @@ class FilterObs:
         # Get rgb image, remove road, and replace other egos (if any) as background vehicles
         rgb = obs["top_down_rgb"]
         h, w, _ = rgb.shape
-        rgb_noroad = replace_color(rgb=rgb, old_color=[self._road_color, self._lane_divider_color, self._edge_divider_color], new_color=np.zeros((3,)))
+        rgb_noroad = replace_color(rgb=rgb, old_color=[self._road_color, self._lane_divider_color, self._edge_divider_color], new_color=self._no_color)
         rgb_ego = replace_color(rgb=rgb_noroad, old_color=[self._ego_color], new_color=self._traffic_color, mask=self._rgb_mask)
 
-        # Recolour the leader
-        def _get_neighbor_vehicles(obs, neighbor_name):
-            neighbours = [neighbor for neighbor in zip(
-                obs["neighborhood_vehicle_states"]["id"],
-                obs["neighborhood_vehicle_states"]["heading"],
-                obs["neighborhood_vehicle_states"]["lane_index"],
-                obs["neighborhood_vehicle_states"]["position"],
-                obs["neighborhood_vehicle_states"]["speed"]) if neighbor_name in neighbor[0]]
-            return neighbours
-
-
+        # Draw lead vehicle
 
 
         # Superimpose waypoints onto rgb image
@@ -108,12 +99,8 @@ class FilterObs:
             )
             for point in wps_valid:
                 img_x, img_y = point[0], point[1]
-                if all(rgb_ego[img_y, img_x, :] == self._traffic_color):
-                    # Ignore waypoints in the current path which lie ahead of an obstacle.
-                    # break
-                    # Ignore waypoints overlapping obstacles and continue with other waypoints ahead.
-                    continue
-                rgb_ego[img_y, img_x, :] = self._wps_color
+                if all(rgb_ego[img_y, img_x, :] == self._no_color):
+                    rgb_ego[img_y, img_x, :] = self._wps_color
 
         # Channel first rgb
         rgb_ego = rgb_ego.transpose(2, 0, 1)
@@ -122,6 +109,16 @@ class FilterObs:
 
         return filtered_obs
         # fmt: on
+
+
+# def draw_vehicle(rgb, position, heading, resolution, new_color)->np.ndarray:
+
+#     neighbours = [neighbor for neighbor in zip(
+#         obs["neighborhood_vehicle_states"]["id"],
+#         obs["neighborhood_vehicle_states"]["heading"],
+#         obs["neighborhood_vehicle_states"]["position"]) if neighbor_name in neighbor[0]]
+
+#     return rgb
 
 
 def replace_color(

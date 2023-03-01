@@ -18,7 +18,7 @@ def entry_point(**kwargs):
         top_down_rgb=RGB(
             width=112,
             height=112,
-            resolution=80 / 112,  # m/pixels
+            resolution=60 / 112,  # m/pixels
         ),
     )
 
