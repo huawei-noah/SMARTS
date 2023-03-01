@@ -10,6 +10,8 @@ test: build-all-scenarios
 		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		--nb-exec-timeout 65536 \
 		./examples/tests ./smarts/env ./envision ./smarts/core ./smarts/sstudio ./tests \
+		--ignore=./smarts/core/waymo_map.py \
+		--ignore=./smarts/core/argoverse_map.py \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/core/tests/test_env_frame_rate.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
