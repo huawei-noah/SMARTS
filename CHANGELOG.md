@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 ### Changed
+- Unique id suffix is removed from vehicle name while building agent vehicle in `VehicleIndex.build_agent_vehicle()` function. 
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle ids are now added to the `highway-v1` formatted observations.
