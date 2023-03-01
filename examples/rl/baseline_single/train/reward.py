@@ -129,12 +129,12 @@ class Reward(gym.Wrapper):
                 leader_lane_idx = leader["lane_index"]
                 if ego_lane_idx == leader_lane_idx:
                     reward[agent_id] += np.float64(3)
-                    print(f"{agent_id}: In the same lane.")
+                    # print(f"{agent_id}: In the same lane.")
 
                 # Reward for being within x meters of leader
                 if np.linalg.norm(ego_pos - leader_pos) < 10:
                     reward[agent_id] += np.float64(2)
-                    print(f"{agent_id}: Within radius.")
+                    # print(f"{agent_id}: Within radius.")
 
         # print("^^^^^^^^^^^^^^")
         return reward

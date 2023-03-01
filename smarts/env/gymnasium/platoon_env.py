@@ -202,7 +202,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         agents_alive=AgentsAliveDoneCriteria(
             agent_lists_alive=[
                 AgentsListAlive(
-                    agents_list=['Agent_0'], 
+                    agents_list=['social-agent-leader-Leader-007'], 
                     minimum_agents_alive_in_list=1
                 )
             ]
