@@ -1,0 +1,46 @@
+name: Bug Report
+description: Create a report to help us improve
+title: "[Bug Report] Bug title"
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: High Level Description
+      description: Describe the problem in short.
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Version
+      description: What version of our software are you using?
+    validations:
+      required: true
+  - type: textarea
+    id: code-example
+    attributes:
+      label: Steps to reproduce the bug
+      description: |
+        Give a description or code snippet to help reproduce the bug.
+      render: shell
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System info
+      description: |
+        Describe the characteristic of your environment:
+        * Operating system & Environment (Please note if using Docker or wsl)
+        * Python version
+        * Python packages
+        * Date when bug occurred
+  - type: textarea
+    id: error-logs
+    attributes:
+      label: Error logs and screenshots
+      description: Add any other context about the problem here. Text or screenshots (preferably text).
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact (If known)
+      description: Add any other context about the problem here.

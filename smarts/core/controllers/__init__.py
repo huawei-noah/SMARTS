@@ -138,7 +138,7 @@ class ActionSpaceType(Enum):
     """
     RelativeTargetPose = 11
     """
-    Action=(delta_x, delta_y, heading). Type= ``Tuple[float,
+    Action=(delta_x, delta_y, delta_heading). Type= ``Tuple[float,
     float, float]``. Continuous action space of vehicle's next pose in terms of delta x 
     coordinate, delta y coordinate, and delta heading, to be reached in 0.1 seconds.
     """
@@ -246,7 +246,7 @@ class Controllers:
                 motion_action = [
                     action[0] + position[0],
                     action[1] + position[1],
-                    action[2],
+                    action[2] + heading,
                     0.1,
                 ]
             MotionPlannerController.perform_action(

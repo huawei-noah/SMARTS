@@ -10,15 +10,38 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+- Missing neighborhood vehicle ids are now added to the `highway-v1` formatted observations.
+- Using `trip` in sstudio traffic generation no longer causes a durouter error.
+### Removed
+### Security
+
+## [1.0.6] # 2023-02-26
+### Added
+- Added a math utility for generating combination groups out of two sequences with unique index use per group. This is intended for use to generate the combinations needed to give a unique agent-mission set per reset.
+- Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
+- Added `"steps_completed"` to observation formatter.
+### Fixed
+- Ensured that `hiwayenv.reset` provides unique agent-mission sets per reset.
+- Fixed an issue where `sstudio.types.Via` was not hashable.
+
+## [1.0.5] # 2023-02-19
+### Added
 - Added a zoo agent, named Control-and-Supervised-Learning, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
 - Added a zoo agent, named Discrete Soft Actor Critic, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
-- Added basic tests for `hiway-v1` resetting and unformatted observations and actions. 
+- Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
+- Added `actor_ids` as a provider interface to check the actors that the provider is currently in charge of.
 ### Changed
 - `HiWayEnvV1` derived environments now allow an explicit scenario through `reset(options["scenario"])`.
 - `HiWayEnvV1` derived environments now allow an explicit simulation start time through `reset(options["start_time"])`.
 - Exposed `smarts` as a property on `HiWayEnvV1`.
+- Made the heading input relative to the current heading in `RelativeTargetPose` action space.
 ### Deprecated
 ### Fixed
+- Issue where a 0 length lane caused `envision` to crash.
+- Fixed an issue where `Feature.type_specific_info` was calling a non-existant method.
 ### Removed
 ### Security
 

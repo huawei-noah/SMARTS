@@ -60,7 +60,11 @@ from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import radians_to_vec, vec_to_radians
+from smarts.core.utils.math import (
+    combination_pairs_with_unique_indices,
+    radians_to_vec,
+    vec_to_radians,
+)
 from smarts.sstudio import types as sstudio_types
 from smarts.sstudio.types import MapSpec
 from smarts.sstudio.types import Via as SSVia
@@ -213,7 +217,7 @@ class Scenario:
             agent_missions = Scenario.discover_agent_missions(
                 scenario_root, agents_to_be_briefed
             )
-            agent_missions = [dict(zip(agents_to_be_briefed, agent_missions))]
+
             social_agent_infos = Scenario._discover_social_agents_info(scenario_root)
             social_agents = [
                 {
@@ -229,6 +233,15 @@ class Scenario:
             # `or [None]` so that product(...) will not return an empty result
             # but insted a [(..., `None`), ...].
             agent_missions = agent_missions or [None]
+            if len(agents_to_be_briefed) == len(agent_missions):
+                warnings.warn(
+                    f"Scenario `{scenario_root}` has {len(agent_missions)} missions and"
+                    f" but there are {len(agents_to_be_briefed)} agents to assign"
+                    " missions to. The missions will be padded with random missions."
+                )
+            mission_agent_groups = combination_pairs_with_unique_indices(
+                agents_to_be_briefed, agent_missions
+            )
             social_agents = social_agents or [None]
             traffic_histories = Scenario.discover_traffic_histories(scenario_root) or [
                 None
@@ -236,13 +249,11 @@ class Scenario:
             traffic = Scenario.discover_traffic(scenario_root) or [[]]
 
             roll_traffic = 0
-            roll_agent_missions = 0
             roll_social_agents = 0
             roll_traffic_histories = 0
 
             if shuffle_scenarios:
                 roll_traffic = random.randint(0, len(traffic))
-                roll_agent_missions = random.randint(0, len(agent_missions))
                 roll_social_agents = random.randint(0, len(social_agents))
                 roll_traffic_histories = 0  # random.randint(0, len(traffic_histories))
 
@@ -253,7 +264,7 @@ class Scenario:
                 concrete_traffic_history,
             ) in product(
                 np.roll(traffic, roll_traffic, 0),
-                np.roll(agent_missions, roll_agent_missions, 0),
+                mission_agent_groups,
                 np.roll(social_agents, roll_social_agents, 0),
                 np.roll(traffic_histories, roll_traffic_histories, 0),
             ):
@@ -276,7 +287,7 @@ class Scenario:
                     scenario_root,
                     traffic_specs=concrete_traffic,
                     missions={
-                        **(concrete_agent_missions or {}),
+                        **{a_id: mission for a_id, mission in concrete_agent_missions},
                         **concrete_social_agent_missions,
                     },
                     social_agents=concrete_social_agents,
@@ -320,18 +331,6 @@ class Scenario:
 
         if not missions:
             missions = [None for _ in range(len(agents_to_be_briefed))]
-
-        if len(agents_to_be_briefed) == 1:
-            # single-agent, so we cycle through all missions individually.
-            return missions
-        elif len(agents_to_be_briefed) > 1:
-            # multi-agent, so we assume missions "drive" the agents (i.e. one
-            # mission per agent) and we will not be cycling through missions.
-            assert not missions or len(missions) == len(agents_to_be_briefed), (
-                "You must either provide an equal number of missions ({}) to "
-                "agents ({}) or provide no missions at all so they can be "
-                "randomly generated.".format(len(missions), len(agents_to_be_briefed))
-            )
 
         return missions
 
