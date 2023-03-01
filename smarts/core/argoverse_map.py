@@ -1,15 +1,36 @@
-from functools import lru_cache
+# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
 import heapq
 import logging
-import math
-from pathlib import Path
 import random
-from cached_property import cached_property
 import time
+from functools import lru_cache
+from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
+from cached_property import cached_property
+from shapely.geometry import Point as SPoint
+from shapely.geometry import Polygon
 
 from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from smarts.core.lanepoints import LanePoints, LinkedLanePoint
@@ -23,11 +44,16 @@ from smarts.core.utils.math import (
     vec_2d,
 )
 from smarts.sstudio.types import MapSpec
-from av2.map.map_api import ArgoverseStaticMap
-from av2.map.lane_segment import LaneMarkType, LaneSegment
-from av2.geometry.interpolate import interp_arc
-from shapely.geometry import Polygon
-from shapely.geometry import Point as SPoint
+
+try:
+    from av2.geometry.interpolate import interp_arc
+    from av2.map.lane_segment import LaneMarkType, LaneSegment
+    from av2.map.map_api import ArgoverseStaticMap
+except:
+    raise ImportError(
+        "You may not have installed the [argoverse] dependencies required for using Argoverse 2 maps with SMARTS. Install it first using the command `pip install -e .[argoverse]` at the source directory."
+        ""
+    )
 
 
 class ArgoverseMap(RoadMapWithCaches):
@@ -313,6 +339,8 @@ class ArgoverseMap(RoadMapWithCaches):
         lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     class Surface(RoadMapWithCaches.Surface):
+        """Surface representation for Argoverse maps."""
+
         def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
 
@@ -328,6 +356,8 @@ class ArgoverseMap(RoadMapWithCaches):
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMapWithCaches.Lane, Surface):
+        """Lane representation for Argoverse maps."""
+
         def __init__(
             self, map: "ArgoverseMap", lane_id: str, lane_seg: LaneSegment, index: int
         ):
@@ -589,6 +619,8 @@ class ArgoverseMap(RoadMapWithCaches):
         return None
 
     class Road(RoadMapWithCaches.Road, Surface):
+        """Road representation for Argoverse maps."""
+
         def __init__(self, road_id: str, lanes: List[RoadMap.Lane]):
             super().__init__(road_id, None)
             self._road_id = road_id
@@ -697,6 +729,8 @@ class ArgoverseMap(RoadMapWithCaches):
         return road
 
     class Route(RouteWithCache):
+        """Describes a route between Argoverse roads."""
+
         def __init__(self, road_map):
             super().__init__(road_map)
             self._roads = []
