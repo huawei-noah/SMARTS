@@ -59,22 +59,27 @@ with open(controller_filepath, "r") as controller_file:
 
 def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     contact_objects = set()
+    # Give 0.05 meter leeway
+    LEEWAY = 0.05
 
     # `getContactPoints` does not pick up collisions well so we cast a fast box check on the physics
     min_, max_ = bullet_client.getAABB(bullet_id, link_index)
     # note that getAABB returns a box around the link_index link only,
     # which means it's offset from the ground (min_ has a positive z)
     # if link_index=0 (the chassis link) is used.
-    overlapping_objects = bullet_client.getOverlappingObjects(min_, max_)
+    overlapping_objects = bullet_client.getOverlappingObjects(
+        tuple(map(sum, zip(min_, (-LEEWAY, -LEEWAY, -LEEWAY)))),
+        tuple(map(sum, zip(max_, (LEEWAY, LEEWAY, LEEWAY)))),
+    )
     # the pairs returned by getOverlappingObjects() appear to be in the form (body_id, link_idx)
     if overlapping_objects is not None:
         contact_objects = set(oo for oo, _ in overlapping_objects if oo != bullet_id)
 
     contact_points = []
     for contact_object in contact_objects:
-        # Give 0.05 meter leeway
+
         contact_points.extend(
-            bullet_client.getClosestPoints(bullet_id, contact_object, distance=0.05)
+            bullet_client.getClosestPoints(bullet_id, contact_object, distance=LEEWAY)
         )
 
     return contact_points
