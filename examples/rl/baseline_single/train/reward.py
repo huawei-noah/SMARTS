@@ -117,9 +117,10 @@ class Reward(gym.Wrapper):
                 # Verify the leader is infront of the ego agent.
                 leader_in_front = -self._half_pi < angle_diff < self._half_pi
 
-                print(f"ego_heading: {ego_heading}")
-                print(f"leader_angle: {leader_angle}")
-                print(f"angle_diff: {angle_diff*180/np.pi}")
+                # print(f"ego_heading: {ego_heading*180/np.pi}")
+                # print(f"leader_angle: {leader_angle*180/np.pi}")
+                # print(f"leader_heading: {leader['heading']*180/np.pi}")
+                # print(f"angle_diff: {angle_diff*180/np.pi}")
 
             if leader and leader_in_front:
 
@@ -131,11 +132,11 @@ class Reward(gym.Wrapper):
                     print(f"{agent_id}: In the same lane.")
 
                 # Reward for being within x meters of leader
-                if np.linalg.norm(ego_pos - leader_pos) < 7:
+                if np.linalg.norm(ego_pos - leader_pos) < 10:
                     reward[agent_id] += np.float64(2)
                     print(f"{agent_id}: Within radius.")
 
-        print("^^^^^^^^^^^^^^")
+        # print("^^^^^^^^^^^^^^")
         return reward
 
 def _get_neighbor_vehicles(obs, neighbor_name):
