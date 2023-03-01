@@ -199,13 +199,14 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         on_shoulder=False,
         wrong_way=False,
         not_moving=False,
-        # agents_alive=AgentsAliveDoneCriteria(
-        #     agent_lists_alive=[
-        #         AgentsListAlive(
-        #             agents_list=[""]
-        #         )
-        #     ]
-        # ),
+        agents_alive=AgentsAliveDoneCriteria(
+            agent_lists_alive=[
+                AgentsListAlive(
+                    agents_list=['Agent_0'], 
+                    minimum_agents_alive_in_list=1
+                )
+            ]
+        ),
     )
     max_episode_steps = 800
     waypoints_lookahead = 50
