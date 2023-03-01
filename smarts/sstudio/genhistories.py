@@ -996,7 +996,7 @@ class Waymo(_TrajectoryDataset):
 
 
 class Argoverse(_TrajectoryDataset):
-    """A tool for conversion of a Waymo dataset for use within SMARTS."""
+    """A tool for conversion of an Argoverse 2 dataset for use within SMARTS."""
 
     def __init__(self, dataset_spec: Dict[str, Any], output: str):
         super().__init__(dataset_spec, output)
