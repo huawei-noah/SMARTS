@@ -17,7 +17,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import dataclasses
 import logging
 import re
 import multiprocessing as mp
@@ -654,7 +653,6 @@ class Sensors:
             if sensor.mutable
         }
 
-        # TODO MTA: Return updated sensors or make sensors stateless
         return (
             Observation(
                 dt=sim_frame.last_dt,
@@ -689,8 +687,7 @@ class Sensors:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
         base_obs, dones, updated_sensors = cls.process_serialization_safe_sensors(*args)
-        complete_obs = dataclasses.replace(
-            base_obs,
+        complete_obs = base_obs._replace(
             **cls.process_serialization_unsafe_sensors(*args, renderer, bullet_client),
         )
         return (complete_obs, dones, updated_sensors)
