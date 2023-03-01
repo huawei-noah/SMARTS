@@ -17,6 +17,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Missing neighborhood vehicle ids are now added to the `highway-v1` formatted observations.
 - Stopped agent providers from removing social agents when they have no actor.
 - Using `trip` in sstudio traffic generation no longer causes a durouter error.
+- Chassis collision AABB first pass now has an additional `0.05m` tolerance to identify axis aligned collisions that would previously be missed.
+- Agent to mission padding warning now occurs when there are less missions than agents rather than when there are the same number of agents as missions.
 ### Removed
 ### Security
 
