@@ -607,17 +607,16 @@ class VehicleIndex:
         boid=False,
     ):
         """Build an entirely new vehicle for an agent."""
-        vehicle_id = f"{agent_id}-{gen_id()}"
         vehicle = Vehicle.build_agent_vehicle(
-            sim,
-            vehicle_id,
-            agent_interface,
-            plan,
-            filepath,
-            tire_filepath,
-            trainable,
-            surface_patches,
-            initial_speed,
+            sim=sim,
+            vehicle_id=agent_id,
+            agent_interface=agent_interface,
+            plan=plan,
+            vehicle_filepath=filepath,
+            tire_filepath=tire_filepath,
+            trainable=trainable,
+            surface_patches=surface_patches,
+            initial_speed=initial_speed,
         )
 
         sensor_state = SensorState(
