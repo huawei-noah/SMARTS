@@ -19,8 +19,8 @@
 # THE SOFTWARE.
 
 import logging
-import weakref
 import warnings
+import weakref
 from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
