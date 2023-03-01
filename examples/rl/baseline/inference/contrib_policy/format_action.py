@@ -22,8 +22,8 @@ def _discrete() -> Tuple[Callable[[int], np.ndarray], gym.Space]:
 
     action_map = {
         # key: [throttle, brake, steering]
-        0: [0.3, 0, 0],  # keep_direction
-        1: [0, 1, 0],  # slow_down
+        0: [0, 1, 0],  # slow_down
+        1: [0.3, 0, 0],  # keep_direction
         2: [0.3, 0, -0.5],  # turn_left
         3: [0.3, 0, 0.5],  # turn_right
     }
