@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Dict, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
@@ -47,7 +47,7 @@ class SignalProvider(Provider):
     @property
     def actions(self) -> Set[ActionSpaceType]:
         # TAI: could allow for agents to hijack things like signals as well.
-        # (Then the action spcae could just be the desired SignalLightState.)
+        # (Then the action space could just be the desired SignalLightState.)
         return set()
 
     @property
@@ -106,3 +106,12 @@ class SignalProvider(Provider):
     def stop_managing(self, actor_id: str):
         if actor_id in self._my_signals:
             del self._my_signals[actor_id]
+
+    @property
+    def actor_ids(self) -> Iterable[str]:
+        """A set of actors that this provider manages.
+
+        Returns:
+            Iterable[str]: The actors this provider manages.
+        """
+        return set(vs.actor_id for vs in self._my_signals.values())

@@ -21,14 +21,13 @@
 # THE SOFTWARE.
 import logging
 import os
-from typing import Callable, Dict, Generator, List, Tuple
+from typing import List, Tuple
 
 import gymnasium as gym
 import psutil
 import ray
 
 from smarts.benchmark.driving_smarts import load_config
-from smarts.benchmark.driving_smarts.v0 import DEFAULT_CONFIG
 from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metrics import Metrics, Score
 from smarts.zoo import registry as agent_registry
@@ -38,25 +37,25 @@ ERROR_TOLERANT = False
 
 
 @ray.remote(num_returns=1)
-def _eval_worker(name, env_config, episodes, agent_config, error_tolerant=False):
-    return _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant)
+def _eval_worker(name, env_config, episodes, agent_locator, error_tolerant=False):
+    return _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant)
 
 
-def _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant=False):
+def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant=False):
     import warnings
 
     warnings.filterwarnings("ignore")
     env = gym.make(
         env_config["env"],
         scenario=env_config["scenario"],
+        agent_interface=agent_registry.make(locator=agent_locator).interface,
         **env_config["kwargs"],
-        **agent_config["interface"],
     )
     env = Metrics(env)
-    agent = agent_registry.make_agent(
-        locator=agent_config["locator"],
-        **agent_config["kwargs"],
-    )
+    agents = {
+        agent_id: agent_registry.make_agent(locator=agent_locator)
+        for agent_id in env.agent_ids
+    }
 
     observation, info = env.reset()
     current_resets = 0
@@ -64,7 +63,8 @@ def _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant=
         while current_resets < episodes:
             try:
                 action = {
-                    agent_id: agent.act(obs) for agent_id, obs in observation.items()
+                    agent_id: agents[agent_id].act(obs)
+                    for agent_id, obs in observation.items()
                 }
                 # assert env.action_space.contains(action)
             except Exception:
@@ -85,7 +85,7 @@ def _eval_worker_local(name, env_config, episodes, agent_config, error_tolerant=
     return name, score
 
 
-def _parallel_task_iterator(env_args, benchmark_args, agent_args, log_workers):
+def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers):
     num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
 
     with suppress_output(stdout=True):
@@ -104,7 +104,7 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_args, log_workers):
                     name=name,
                     env_config=env_config,
                     episodes=benchmark_args["eval_episodes"],
-                    agent_config=agent_args,
+                    agent_locator=agent_locator,
                     error_tolerant=ERROR_TOLERANT,
                 )
             )
@@ -114,24 +114,24 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_args, log_workers):
         ray.shutdown()
 
 
-def _serial_task_iterator(env_args, benchmark_args, agent_args, *args, **_):
+def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
     for name, env_config in env_args.items():
         print(f"Evaluating {name}...")
         name, score = _eval_worker_local(
             name=name,
             env_config=env_config,
             episodes=benchmark_args["eval_episodes"],
-            agent_config=agent_args,
+            agent_locator=agent_locator,
             error_tolerant=ERROR_TOLERANT,
         )
         yield name, score
 
 
-def benchmark(benchmark_args, agent_args, log_workers=False):
+def benchmark(benchmark_args, agent_locator, log_workers=False):
     """Runs the benchmark using the following:
     Args:
         benchmark_args(dict): Arguments configuring the benchmark.
-        agent_args(dict): Arguments configuring the agent running in the benchmark.
+        agent_loctor(str): Locator string for the registered agent.
         debug_log(bool): Whether the benchmark should log to stdout.
     """
     print(f"Starting `{benchmark_args['name']}` benchmark.")
@@ -156,7 +156,7 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
     for name, score in iterator(
         env_args=env_args,
         benchmark_args=benchmark_args,
-        agent_args=agent_args,
+        agent_locator=agent_locator,
         log_workers=log_workers,
     ):
         named_scores.append((name, score))
@@ -185,35 +185,21 @@ def benchmark(benchmark_args, agent_args, log_workers=False):
     print(format_one_line_scores(named_scores))
     print()
     print("`Driving SMARTS V0` averaged result:")
-    print(format_scores_total(named_scores, len(env_args) or 1))
+    print(format_scores_total(named_scores, len(env_args)))
 
 
-def benchmark_from_configs(benchmark_config, agent_config, debug_log=False):
+def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
     """Runs a benchmark given the following.
 
     Args:
         benchmark_config(file path): The file path to the benchmark configuration.
-        agent_config(file path): The file path to the agent configuration.
+        agent_locator(str): Locator string for the registered agent.
         debug_log(bool): Whether the benchmark should log to stdout.
     """
     benchmark_args = load_config(benchmark_config)
-    agent_args = {}
-    if agent_config:
-        agent_args = load_config(agent_config)
-
-    assert agent_args, f"""
-    Cannot resolve `{agent_config}`. This should be in a location that can be resolved by python
-    in python's `sys.path`.  (e.g. `<path>/custom/__init__.py` or`<path>/custom.py`) 
-    
-    Please ensure agent configuration:
-      - file exists
-      - file path is correct
-      - contains correct data
-
-    The benchmark cannot continue."""
 
     benchmark(
         benchmark_args=benchmark_args["benchmark"],
-        agent_args=agent_args["agent"],
+        agent_locator=agent_locator,
         log_workers=debug_log,
     )

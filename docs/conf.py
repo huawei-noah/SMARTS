@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.coverage",  # to generate documentation coverage reports
     "sphinx.ext.extlinks",  # shorten external links
     "sphinx.ext.napoleon",  # support Numpy and Google doc style
+    "sphinx.ext.todo",  # support for todo items
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx_click",  # extract documentation from a `click` application
@@ -46,11 +47,11 @@ extensions = [
 
 extlinks = {
     "examples": (
-        "https://github.com/huawei-noah/SMARTS/blob/develop/examples/%s",
+        "https://github.com/huawei-noah/SMARTS/blob/master/examples/%s",
         "%s",
     ),
     "scenarios": (
-        "https://github.com/huawei-noah/SMARTS/blob/develop/scenarios/%s",
+        "https://github.com/huawei-noah/SMARTS/blob/master/scenarios/%s",
         "%s",
     ),
 }
@@ -65,6 +66,7 @@ apidoc_excluded_paths = [
     "setup.py",
     "scenarios",
     "smarts/ros",
+    "zoo/policies/interaction_aware_motion_prediction",
 ]
 apidoc_extra_args = [
     "--force",
@@ -77,17 +79,22 @@ apidoc_extra_args = [
 autodoc_mock_imports = [
     "cpuinfo",
     "cv2",
+    "gymnasium",
     "lxml",
     "mdutils",
     "moviepy",
     "opendrive2lanelet",
     "pathos",
+    "PIL",
     "pynput",
     "ray",
     "tabulate",
     "tools",
+    "torch",
     "waymo_open_dataset",
 ]
+
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

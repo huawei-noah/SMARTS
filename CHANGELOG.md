@@ -13,8 +13,57 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Missing neighborhood vehicle ids are now added to the `highway-v1` formatted observations.
+- Using `trip` in sstudio traffic generation no longer causes a durouter error.
+### Removed
+### Security
+
+## [1.0.6] # 2023-02-26
+### Added
+- Added a math utility for generating combination groups out of two sequences with unique index use per group. This is intended for use to generate the combinations needed to give a unique agent-mission set per reset.
+- Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
+- Added `"steps_completed"` to observation formatter.
+### Fixed
+- Ensured that `hiwayenv.reset` provides unique agent-mission sets per reset.
+- Fixed an issue where `sstudio.types.Via` was not hashable.
+
+## [1.0.5] # 2023-02-19
+### Added
+- Added a zoo agent, named Control-and-Supervised-Learning, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
+- Added a zoo agent, named Discrete Soft Actor Critic, from NeurIPS 2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
+- Added basic tests for `hiway-v1` resetting and unformatted observations and actions.
+- Added `actor_ids` as a provider interface to check the actors that the provider is currently in charge of.
+### Changed
+- `HiWayEnvV1` derived environments now allow an explicit scenario through `reset(options["scenario"])`.
+- `HiWayEnvV1` derived environments now allow an explicit simulation start time through `reset(options["start_time"])`.
+- Exposed `smarts` as a property on `HiWayEnvV1`.
+- Made the heading input relative to the current heading in `RelativeTargetPose` action space.
+### Deprecated
+### Fixed
+- Issue where a 0 length lane caused `envision` to crash.
+- Fixed an issue where `Feature.type_specific_info` was calling a non-existant method.
+### Removed
+### Security
+
+## [1.0.4] # 2023-02-10
+### Added
+- Engine configuration utility that uses the following locations to allow configuration of the SMARTS engine. The engine consumes the configuration files from the following locations in the following priority: `./engine.ini`, `~/.smarts/engine.ini`, `$GLOBAL_USER/smarts/engine.ini`, and `${PYTHON_ENV}/lib/${PYTHON_VERSION}/site-packages/smarts/engine.ini`.
+- Added map source uri as `map_source` inside of `hiway-v1` reset info to indicate what the current map is on reset.
+- Added NGSIM documentation.
+- Added a zoo agent, named Interaction-Aware Motion Prediction, from NeurIPS2022 submission. This zoo agent runs in benchmark `driving_smarts==0.0`.
+- Added Agent Zoo documentation in ReadTheDocs.
+### Changed
+- Made changes in the docs to reflect `master` branch as the main development branch.
+- Enabled supplying agent locator directly to benchmark runner and removed the need for an intermediary config file. Updated benchmark docs to reflect this.
+- Individualised the agent instances in the `benchmark_runner_v0.py`.
+- Made driving_smarts_competition_v0 env configurable through supply of `AgentInterface`.
+- Observation of driving_smarts_competition_v0 env was fixed to be of type `ObservationOptions.unformatted`.
+### Deprecated
+### Fixed
+- Fixed an exit error that occurs when envision attempts to close down.
 - Clarified the actions for `ActionSpaceType.Continuous` and `ActionSpaceType.ActuatorDynamic` in their respective docstrings.
 - Excluded from wheel any scenario build files in pattern `smarts/**/build/**/*.xml`.
+- Fixed an unintended regression in the metrics.
 ### Removed
 - Removed duplicated `smarts.env.gymnasium.action_conversion` module.
 ### Security

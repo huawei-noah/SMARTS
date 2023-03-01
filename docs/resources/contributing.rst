@@ -54,7 +54,7 @@ Pre-Push Checklist
 ------------------
 
 1. Do your best to see that your code compiles locally.
-2. Do not push to ``master``. Instead make a branch and a pull request to the ``develop`` branch.
+2. Do not push directly to ``master``. Instead make a branch and a pull request to the ``master`` branch.
 
 Submission of a Pull Request
 ----------------------------
@@ -99,6 +99,10 @@ Execute the following to build the docs locally.
     $ make docs
     $ python3.8 -m http.server 8000 --bind 127.0.0.1 -d docs/_build/html
     # Open http://127.0.0.1:8000 in your browser
+
+If documentation is incomplete please mark the area with a ``.. todo::`` as described in `sphinx.ext.todo <https://www.sphinx-doc.org/en/master/usage/extensions/todo.html>`_.
+
+Feel free to further contribute to the documentation and look at :ref:`todo` for sections that may yet need to be filled.
 
 Communication
 -------------

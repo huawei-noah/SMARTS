@@ -289,60 +289,15 @@ def test_complex_data(complex_data):
 def sim_data():
     return [
         0.1,
-        None,  # scene_id
-        "straight",  # scene_name
+        None,
+        "straight",
         [
-            [  # Traffic actor
-                0,  # id
-                1,  # lane id
-                -1.84,  # x
-                -3.2,  # y
-                0.0,  # z
-                -1.57,  # heading
-                4.62,  # speed
-                None,  # events
-                [],  # wapypoint paths
-                [],  # driven path
-                [],  # lidar
-                [],  # geometry
-                0,  # actor type
-                4,  # vehicle type
-            ],
-            [
-                2,
-                1,
-                -1.84,
-                0.0,
-                0.0,
-                -1.57,
-                5.0,
-                None,
-                [],
-                [],
-                [],
-                [],
-                0,
-                4,
-            ],
-            [
-                3,
-                1,
-                -1.84,
-                3.2,
-                0.0,
-                -1.57,
-                4.91,
-                None,
-                [],
-                [],
-                [],
-                [],
-                0,
-                4,
-            ],
+            [0, 1, -1.84, -3.2, 0.0, -1.57, 5.05, None, [], [], [], [], 0, 4],
+            [2, 1, -1.84, 0.0, 0.0, -1.57, 5.05, None, [], [], [], [], 0, 4],
+            [3, 1, -1.84, 3.2, 0.0, -1.57, 4.88, None, [], [], [], [], 0, 4],
         ],
         [],
-        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],  # bubbles
+        [[90.0, -10.0, 90.0, 10.0, 110.0, 10.0, 110.0, -10.0, 90.0, -10.0]],
         [],
         [4],
         {
@@ -448,6 +403,7 @@ def test_client_with_smarts(smarts: SMARTS, scenarios: Iterator[Scenario], sim_d
             es.add_any(state)
 
             data = es.resolve()
+
             assert data == sim_data
             assert data == unpack(data)
 

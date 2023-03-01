@@ -12,8 +12,8 @@ import gym
 from smarts.core.utils.episodes import episodes
 from smarts.sstudio.scenario_construction import build_scenarios
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
-from tools.argument_parser import default_argument_parser
+sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
+from examples.tools.argument_parser import default_argument_parser
 
 try:
     open_agent = importlib.import_module("open_agent")
@@ -31,7 +31,7 @@ def main(scenarios, headless, num_episodes):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
-        agent_specs={AGENT_ID: open_agent_spec},
+        agent_interfaces={AGENT_ID: open_agent_spec.interface},
         headless=headless,
         visdom=False,
         sumo_headless=True,

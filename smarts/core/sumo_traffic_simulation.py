@@ -23,7 +23,7 @@ import random
 import time
 import weakref
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -172,6 +172,15 @@ class SumoTrafficSimulation(TrafficProvider):
     def headless(self):
         """Does not show TraCI visualization."""
         return self._headless
+
+    @property
+    def actor_ids(self) -> Iterable[str]:
+        """The vehicles that sumo manages.
+
+        Returns:
+            Iterable[str]: Sumo vehicle ids.
+        """
+        return self._sumo_vehicle_ids
 
     def _initialize_traci_conn(self, num_retries=5):
         # TODO: inline sumo or process pool

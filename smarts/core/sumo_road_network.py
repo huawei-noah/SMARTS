@@ -1042,7 +1042,7 @@ class SumoRoadNetwork(RoadMap):
             # the only type we currently handle is FIXED_LOC_SIGNAL
             in_lane, to_lane, _ = self._feat_data
             via_id = in_lane.getConnection(to_lane).getViaLaneID()
-            return self.lane_by_id(via_id)
+            return self._map.lane_by_id(via_id)
 
         def min_dist_from(self, point: Point) -> float:
             return np.linalg.norm(self.geometry[0].as_np_array - point.as_np_array)

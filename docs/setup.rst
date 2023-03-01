@@ -6,7 +6,7 @@ Setup
 Prerequisites
 -------------
 
-+ python3 (3.7 and 3.8)
++ python3 (3.7 or 3.8)
 + ubuntu (>=16.04)
 
 Installation
@@ -20,7 +20,8 @@ Run the following commands to setup the SMARTS simulator.
     $ cd <path/to/SMARTS>
 
     # For latest stable release
-    $ git checkout master
+    $ git checkout tags/<tag_name>
+    # e.g., git checkout tags/v1.0.3
 
 .. note::
 
@@ -28,7 +29,7 @@ Run the following commands to setup the SMARTS simulator.
 
     .. code-block:: bash
 
-        $ git checkout develop
+        $ git checkout master
 
 .. code-block:: bash
 

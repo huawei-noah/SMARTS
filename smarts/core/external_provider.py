@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import weakref
-from typing import List, Sequence, Set
+from typing import Iterable, List, Sequence, Set
 
 import numpy as np
 
@@ -132,3 +132,12 @@ class ExternalProvider(Provider):
             if vs.actor_id == actor_id:
                 return True
         return False
+
+    @property
+    def actor_ids(self) -> Iterable[str]:
+        """A set of actors that this provider manages.
+
+        Returns:
+            Iterable[str]: The actors this provider manages.
+        """
+        return set(vs.actor_id for vs in self._ext_vehicle_states)
