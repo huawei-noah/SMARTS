@@ -128,7 +128,7 @@ class Reward(gym.Wrapper):
                 ego_lane_idx = agent_obs["ego_vehicle_state"]["lane_index"]
                 leader_lane_idx = leader["lane_index"]
                 if ego_lane_idx == leader_lane_idx:
-                    reward[agent_id] += np.float64(2)
+                    reward[agent_id] += np.float64(3)
                     print(f"{agent_id}: In the same lane.")
 
                 # Reward for being within x meters of leader
