@@ -97,6 +97,7 @@ class V2XTransmitter(NamedTuple):
     bands: Bands
     range: float
     # available_channels: List[str]
+    # max_message_bytes: int = 125000
 
 
 class V2XReceiver(NamedTuple):
@@ -133,55 +134,68 @@ class MessagePasser(gym.Wrapper):
 
         assert isinstance(env.unwrapped, HiWayEnvV1)
         o_action_space: gym.spaces.Dict = self.env.action_space
-        msg_space = gym.spaces.Tuple(
-            (
-                gym.spaces.Box(
-                    low=0, high=256, shape=(max_message_bytes,), dtype=np.uint8
-                ),
-            )
-        )
-        self.action_space = gym.spaces.Dict(
-            {
-                a_id: gym.spaces.Tuple(
-                    (
-                        base_action_space,
-                        msg_space,
-                    )
-                )
-                for a_id, base_action_space in o_action_space.spaces.items()
-            }
-        )
         o_observation_space: gym.spaces.Dict = self.env.observation_space
-        self._transmission_space = gym.spaces.Sequence(
-            gym.spaces.Tuple(
-                (
-                    gym.spaces.Tuple(
-                        (
-                            gym.spaces.Text(20),  # channel
-                            gym.spaces.Text(30),  # sender
-                            gym.spaces.Text(10),  # sender_type
-                            gym.spaces.Sequence(gym.spaces.Text(30)),  # cc
-                            gym.spaces.Sequence(gym.spaces.Text(30)),  # bcc
-                            gym.spaces.Text(10),  # format
-                        )
-                    ),
-                    gym.spaces.Tuple((msg_space,)),
-                )
+
+        header_space = gym.spaces.Tuple(
+            (
+                gym.spaces.Text(20),  # channel
+                gym.spaces.Text(30),  # sender
+                gym.spaces.Text(10),  # sender_type
+                gym.spaces.Sequence(gym.spaces.Text(30)),  # cc
+                gym.spaces.Sequence(gym.spaces.Text(30)),  # bcc
+                gym.spaces.Text(10),  # format
             )
-        )
-        self.observation_space = gym.spaces.Dict(
-            {
-                a_id: gym.spaces.Dict(
-                    dict(
-                        **obs,
-                        transmissions=self._transmission_space,
-                    )
-                )
-                for a_id, obs in o_observation_space.items()
-            }
         )
 
-    @lru_cache
+        def gen_msg_body_space(max_message_bytes: int):
+            return gym.spaces.Tuple(
+                (
+                    gym.spaces.Box(
+                        low=0, high=256, shape=(max_message_bytes,), dtype=np.uint8
+                    ),
+                )
+            )
+
+        def gen_msg_space(max_message_bytes: int):
+            return gym.spaces.Tuple(
+                (
+                    header_space,
+                    gen_msg_body_space(max_message_bytes),
+                )
+            )
+
+        def gen_transmission_space(max_message_bytes: int):
+            return gym.spaces.Sequence(gen_msg_space(max_message_bytes))
+
+        _action_space = {}
+        for a_id, base_action_space in o_action_space.spaces.items():
+            if a_id not in message_config:
+                _action_space[a_id] = base_action_space
+            else:
+                _action_space[a_id] = gym.spaces.Tuple(
+                    (
+                        base_action_space,
+                        gen_transmission_space(max_message_bytes=max_message_bytes),
+                    )
+                )
+        self.action_space = gym.spaces.Dict(_action_space)
+
+        _observation_space = {}
+        for a_id, obs in o_observation_space.spaces.items():
+            if a_id not in message_config:
+                _observation_space[a_id] = obs
+            else:
+                _observation_space[a_id] = gym.spaces.Dict(
+                    dict(
+                        **obs,
+                        transmissions=gen_transmission_space(
+                            max_message_bytes=max_message_bytes
+                        ),
+                    )
+                )
+        self.observation_space = gym.spaces.Dict(_observation_space)
+
+    @lru_cache()
     def resolve_alias(self, alias):
         """Resolve the alias to agent ids."""
         return set(self._alias_mapping[alias])
