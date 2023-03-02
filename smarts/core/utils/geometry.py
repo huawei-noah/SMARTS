@@ -43,4 +43,8 @@ def buffered_shape(shape, width: float = 1.0) -> Polygon:
 def triangulate_polygon(polygon: Polygon):
     """Attempts to convert a polygon into triangles."""
     # XXX: shapely.ops.triangulate current creates a convex fill of triangles.
-    return [tri_face for tri_face in triangulate(polygon) if tri_face.centroid.within(polygon)]
+    return [
+        tri_face
+        for tri_face in triangulate(polygon)
+        if tri_face.centroid.within(polygon)
+    ]

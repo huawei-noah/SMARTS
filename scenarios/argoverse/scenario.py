@@ -13,7 +13,7 @@ scenario_path = None  # e.g. Path("/home/user/argoverse/train/") / scenario_id
 
 traffic_histories = [
     t.TrafficHistoryDataset(
-        name=f"Argoverse_{scenario_id}",
+        name=f"argoverse_{scenario_id}",
         source_type="Argoverse",
         input_path=scenario_path,
     )

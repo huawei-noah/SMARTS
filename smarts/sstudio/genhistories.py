@@ -1029,15 +1029,15 @@ class Argoverse(_TrajectoryDataset):
         )
 
         def _lookup_agent_type(agent_type: AvObjectType) -> int:
-            # 1=motorcycle, 2=auto, 3=truck, 4=pedestrian/bicycle
+            # See decode_vehicle_type in traffic_history.py
             if agent_type == AvObjectType.MOTORCYCLIST:
-                return 1
+                return 1  # motorcycle
             elif agent_type == AvObjectType.VEHICLE:
-                return 2
+                return 2  # passenger
             elif agent_type == AvObjectType.BUS:
-                return 3
+                return 3  # truck
             elif agent_type in [AvObjectType.PEDESTRIAN, AvObjectType.CYCLIST]:
-                return 4  # cyclist
+                return 4  # pedestrian/bicycle
             else:
                 return 0  # other
 
@@ -1049,7 +1049,7 @@ class Argoverse(_TrajectoryDataset):
         # Normalize to start at 0, and convert to milliseconds
         timestamps = (scenario.timestamps_ns - scenario.timestamps_ns[0]) * 1e-6
 
-        # The Ego vehicle has a string ID, so we need to give it a unique int ID
+        # The ego vehicle has a string ID, so we need to give it a unique int ID
         all_ids = [int(t.track_id) for t in scenario.tracks if t.track_id != "AV"]
         ego_id = max(all_ids) + 1
 
