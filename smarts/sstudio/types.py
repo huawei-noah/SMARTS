@@ -545,7 +545,7 @@ class JunctionEdgeIDResolver:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class Via:
     """A point on a road that an actor must pass through"""
 
