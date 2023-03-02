@@ -293,9 +293,9 @@ class HiWayEnvV1(gym.Env):
         if self._observations_formatter.observation_options == ObservationOptions.full:
             return (
                 self._observations_formatter.format(observations),
-                sum(r for r in rewards.values()),
-                dones["__all__"],
-                dones["__all__"],
+                rewards,
+                dones,
+                dones,
                 info,
             )
         elif self._observations_formatter.observation_options in (
