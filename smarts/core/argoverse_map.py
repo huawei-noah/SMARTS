@@ -645,16 +645,6 @@ class ArgoverseMap(RoadMapWithCaches):
             return self._road_id
 
         @property
-        def type(self) -> int:
-            """The type of this road."""
-            raise NotImplementedError()
-
-        @property
-        def type_as_str(self) -> str:
-            """The type of this road."""
-            raise NotImplementedError()
-
-        @property
         def composite_road(self) -> RoadMap.Road:
             """Return an abstract Road composed of one or more RoadMap.Road segments
             (including this one) that has been inferred to correspond to one continuous
@@ -667,8 +657,11 @@ class ArgoverseMap(RoadMapWithCaches):
             and composed out of subordinate Road objects."""
             return False
 
-        @property
+        @cached_property
         def is_junction(self) -> bool:
+            for lane in self.lanes:
+                if lane.foes or len(lane.incoming_lanes) > 1:
+                    return True
             return False
 
         @cached_property
@@ -693,16 +686,21 @@ class ArgoverseMap(RoadMapWithCaches):
                 }
             )
 
+        @lru_cache(maxsize=16)
         def oncoming_roads_at_point(self, point: Point) -> List[RoadMap.Road]:
-            """Returns a list of nearby roads to point that are (roughly)
-            parallel to this one but have lanes that go in the opposite direction."""
-            raise NotImplementedError()
+            result = []
+            for lane in self.lanes:
+                offset = lane.to_lane_coord(point).s
+                result += [
+                    ol.road
+                    for ol in lane.oncoming_lanes_at_offset(offset)
+                    if ol.road != self
+                ]
+            return result
 
         @property
         def parallel_roads(self) -> List[RoadMap.Road]:
-            """Returns roads that start and end at the same
-            point as this one."""
-            raise NotImplementedError()
+            return []
 
         @property
         def lanes(self) -> List[RoadMap.Lane]:
