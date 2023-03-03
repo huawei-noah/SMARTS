@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 - Added objective, scenario description, and trained agent performance, to the Driving Smarts 2022 benchmark documentation.
+- Added support for the [Argoverse 2 Motion Forecasting Dataset](https://www.argoverse.org/av2.html#forecasting-link) (see `scenarios/argoverse`).
 ### Changed
 - Unique id suffix is removed from vehicle name while building agent vehicle in `VehicleIndex.build_agent_vehicle()` function. 
 ### Deprecated

@@ -87,7 +87,6 @@ class ArgoverseMap(RoadMapWithCaches):
     def __init__(self, map_spec: MapSpec, avm: ArgoverseStaticMap):
         super().__init__()
         self._log = logging.getLogger(self.__class__.__name__)
-        self._log.setLevel(logging.INFO)
         self._avm = avm
         self._argoverse_scenario_id = avm.log_id
         self._map_spec = map_spec
