@@ -152,7 +152,8 @@ def run(
 
     if config.mode == "evaluate":
         print("\nEvaluate policy.\n")
-        model = sb3lib.PPO.load(config.model, print_system_info=True)
+        device = th.device("cpu")
+        model = sb3lib.PPO.load(config.model, print_system_info=True, device=device)
         for env_name, env_eval in envs_eval.items():
             print(f"\nEvaluating env {env_name}.")
             mean_reward, std_reward = evaluate_policy(
