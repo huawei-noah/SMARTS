@@ -19,7 +19,15 @@
 # THE SOFTWARE.
 
 
+import warnings
+
 import pkg_resources
 
 # The full version, including alpha/beta/rc tags
 VERSION = pkg_resources.get_distribution("smarts").version
+
+warnings.simplefilter("once")
+warnings.warn(
+    f"The develop branch is now deprecated and will soon be removed. Please switch to the master branch to stay up to date with SMARTS development.",
+    DeprecationWarning,
+)
