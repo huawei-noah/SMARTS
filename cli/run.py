@@ -27,7 +27,7 @@ from contextlib import contextmanager
 
 import click
 
-from cli.studio import build_scenarios
+from cli.studio import build_all
 
 
 @contextmanager
@@ -75,7 +75,7 @@ def kill_process_group_afterwards():
 @click.argument("scenario_path", nargs=-1, type=click.UNPROCESSED)
 def run_experiment(clean, envision, envision_port, script_path, scenario_path, seed):
     with kill_process_group_afterwards():
-        build_scenarios(
+        build_all(
             clean=clean,
             scenarios=scenario_path,
             seed=seed,
