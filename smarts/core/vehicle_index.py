@@ -280,7 +280,7 @@ class VehicleIndex:
         """A list of all vehicle IDs paired with their vehicle."""
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
-    def vehicle_by_id(self, vehicle_id, default=...):
+    def vehicle_by_id(self, vehicle_id, default=...) -> Vehicle:
         """Get a vehicle by its id."""
         vehicle_id = _2id(vehicle_id)
         if default is ...:

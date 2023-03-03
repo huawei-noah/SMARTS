@@ -21,7 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TypeVar
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -1098,7 +1098,7 @@ class SMARTS(ProviderManager):
         """The current providers controlling actors within the simulation."""
         return self._providers
 
-    def get_provider_by_type(self, requested_type) -> Optional[Provider]:
+    def get_provider_by_type(self, requested_type: type) -> Optional[Provider]:
         """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self._providers:

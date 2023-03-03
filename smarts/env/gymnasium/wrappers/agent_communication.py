@@ -22,8 +22,8 @@
 import enum
 from collections import defaultdict
 from enum import Enum, IntFlag, unique
-from functools import lru_cache
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
+from functools import lru_cache, partial
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Tuple
 
 import gymnasium as gym
 import numpy as np
@@ -104,10 +104,75 @@ class V2XReceiver(NamedTuple):
     """A configuratoin utility to set up agent to receive messages."""
 
     bands: Bands
-    aliases: List[str]
-    whitelist_channels: Optional[List[str]] = None
+    aliases: Set[str]
+    whitelist_channels: Optional[Set[str]] = None
     blacklist_channels: Set[str] = set()
     sensitivity: Sensitivity = Sensitivity.STANDARD
+
+
+@lru_cache
+def active_filter(a: frozenset, a_in_observations):
+    return frozenset(a.intersection(a_in_observations))
+
+
+# filter recipients by band
+## compare transmitter
+def band_filter(
+    sender, recipients, message_config: Dict[str, Tuple[V2XTransmitter, V2XReceiver]]
+):
+    return frozenset(
+        r
+        for r in recipients
+        if message_config[sender][0].bands | message_config[r][1].bands
+    )
+
+
+# filter recipients that do not listen to the channel
+def accepts_channel(channel, receiver: V2XReceiver):
+    return (
+        (not receiver.whitelist_channels) or (channel in receiver.whitelist_channels)
+    ) and channel not in receiver.blacklist_channels
+
+
+def channel_filter(
+    channel, recipients, message_config: Dict[str, Tuple[V2XTransmitter, V2XReceiver]]
+):
+    return frozenset(
+        r for r in recipients if accepts_channel(channel, message_config[r][1])
+    )
+
+
+# pytype: enable=wrong-arg-types
+
+## filter recipients by distance
+## Includes all
+## TODO ensure this works on all formatting types
+# cached_dist_comp = lambda sender, receiver: obs[sender]["position"].dot(obs[receiver]["position"])
+# cached_distance_filter = lru_cache(lambda sender, receivers: (
+#     r for r in receivers if cached_distance_filter
+# ))
+
+# compress filters
+def general_filter(
+    header,
+    initial_recipients,
+    observations,
+    message_config,
+    alias_resolver: Callable[[frozenset], frozenset],
+):
+    return (
+        cc
+        for recipients in map(alias_resolver, initial_recipients)
+        for cc in channel_filter(
+            header.channel,
+            band_filter(
+                header.sender,
+                active_filter(frozenset(recipients), frozenset(observations.keys())),
+                message_config,
+            ),
+            message_config,
+        )
+    )
 
 
 class MessagePasser(gym.Wrapper):
@@ -122,7 +187,9 @@ class MessagePasser(gym.Wrapper):
         max_message_bytes=125000,
     ):
         """"""
+        assert isinstance(env.unwrapped, HiWayEnvV1)
         super().__init__(env)
+        self._max_message_bytes = max_message_bytes
         self._message_config = message_config
         # map alias to agent ids (multiple agents can be under the same alias)
         self._alias_mapping = defaultdict(list)
@@ -132,7 +199,6 @@ class MessagePasser(gym.Wrapper):
             self._alias_mapping[a_id].append(a_id)
             self._alias_mapping["__all__"].append(a_id)
 
-        assert isinstance(env.unwrapped, HiWayEnvV1)
         o_action_space: gym.spaces.Dict = self.env.action_space
         o_observation_space: gym.spaces.Dict = self.env.observation_space
 
@@ -167,6 +233,10 @@ class MessagePasser(gym.Wrapper):
         def gen_transmission_space(max_message_bytes: int):
             return gym.spaces.Sequence(gen_msg_space(max_message_bytes))
 
+        self._transmission_space = gen_transmission_space(
+            max_message_bytes=max_message_bytes
+        )
+
         _action_space = {}
         for a_id, base_action_space in o_action_space.spaces.items():
             if a_id not in message_config:
@@ -175,7 +245,7 @@ class MessagePasser(gym.Wrapper):
                 _action_space[a_id] = gym.spaces.Tuple(
                     (
                         base_action_space,
-                        gen_transmission_space(max_message_bytes=max_message_bytes),
+                        self._transmission_space,
                     )
                 )
         self.action_space = gym.spaces.Dict(_action_space)
@@ -188,98 +258,90 @@ class MessagePasser(gym.Wrapper):
                 _observation_space[a_id] = gym.spaces.Dict(
                     dict(
                         **obs,
-                        transmissions=gen_transmission_space(
-                            max_message_bytes=max_message_bytes
-                        ),
+                        transmissions=self._transmission_space,
                     )
                 )
         self.observation_space = gym.spaces.Dict(_observation_space)
 
-    @lru_cache()
+    @property
+    def message_config(self):
+        """The current message config.
+
+        Returns:
+            Dict[str, Tuple[V2XTransmitter, V2XReceiver]]: The message configuration.
+        """
+        return self._message_config.copy()
+
+    @property
+    def max_message_bytes(self):
+        """The max message bytes size.
+
+        Returns:
+            int: The max size of a message.
+        """
+        return self._max_message_bytes
+
+    @lru_cache
     def resolve_alias(self, alias):
         """Resolve the alias to agent ids."""
-        return set(self._alias_mapping[alias])
+        return frozenset(self._alias_mapping[alias])
 
     def step(self, action):
         """Steps the environment using the given action."""
         std_actions = {a_id: act for a_id, (act, _) in action.items()}
         observations, rewards, terms, truncs, infos = self.env.step(std_actions)
 
-        msgs = defaultdict(list)
-
-        # pytype: disable=wrong-arg-types
-        # filter recipients for active
-        cached_active_filter = lru_cache(
-            lambda a: frozenset(a.intersection(observations.keys()))
-        )
-
-        # filter recipients by band
-        ## compare transmitter
-        cached_band_filter = lru_cache(
-            lambda sender, recipients: frozenset(
-                r
-                for r in recipients
-                if self._message_config[sender][0].bands
-                | self._message_config[r][1].bands
+        obs_with_msgs = {
+            a_id: dict(
+                **obs,
+                transmissions=[],
             )
+            if a_id in self._message_config
+            else obs
+            for a_id, obs in observations.items()
+        }
+
+        self.augment_observations(
+            messages=(msg for (_, msg) in action.values()), observations=obs_with_msgs
         )
 
-        # filter recipients that do not listen to the channel
-        accepts_channel = lru_cache(
-            lambda channel, recipient: (
-                (not self._message_config[recipient][1].whitelist_channels)
-                or (channel in self._message_config[recipient][1].whitelist_channels)
-            )
-            and channel not in self._message_config[recipient][1].blacklist_channels
-        )
-        cached_channel_filter = lru_cache(
-            lambda channel, recipients: frozenset(
-                r for r in recipients if accepts_channel(channel, r)
-            )
-        )
-        # pytype: enable=wrong-arg-types
+        return obs_with_msgs, rewards, terms, truncs, infos
 
-        ## filter recipients by distance
-        ## Includes all
-        ## TODO ensure this works on all formatting types
-        # cached_dist_comp = lambda sender, receiver: obs[sender]["position"].dot(obs[receiver]["position"])
-        # cached_distance_filter = lru_cache(lambda sender, receivers: (
-        #     r for r in receivers if cached_distance_filter
-        # ))
-
-        # compress filters
-        general_filter = lambda header, initial_recipients: (
-            cc
-            for recipients in map(self.resolve_alias, initial_recipients)
-            for cc in cached_channel_filter(
-                header.channel,
-                cached_band_filter(
-                    header.sender, cached_active_filter(frozenset(recipients))
-                ),
-            )
+    def augment_observations(
+        self,
+        messages,
+        observations,
+    ):
+        f = partial(
+            general_filter,
+            observations=observations,
+            message_config=self._message_config,
+            alias_resolver=self.resolve_alias,
         )
-
-        # Organise the messages to their recipients
-        for a_id, (_, msg) in action.items():
+        for msg in messages:
             msg: List[Tuple[Header, Message]] = msg
             for header, message in msg:
                 header: Header = header
                 message: Message = message
 
                 # expand the recipients
-                cc_recipients = set(general_filter(header, frozenset(header.cc)))
-                bcc_recipients = set(general_filter(header, frozenset(header.bcc)))
+                cc_recipients = set(
+                    f(header=header, initial_recipients=frozenset(header.cc))
+                )
+                bcc_recipients = set(
+                    f(header=header, initial_recipients=frozenset(header.bcc))
+                )
                 cc_header = header._replace(cc=cc_recipients)
 
                 # associate the messages to the recipients
                 for recipient in (
                     cc_recipients - bcc_recipients
                 ):  # privacy takes priority
-                    msgs[recipient].append(
+                    observations[recipient]["transmissions"].append(
                         (cc_header._replace(bcc=set()), message)  # clear bcc
                     )
                 for recipient in bcc_recipients:
-                    msgs[recipient].append(
+                    observations[recipient]["transmissions"].append(
                         (
                             cc_header._replace(
                                 bcc={recipient}
@@ -287,15 +349,6 @@ class MessagePasser(gym.Wrapper):
                             message,
                         )
                     )
-
-        obs_with_msgs = {
-            a_id: dict(
-                **obs,
-                transmissions=msgs[a_id],
-            )
-            for a_id, obs in observations.items()
-        }
-        return obs_with_msgs, rewards, terms, truncs, infos
 
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
