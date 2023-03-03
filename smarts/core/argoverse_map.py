@@ -87,6 +87,7 @@ class ArgoverseMap(RoadMapWithCaches):
     def __init__(self, map_spec: MapSpec, avm: ArgoverseStaticMap):
         super().__init__()
         self._log = logging.getLogger(self.__class__.__name__)
+        self._log.setLevel(logging.INFO)
         self._avm = avm
         self._argoverse_scenario_id = avm.log_id
         self._map_spec = map_spec
@@ -198,16 +199,22 @@ class ArgoverseMap(RoadMapWithCaches):
                 neighbours: List[int] = []
                 cur_seg = lane_seg
                 while True:
-                    left = cur_seg.left_lane_marking.mark_type
+                    left_mark = cur_seg.left_lane_marking.mark_type
+                    left_id = cur_seg.left_neighbor_id
                     if (
-                        cur_seg.left_neighbor_id is not None
-                        and left == LaneMarkType.DASHED_WHITE
+                        left_id is not None
+                        and left_mark == LaneMarkType.DASHED_WHITE
+                        and left_id in self._avm.vector_lane_segments
                     ):
                         # There is a valid lane to the left, so add it and continue
-                        neighbours.append(cur_seg.left_neighbor_id)
-                        cur_seg = self._avm.vector_lane_segments[
-                            cur_seg.left_neighbor_id
-                        ]
+                        left_seg = self._avm.vector_lane_segments[left_id]
+
+                        # Edge case: sometimes there can be a cycle (2 lanes can have each other as their left neighbour)
+                        if left_seg.left_neighbor_id == cur_seg.id:
+                            break
+
+                        cur_seg = left_seg
+                        neighbours.append(left_id)
                     else:
                         break  # This is the leftmost lane in the road, so stop
 
@@ -297,7 +304,14 @@ class ArgoverseMap(RoadMapWithCaches):
             if lane_seg.right_neighbor_id is None:
                 cur_seg = lane_seg
                 while True:
-                    if cur_seg.left_neighbor_id is None or cur_seg.id in processed_ids:
+                    if (
+                        cur_seg.left_neighbor_id is None
+                        or cur_seg.id in processed_ids
+                        or (
+                            cur_seg.left_neighbor_id
+                            not in self._avm.vector_lane_segments
+                        )
+                    ):
                         break  # This is the leftmost lane in the road, so stop
                     else:
                         left_mark = cur_seg.left_lane_marking.mark_type
