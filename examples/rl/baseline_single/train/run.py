@@ -115,8 +115,8 @@ def run(
         scenarios_iter = cycle(config.scenarios)
         model = sb3lib.PPO(
             env=envs_train[next(scenarios_iter)],
-            verbose=1,
             tensorboard_log=config.logdir / "tensorboard",
+            verbose=1,
             **network.combined_extractor(config),
         )
         
@@ -154,6 +154,13 @@ def run(
         print("\nEvaluate policy.\n")
         device = th.device("cpu")
         model = sb3lib.PPO.load(config.model, print_system_info=True, device=device)
+
+        # Print model summary
+        # from torchinfo import summary
+        # td = {"rgb":th.zeros(1,9,112,112)}
+        # summary(model.policy, input_data=[td], depth=5)   
+        # input("Press any key to continue ...")
+
         for env_name, env_eval in envs_eval.items():
             print(f"\nEvaluating env {env_name}.")
             mean_reward, std_reward = evaluate_policy(

@@ -21,6 +21,7 @@ class FilterObs:
 
         self._no_color = np.zeros((3,))
         self._wps_color = np.array(Colors.GreenTransparent.value[0:3]) * 255
+        self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._traffic_color = np.array(SceneColors.SocialVehicle.value[0:3]) * 255
         self._road_color = np.array(SceneColors.Road.value[0:3]) * 255
         self._lane_divider_color = np.array(SceneColors.LaneDivider.value[0:3]) * 255

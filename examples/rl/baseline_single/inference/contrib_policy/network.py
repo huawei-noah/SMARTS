@@ -48,7 +48,10 @@ def combined_extractor(config):
     kwargs["policy_kwargs"] = dict(
         features_extractor_class=CombinedExtractor,
         features_extractor_kwargs=dict(cnn_output_dim=256),
-        net_arch=[],
+        # net_arch=[],
+        net_arch=[dict(pi=[256], vf=[256])],
     )
     kwargs["target_kl"] = 0.1
+    kwargs["n_steps"] = config.n_steps
+    kwargs["batch_size"] = config.batch_size
     return kwargs

@@ -1,6 +1,6 @@
 import gymnasium as gym
 import numpy as np
-
+from smarts.core.colors import SceneColors
 
 class Reward(gym.Wrapper):
     def __init__(self, env):
@@ -8,6 +8,7 @@ class Reward(gym.Wrapper):
         super().__init__(env)
         self._half_pi = np.pi/2
         self._two_pi = 2 * np.pi
+        self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
 
     def step(self, action):
         """Adapts the wrapped environment's step.
@@ -90,10 +91,10 @@ class Reward(gym.Wrapper):
             # if agent_obs["events"]["reached_goal"]:
             #     reward[agent_id] += np.float64(30)
 
-            # Reward for distance travelled
+            # Reward for distance travelled by driving
             reward[agent_id] += np.float64(env_reward[agent_id])
 
-            # Rewards specific to "platooning" and "following" tasks
+            # Check if leader is in front within visual angle
             if leader:
 
                 # Ego's heading with respect to the map's coordinate system.
@@ -122,19 +123,32 @@ class Reward(gym.Wrapper):
                 # print(f"leader_heading: {leader['heading']*180/np.pi}")
                 # print(f"angle_diff: {angle_diff*180/np.pi}")
 
-            if leader and leader_in_front:
+            if leader:
+                rgb = agent_obs["top_down_rgb"]
+                leader_in_rgb = (rgb == self._leader_color.reshape((1, 1, 3))).all(axis=-1).any()
+
+                # from contrib_policy.helper import plotter3d
+                # print("-----------------------------")
+                # plotter3d(obs=agent_obs["top_down_rgb"],rgb_gray=3,channel_order="last",pause=0)
+                # print("-----------------------------")
+
+            # Rewards specific to "platooning" and "following" tasks
+            if leader and leader_in_front and leader_in_rgb:
 
                 # Reward for being in the same lane as the leader
                 ego_lane_idx = agent_obs["ego_vehicle_state"]["lane_index"]
                 leader_lane_idx = leader["lane_index"]
                 if ego_lane_idx == leader_lane_idx:
-                    reward[agent_id] += np.float64(3)
-                    # print(f"{agent_id}: In the same lane.")
+                    reward[agent_id] += np.float64(1)
+                    print(f"{agent_id}: In the same lane.")
 
                 # Reward for being within x meters of leader
                 if np.linalg.norm(ego_pos - leader_pos) < 10:
-                    reward[agent_id] += np.float64(2)
-                    # print(f"{agent_id}: Within radius.")
+                    reward[agent_id] += np.float64(1)
+                    print(f"{agent_id}: Within radius.")
+
+            else:
+                reward[agent_id] -= np.float64(0.1)
 
         # print("^^^^^^^^^^^^^^")
         return reward
@@ -149,3 +163,12 @@ def _get_neighbor_vehicles(obs, neighbor_name):
         obs["neighborhood_vehicle_states"]["speed"]) if neighbor_name in neighbor[0]]
     neighbors_dict = [dict(zip(keys,neighbor)) for neighbor in neighbors_tuple]
     return neighbors_dict
+
+
+def _point_in_rectangle(x1, y1, x2, y2, x, y) :
+    # bottom-left (x1, y1) 
+    # top-right (x2, y2)
+    if (x > x1 and x < x2 and y > y1 and y < y2) :
+        return True
+    else :
+        return False
