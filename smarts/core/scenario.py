@@ -233,7 +233,7 @@ class Scenario:
             # `or [None]` so that product(...) will not return an empty result
             # but insted a [(..., `None`), ...].
             agent_missions = agent_missions or [None]
-            if len(agents_to_be_briefed) == len(agent_missions):
+            if len(agents_to_be_briefed) > len(agent_missions):
                 warnings.warn(
                     f"Scenario `{scenario_root}` has {len(agent_missions)} missions and"
                     f" but there are {len(agents_to_be_briefed)} agents to assign"
