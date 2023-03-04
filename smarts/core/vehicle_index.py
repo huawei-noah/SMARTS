@@ -273,7 +273,6 @@ class VehicleIndex:
 
         return positions[0] if len(positions) > 0 else None
 
-    @cache
     def vehicles_by_actor_id(self, actor_id, include_shadowers=False):
         """Find vehicles associated with the given actor.
         Args:
