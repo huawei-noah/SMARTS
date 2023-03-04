@@ -20,7 +20,16 @@
 import logging
 from copy import copy, deepcopy
 from io import StringIO
-from typing import FrozenSet, Iterator, NamedTuple, Optional, Set, Tuple, Union
+from typing import (
+    FrozenSet,
+    Iterator,
+    NamedTuple,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import tableprint as tp
@@ -238,6 +247,22 @@ class VehicleIndex:
         return None
 
     @cache
+    def shadower_ids_from_vehicle_id(self, vehicle_id) -> Sequence[str]:
+        """Find the first actor watching a vehicle."""
+        vehicle_id = _2id(vehicle_id)
+
+        shadow_actor_ids = self._controlled_by[
+            self._controlled_by["vehicle_id"] == vehicle_id
+        ]["shadow_actor_id"]
+
+        if shadow_actor_ids:
+            return [
+                self._2id_to_id[shadow_actor_id] for shadow_actor_id in shadow_actor_ids
+            ]
+
+        return []
+
+    @cache
     def vehicle_position(self, vehicle_id):
         """Find the position of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
@@ -445,13 +470,34 @@ class VehicleIndex:
             entity._replace(
                 actor_role=actor_role,
                 actor_id=agent_id,
-                shadow_actor_id="",
+                shadow_actor_id=b"",
                 is_boid=boid,
                 is_hijacked=hijacking,
             )
         )
 
         return vehicle
+
+    @clear_cache
+    def stop_shadowing(self, shadower_id: str, vehicle_id: Optional[str] = None):
+        """Ends the shadowing by an a shadowing observer.
+
+        Args:
+            shadower_id (str): Removes this shadowing observer from all vehicles.
+            vehicle_id (str, optional):
+                If given this method removes shadowing from a specific vehicle. Defaults to None.
+        """
+        shadower_id = _2id(shadower_id)
+
+        v_index = self._controlled_by["shadow_actor_id"] == shadower_id
+        if vehicle_id:
+            vehicle_id = _2id(vehicle_id)
+            # This multiplication finds overlap of "shadow_actor_id" and "vehicle_id"
+            v_index = (self._controlled_by["vehicle_id"] == vehicle_id) * v_index
+
+        for entity in self._controlled_by[v_index]:
+            entity = _ControlEntity(*entity)
+            self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=b""))
 
     @clear_cache
     def stop_agent_observation(self, vehicle_id):
@@ -467,7 +513,7 @@ class VehicleIndex:
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
-        self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=""))
+        self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=b""))
 
         return vehicle
 
@@ -499,8 +545,8 @@ class VehicleIndex:
         self._controlled_by[v_index] = tuple(
             entity._replace(
                 actor_role=ActorRole.Social,
-                actor_id="",
-                shadow_actor_id="",
+                actor_id=b"",
+                shadow_actor_id=b"",
                 is_boid=False,
                 is_hijacked=False,
             )
@@ -677,7 +723,7 @@ class VehicleIndex:
             vehicle_id=vehicle_id,
             actor_id=agent_id,
             actor_role=actor_role,
-            shadow_actor_id="",
+            shadow_actor_id=b"",
             is_boid=boid,
             is_hijacked=hijacking,
             position=vehicle.position,
@@ -713,7 +759,7 @@ class VehicleIndex:
             vehicle_id=vehicle_id,
             actor_id=actor_id,
             actor_role=actor_role,
-            shadow_actor_id="",
+            shadow_actor_id=b"",
             is_boid=False,
             is_hijacked=False,
             position=np.asarray(vehicle.position),
