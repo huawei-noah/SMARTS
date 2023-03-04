@@ -9,6 +9,11 @@ class Reward(gym.Wrapper):
         self._half_pi = np.pi/2
         self._two_pi = 2 * np.pi
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
+        self._total_dist = {}
+
+    def reset(self, *, seed=None, options=None):
+        self._total_dist = {}
+        return self.env.reset(seed=seed, options=options)
 
     def step(self, action):
         """Adapts the wrapped environment's step.
@@ -16,31 +21,38 @@ class Reward(gym.Wrapper):
         Note: Users should not directly call this method.
         """
 
-        obs, reward, terminated, truncated, info = self.env.step(action)       
+        obs, reward, terminated, truncated, info = self.env.step(action)    
         wrapped_reward = self._reward(obs, reward)
 
-        for agent_id, agent_done in terminated.items():
-            if agent_id != "__all__" and agent_done == True:
-                if obs[agent_id]["events"]["reached_goal"]:
+        for agent_id, agent_obs in obs.items():
+            # Accumulate total distance travelled
+            self._total_dist[agent_id] = self._total_dist.get(agent_id,0) + agent_obs['distance_travelled']
+
+            # If agent is done
+            if terminated[agent_id] == True:
+                if agent_obs["events"]["reached_goal"]:
                     print(f"{agent_id}: Hooray! Reached goal.")
                     raise Exception(f"{agent_id}: Goal has been leaked to the ego agent!")
-                elif obs[agent_id]["events"]["reached_max_episode_steps"]:
+                elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
-                    obs[agent_id]["events"]["collisions"]
-                    | obs[agent_id]["events"]["off_road"]
-                    # | obs[agent_id]["events"]["off_route"]
-                    # | obs[agent_id]["events"]["on_shoulder"]
-                    # | obs[agent_id]["events"]["wrong_way"]
+                    agent_obs["events"]["collisions"]
+                    | agent_obs["events"]["off_road"]
+                    # | agent_obs["events"]["off_route"]
+                    # | agent_obs["events"]["on_shoulder"]
+                    # | agent_obs["events"]["wrong_way"]
                 ):
                     pass
                 elif (
-                    obs[agent_id]["events"]["agents_alive_done"]
+                    agent_obs["events"]["agents_alive_done"]
                 ):
                     print(f"{agent_id}: Agents alive done triggered.")
                 else:
-                    print("Events: ", obs[agent_id]["events"])
+                    print("Events: ", agent_obs["events"])
                     raise Exception("Episode ended for unknown reason.")
+                
+                print(f"{agent_id}: Steps = {agent_obs['steps_completed']} "
+                    f"{agent_id}: Dist = {self._total_dist[agent_id]:.2f}")
 
         return obs, wrapped_reward, terminated, truncated, info
 
@@ -143,12 +155,12 @@ class Reward(gym.Wrapper):
                     # print(f"{agent_id}: In the same lane.")
 
                 # Reward for being within x meters of leader
-                if np.linalg.norm(ego_pos - leader_pos) < 10:
+                if np.linalg.norm(ego_pos - leader_pos) < 15:
                     reward[agent_id] += np.float64(1)
                     # print(f"{agent_id}: Within radius.")
 
             else:
-                reward[agent_id] -= np.float64(0.1)
+                reward[agent_id] -= np.float64(0.2)
 
         # print("^^^^^^^^^^^^^^")
         return reward

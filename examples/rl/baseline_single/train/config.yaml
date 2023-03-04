@@ -22,4 +22,4 @@ smarts:
   train_steps: 2_000_000
   checkpoint_freq: 32_768 # Save a model every checkpoint_freq calls to env.step().
   eval_freq: 32_768 # Evaluate the trained model every eval_freq steps and save the best model.
-  eval_eps: 10 # Number of evaluation epsiodes.
+  eval_eps: 30 # Number of evaluation epsiodes.

@@ -13,6 +13,7 @@ def make_env(env_id, scenario, agent_interface, config, seed):
 
     from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.wrappers.single_agent import SingleAgent
+    from stable_baselines3.common.monitor import Monitor
 
     env = gym.make(
         env_id,
@@ -26,5 +27,6 @@ def make_env(env_id, scenario, agent_interface, config, seed):
     env = Api021Reversion(env)
     env = SingleAgent(env)
     env = Preprocess(env, config, agent_interface.top_down_rgb)
+    env = Monitor(env)
 
     return env
