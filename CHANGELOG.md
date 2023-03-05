@@ -20,6 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Using `trip` in sstudio traffic generation no longer causes a durouter error.
 - Chassis collision AABB first pass now has an additional `0.05m` tolerance to identify axis aligned collisions that would previously be missed.
 - Agent to mission padding warning now occurs when there are less missions than agents rather than when there are the same number of agents as missions.
+- Agent manager should no longer de-synchronize vehicle ids with the vehicle index.
 ### Removed
 ### Security
 
