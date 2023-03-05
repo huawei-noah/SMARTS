@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.0.7] # 2023-03-04
+### Added
 - Added objective, scenario description, and trained agent performance, to the Driving Smarts 2022 benchmark documentation.
 ### Changed
 - Unique id suffix is removed from vehicle name while building agent vehicle in `VehicleIndex.build_agent_vehicle()` function. 
