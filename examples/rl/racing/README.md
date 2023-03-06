@@ -28,7 +28,7 @@ action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 ```bash
 $ git clone https://github.com/huawei-noah/SMARTS.git
 $ cd <path>/SMARTS/examples/rl/racing
-$ python3.7 -m venv ./.venv
+$ python3.8 -m venv ./.venv
 $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
@@ -38,7 +38,7 @@ $ pip install -e .
 1. Train
     ```bash
     $ cd <path>/SMARTS/examples/rl/racing
-    $ python3.7 run.py 
+    $ python3.8 run.py 
     ```
 1. The trained model is saved into `<path>/SMARTS/examples/rl/racing/logs/<folder_name>` folder.
 
@@ -47,7 +47,7 @@ $ pip install -e .
     ```bash
     $ cd <path>/SMARTS/examples/rl/racing
     $ scl envision start -s ./scenarios &
-    $ python3.7 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/rl/racing/logs/<folder_name>" --head
+    $ python3.8 run.py --mode=evaluate --logdir="<path>/SMARTS/examples/rl/racing/logs/<folder_name>" --head
     ```
 1. Go to `localhost:8081` to view the simulation in Envision.
 
@@ -58,5 +58,5 @@ $ pip install -e .
     $ docker build --file=<path>/SMARTS/examples/rl/racing/Dockerfile --network=host --tag=racing <path>/SMARTS
     $ docker run --rm -it --network=host --gpus=all racing
     (container) $ cd /src/examples/rl/racing
-    (container) $ python3.7 run.py
+    (container) $ python3.8 run.py
     ```

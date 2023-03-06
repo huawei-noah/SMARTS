@@ -17,7 +17,7 @@ and open `localhost:8081` in your local browser.
 To run an example run:
 ```bash
 # cd zoo/policies/cross-rl-agent/cross_rl_agent/train
-$ python3.7 run_test.py scenarios/4lane_left_turn
+$ python3.8 run_test.py scenarios/4lane_left_turn
 ```
 
 
@@ -25,6 +25,6 @@ $ python3.7 run_test.py scenarios/4lane_left_turn
 To train an agent:
 ```bash
 # cd zoo/policies/cross-rl-agent/cross_rl_agent/train
-$ python3.7 run_train.py scenarios/4lane_left_turn #--headless
+$ python3.8 run_train.py scenarios/4lane_left_turn #--headless
 ```
 For fast training, you can stop the envision server and add `--headless`.

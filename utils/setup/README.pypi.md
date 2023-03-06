@@ -10,8 +10,8 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 ## Installation of the SMARTS package
 You can install the SMARTS package from [PyPI](https://pypi.org/project/smarts/).
 
-Package installation requires Python >= 3.7.
-If you dont have python 3.7 or higher, make sure to install or update python first.
+Package installation requires Python >= 3.8.
+If you dont have python 3.8 or higher, make sure to install or update python first.
 
 ```bash
 # For windows user 

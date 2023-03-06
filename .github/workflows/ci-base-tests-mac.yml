@@ -31,9 +31,9 @@ jobs:
       - name: Setup Python
         run: |
           brew update
-          brew install python@3.7
+          brew install python@3.8
           brew unlink python@3.9
-          brew link --force --overwrite python@3.7
+          brew link --force --overwrite python@3.8
       - name: Setup SUMO
         run: |
           brew install xquartz
@@ -42,7 +42,7 @@ jobs:
           brew install geos
       - name: Install dependencies
         run: |
-          python3.7 -m venv ${{env.venv_dir}}
+          python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
