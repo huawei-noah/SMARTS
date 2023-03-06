@@ -22,16 +22,11 @@
 import logging
 from collections import Counter
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
-from smarts.core import config
 
-from smarts.core.sensors import (
-    LocalSensorResolver,
-    Observation,
-    ParallelSensorResolver,
-    Sensor,
-    Sensors,
-    SensorState,
-)
+from smarts.core import config
+from smarts.core.sensors import Observation, Sensor, Sensors, SensorState
+from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
+from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 

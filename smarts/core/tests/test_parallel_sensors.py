@@ -27,7 +27,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import ParallelSensorResolver
+from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
