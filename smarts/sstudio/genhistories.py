@@ -1039,7 +1039,7 @@ class Argoverse(_TrajectoryDataset):
                 return 2  # passenger
             elif agent_type == AvObjectType.BUS:
                 return 3  # truck
-            elif agent_type in [AvObjectType.PEDESTRIAN, AvObjectType.CYCLIST]:
+            elif agent_type in {AvObjectType.PEDESTRIAN, AvObjectType.CYCLIST}:
                 return 4  # pedestrian/bicycle
             else:
                 return 0  # other
