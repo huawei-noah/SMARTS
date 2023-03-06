@@ -10,8 +10,10 @@ smarts:
     - "no_traffic_agents_1"
 
   # PPO algorithm
-  n_steps: 512
-  batch_size: 128
+  alg:
+    n_steps: 512
+    batch_size: 128
+    target_kl: 0.08
 
   # Training over all scenarios
   epochs: 1 # Number of training loops.
