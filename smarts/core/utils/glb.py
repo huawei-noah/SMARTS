@@ -136,7 +136,7 @@ def make_map_glb(
 
         road_id = mesh.metadata["road_id"]
         lane_id = mesh.metadata.get("lane_id")
-        name = f"{road_id}"
+        name = str(road_id)
         if lane_id is not None:
             name += f"-{lane_id}"
         scene.add_geometry(mesh, name, extras=mesh.metadata)
