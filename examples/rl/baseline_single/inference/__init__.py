@@ -8,7 +8,8 @@ from smarts.zoo.registry import register
 
 def entry_point(**kwargs):
     interface = AgentInterface(
-        action=ActionSpaceType.Continuous,
+        # action=ActionSpaceType.Continuous,
+        action=ActionSpaceType.ActuatorDynamic,
         drivable_area_grid_map=False,
         lane_positions=True,
         lidar_point_cloud=False,
