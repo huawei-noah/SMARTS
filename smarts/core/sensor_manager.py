@@ -160,8 +160,7 @@ class SensorManager:
         sensor_states = self._sensor_states.get(actor_id)
         if not sensor_states:
             logger.warning(
-                "Attempted to remove sensors from actor with no sensors: `%s`",
-                actor_id
+                "Attempted to remove sensors from actor with no sensors: `%s`", actor_id
             )
             return frozenset()
         del self._sensor_states[actor_id]

@@ -717,7 +717,6 @@ class VehicleIndex:
         self._2id_to_id[agent_id] = original_agent_id
 
         owner_role = OwnerRole.SocialAgent if hijacking else OwnerRole.EgoAgent
-        assert vehicle_id != agent_id
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             owner_id=agent_id,
@@ -756,12 +755,11 @@ class VehicleIndex:
             OwnerRole.EgoAgent,
             OwnerRole.SocialAgent,
         ), f"role={owner_role} from {vehicle_state.source}"
-        assert owner_id != vehicle_id
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             owner_id=owner_id,
             owner_role=owner_role,
-            shadower_id=v"",
+            shadower_id=b"",
             is_boid=False,
             is_hijacked=False,
             position=np.asarray(vehicle.position),
