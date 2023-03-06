@@ -104,48 +104,51 @@ class Reward(gym.Wrapper):
             #     reward[agent_id] += np.float64(30)
 
             # Reward for distance travelled by driving
-            reward[agent_id] += np.float64(env_reward[agent_id])
+            # reward[agent_id] += np.float64(env_reward[agent_id])
 
-            # Check if leader is in front within visual angle
-            if leader:
+            # # Check if leader is in front within visual angle
+            # if leader:
 
-                # Ego's heading with respect to the map's coordinate system.
-                # Note: All angles returned by smarts is with respect to the map's coordinate system.
-                #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
-                ego_heading = (agent_obs["ego_vehicle_state"]["heading"] + np.pi) % self._two_pi - np.pi
-                ego_pos = agent_obs["ego_vehicle_state"]["position"]
+            #     # Ego's heading with respect to the map's coordinate system.
+            #     # Note: All angles returned by smarts is with respect to the map's coordinate system.
+            #     #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
+            #     ego_heading = (agent_obs["ego_vehicle_state"]["heading"] + np.pi) % self._two_pi - np.pi
+            #     ego_pos = agent_obs["ego_vehicle_state"]["position"]
 
-                # Leader's angle with respect to the ego's position.
-                # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
-                #       Hence, map_angle = np.angle() - π/2
-                leader_pos = leader["position"]
-                rel_pos = leader_pos - ego_pos
-                leader_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - self._half_pi
-                leader_angle = (leader_angle + np.pi) % self._two_pi - np.pi
+            #     # Leader's angle with respect to the ego's position.
+            #     # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
+            #     #       Hence, map_angle = np.angle() - π/2
+            #     leader_pos = leader["position"]
+            #     rel_pos = leader_pos - ego_pos
+            #     leader_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - self._half_pi
+            #     leader_angle = (leader_angle + np.pi) % self._two_pi - np.pi
 
-                # The angle by which ego agent should turn to face leader.
-                angle_diff = leader_angle - ego_heading
-                angle_diff = (angle_diff + np.pi) % self._two_pi - np.pi
+            #     # The angle by which ego agent should turn to face leader.
+            #     angle_diff = leader_angle - ego_heading
+            #     angle_diff = (angle_diff + np.pi) % self._two_pi - np.pi
 
-                # Verify the leader is infront of the ego agent.
-                leader_in_front = -self._half_pi < angle_diff < self._half_pi
+            #     # Verify the leader is infront of the ego agent.
+            #     leader_in_front = -self._half_pi < angle_diff < self._half_pi
 
-                # print(f"ego_heading: {ego_heading*180/np.pi}")
-                # print(f"leader_angle: {leader_angle*180/np.pi}")
-                # print(f"leader_heading: {leader['heading']*180/np.pi}")
-                # print(f"angle_diff: {angle_diff*180/np.pi}")
+            #     # print(f"ego_heading: {ego_heading*180/np.pi}")
+            #     # print(f"leader_angle: {leader_angle*180/np.pi}")
+            #     # print(f"leader_heading: {leader['heading']*180/np.pi}")
+            #     # print(f"angle_diff: {angle_diff*180/np.pi}")
 
+            # Check if leader is in front and within the rgb observation
             if leader:
                 rgb = agent_obs["top_down_rgb"]
-                leader_in_rgb = (rgb == self._leader_color.reshape((1, 1, 3))).all(axis=-1).any()
+                h,w,d = rgb.shape
+                rgb_masked = rgb[0:h//2,:,:]
+                leader_in_rgb = (rgb_masked == self._leader_color.reshape((1, 1, 3))).all(axis=-1).any()
 
                 # from contrib_policy.helper import plotter3d
                 # print("-----------------------------")
-                # plotter3d(obs=agent_obs["top_down_rgb"],rgb_gray=3,channel_order="last",pause=0)
+                # plotter3d(obs=rgb_masked,rgb_gray=3,channel_order="last",pause=0)
                 # print("-----------------------------")
 
             # Rewards specific to "platooning" and "following" tasks
-            if leader and leader_in_front and leader_in_rgb:
+            if leader and leader_in_rgb:
 
                 # Reward for being in the same lane as the leader
                 ego_lane_idx = agent_obs["ego_vehicle_state"]["lane_index"]
@@ -155,12 +158,12 @@ class Reward(gym.Wrapper):
                     # print(f"{agent_id}: In the same lane.")
 
                 # Reward for being within x meters of leader
-                if np.linalg.norm(ego_pos - leader_pos) < 15:
-                    reward[agent_id] += np.float64(1)
+                # if np.linalg.norm(ego_pos - leader_pos) < 15:
+                    # reward[agent_id] += np.float64(1)
                     # print(f"{agent_id}: Within radius.")
 
-            else:
-                reward[agent_id] -= np.float64(0.2)
+            # else:
+                # reward[agent_id] -= np.float64(0.2)
 
         # print("^^^^^^^^^^^^^^")
         return reward

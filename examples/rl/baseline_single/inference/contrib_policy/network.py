@@ -51,7 +51,7 @@ def combined_extractor(config):
         # net_arch=[],
         # net_arch=[dict(pi=[256], vf=[256])],
     )
-    kwargs["target_kl"] = 0.1
+    kwargs["target_kl"] = 0.08
     kwargs["n_steps"] = config.n_steps
     kwargs["batch_size"] = config.batch_size
     return kwargs

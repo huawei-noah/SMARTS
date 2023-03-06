@@ -21,7 +21,7 @@ import gym
 import stable_baselines3 as sb3lib
 import torch as th
 from smarts.zoo import registry
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train.env import make_env
 
@@ -42,7 +42,7 @@ def main(args: argparse.Namespace):
 
     # Setup logdir.
     if not args.logdir:
-        time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        time = datetime.now().strftime("%Y_%m_%d_%H_%M")
         logdir = parent_dir / "logs" / time
     else:
         logdir = Path(args.logdir)
@@ -136,10 +136,18 @@ def run(
                 save_path=config.logdir / "checkpoint",
                 name_prefix=f"PPO_{index}",
             )
+            eval_callback = EvalCallback(env_eval, 
+                best_model_save_path=config.logdir / "eval",
+                n_eval_episodes=5,
+                eval_freq=config.eval_freq,
+                deterministic=True, 
+                render=False,
+                verbose=1,
+            )
             model.set_env(env_train)
             model.learn(
                 total_timesteps=config.train_steps,
-                callback=[checkpoint_callback],
+                callback=[checkpoint_callback, eval_callback],
                 reset_num_timesteps=False
             )
 
