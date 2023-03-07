@@ -162,8 +162,8 @@ class Reward(gym.Wrapper):
                     # reward[agent_id] += np.float64(1)
                     # print(f"{agent_id}: Within radius.")
 
-            # else:
-                # reward[agent_id] -= np.float64(0.2)
+            else:
+                reward[agent_id] -= np.float64(0.2)
 
         # print("^^^^^^^^^^^^^^")
         return reward
