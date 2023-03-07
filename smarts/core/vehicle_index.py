@@ -301,10 +301,12 @@ class VehicleIndex:
         """A list of all existing vehicles."""
         return list(self._vehicles.values())
 
+    @cache
     def vehicleitems(self) -> Iterator[Tuple[str, Vehicle]]:
         """A list of all vehicle IDs paired with their vehicle."""
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
+    @cache
     def vehicle_by_id(self, vehicle_id, default=...):
         """Get a vehicle by its id."""
         vehicle_id = _2id(vehicle_id)
@@ -791,6 +793,7 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
         return self._sensor_states[vehicle_id]
 
+    @cache
     def controller_state_for_vehicle_id(self, vehicle_id: str) -> ControllerState:
         """Retrieve the controller state of the given vehicle."""
         vehicle_id = _2id(vehicle_id)
