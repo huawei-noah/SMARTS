@@ -12,8 +12,8 @@ smarts:
   # PPO algorithm
   alg:
     n_steps: 512
-    batch_size: 128
-    target_kl: 0.08
+    batch_size: 64
+    target_kl: 0.1
 
   # Training over all scenarios
   epochs: 1 # Number of training loops.
