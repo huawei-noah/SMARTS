@@ -26,7 +26,7 @@ def make_env(env_id, scenario, agent_interface, config, seed):
     env = Reward(env)
     env = Api021Reversion(env)
     env = SingleAgent(env)
-    env = Preprocess(env, config, agent_interface.top_down_rgb)
+    env = Preprocess(env, config, agent_interface)
     env = Monitor(env)
 
     return env

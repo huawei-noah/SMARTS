@@ -3,13 +3,13 @@ from contrib_policy.filter_obs import FilterObs
 from contrib_policy.format_action import FormatAction
 from contrib_policy.frame_stack import FrameStack
 from contrib_policy.make_dict import MakeDict
-
+from smarts.core.agent_interface import AgentInterface
 
 class Preprocess(gym.Wrapper):
-    def __init__(self, env: gym.Env, config, top_down_rgb):
+    def __init__(self, env: gym.Env, config, agent_interface:AgentInterface):
         super().__init__(env)
 
-        self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
+        self._filter_obs = FilterObs(top_down_rgb=agent_interface.top_down_rgb)
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=config.num_stack,
@@ -20,7 +20,7 @@ class Preprocess(gym.Wrapper):
 
         self.observation_space = self._make_dict.observation_space
 
-        self._format_action = FormatAction()
+        self._format_action = FormatAction(agent_interface.action)
         self.action_space = self._format_action.action_space
         print("Policy initialised.")
 
