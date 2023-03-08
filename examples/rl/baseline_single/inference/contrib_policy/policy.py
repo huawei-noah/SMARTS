@@ -54,7 +54,7 @@ class Policy(Agent):
         print("Policy initialised.")
 
     def act(self, obs):
-        """Act function to be implemented by user."""
+        """Mandatory act function to be implemented by user."""
         processed_obs = self._process(obs)
         action, _ = self.model.predict(observation=processed_obs, deterministic=True)
         formatted_action = self._format_action.format(action)
