@@ -4,11 +4,9 @@ from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
     MapSpec,
     EndlessMission,
-    Route,
     Scenario,
     Via,
     SocialAgentActor,
-    Mission,
 )
 
 end_road = ["E_left","E_right"]
@@ -42,13 +40,13 @@ for route in route_comb:
                     "E0",
                     lane_offset=150,
                     lane_index=route[3],
-                    required_speed=7,
+                    required_speed=13,
                 ),
                 Via(
                     route[5],
                     lane_offset=50,
                     lane_index=route[4],
-                    required_speed=7,
+                    required_speed=11,
                 ),
             ),
         )
