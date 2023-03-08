@@ -7,12 +7,15 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0  
   scenarios: 
-    - "no_traffic_agents_1"
+    # - straight_agents_1
+    - fork_agents_1
+    # - merge_exit_agents_1
 
   # PPO algorithm
   alg:
-    n_steps: 512
-    batch_size: 64
+    n_steps: 2048
+    batch_size: 512
+    n_epochs: 3
     target_kl: 0.1
 
   # Training over all scenarios
@@ -22,6 +25,6 @@ smarts:
   # train_steps: 4_096
   # checkpoint_freq: 4_096
   train_steps: 2_000_000
-  checkpoint_freq: 32_768 # Save a model every checkpoint_freq calls to env.step().
-  eval_freq: 32_768 # Evaluate the trained model every eval_freq steps and save the best model.
+  checkpoint_freq: 40_000 # Save a model every checkpoint_freq calls to env.step().
+  eval_freq: 40_000 # Evaluate the trained model every eval_freq steps and save the best model.
   eval_eps: 30 # Number of evaluation epsiodes.

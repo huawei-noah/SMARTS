@@ -138,7 +138,7 @@ def run(
             )
             eval_callback = EvalCallback(env_eval, 
                 best_model_save_path=config.logdir / "eval",
-                n_eval_episodes=5,
+                n_eval_episodes=3,
                 eval_freq=config.eval_freq,
                 deterministic=True, 
                 render=False,

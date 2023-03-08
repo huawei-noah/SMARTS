@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
     MapSpec,
