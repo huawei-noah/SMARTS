@@ -49,7 +49,7 @@ for route in route_comb:
                     route[5],
                     lane_offset=50,
                     lane_index=route[4],
-                    required_speed=11,
+                    required_speed=14,
                 ),
             ),
         )
