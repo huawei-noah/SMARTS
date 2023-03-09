@@ -51,7 +51,6 @@ for route in route_comb:
             ),
         )
     )
-    print(leader_mission)
 
 
 leader_actor = [
