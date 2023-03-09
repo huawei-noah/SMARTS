@@ -29,6 +29,7 @@ print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=ResourceWarning)
 
+# pytype: disable=attribute-error
 
 def main(args: argparse.Namespace):
     # Load config file.
