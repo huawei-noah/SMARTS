@@ -35,7 +35,9 @@ MAX_EPISODES = 1
 
 @pytest.fixture
 def agent_interface():
-    return AgentInterface.from_type(AgentType.Laner, max_episode_steps=100, neighborhood_vehicle_states=True)
+    return AgentInterface.from_type(
+        AgentType.Laner, max_episode_steps=100, neighborhood_vehicle_states=True
+    )
 
 
 @pytest.fixture
@@ -65,7 +67,9 @@ def test_social_agents_not_in_env_obs_keys(env: HiWayEnv):
             assert SOCIAL_AGENT_ID not in dones
 
 
-def test_social_agents_in_env_neighborhood_vehicle_obs(env: HiWayEnv, agent_interface: AgentInterface):
+def test_social_agents_in_env_neighborhood_vehicle_obs(
+    env: HiWayEnv, agent_interface: AgentInterface
+):
     first_seen_vehicles = {}
     for _ in range(MAX_EPISODES):
         observations = env.reset()
@@ -74,14 +78,18 @@ def test_social_agents_in_env_neighborhood_vehicle_obs(env: HiWayEnv, agent_inte
         while not dones["__all__"]:
             observations, rewards, dones, infos = env.step({AGENT_ID: "keep_lane"})
 
-            new_nvs_ids = [nvs.id for nvs in observations[AGENT_ID].neighborhood_vehicle_states if nvs.id not in first_seen_vehicles]
+            new_nvs_ids = [
+                nvs.id
+                for nvs in observations[AGENT_ID].neighborhood_vehicle_states
+                if nvs.id not in first_seen_vehicles
+            ]
             for v_id in new_nvs_ids:
                 first_seen_vehicles[v_id] = observations[AGENT_ID].step_count + 1
-    print(first_seen_vehicles)
-    print()
 
     seen_zoo_social_vehicles = [v_id for v_id in first_seen_vehicles if "zoo" in v_id]
     assert len(seen_zoo_social_vehicles) == 2
-    late_entry = next((v_id for v_id in seen_zoo_social_vehicles if "zoo-car1" in v_id), None)
+    late_entry = next(
+        (v_id for v_id in seen_zoo_social_vehicles if "zoo-car1" in v_id), None
+    )
     assert late_entry is not None, seen_zoo_social_vehicles
     assert first_seen_vehicles[late_entry] == 70

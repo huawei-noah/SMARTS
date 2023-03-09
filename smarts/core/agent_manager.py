@@ -500,8 +500,6 @@ class AgentManager:
     ):
         """Generates an entirely new social agent and emits a vehicle for it immediately.
 
-        This 
-
         Args:
             agent_id (str): The agent id for the new agent.
             agent_spec (AgentSpec): The agent spec of the new agent
