@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed an issue with SMARTS where the social vehicles started instantly regardless of what mission start time they were given.
 ### Removed
 ### Security
 
