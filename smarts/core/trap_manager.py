@@ -230,6 +230,7 @@ class TrapManager:
                         ),
                     )
                 )
+                social_vehicle_ids.remove(v_id)
                 break
 
         used_traps = []
