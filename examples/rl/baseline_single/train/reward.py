@@ -1,12 +1,14 @@
 import gymnasium as gym
 import numpy as np
+
 from smarts.core.colors import SceneColors
+
 
 class Reward(gym.Wrapper):
     def __init__(self, env):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
-        self._half_pi = np.pi/2
+        self._half_pi = np.pi / 2
         self._two_pi = 2 * np.pi
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._total_dist = {}
@@ -21,7 +23,7 @@ class Reward(gym.Wrapper):
         Note: Users should not directly call this method.
         """
 
-        obs, reward, terminated, truncated, info = self.env.step(action)    
+        obs, reward, terminated, truncated, info = self.env.step(action)
         wrapped_reward = self._reward(obs, reward)
 
         for agent_id, agent_obs in obs.items():
@@ -32,7 +34,9 @@ class Reward(gym.Wrapper):
             if terminated[agent_id] == True:
                 if agent_obs["events"]["reached_goal"]:
                     print(f"{agent_id}: Hooray! Reached goal.")
-                    raise Exception(f"{agent_id}: Goal has been leaked to the ego agent!")
+                    raise Exception(
+                        f"{agent_id}: Goal has been leaked to the ego agent!"
+                    )
                 elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
@@ -43,30 +47,31 @@ class Reward(gym.Wrapper):
                     # | agent_obs["events"]["wrong_way"]
                 ):
                     pass
-                elif (
-                    agent_obs["events"]["agents_alive_done"]
-                ):
+                elif agent_obs["events"]["agents_alive_done"]:
                     print(f"{agent_id}: Agents alive done triggered.")
                 else:
                     print("Events: ", agent_obs["events"])
                     raise Exception("Episode ended for unknown reason.")
-                
-                print(f"{agent_id}: Steps = {agent_obs['steps_completed']} "
-                    f"{agent_id}: Dist = {self._total_dist[agent_id]:.2f}")
+
+                print(
+                    f"{agent_id}: Steps = {agent_obs['steps_completed']} "
+                    f"{agent_id}: Dist = {self._total_dist[agent_id]:.2f}"
+                )
 
         return obs, wrapped_reward, terminated, truncated, info
-
 
     def _reward(self, obs, env_reward):
         reward = {agent_id: np.float64(0) for agent_id in obs.keys()}
 
         leader_name = "Leader-007"
-        leader=None
+        leader = None
         for agent_id, agent_obs in obs.items():
-            neighbor_vehicles = _get_neighbor_vehicles(obs=agent_obs, neighbor_name=leader_name)
+            neighbor_vehicles = _get_neighbor_vehicles(
+                obs=agent_obs, neighbor_name=leader_name
+            )
             if neighbor_vehicles:
-                leader=neighbor_vehicles[0]
-                break 
+                leader = neighbor_vehicles[0]
+                break
 
         for agent_id, agent_obs in obs.items():
             # Penalty for colliding
@@ -138,7 +143,7 @@ class Reward(gym.Wrapper):
             # Check if leader is in front and within the rgb observation
             if leader:
                 rgb = agent_obs["top_down_rgb"]
-                h,w,d = rgb.shape
+                h, w, d = rgb.shape
                 rgb_masked = rgb[0:h//2,:,:]
                 leader_in_rgb = (rgb_masked == self._leader_color.reshape((1, 1, 3))).all(axis=-1).any()
 
@@ -159,8 +164,8 @@ class Reward(gym.Wrapper):
 
                 # Reward for being within x meters of leader
                 # if np.linalg.norm(ego_pos - leader_pos) < 15:
-                    # reward[agent_id] += np.float64(1)
-                    # print(f"{agent_id}: Within radius.")
+                # reward[agent_id] += np.float64(1)
+                # print(f"{agent_id}: Within radius.")
 
             else:
                 reward[agent_id] -= np.float64(0.2)
@@ -168,22 +173,28 @@ class Reward(gym.Wrapper):
         # print("^^^^^^^^^^^^^^")
         return reward
 
+
 def _get_neighbor_vehicles(obs, neighbor_name):
-    keys = ["id","heading","lane_index","position","speed"]
-    neighbors_tuple = [neighbor for neighbor in zip(
-        obs["neighborhood_vehicle_states"]["id"],
-        obs["neighborhood_vehicle_states"]["heading"],
-        obs["neighborhood_vehicle_states"]["lane_index"],
-        obs["neighborhood_vehicle_states"]["position"],
-        obs["neighborhood_vehicle_states"]["speed"]) if neighbor_name in neighbor[0]]
-    neighbors_dict = [dict(zip(keys,neighbor)) for neighbor in neighbors_tuple]
+    keys = ["id", "heading", "lane_index", "position", "speed"]
+    neighbors_tuple = [
+        neighbor
+        for neighbor in zip(
+            obs["neighborhood_vehicle_states"]["id"],
+            obs["neighborhood_vehicle_states"]["heading"],
+            obs["neighborhood_vehicle_states"]["lane_index"],
+            obs["neighborhood_vehicle_states"]["position"],
+            obs["neighborhood_vehicle_states"]["speed"],
+        )
+        if neighbor_name in neighbor[0]
+    ]
+    neighbors_dict = [dict(zip(keys, neighbor)) for neighbor in neighbors_tuple]
     return neighbors_dict
 
 
-def _point_in_rectangle(x1, y1, x2, y2, x, y) :
-    # bottom-left (x1, y1) 
+def _point_in_rectangle(x1, y1, x2, y2, x, y):
+    # bottom-left (x1, y1)
     # top-right (x2, y2)
-    if (x > x1 and x < x2 and y > y1 and y < y2) :
+    if x > x1 and x < x2 and y > y1 and y < y2:
         return True
-    else :
+    else:
         return False

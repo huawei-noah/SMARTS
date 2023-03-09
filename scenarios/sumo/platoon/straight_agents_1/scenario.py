@@ -1,18 +1,15 @@
 from pathlib import Path
+
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
-    MapSpec,
     EndlessMission,
+    MapSpec,
+    Mission,
     Route,
     Scenario,
-    Via,
     SocialAgentActor,
-    Mission,
+    Via,
 )
-
-
-ego_missions = [EndlessMission(begin=("E0", 1, 5))]
-
 
 leader_mission = [
     Mission(
@@ -31,7 +28,7 @@ leader_mission = [
                 "E0",
                 lane_offset=100,
                 lane_index=0,
-                required_speed=18,
+                required_speed=20,
             ),
             Via(
                 "E0",
@@ -56,6 +53,8 @@ leader_actor = [
         agent_locator="zoo.policies:chase-via-points-agent-v0",
     )
 ]
+
+ego_missions = [EndlessMission(begin=("E0", 1, 5))]
 
 scenario = Scenario(
     ego_missions=ego_missions,

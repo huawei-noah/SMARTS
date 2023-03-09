@@ -2,10 +2,12 @@ from typing import Callable, Tuple
 
 import gym
 import numpy as np
-from smarts.core.controllers import  ActionSpaceType
+
+from smarts.core.controllers import ActionSpaceType
+
 
 class FormatAction:
-    def __init__(self, action_space_type:ActionSpaceType):
+    def __init__(self, action_space_type: ActionSpaceType):
         if action_space_type == ActionSpaceType.ActuatorDynamic:
             self._wrapper, self.action_space = _discrete_actuatordynamic()
         elif action_space_type == ActionSpaceType.Continuous:
@@ -22,7 +24,7 @@ class FormatAction:
         return wrapped_act
 
 
-def _discrete_actuatordynamic() -> Tuple[Callable[[int], np.ndarray], gym.Space]: 
+def _discrete_actuatordynamic() -> Tuple[Callable[[int], np.ndarray], gym.Space]:
     action_map = {
         # key: [throttle, brake, steering]
         0: [0, 1, 0],  # slow_down

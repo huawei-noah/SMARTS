@@ -73,7 +73,13 @@ def main(args: argparse.Namespace):
     envs_train = {}
     envs_eval = {}
     for scenario in config.scenarios:
-        scenario_path = str(Path(__file__).resolve().parents[4]/"scenarios"/"sumo"/"platoon"/scenario)
+        scenario_path = str(
+            Path(__file__).resolve().parents[4]
+            / "scenarios"
+            / "sumo"
+            / "platoon"
+            / scenario
+        )
         envs_train[f"{scenario}"] = make_env(
             env_id=config.env_id,
             scenario=scenario_path,
@@ -119,11 +125,11 @@ def run(
             verbose=1,
             **network.combined_extractor(config),
         )
-        
+
         # Print model summary
         # from torchinfo import summary
         # td = {"rgb":th.zeros(1,9,112,112)}
-        # summary(model.policy, input_data=[td], depth=5)   
+        # summary(model.policy, input_data=[td], depth=5)
         # input("Press any key to continue ...")
 
         for index in range(config.epochs):
@@ -136,11 +142,12 @@ def run(
                 save_path=config.logdir / "checkpoint",
                 name_prefix=f"PPO_{index}",
             )
-            eval_callback = EvalCallback(env_eval, 
+            eval_callback = EvalCallback(
+                env_eval,
                 best_model_save_path=config.logdir / "eval",
                 n_eval_episodes=3,
                 eval_freq=config.eval_freq,
-                deterministic=True, 
+                deterministic=True,
                 render=False,
                 verbose=1,
             )
@@ -148,7 +155,7 @@ def run(
             model.learn(
                 total_timesteps=config.train_steps,
                 callback=[checkpoint_callback, eval_callback],
-                reset_num_timesteps=False
+                reset_num_timesteps=False,
             )
 
         # Save trained model.
@@ -166,7 +173,7 @@ def run(
         # Print model summary
         # from torchinfo import summary
         # td = {"rgb":th.zeros(1,9,112,112)}
-        # summary(model.policy, input_data=[td], depth=5)   
+        # summary(model.policy, input_data=[td], depth=5)
         # input("Press any key to continue ...")
 
         for env_name, env_eval in envs_eval.items():

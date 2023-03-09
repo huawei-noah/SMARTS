@@ -3,10 +3,12 @@ from contrib_policy.filter_obs import FilterObs
 from contrib_policy.format_action import FormatAction
 from contrib_policy.frame_stack import FrameStack
 from contrib_policy.make_dict import MakeDict
+
 from smarts.core.agent_interface import AgentInterface
 
+
 class Preprocess(gym.Wrapper):
-    def __init__(self, env: gym.Env, config, agent_interface:AgentInterface):
+    def __init__(self, env: gym.Env, config, agent_interface: AgentInterface):
         super().__init__(env)
 
         self._filter_obs = FilterObs(top_down_rgb=agent_interface.top_down_rgb)
@@ -28,12 +30,12 @@ class Preprocess(gym.Wrapper):
         obs = self._filter_obs.filter(obs)
         obs = self._frame_stack.stack(obs)
         obs = self._make_dict.make(obs)
-        
+
         # from contrib_policy.helper import plotter3d
         # print("-----------------------------")
         # plotter3d(obs=obs["rgb"],rgb_gray=3,channel_order="first",pause=0)
         # print("-----------------------------")
-       
+
         return obs
 
     def step(self, action):

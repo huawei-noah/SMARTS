@@ -1,22 +1,21 @@
-from pathlib import Path
 from itertools import product
+from pathlib import Path
+
 from smarts.sstudio.genscenario import gen_scenario
 from smarts.sstudio.types import (
-    MapSpec,
     EndlessMission,
-    Route,
+    MapSpec,
     Scenario,
-    Via,
     SocialAgentActor,
-    Mission,
+    Via,
 )
 
-begin_road = ["E_start","E_on"]
-first_via = (0,1,2)
-second_via = (0,1,2)
-third_via = (0,1,2)
+begin_road = ["E_start", "E_on"]
+first_via = (0, 1, 2)
+second_via = (0, 1, 2)
+third_via = (0, 1, 2)
 
-route_comb = product(begin_road,first_via,second_via,third_via)
+route_comb = product(begin_road, first_via, second_via, third_via)
 leader_mission = []
 for route in route_comb:
     leader_mission.append(

@@ -6,10 +6,10 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
 
+from .chase_via_points_agent import ChaseViaPointsAgent
 from .keep_lane_agent import KeepLaneAgent
 from .non_interactive_agent import NonInteractiveAgent
 from .waypoint_tracking_agent import WaypointTrackingAgent
-from .chase_via_points_agent import ChaseViaPointsAgent
 
 register(
     locator="non-interactive-agent-v0",
@@ -41,7 +41,7 @@ register(
 register(
     locator="chase-via-points-agent-v0",
     entry_point=lambda **kwargs: AgentSpec(
-        interface = AgentInterface(
+        interface=AgentInterface(
             action=ActionSpaceType.LaneWithContinuousSpeed,
             done_criteria=DoneCriteria(
                 collision=True,
@@ -49,7 +49,7 @@ register(
                 off_route=True,
                 on_shoulder=False,
                 wrong_way=False,
-                not_moving=False
+                not_moving=False,
             ),
             accelerometer=False,
             drivable_area_grid_map=False,
@@ -66,6 +66,7 @@ register(
         agent_builder=ChaseViaPointsAgent,
     ),
 )
+
 
 def klws_entrypoint(speed):
     from .keep_left_with_speed_agent import KeepLeftWithSpeedAgent

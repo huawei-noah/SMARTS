@@ -51,6 +51,6 @@ def combined_extractor(config):
         # net_arch=[],
         # net_arch=[dict(pi=[256], vf=[256])],
     )
-    kwargs.update(config.get("alg",{}))
+    kwargs.update(config.get("alg", {}))
 
     return kwargs

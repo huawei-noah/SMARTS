@@ -9,11 +9,11 @@ import gymnasium as gym
 
 def make_env(env_id, scenario, agent_interface, config, seed):
     from preprocess import Preprocess
+    from stable_baselines3.common.monitor import Monitor
     from train.reward import Reward
 
     from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.wrappers.single_agent import SingleAgent
-    from stable_baselines3.common.monitor import Monitor
 
     env = gym.make(
         env_id,
