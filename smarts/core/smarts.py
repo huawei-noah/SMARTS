@@ -560,9 +560,7 @@ class SMARTS(ProviderManager):
         assert not self.vehicle_index.vehicle_is_hijacked(
             vehicle_id
         ), f"Vehicle has already been hijacked: {vehicle_id}"
-        assert (
-            not vehicle_id in self.vehicle_index.agent_vehicle_ids()
-        ), (
+        assert not vehicle_id in self.vehicle_index.agent_vehicle_ids(), (
             f"`{agent_id}` can't hijack vehicle that is already controlled by an agent"
             f" `{self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)}`: {vehicle_id}"
         )
