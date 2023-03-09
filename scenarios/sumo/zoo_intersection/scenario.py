@@ -86,17 +86,19 @@ gen_scenario(
         social_agent_missions={
             f"s-agent-{social_agent2.name}": (
                 [social_agent2],
-                [Mission(RandomRoute())],
+                [
+                    Mission(
+                        Route(
+                            begin=("edge-south-SN", 0, 30), end=("edge-east-WE", 0, 10)
+                        ),
+                    ),
+                 ],
             ),
             f"s-agent-{social_agent1.name}": (
                 [social_agent1],
                 [
-                    EndlessMission(begin=("edge-south-SN", 0, 30)),
-                    Mission(
-                        Route(
-                            begin=("edge-west-WE", 0, 10), end=("edge-east-WE", 0, 10)
-                        )
-                    ),
+                    EndlessMission(begin=("edge-south-SN", 0, 10), start_time=0.7),
+
                 ],
             ),
         },
