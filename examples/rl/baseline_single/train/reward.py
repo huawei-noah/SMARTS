@@ -144,8 +144,12 @@ class Reward(gym.Wrapper):
             if leader:
                 rgb = agent_obs["top_down_rgb"]
                 h, w, d = rgb.shape
-                rgb_masked = rgb[0:h//2,:,:]
-                leader_in_rgb = (rgb_masked == self._leader_color.reshape((1, 1, 3))).all(axis=-1).any()
+                rgb_masked = rgb[0 : h // 2, :, :]
+                leader_in_rgb = (
+                    (rgb_masked == self._leader_color.reshape((1, 1, 3)))
+                    .all(axis=-1)
+                    .any()
+                )
 
                 # from contrib_policy.helper import plotter3d
                 # print("-----------------------------")

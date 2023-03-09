@@ -10,41 +10,42 @@ from smarts.sstudio.types import (
     Via,
 )
 
-begin_road = ["E_start", "E_on"]
+begin_road_lane = [("E_0", 1), ("E_0", 2), ("E_1", 0), ("E_1", 1)]
 first_via = (0, 1, 2)
 second_via = (0, 1, 2)
-third_via = (0, 1, 2)
+third_via = (1, 2)
 
-route_comb = product(begin_road, first_via, second_via, third_via)
+route_comb = product(begin_road_lane, first_via, second_via, third_via)
+
 leader_mission = []
 for route in route_comb:
     leader_mission.append(
         EndlessMission(
-            begin=(route[0], 2, 20),
+            begin=(route[0][0], route[0][1], 20),
             via=(
                 Via(
-                    "E0",
-                    lane_offset=50,
+                    "E2",
+                    lane_offset=10,
                     lane_index=route[1],
-                    required_speed=15,
+                    required_speed=10,
                 ),
                 Via(
-                    "E0",
-                    lane_offset=100,
+                    "E2",
+                    lane_offset=80,
                     lane_index=route[2],
-                    required_speed=20,
+                    required_speed=18,
                 ),
                 Via(
-                    "E0",
-                    lane_offset=150,
+                    "E2",
+                    lane_offset=140,
                     lane_index=route[3],
-                    required_speed=7,
+                    required_speed=13,
                 ),
                 Via(
-                    "E_off",
-                    lane_offset=50,
+                    "E4",
+                    lane_offset=40,
                     lane_index=0,
-                    required_speed=7,
+                    required_speed=15,
                 ),
             ),
         )
