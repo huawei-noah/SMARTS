@@ -10,7 +10,7 @@ from smarts.sstudio.types import (
     Via,
 )
 
-begin_road_lane = [("E_0", 1), ("E_0", 2), ("E_1", 0), ("E_1", 1)]
+begin_road_lane = [("E0", 1), ("E0", 2), ("E1", 0), ("E1", 1)]
 first_via = (0, 1, 2)
 second_via = (0, 1, 2)
 third_via = (1, 2)
