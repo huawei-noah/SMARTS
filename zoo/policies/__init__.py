@@ -1,7 +1,7 @@
 import importlib
 from pathlib import Path
 
-from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria
+from smarts.core.agent_interface import AgentInterface, AgentType, DoneCriteria, RoadWaypoints, Waypoints
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
@@ -46,7 +46,7 @@ register(
             done_criteria=DoneCriteria(
                 collision=True,
                 off_road=True,
-                off_route=True,
+                off_route=False,
                 on_shoulder=False,
                 wrong_way=False,
                 not_moving=False,
@@ -59,8 +59,8 @@ register(
             neighborhood_vehicle_states=True,
             occupancy_grid_map=False,
             top_down_rgb=False,
-            road_waypoints=True,
-            waypoint_paths=True,
+            road_waypoints=RoadWaypoints(horizon=50),
+            waypoint_paths=Waypoints(lookahead=50),
             signals=False,
         ),
         agent_builder=ChaseViaPointsAgent,

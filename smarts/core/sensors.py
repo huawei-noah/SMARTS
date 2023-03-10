@@ -40,7 +40,6 @@ from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
 from .observations import (
-    Collision,
     DrivableAreaGridMap,
     EgoVehicleObservation,
     GridMapMetadata,
@@ -1050,6 +1049,9 @@ class ViaSensor(Sensor):
             lane = self._plan.road_map.lane_by_id(lane_id)
             return lane.center_at_point(position)
 
+        # print(self._vias)
+        # input("Inside via sebsorsssssss")
+
         for via in self._vias:
             closest_position_on_lane = closest_point_on_lane(
                 tuple(vehicle_position), via.lane_id
@@ -1078,6 +1080,10 @@ class ViaSensor(Sensor):
             ):
                 self._consumed_via_points.add(via)
                 hit_points.append(point)
+
+        print(vehicle_position, "ViaPoints: ")
+        print(near_points)
+        # input()
 
         return (
             sorted(
