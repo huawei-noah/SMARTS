@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 ### Changed
+- Changed the minimum supported Python version from 3.7 to 3.8
 ### Deprecated
 ### Fixed
 ### Removed
