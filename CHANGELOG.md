@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
 ### Changed
 ### Deprecated
 ### Fixed
@@ -483,7 +484,7 @@ the missions for all agents.
 ### Changed
 – Note any changes to the software’s existing functionality.
 ### Deprecated
-– Note any features that were once stable but are no longer and have thus been removed.
+– Note any features that were once stable but are no longer and have thus been scheduled for removal.
 ### Fixed
 – List any bugs or errors that have been fixed in a change.
 ### Removed
