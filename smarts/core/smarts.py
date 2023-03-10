@@ -21,7 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, TypeVar
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from scipy.spatial.distance import cdist
