@@ -18,24 +18,24 @@ RUN apt-get update --fix-missing && \
     apt-get update && \
     apt-get install -y \
         libspatialindex-dev \
-        python3.7 \
-        python3.7-venv \
+        python3.8 \
+        python3.8-venv \
         xorg && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
 # Update default python version.
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
 # Setup virtual environment and install pip.
 ENV VIRTUAL_ENV=/opt/.venv
-RUN python3.7 -m venv $VIRTUAL_ENV
+RUN python3.8 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
 # Setup SUMO.
 RUN pip install eclipse-sumo==1.12.0
-ENV SUMO_HOME $VIRTUAL_ENV/lib64/python3.7/site-packages/sumo
+ENV SUMO_HOME $VIRTUAL_ENV/lib64/python3.8/site-packages/sumo
 
 # Install requirements.txt .
 COPY ./requirements.txt /tmp/requirements.txt

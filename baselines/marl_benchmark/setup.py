@@ -40,7 +40,7 @@ setup(
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     zip_safe=True,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         "smarts[train]==0.4.16",
         "setuptools>=41.0.0,!=50.0",

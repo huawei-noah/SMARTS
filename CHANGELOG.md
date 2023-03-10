@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
 ### Changed
+- Changed the minimum supported Python version from 3.7 to 3.8
 ### Deprecated
 ### Fixed
 - Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
