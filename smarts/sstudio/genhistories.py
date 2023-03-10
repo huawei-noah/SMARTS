@@ -45,8 +45,8 @@ from smarts.waymo.waymo_utils import WaymoDatasetError
 
 try:
     # pytype: disable=import-error
-    from waymo_open_dataset.protos import scenario_pb2
-    from waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
+    from smarts.waymo import scenario_pb2
+    from smarts.waymo.map_pb2 import TrafficSignalLaneState
 
     # pytype: enable=import-error
 except ImportError:

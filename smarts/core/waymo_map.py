@@ -37,8 +37,8 @@ from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 from trimesh.exchange import gltf
-from waymo_open_dataset.protos import scenario_pb2
-from waymo_open_dataset.protos.map_pb2 import (
+from smarts.waymo import scenario_pb2
+from smarts.waymo.map_pb2 import (
     Crosswalk,
     LaneCenter,
     RoadLine,
