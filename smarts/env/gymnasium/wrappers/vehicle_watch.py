@@ -57,7 +57,20 @@ C = TypeVar("C", Callable[[str, SMARTS], Sequence[Tuple[Header, Message]]])
 
 
 class VehicleWatch(gym.Wrapper):
-    def __init__(self, env, vehicle_watches: Dict[str, Tuple[V2XTransmitter, C]]):
+    """A wrapper that augments the MessagePasser wrapper to allow programmable messages.
+
+    These messages are configured through vehicle_watches.
+
+    Args:
+        env (MessagePasser): The base environment. This must be a MessagePasser.
+        vehicle_watches (Dict[str, Tuple[V2XTransmitter, C]]):
+            The configurable message generator. The first part is the transmitter config, the
+            second is the transmission generator callable.
+    """
+
+    def __init__(
+        self, env: MessagePasser, vehicle_watches: Dict[str, Tuple[V2XTransmitter, C]]
+    ):
         super().__init__(env)
         assert isinstance(self.env, MessagePasser)
 
@@ -67,11 +80,21 @@ class VehicleWatch(gym.Wrapper):
     def reset(
         self, *, seed: Optional[int] = None, options: Optional[Dict[str, Any]] = None
     ) -> Tuple[Any, Dict[str, Any]]:
+        """Resets the environment
+
+        Args:
+            seed (int, optional): The environment seed. Defaults to None.
+            options (Dict[str, Any], optional): The options to the environment. Defaults to None.
+
+        Returns:
+            Tuple[Any, Dict[str, Any]]: The observations and infos.
+        """
         return super().reset(seed=seed, options=options)
 
     def step(
         self, action: Any
     ) -> Tuple[Any, SupportsFloat, bool, bool, Dict[str, Any]]:
+        """The gym step function."""
         observation, reward, term, trunc, info = super().step(action)
         env: MessagePasser = self.env
 
@@ -87,6 +110,15 @@ class VehicleWatch(gym.Wrapper):
     def programmed_sumo_device(
         self, target: str, smarts: SMARTS
     ) -> Sequence[Tuple[Header, Message]]:
+        """An example transmission method.
+
+        Args:
+            target (str): The intended sender of the transmission.
+            smarts (SMARTS): The smarts instance to grab relevant information from.
+
+        Returns:
+            Sequence[Tuple[Header, Message]]: A new set of transmissions.
+        """
         traffic_sim: SumoTrafficSimulation = smarts.get_provider_by_type(
             SumoTrafficSimulation
         )

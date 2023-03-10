@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Any, Dict, Generator, List, Tuple, Union
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
@@ -29,7 +29,10 @@ MESSAGE_MEGABITS_PER_SECOND = 10
 MESSAGE_BYTES = int(BYTES_IN_MEGABIT * MESSAGE_MEGABITS_PER_SECOND / TIMESTEP)
 
 
-def filter_useless(transmissions):
+def filter_useless(
+    transmissions: List[Header, Message]
+) -> Generator[Tuple[Header, Message], None, None]:
+    """A primitive example filter that takes in transmissions and outputs filtered transmissions."""
     for header, msg in transmissions:
         if header.sender in ("parked_agent", "broken_stoplight"):
             continue

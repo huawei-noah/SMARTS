@@ -33,8 +33,10 @@ from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 
 @unique
 class Bands(IntFlag):
-    """Communcation bands."""
+    """Communcation bands. The receiver must have the band the transmitter has in order to receive
+    information from the transmitter."""
 
+    # TODO augment range with standard bands.
     L0 = enum.auto()
     L1 = enum.auto()
     L2 = enum.auto()
@@ -52,6 +54,8 @@ class Bands(IntFlag):
 
 @unique
 class Sensitivity(Enum):
+    """Sensitivity models for the receiver. Will be modelled after wave attenuation."""
+
     LOW = 0
     STANDARD = 1
     HIGH = 2
@@ -112,14 +116,14 @@ class V2XReceiver(NamedTuple):
 
 @lru_cache
 def active_filter(a: frozenset, a_in_observations):
+    """A filter for active agents in observations."""
     return frozenset(a.intersection(a_in_observations))
 
 
-# filter recipients by band
-## compare transmitter
 def band_filter(
     sender, recipients, message_config: Dict[str, Tuple[V2XTransmitter, V2XReceiver]]
 ):
+    """A filter to only include recipients whose receivers match the transmitter band."""
     return frozenset(
         r
         for r in recipients
@@ -127,8 +131,8 @@ def band_filter(
     )
 
 
-# filter recipients that do not listen to the channel
-def accepts_channel(channel, receiver: V2XReceiver):
+def _accepts_channel(channel, receiver: V2XReceiver):
+    """Evaluates if the current receiver accepts the given channel."""
     return (
         (not receiver.whitelist_channels) or (channel in receiver.whitelist_channels)
     ) and channel not in receiver.blacklist_channels
@@ -137,8 +141,9 @@ def accepts_channel(channel, receiver: V2XReceiver):
 def channel_filter(
     channel, recipients, message_config: Dict[str, Tuple[V2XTransmitter, V2XReceiver]]
 ):
+    """Filters recipients by channel."""
     return frozenset(
-        r for r in recipients if accepts_channel(channel, message_config[r][1])
+        r for r in recipients if _accepts_channel(channel, message_config[r][1])
     )
 
 
@@ -154,12 +159,13 @@ def channel_filter(
 
 # compress filters
 def general_filter(
-    header,
-    initial_recipients,
-    observations,
-    message_config,
+    header: Header,
+    initial_recipients: frozenset,  # frozenset[str]
+    observations: Dict,
+    message_config: Dict[str, Tuple[V2XTransmitter, V2XReceiver]],
     alias_resolver: Callable[[frozenset], frozenset],
 ):
+    """Compresses all used filters."""
     return (
         cc
         for recipients in map(alias_resolver, initial_recipients)
@@ -312,6 +318,7 @@ class MessagePasser(gym.Wrapper):
         messages,
         observations,
     ):
+        """Updates the given observations to send out the given messages."""
         f = partial(
             general_filter,
             observations=observations,
