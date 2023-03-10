@@ -22,7 +22,7 @@ import math
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Sequence, Set
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from shapely.geometry import Polygon
 
@@ -161,7 +161,9 @@ class TrapManager:
         from smarts.core.smarts import SMARTS
 
         assert isinstance(sim, SMARTS)
-        captures_by_agent_id = defaultdict(list)
+        captures_by_agent_id: Dict[str, List[Tuple[str, Trap, Mission]]] = defaultdict(
+            list
+        )
 
         # Do an optimization to only check if there are pending agents.
         if (
@@ -248,7 +250,7 @@ class TrapManager:
 
             captures = captures_by_agent_id[agent_id]
 
-            vehicle = None
+            vehicle: Optional[Vehicle] = None
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
                 vehicle = self._take_existing_vehicle(
@@ -297,7 +299,9 @@ class TrapManager:
         return self._traps
 
     @staticmethod
-    def _take_existing_vehicle(sim, vehicle_id, agent_id, mission, social=False):
+    def _take_existing_vehicle(
+        sim, vehicle_id, agent_id, mission, social=False
+    ) -> Optional[Vehicle]:
         from smarts.core.smarts import SMARTS
 
         assert isinstance(sim, SMARTS)
@@ -313,7 +317,9 @@ class TrapManager:
         return vehicle
 
     @staticmethod
-    def _make_new_vehicle(sim, agent_id, mission, initial_speed, social=False):
+    def _make_new_vehicle(
+        sim, agent_id, mission, initial_speed, social=False
+    ) -> Optional[Vehicle]:
         from smarts.core.smarts import SMARTS
 
         assert isinstance(sim, SMARTS)
