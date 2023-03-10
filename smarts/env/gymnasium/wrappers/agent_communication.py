@@ -114,7 +114,7 @@ class V2XReceiver(NamedTuple):
     sensitivity: Sensitivity = Sensitivity.STANDARD
 
 
-@lru_cache
+@lru_cache(128)
 def active_filter(a: frozenset, a_in_observations):
     """A filter for active agents in observations."""
     return frozenset(a.intersection(a_in_observations))
@@ -287,7 +287,7 @@ class MessagePasser(gym.Wrapper):
         """
         return self._max_message_bytes
 
-    @lru_cache
+    @lru_cache(128)
     def resolve_alias(self, alias):
         """Resolve the alias to agent ids."""
         return frozenset(self._alias_mapping[alias])
