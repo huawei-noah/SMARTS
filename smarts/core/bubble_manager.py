@@ -595,7 +595,8 @@ class BubbleManager:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
                 teardown = not cursor.bubble.is_boid or not cursor.bubble.keep_alive
-                sim.vehicle_exited_bubble(cursor.vehicle_id, teardown)
+                agent_id = BubbleManager._get_agent_id_from_cursor(cursor)
+                sim.vehicle_exited_bubble(cursor.vehicle_id, agent_id, teardown)
 
     def _move_travelling_bubbles(self, sim):
         active_bubbles, inactive_bubbles = self._bubble_groups()
@@ -678,10 +679,8 @@ class BubbleManager:
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
-        try:
-            agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        except KeyError:
-            return
+        # TODO MTA: Resolve potential issue if vehicle is not acquired
+        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
             vehicle_id,
@@ -750,6 +749,12 @@ class BubbleManager:
     @staticmethod
     def _make_boid_social_agent_id(social_agent_actor):
         return f"BUBBLE-AGENT-{truncate(social_agent_actor.name, 48)}"
+
+    @staticmethod
+    def _get_agent_id_from_cursor(cursor: Cursor):
+        if cursor.bubble.is_boid:
+            return BubbleManager._make_boid_social_agent_id(cursor.bubble.actor)
+        return BubbleManager._make_social_agent_id(cursor.vehicle_id)
 
     def teardown(self):
         """Clean up internal state."""

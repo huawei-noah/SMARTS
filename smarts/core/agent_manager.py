@@ -53,7 +53,7 @@ class AgentManager:
         self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
-        self._vehicle_with_sensors = dict()
+        self._vehicle_with_sensors_to_agent = dict()
 
         # Initial interfaces are for agents that are spawned at the beginning of the
         # episode and that we'd re-spawn upon episode reset. This would include ego
@@ -80,7 +80,7 @@ class AgentManager:
         self._log.debug("Tearing down AgentManager")
         self.teardown_ego_agents()
         self.teardown_social_agents()
-        self._vehicle_with_sensors = dict()
+        self._vehicle_with_sensors_to_agent = dict()
         self._pending_agent_ids = set()
 
     def destroy(self):
@@ -146,8 +146,15 @@ class AgentManager:
         dones = {}
         scores = {}
         for v_id in vehicle_ids:
-            vehicle = self._vehicle_index.vehicle_by_id(v_id)
-            agent_id = self._vehicle_with_sensors[v_id]
+            vehicle = self._vehicle_index.vehicle_by_id(v_id, None)
+            if not vehicle:
+                self._log.warning(
+                    "Attempted to observe non-existing vehicle `%s`", v_id
+                )
+
+            agent_id = self.vehicle_with_sensors_to_agent(v_id)
+            if not agent_id:
+                continue
 
             if not self._vehicle_index.check_vehicle_id_has_sensor_state(vehicle.id):
                 continue
@@ -162,7 +169,7 @@ class AgentManager:
 
         # also add agents that were done in virtue of just dropping out
         for done_v_id in done_this_step:
-            agent_id = self._vehicle_with_sensors.get(done_v_id, None)
+            agent_id = self._vehicle_with_sensors_to_agent.get(done_v_id, None)
             if agent_id:
                 dones[agent_id] = True
 
@@ -613,7 +620,7 @@ class AgentManager:
             ids_ = ids_ & filter_ids
 
         if ids_:
-            self._log.debug(f"Tearing down agents={ids_}")
+            self._log.debug("Tearing down agents=%s", ids_)
 
         for agent_id in ids_:
             self._agent_interfaces.pop(agent_id, None)
@@ -649,12 +656,36 @@ class AgentManager:
 
         return self._social_agent_data_models[agent_id].is_boid_keep_alive
 
+    def vehicle_with_sensors_to_agent(self, vehicle_id: str) -> Optional[str]:
+        """Maps a vehicle to an agent if the vehicle has sensors.
+
+        Args:
+            vehicle_id (str): The vehicle to check for an agent.
+
+        Returns:
+            Optional[str]:
+                The agent id if the vehicle has a sensor. `None` if the vehicle does
+                not exist or is not mapped to an agent.
+        """
+        if not vehicle_id in self._vehicle_with_sensors_to_agent:
+            return None
+        if not self._vehicle_index.vehicle_by_id(vehicle_id, None):
+            del self._vehicle_with_sensors_to_agent[vehicle_id]
+            return None
+        return self._vehicle_with_sensors_to_agent[vehicle_id]
+
     def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
         """Attach the interface required sensors to the given vehicles"""
         sim = self._sim()
         assert sim
         for sv_id in vehicle_ids:
-            if sv_id in self._vehicle_with_sensors:
+            if not self._vehicle_index.vehicle_by_id(sv_id, None):
+                self._log.warning(
+                    "Attempted to add sensors to non-existing vehicle: %s.", sv_id
+                )
+                continue
+
+            if self.vehicle_with_sensors_to_agent(sv_id):
                 continue
 
             # If this is a history vehicle, assign a mission based on its final position.
@@ -672,7 +703,7 @@ class AgentManager:
             plan = Plan(sim.road_map, mission)
 
             agent_id = f"Agent-{sv_id}"
-            self._vehicle_with_sensors[sv_id] = agent_id
+            self._vehicle_with_sensors_to_agent[sv_id] = agent_id
             self._agent_interfaces[agent_id] = agent_interface
 
             self._vehicle_index.attach_sensors_to_vehicle(
@@ -681,7 +712,7 @@ class AgentManager:
 
     def detach_sensors_from_vehicle(self, vehicle_id: str):
         """Called when agent observation is finished and sensors should be removed from a vehicle"""
-        if not vehicle_id in self._vehicle_with_sensors:
+        if not self.vehicle_with_sensors_to_agent(vehicle_id):
             return
         self._vehicle_index.stop_agent_observation(vehicle_id)
-        del self._vehicle_with_sensors[vehicle_id]
+        del self._vehicle_with_sensors_to_agent[vehicle_id]
