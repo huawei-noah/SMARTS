@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
 ### Removed
 ### Security
 
