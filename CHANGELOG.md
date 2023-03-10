@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 - Fixed an issue with SMARTS where the social vehicles started instantly regardless of what mission start time they were given.
+- Missing waypoint paths `'lane_id'`  is now added to the `hiway-v1` formatted observations.
 ### Removed
 ### Security
 
