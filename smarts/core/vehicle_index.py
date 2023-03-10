@@ -481,15 +481,15 @@ class VehicleIndex:
         """
         shadower_id = _2id(shadower_id)
 
-        v_index = self._controlled_by["shadow_actor_id"] == shadower_id
+        v_index = self._controlled_by["shadower_id"] == shadower_id
         if vehicle_id:
             vehicle_id = _2id(vehicle_id)
-            # This multiplication finds overlap of "shadow_actor_id" and "vehicle_id"
+            # This multiplication finds overlap of "shadower_id" and "vehicle_id"
             v_index = (self._controlled_by["vehicle_id"] == vehicle_id) * v_index
 
         for entity in self._controlled_by[v_index]:
             entity = _ControlEntity(*entity)
-            self._controlled_by[v_index] = tuple(entity._replace(shadow_actor_id=b""))
+            self._controlled_by[v_index] = tuple(entity._replace(shadower_id=b""))
 
     @clear_cache
     def stop_agent_observation(self, vehicle_id):
