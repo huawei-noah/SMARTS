@@ -40,6 +40,7 @@ from typing import (
 import gymnasium as gym
 import numpy as np
 
+from smarts.core.provider import Provider
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
@@ -53,7 +54,7 @@ from .agent_communication import (
     V2XTransmitter,
 )
 
-C = TypeVar("C", Callable[[str, SMARTS], Sequence[Tuple[Header, Message]]])
+CALLABLE = Callable[[str, SMARTS], Sequence[Tuple[Header, Message]]]
 
 
 class VehicleWatch(gym.Wrapper):
@@ -69,7 +70,9 @@ class VehicleWatch(gym.Wrapper):
     """
 
     def __init__(
-        self, env: MessagePasser, vehicle_watches: Dict[str, Tuple[V2XTransmitter, C]]
+        self,
+        env: MessagePasser,
+        vehicle_watches: Dict[str, Tuple[V2XTransmitter, CALLABLE]],
     ):
         super().__init__(env)
         assert isinstance(self.env, MessagePasser)
@@ -101,7 +104,7 @@ class VehicleWatch(gym.Wrapper):
         smarts: SMARTS = env.smarts
         msgs = [
             watch(target, smarts)
-            for target, (_, watch) in self._vehicle_watches.values()
+            for target, (_, watch) in self._vehicle_watches.items()
         ]
         env.augment_observations(msgs, observation)
 
@@ -119,9 +122,10 @@ class VehicleWatch(gym.Wrapper):
         Returns:
             Sequence[Tuple[Header, Message]]: A new set of transmissions.
         """
-        traffic_sim: SumoTrafficSimulation = smarts.get_provider_by_type(
+        traffic_sim: Optional[Provider] = smarts.get_provider_by_type(
             SumoTrafficSimulation
         )
+        assert isinstance(traffic_sim, SumoTrafficSimulation)
 
         if not target in traffic_sim.actor_ids:
             return []
@@ -133,7 +137,7 @@ class VehicleWatch(gym.Wrapper):
                     sender=target,
                     sender_type="leader",
                     cc={"__all__"},
-                    bcc={},
+                    bcc=set(),
                     format="position",
                 ),
                 Message(smarts.vehicle_index.vehicle_by_id(target).position),

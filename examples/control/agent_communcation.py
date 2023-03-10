@@ -30,7 +30,7 @@ MESSAGE_BYTES = int(BYTES_IN_MEGABIT * MESSAGE_MEGABITS_PER_SECOND / TIMESTEP)
 
 
 def filter_useless(
-    transmissions: List[Header, Message]
+    transmissions: List[Tuple[Header, Message]]
 ) -> Generator[Tuple[Header, Message], None, None]:
     """A primitive example filter that takes in transmissions and outputs filtered transmissions."""
     for header, msg in transmissions:
@@ -147,7 +147,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
                 ),
                 V2XReceiver(
                     bands=Bands.ALL,
-                    aliases=["tim"],
+                    aliases={"tim"},
                     blacklist_channels={"self_control"},
                 ),
             ),
@@ -158,7 +158,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
                 ),
                 V2XReceiver(
                     bands=Bands.ALL,
-                    aliases=[],
+                    aliases=set(),
                 ),
             ),
         },
