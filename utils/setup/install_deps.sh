@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 
-function check_python_version_gte_3_7 {
-    echo "Checking for >=python3.7"
+function check_python_version_gte_3_8 {
+    echo "Checking for >=python3.8"
     # running through current minor versions
-    hash python3.7 2>/dev/null \
+    hash python3.8 2>/dev/null \
     || hash python3.8 2>/dev/null \
     || hash python3.9 2>/dev/null;
 }
 
-function install_python_3_7 {
-    echo "Installing python3.7"
+function install_python_3_8 {
+    echo "Installing python3.8"
     sudo apt-get install $1 software-properties-common
     sudo add-apt-repository $1 ppa:deadsnakes/ppa
-    sudo apt-get install $1 python3.7 python3.7-tk python3.7-venv
+    sudo apt-get install $1 python3.8 python3.8-tk python3.8-venv
 }
 
 function do_install_for_linux {
@@ -23,20 +23,20 @@ function do_install_for_linux {
         build-essential cmake
 
     #only a problem for linux
-    if ! check_python_version_gte_3_7; then
-        echo "A >=3.7 python version not found"
+    if ! check_python_version_gte_3_8; then
+        echo "A >=3.8 python version not found"
         if  [[ "$1" = "-y" ]]; then
-            install_python_3_7 "$1"
+            install_python_3_8 "$1"
         else
-            read -p "Install python3.7? [Yn]" should_add_python_3_7
-            if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
+            read -p "Install python3.8? [Yn]" should_add_python_3_8
+            if [[ $should_add_python_3_8 =~ ^[yY\w]*$ ]]; then
                 echo ""
-                printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.7 python3.7-tk python3.7-venv"
+                printf "This will run the following commands:\n$ sudo apt-get update\n$ sudo apt-get install software-properties-common\n$ sudo add-apt-repository ppa:deadsnakes/ppa\n$ sudo apt-get install python3.8 python3.8-tk python3.8-venv"
                 echo ""
-                read -p "WARNING. Is this OK? If you are unsure choose no. [Yn]" should_add_python_3_7
+                read -p "WARNING. Is this OK? If you are unsure choose no. [Yn]" should_add_python_3_8
                 # second check to make sure they really want to
-                if [[ $should_add_python_3_7 =~ ^[yY\w]*$ ]]; then
-                    install_python_3_7
+                if [[ $should_add_python_3_8 =~ ^[yY\w]*$ ]]; then
+                    install_python_3_8
                 fi
             fi
         fi

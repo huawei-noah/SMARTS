@@ -15,6 +15,7 @@ test: build-all-scenarios
 		--ignore=./smarts/core/tests/test_argoverse.py \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
 		--ignore=./smarts/core/tests/test_env_frame_rate.py \
+		--ignore=./smarts/core/tests/test_notebook.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./examples/tests/test_learning.py \
 		-k 'not test_long_determinism'

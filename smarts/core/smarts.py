@@ -346,7 +346,6 @@ class SMARTS(ProviderManager):
                     vehicle_ids.update(id_ for id_ in done if done[id_])
                 elif done:
                     ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
-                    # 0 if shadowing, 1 if active
                     assert len(ids) <= 1, f"{len(ids)} <= 1"
                     vehicle_ids.update(ids)
 
@@ -367,11 +366,11 @@ class SMARTS(ProviderManager):
 
         # XXX: These can not be put inline because we do queries that must proceed
         #      the actual teardown.
-        vehicles_to_teardown = done_vehicle_ids(dones)
         agents_to_teardown = done_agent_ids(dones)
-
         self._agent_manager.teardown_ego_agents(agents_to_teardown)
         self._agent_manager.teardown_social_agents(agents_to_teardown)
+
+        vehicles_to_teardown = done_vehicle_ids(dones)
         self._teardown_vehicles(vehicles_to_teardown)
 
     def reset(
@@ -491,6 +490,8 @@ class SMARTS(ProviderManager):
         self._check_valid()
         assert isinstance(provider, Provider)
         self._insert_provider(len(self._providers), provider, recovery_flags)
+        if isinstance(provider, TrafficProvider):
+            self._traffic_sims.append(provider)
 
     def _insert_provider(
         self,
@@ -559,9 +560,10 @@ class SMARTS(ProviderManager):
         assert not self.vehicle_index.vehicle_is_hijacked(
             vehicle_id
         ), f"Vehicle has already been hijacked: {vehicle_id}"
-        assert (
-            not vehicle_id in self.vehicle_index.agent_vehicle_ids()
-        ), f"Can't hijack vehicle that is already controlled by an agent: {vehicle_id}"
+        assert not vehicle_id in self.vehicle_index.agent_vehicle_ids(), (
+            f"`{agent_id}` can't hijack vehicle that is already controlled by an agent"
+            f" `{self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)}`: {vehicle_id}"
+        )
 
         # Switch control to agent
         plan = Plan(self.road_map, mission)
@@ -631,16 +633,22 @@ class SMARTS(ProviderManager):
             False
         ), f"could not find a provider to accept vehicle {vehicle.id} for agent {agent_id} with role={role.name}"
 
-    def vehicle_exited_bubble(self, vehicle_id: str, teardown_agent: bool):
+    def vehicle_exited_bubble(
+        self, vehicle_id: str, agent_id: str, teardown_agent: bool
+    ):
         """Bubbles call this when a vehicle is exiting the bubble.
         Will try to find a new provider for the vehicle if necessary."""
+        original_agent_id = agent_id
         agent_id = None
         # FIXME: This only gets the first shadow agent and this shadow agent is not specific to a bubble!!!!!!
         shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
             vehicle_id
         )
+        if shadow_agent_id is not None:
+            assert original_agent_id == shadow_agent_id
         if self._vehicle_index.vehicle_is_hijacked(vehicle_id):
             agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            assert agent_id == original_agent_id
             self._log.debug(
                 "agent=%s relinquishing vehicle=%s (shadow_agent=%s)",
                 agent_id,
@@ -663,20 +671,20 @@ class SMARTS(ProviderManager):
                 shadow_agent_id,
                 vehicle_id,
             )
+            self._vehicle_index.stop_shadowing(shadow_agent_id, vehicle_id)
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
         if self._vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id) is None:
             self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
 
         if teardown_agent:
-            if self._log.isEnabledFor(logging.ERROR):
-                active_agents = self._agent_manager.active_agents
-                assert (
-                    shadow_agent_id not in active_agents
-                ), f"Agent ids {shadow_agent_id}, {active_agents}"
-                assert (
-                    agent_id not in active_agents
-                ), f"Agent id `{agent_id}` not in {active_agents}`"
+            active_agents = self._agent_manager.active_agents
+            assert (
+                shadow_agent_id not in active_agents
+            ), f"Agent ids {shadow_agent_id}, {active_agents}"
+            assert (
+                agent_id not in active_agents
+            ), f"Agent id `{agent_id}` not in {active_agents}`"
 
     def _agent_relinquishing_actor(
         self,

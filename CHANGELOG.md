@@ -10,6 +10,20 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
+### Changed
+- Changed the minimum supported Python version from 3.7 to 3.8
+### Deprecated
+### Fixed
+- Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
+- Fixed an issue with SMARTS where the social vehicles started instantly regardless of what mission start time they were given.
+- Missing waypoint paths `'lane_id'`  is now added to the `hiway-v1` formatted observations.
+- Engine config utility now properly evaluates `[Ff]alse` as `False` when using a `bool` cast.
+### Removed
+### Security
+
+## [1.0.7] # 2023-03-04
+### Added
 - Added objective, scenario description, and trained agent performance, to the Driving Smarts 2022 benchmark documentation.
 - Added support for the [Argoverse 2 Motion Forecasting Dataset](https://www.argoverse.org/av2.html#forecasting-link) (see `scenarios/argoverse`).
 ### Changed
@@ -21,6 +35,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Using `trip` in sstudio traffic generation no longer causes a durouter error.
 - Chassis collision AABB first pass now has an additional `0.05m` tolerance to identify axis aligned collisions that would previously be missed.
 - Agent to mission padding warning now occurs when there are less missions than agents rather than when there are the same number of agents as missions.
+- Agent manager should no longer de-synchronize vehicle ids with the vehicle index.
 ### Removed
 ### Security
 
@@ -473,7 +488,7 @@ the missions for all agents.
 ### Changed
 – Note any changes to the software’s existing functionality.
 ### Deprecated
-– Note any features that were once stable but are no longer and have thus been removed.
+– Note any features that were once stable but are no longer and have thus been scheduled for removal.
 ### Fixed
 – List any bugs or errors that have been fixed in a change.
 ### Removed

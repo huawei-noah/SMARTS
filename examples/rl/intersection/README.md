@@ -31,7 +31,7 @@ action_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(3,), dtype=np.float32)
 ```bash
 $ git clone https://github.com/huawei-noah/SMARTS.git
 $ cd <path>/SMARTS/examples/rl/intersection
-$ python3.7 -m venv ./.venv
+$ python3.8 -m venv ./.venv
 $ source ./.venv/bin/activate
 $ pip install --upgrade pip
 $ pip install -e .
@@ -41,7 +41,7 @@ $ pip install -e .
 1. Train
     ```bash
     $ cd <path>/SMARTS/examples/rl/intersection
-    $ python3.7 run.py 
+    $ python3.8 run.py 
     ```
 1. Trained model is saved into `<path>/SMARTS/examples/rl/intersection/logs/<folder_name>` folder.
 1. Monitor the RL agent during or after the training using tensorboard
@@ -54,17 +54,17 @@ $ pip install -e .
 1. Start
     ```bash
     $ cd <path>/SMARTS/examples/rl/intersection
-    $ scl envision start --scenarios ./.venv/lib/python3.7/site-packages/smarts/scenarios &
+    $ scl envision start --scenarios ./.venv/lib/python3.8/site-packages/smarts/scenarios &
     ```
 1. Run
     + Evaluate your own model 
         ```bash
-        $ python3.7 run.py --mode=evaluate --model="./logs/<folder_name>/<model>" --head
+        $ python3.8 run.py --mode=evaluate --model="./logs/<folder_name>/<model>" --head
         ```
     + Evaluate pre-trained agent
         ```bash
         $ curl -o ./logs/pretrained/intersection.zip --create-dirs -L https://github.com/Adaickalavan/SMARTS-zoo/raw/main/intersection-v0/PPO_5800000_steps.zip        
-        $ python3.7 run.py --mode=evaluate --model="./logs/pretrained/intersection" --head
+        $ python3.8 run.py --mode=evaluate --model="./logs/pretrained/intersection" --head
         ```
 1. Go to `localhost:8081` to view the simulation in Envision.
 
@@ -75,5 +75,5 @@ $ pip install -e .
     $ docker build --file=./examples/rl/intersection/Dockerfile --network=host --tag=intersection .
     $ docker run --rm -it --network=host --gpus=all intersection
     (container) $ cd /src/examples/rl/intersection
-    (container) $ python3.7 run.py
+    (container) $ python3.8 run.py
     ```

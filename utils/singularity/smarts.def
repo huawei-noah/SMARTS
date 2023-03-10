@@ -21,8 +21,8 @@ From: ubuntu:bionic
         apt-get update && \
         apt-get install -y \
             libspatialindex-dev \
-            python3.7 \
-            python3.7-venv \
+            python3.8 \
+            python3.8-venv \
             sumo \
             sumo-doc \
             sumo-tools \
@@ -32,11 +32,11 @@ From: ubuntu:bionic
         rm -rf /var/lib/apt/lists/*
 
     # Update default python version
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
     # Setup virtual environment and install pip
     export VIRTUAL_ENV=/opt/.venv
-    python3.7 -m venv $VIRTUAL_ENV
+    python3.8 -m venv $VIRTUAL_ENV
     export PATH="$VIRTUAL_ENV/bin:$PATH"
     wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py
     python get-pip.py
@@ -57,4 +57,4 @@ From: ubuntu:bionic
     . /src/utils/singularity/setup.sh
 
 %startscript
-    python3.7 "$@"    
+    python3.8 "$@"    

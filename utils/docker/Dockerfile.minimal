@@ -20,8 +20,8 @@ RUN apt-get update --fix-missing && \
     apt-get update && \
     apt-get install -y \
         libspatialindex-dev \
-        python3.7 \
-        python3.7-venv \
+        python3.8 \
+        python3.8-venv \
         sumo \
         sumo-doc \
         sumo-tools \
@@ -34,7 +34,7 @@ RUN apt-get update --fix-missing && \
 ENV SUMO_HOME /usr/share/sumo
 
 # Update default python version
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
 # Setup pip
 RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \

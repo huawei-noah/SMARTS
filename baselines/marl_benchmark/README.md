@@ -17,8 +17,8 @@ This directory contains the scenarios, training environment, and agents used in 
 # git clone ...
 cd <projec/baseline/marl_benchmark>
 
-# setup virtual environment; presently at least Python 3.7 and higher is officially supported
-python3.7 -m venv .venv
+# setup virtual environment; presently at least Python 3.8 and higher is officially supported
+python3.8 -m venv .venv
 
 # enter virtual environment to install all dependencies
 source .venv/bin/activate
@@ -40,8 +40,8 @@ To run the training procedure,
 
 ```bash
 # from baselines/marl_benchmark/
-$ python3.7 run.py <scenario> -f <config_file>
-# E.x. python3.7 run.py scenarios/sumo/intersections/4lane -f agents/ppo/baseline-lane-control.yaml
+$ python3.8 run.py <scenario> -f <config_file>
+# E.x. python3.8 run.py scenarios/sumo/intersections/4lane -f agents/ppo/baseline-lane-control.yaml
 ```
 
 To run the evaluation procedure for multiple algorithms,
@@ -49,7 +49,7 @@ To run the evaluation procedure for multiple algorithms,
 ```bash
 # from baselines/marl_benchmark/
 $ python evaluate.py <scenario> -f <config_files>
-# E.x. python3.7  evaluate.py scenarios/sumo/intersections/4lane \
+# E.x. python3.8  evaluate.py scenarios/sumo/intersections/4lane \
 #          -f agents/ppo/baseline-lane-control.yaml \
 #          --checkpoint ./log/results/run/4lane-4/PPO_Simple_977c1_00000_0_2020-10-14_00-06-10
 ```

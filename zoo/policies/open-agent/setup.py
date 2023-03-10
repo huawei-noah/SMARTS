@@ -36,10 +36,10 @@ try:
             "/bin/bash",
             "konstin2/maturin",
             "-c",
-            "cd /io/python_bindings_open_agent_solver && maturin build --release -i python3.7",
+            "cd /io/python_bindings_open_agent_solver && maturin build --release -i python3.8",
         ],
         cwd=str(python_bindings_src.parent),
-        # ["maturin", "build", "--release", "-i", "python3.7"],
+        # ["maturin", "build", "--release", "-i", "python3.8"],
         # cwd=str(python_bindings_src),
     )
 

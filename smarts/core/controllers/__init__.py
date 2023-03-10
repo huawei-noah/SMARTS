@@ -128,7 +128,7 @@ class ActionSpaceType(Enum):
     Direct = 9
     """
     Action=(speed) OR (acceleration, angular_velocity). Type= ``Union[float, 
-    (float,float)]``. Continuous action space where we can pass either (a) an 
+    Tuple[float,float]]``. Continuous action space where we can pass either (a) an 
     initial speed upon reset, or (b) linear acceleration and angular velocity 
     for other steps.
     """
@@ -138,7 +138,7 @@ class ActionSpaceType(Enum):
     """
     RelativeTargetPose = 11
     """
-    Action=(delta_x, delta_y, delta_heading). Type= ``Sequence[float,
+    Action=(delta_x, delta_y, delta_heading). Type= ``Tuple[float,
     float, float]``. Continuous action space of vehicle's next pose in terms of delta x 
     coordinate, delta y coordinate, and delta heading, to be reached in 0.1 seconds.
     """

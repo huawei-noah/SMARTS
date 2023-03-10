@@ -41,7 +41,6 @@ _SIGNALS_SHP = (3,)
 _POSITION_SHP = (3,)
 _WAYPOINT_NAME_LIMIT = 50
 _ID_NAME_LIMIT = _WAYPOINT_NAME_LIMIT
-_TEXT_PAD_CHAR = " "
 _WAYPOINT_CHAR_SET = frozenset(
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=+.,;\"' "
 )
@@ -101,8 +100,8 @@ def _format_waypoint_paths(waypoint_paths: List[List[Waypoint]]):
 
     def extract_elem(waypoint: Waypoint):
         return (
-            waypoint.lane_id,
             waypoint.heading,
+            waypoint.lane_id,
             waypoint.lane_index,
             waypoint.lane_offset,
             waypoint.lane_width,
@@ -113,13 +112,18 @@ def _format_waypoint_paths(waypoint_paths: List[List[Waypoint]]):
     paths = [
         map(extract_elem, path[: des_shp[1]]) for path in trunc_paths[: des_shp[0]]
     ]
-    lane_id, heading, lane_index, lane_offset, lane_width, pos, speed_limit = zip(
+    heading, lane_id, lane_index, lane_offset, lane_width, pos, speed_limit = zip(
         *[zip(*path) for path in paths]
     )
 
-    # # TODO MTA: Add padded lane id
-    # lane_id = ((l_id.ljust(_WAYPOINT_NAME_LIMIT, _TEXT_PAD_CHAR)[:_WAYPOINT_NAME_LIMIT] for l_id in s_lane_id) for s_lane_id in lane_id)
     heading = np.array(heading, dtype=np.float32)
+    lane_id = tuple(
+        tuple(
+            _format_id(l_id, _WAYPOINT_NAME_LIMIT, "waypoint lane id")
+            for l_id in s_lane_id
+        )
+        for s_lane_id in lane_id
+    )
     lane_index = np.array(lane_index, dtype=np.int8)
     lane_offset = np.array(lane_offset, dtype=np.float32)
     lane_width = np.array(lane_width, dtype=np.float32)
@@ -127,8 +131,8 @@ def _format_waypoint_paths(waypoint_paths: List[List[Waypoint]]):
     speed_limit = np.array(speed_limit, dtype=np.float32)
 
     # fmt: off
-    # # TODO MTA: Add padded lane id
     heading = np.pad(heading, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
+    lane_id = tuple(l + ("",) * pad_shp[1] for l in lane_id) + tuple(("", ) * des_shp[1] for _ in range(pad_shp[0]))
     lane_index = np.pad(lane_index, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
     lane_offset = np.pad(lane_offset, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
     lane_width = np.pad(lane_width, ((0,pad_shp[0]),(0,pad_shp[1])), mode='constant', constant_values=0)
@@ -137,9 +141,8 @@ def _format_waypoint_paths(waypoint_paths: List[List[Waypoint]]):
     # fmt: on
 
     return {
-        # # TODO MTA: Add padded lane id
-        # "lane_id": lane_id,
         "heading": heading,
+        "lane_id": lane_id,
         "lane_index": lane_index,
         "lane_offset": lane_offset,
         "lane_width": lane_width,
@@ -191,24 +194,24 @@ def _format_neighborhood_vehicle_states(
         return {
             "box": np.zeros((des_shp, 3), dtype=np.float32),
             "heading": np.zeros((des_shp,), dtype=np.float32),
+            "id": [""] * des_shp,
             "lane_index": np.zeros((des_shp,), dtype=np.int8),
             "position": np.zeros((des_shp, 3), dtype=np.float64),
             "speed": np.zeros((des_shp,), dtype=np.float32),
-            "id": [""] * des_shp,
         }
 
     neighborhood_vehicle_states = [
         (
             nghb.bounding_box.as_lwh,
             nghb.heading,
+            _format_id(nghb.id, _ID_NAME_LIMIT, "vehicle id"),
             nghb.lane_index,
             nghb.position,
             nghb.speed,
-            _format_id(nghb.id, _ID_NAME_LIMIT, "vehicle id"),
         )
         for nghb in neighborhood_vehicle_states[:des_shp]
     ]
-    box, heading, lane_index, pos, speed, vehicle_id = zip(*neighborhood_vehicle_states)
+    box, heading, vehicle_id, lane_index, pos, speed = zip(*neighborhood_vehicle_states)
 
     box = np.array(box, dtype=np.float32)
     heading = np.array(heading, dtype=np.float32)
@@ -219,16 +222,16 @@ def _format_neighborhood_vehicle_states(
     # fmt: off
     box = np.pad(box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     heading = np.pad(heading, ((0,pad_shp)), mode='constant', constant_values=0)
+    vehicle_id = tuple(vehicle_id + ("",) * pad_shp)
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
-    vehicle_id = tuple(vehicle_id + ("",) * pad_shp)
     # fmt: on
 
     return {
-        "id": vehicle_id,
         "box": box,
         "heading": heading,
+        "id": vehicle_id,
         "lane_index": lane_index,
         "position": pos,
         "speed": speed,
@@ -680,15 +683,15 @@ neighborhood_vehicle_states_space_format = StandardSpaceFormat(
     "neighborhood_vehicle_states",
     gym.spaces.Dict(
         {
-            "id": gym.spaces.Tuple(
-                (gym.spaces.Text(_ID_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET),)
-                * _NEIGHBOR_SHP
-            ),
             "box": gym.spaces.Box(
                 low=0, high=1e10, shape=(_NEIGHBOR_SHP, 3), dtype=np.float32
             ),
             "heading": gym.spaces.Box(
                 low=-math.pi, high=math.pi, shape=(_NEIGHBOR_SHP,), dtype=np.float32
+            ),
+            "id": gym.spaces.Tuple(
+                (gym.spaces.Text(_ID_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET),)
+                * _NEIGHBOR_SHP
             ),
             "lane_index": gym.spaces.Box(
                 low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8
@@ -744,22 +747,20 @@ waypoint_paths_space_format = StandardSpaceFormat(
     "waypoint_paths",
     gym.spaces.Dict(
         {
-            # # TODO MTA: Add padded lane id
-            # "lane_id": gym.spaces.Tuple(
-            #     (
-            #         gym.spaces.Tuple(
-            #             gym.spaces.Text(
-            #                 _WAYPOINT_NAME_LIMIT,
-            #                 charset=frozenset(
-            #                     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_=+"
-            #                 ),
-            #             ) for _ in range(_WAYPOINT_SHP[1])
-            #         )
-            #         for _ in range(_WAYPOINT_SHP[0])
-            #     )
-            # ),
             "heading": gym.spaces.Box(
                 low=-math.pi, high=math.pi, shape=_WAYPOINT_SHP, dtype=np.float32
+            ),
+            "lane_id": gym.spaces.Tuple(
+                (
+                    gym.spaces.Tuple(
+                        gym.spaces.Text(
+                            _WAYPOINT_NAME_LIMIT,
+                            charset=_WAYPOINT_CHAR_SET,
+                        )
+                        for _ in range(_WAYPOINT_SHP[1])
+                    )
+                    for _ in range(_WAYPOINT_SHP[0])
+                )
             ),
             "lane_index": gym.spaces.Box(
                 low=0, high=127, shape=_WAYPOINT_SHP, dtype=np.int8
@@ -996,15 +997,15 @@ class ObservationSpacesFormatter:
             Feature array of 10 nearest neighborhood vehicles. If nearest neighbor
             vehicles are insufficient, default feature values are padded.
             "neighborhood_vehicle_states": dict({
-                "id":
-                    The vehicle ids of neighbor vehicles. Defaults to '' per vehicle.
-                    tuple(Text(50)) * 10
                 "box":
                     Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
                     vehicle. shape=(10,3). dtype=np.float32.
                 "heading":
                     Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
                     np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
+                "id":
+                    The vehicle ids of neighbor vehicles. Defaults to str("") per vehicle.
+                    shape=(10,Text(50))
                 "lane_index":
                     Lane number of neighbor vehicles. Defaults to np.array([0]) per
                     vehicle. shape=(10,). dtype=np.int8.
@@ -1032,6 +1033,9 @@ class ObservationSpacesFormatter:
                 "heading":
                     Lane heading angle at a waypoint in radians [-pi, pi]. Defaults to
                     np.array([0]) per waypoint. shape=(4,20). dtype=np.float32.
+                "lane_id":
+                    The closest lane id for the waypoint. Defaults to str("") per waypoint.
+                    shape=(4,20,Text(50))
                 "lane_index":
                     Lane number at a waypoint. Defaults to np.array([0]) per waypoint.
                     shape=(4,20). dtype=np.int8.

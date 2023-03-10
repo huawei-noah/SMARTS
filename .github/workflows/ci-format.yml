@@ -9,7 +9,7 @@ jobs:
   test-header:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.18-minimal
+    container: huaweinoah/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
   test-docstring:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.18-minimal
+    container: huaweinoah/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -41,7 +41,7 @@ jobs:
   test-types:
     runs-on: ubuntu-20.04
     if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && (github.ref != 'refs/heads/master')
-    container: huaweinoah/smarts:v0.4.18-minimal
+    container: huaweinoah/smarts:v0.6.1-minimal
     steps:
       - name: Install packages
         run: |
@@ -56,10 +56,10 @@ jobs:
           fetch-depth: 0
       - name: Install SMARTS
         run: |
-          python3.7 -m venv ${{env.venv_dir}}
+          python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
-          pip install -e .[dev,camera_obs,train,test] 
+          pip install -e .[dev,camera_obs,train,test]
       - name: Get changed files on branch since branching
         id: changed-files
         shell: bash
@@ -76,4 +76,3 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           pytype -d pyi-error,import-error ${{steps.changed-files.outputs.changed_files}}
-
