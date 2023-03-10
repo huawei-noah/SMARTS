@@ -174,7 +174,7 @@ class SensorManager:
         del self._sensors_by_actor_id[actor_id]
         return frozenset(self._discarded_sensors)
 
-    def remove_sensor(self, sensor_id: str) -> Sensor:
+    def remove_sensor(self, sensor_id: str) -> Optional[Sensor]:
         """Remove a sensor by its id. Removes any associations it has with actors."""
         sensor = self._sensors.get(sensor_id)
         if not sensor:
@@ -262,6 +262,7 @@ class SensorManager:
         for sensor_id in self._discarded_sensors:
             if self._sensor_references.get(sensor_id, 0) < 1:
                 sensor = self.remove_sensor(sensor_id)
-                sensor.teardown(renderer=renderer)
+                if sensor is not None:
+                    sensor.teardown(renderer=renderer)
 
         self._discarded_sensors.clear()

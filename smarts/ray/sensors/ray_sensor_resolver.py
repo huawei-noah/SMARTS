@@ -51,9 +51,9 @@ class RaySensorResolver(SensorResolver):
 
     def get_actors(self, count):
         return [
-            ProcessWorker.options(name=f"sensor_worker_{i}", get_if_exists=True).remote(
-                self._remote_state
-            )
+            ProcessWorker.options(
+                name=f"sensor_worker_{i}", get_if_exists=True
+            ).remote()
             for i in range(count)
         ]
 

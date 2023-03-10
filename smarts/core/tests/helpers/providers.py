@@ -125,7 +125,7 @@ class MockTrafficProvider(TrafficProvider):
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
                     source=self.source_str,
-                    role=ActorRole.Social,
+                    role=OwnerRole.Social,
                 )
                 for vehicle_id, pose, speed in vehicles
             ],
