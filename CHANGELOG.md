@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
 - Fixed an issue with SMARTS where the social vehicles started instantly regardless of what mission start time they were given.
 - Missing waypoint paths `'lane_id'`  is now added to the `hiway-v1` formatted observations.
+- Engine config utility now properly evaluates `[Ff]alse` as `False` when using a `bool` cast.
 ### Removed
 ### Security
 

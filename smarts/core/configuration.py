@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import ast
 import configparser
 import functools
 import os
@@ -26,6 +27,22 @@ from pathlib import Path
 from typing import Any, Callable, Optional, Union
 
 _UNSET = object()
+
+
+def _convert_truthy(t: str) -> bool:
+    """Convert value to a boolean. This should only allow ([Tt]rue)|([Ff]alse)|[\d].
+
+    This is necessary because bool("false") == True.
+    Args:
+        t (str): The value to convert.
+
+    Returns:
+        bool: The truth value.
+    """
+    # ast literal_eval will parse python literals int, str, e.t.c.
+    out = ast.literal_eval(t.strip().title())
+    assert isinstance(out, (bool, int))
+    return bool(out)
 
 
 class Config:
@@ -90,6 +107,9 @@ class Config:
             section.upper(), option.upper()
         )
         setting = os.getenv(env_variable)
+        if cast is bool:
+            # This is necessary because bool("false") == True.
+            cast = _convert_truthy
         if setting is not None:
             return cast(setting)
         try:
