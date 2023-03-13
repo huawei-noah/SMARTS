@@ -165,10 +165,6 @@ class SensorResolver:
 class Sensors:
     """Sensor related utilities"""
 
-    _log = logging.getLogger("Sensors")
-    _instance = None
-    _sim_local_constants: SimulationLocalConstants = None
-
     @classmethod
     def observe_serializable_sensor_batch(
         cls,
