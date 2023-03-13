@@ -129,7 +129,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
     geometries = [bubble_geometry(b, smarts.road_map) for b in bubbles]
 
     # bubble: vehicle: steps per zone
-    steps_driven_in_zones = {b.id: defaultdict(lambda: ZoneSteps()) for b in bubbles}
+    steps_driven_in_zones = {b.id: defaultdict(ZoneSteps) for b in bubbles}
     vehicles_made_to_through_bubble = {b.id: [] for b in bubbles}
     for _ in range(300):
         smarts.step({})
@@ -165,7 +165,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
                         not in_bubble and not is_shadowing and not is_agent_controlled
                     )
 
-    # Just to have some padding, we want to be in each region at least 4 steps
+    # Just to have some padding, we want to be in each region at least 2 steps
     min_steps = 2
     for bubble_id, zones in steps_driven_in_zones.items():
         vehicle_ids = vehicles_made_to_through_bubble[bubble_id]
