@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.0.8] # 2023-03-10
+### Added
 - Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
 - Added support for the [Argoverse 2 Motion Forecasting Dataset](https://www.argoverse.org/av2.html#forecasting-link) (see `scenarios/argoverse`)
 ### Changed
