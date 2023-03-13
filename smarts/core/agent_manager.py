@@ -61,6 +61,7 @@ class AgentManager:
         # would not be included
         self._initial_interfaces = interfaces
         self._pending_agent_ids = set()
+        self._pending_social_agent_ids = set()
 
         # Agent interfaces are interfaces for _all_ active agents
         self._agent_interfaces = {}
@@ -117,6 +118,11 @@ class AgentManager:
     def pending_agent_ids(self) -> Set[str]:
         """The IDs of agents that are waiting to enter the simulation"""
         return self._pending_agent_ids
+
+    @property
+    def pending_social_agent_ids(self) -> Set[str]:
+        """The IDs of social agents that are waiting to enter the simulation"""
+        return self._pending_social_agent_ids
 
     @property
     def active_agents(self) -> Set[str]:
@@ -460,28 +466,7 @@ class AgentManager:
         sim = self._sim()
         assert sim
         social_agents = sim.scenario.social_agents
-        if social_agents:
-            self._setup_agent_buffer()
-        else:
-            return
-
-        self._remote_social_agents = {
-            agent_id: self._agent_buffer.acquire_agent() for agent_id in social_agents
-        }
-
-        for agent_id, (social_agent, social_agent_model) in social_agents.items():
-            self._add_agent(
-                agent_id,
-                social_agent.interface,
-                social_agent_model,
-                trainable=False,
-                # XXX: Currently boids can only be run from bubbles
-                boid=False,
-            )
-            self._social_agent_ids.add(agent_id)
-
-        for social_agent_id, remote_social_agent in self._remote_social_agents.items():
-            remote_social_agent.start(social_agents[social_agent_id][0])
+        self._pending_social_agent_ids.update(social_agents.keys())
 
     def _start_keep_alive_boid_agents(self):
         """Configures and adds boid agents to the sim."""
@@ -509,6 +494,41 @@ class AgentManager:
                 initial_speed=actor.initial_speed,
             )
             self.start_social_agent(agent_id, social_agent, social_agent_data_model)
+
+    def add_and_emit_social_agent(
+        self, agent_id: str, agent_spec, agent_model: SocialAgent
+    ):
+        """Generates an entirely new social agent and emits a vehicle for it immediately.
+
+        Args:
+            agent_id (str): The agent id for the new agent.
+            agent_spec (AgentSpec): The agent spec of the new agent
+            agent_model (SocialAgent): The agent configuration of the new vehicle.
+        Returns:
+            bool:
+                If the agent is added. False if the agent id is already reserved
+                by a pending ego agent or current social/ego agent.
+        """
+        if agent_id in self.agent_ids or agent_id in self.pending_agent_ids:
+            return False
+
+        self._setup_agent_buffer()
+        remote_agent = self._agent_buffer.acquire_agent()
+        self._add_agent(
+            agent_id=agent_id,
+            agent_interface=agent_spec.interface,
+            agent_model=agent_model,
+            trainable=False,
+            boid=False,
+        )
+        if agent_id in self._pending_social_agent_ids:
+            self._pending_social_agent_ids.remove(agent_id)
+        remote_agent.start(agent_spec=agent_spec)
+        self._remote_social_agents[agent_id] = remote_agent
+        self._agent_interfaces[agent_id] = agent_spec.interface
+        self._social_agent_ids.add(agent_id)
+        self._social_agent_data_models[agent_id] = agent_model
+        return True
 
     def _add_agent(
         self, agent_id, agent_interface, agent_model, boid=False, trainable=True

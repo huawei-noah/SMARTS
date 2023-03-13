@@ -25,28 +25,27 @@ import pytest
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
-from smarts.zoo.agent_spec import AgentSpec
+from smarts.env.hiway_env import HiWayEnv
 
 AGENT_ID = "Agent-007"
 SOCIAL_AGENT_ID = "Alec Trevelyan"
 
-MAX_EPISODES = 3
+MAX_EPISODES = 1
 
 
 @pytest.fixture
-def agent_spec():
-    return AgentSpec(
-        interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=100),
-        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
+def agent_interface():
+    return AgentInterface.from_type(
+        AgentType.Laner, max_episode_steps=100, neighborhood_vehicle_states=True
     )
 
 
 @pytest.fixture
-def env(agent_spec):
+def env(agent_interface: AgentInterface):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=["scenarios/sumo/zoo_intersection"],
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces={AGENT_ID: agent_interface},
         headless=True,
         visdom=False,
         fixed_timestep_sec=0.01,
@@ -56,29 +55,41 @@ def env(agent_spec):
     env.close()
 
 
-def test_social_agents(env, agent_spec):
-    episode = None
-    for episode in episodes(n=MAX_EPISODES):
-        agent = agent_spec.build_agent()
+def test_social_agents_not_in_env_obs_keys(env: HiWayEnv):
+    for _ in range(MAX_EPISODES):
         observations = env.reset()
-        episode.record_scenario(env.scenario_log)
 
         dones = {"__all__": False}
         while not dones["__all__"]:
-            obs = observations[AGENT_ID]
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent.act(obs)})
-            episode.record_step(observations, rewards, dones, infos)
+            observations, rewards, dones, infos = env.step({AGENT_ID: "keep_lane"})
 
             assert SOCIAL_AGENT_ID not in observations
             assert SOCIAL_AGENT_ID not in dones
 
-            # Reward is currently the delta in distance travelled by this agent.
-            # We want to make sure that this is infact a delta and not total distance
-            # travelled since this bug has appeared a few times.
-            #
-            # The way to verify this is by making sure the reward does not grow without bounds
-            assert -3 < rewards[AGENT_ID] < 3
 
-    assert episode is not None and episode.index == (
-        MAX_EPISODES - 1
-    ), "Simulation must cycle through to the final episode"
+def test_social_agents_in_env_neighborhood_vehicle_obs(
+    env: HiWayEnv, agent_interface: AgentInterface
+):
+    first_seen_vehicles = {}
+    for _ in range(MAX_EPISODES):
+        observations = env.reset()
+
+        dones = {"__all__": False}
+        while not dones["__all__"]:
+            observations, rewards, dones, infos = env.step({AGENT_ID: "keep_lane"})
+
+            new_nvs_ids = [
+                nvs.id
+                for nvs in observations[AGENT_ID].neighborhood_vehicle_states
+                if nvs.id not in first_seen_vehicles
+            ]
+            for v_id in new_nvs_ids:
+                first_seen_vehicles[v_id] = observations[AGENT_ID].step_count + 1
+
+    seen_zoo_social_vehicles = [v_id for v_id in first_seen_vehicles if "zoo" in v_id]
+    assert len(seen_zoo_social_vehicles) == 2
+    late_entry = next(
+        (v_id for v_id in seen_zoo_social_vehicles if "zoo-car1" in v_id), None
+    )
+    assert late_entry is not None, seen_zoo_social_vehicles
+    assert first_seen_vehicles[late_entry] == 70

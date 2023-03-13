@@ -1025,7 +1025,7 @@ class Scenario:
         return self._missions
 
     @property
-    def social_agents(self) -> Dict[str, SocialAgent]:
+    def social_agents(self) -> Dict[str, Tuple[Any, SocialAgent]]:
         """Managed social agents within this scenario."""
         return self._social_agents
 

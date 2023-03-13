@@ -6,7 +6,7 @@ Setup
 Prerequisites
 -------------
 
-+ python3 (3.7 or 3.8)
++ python3 (3.8 or 3.9)
 + ubuntu (>=16.04)
 
 Installation
@@ -39,9 +39,9 @@ Run the following commands to setup the SMARTS simulator.
     # waiting for user input. 
     $ bash utils/setup/install_deps.sh
 
-    # Setup virtual environment. Presently at least Python 3.7 and higher is
+    # Setup virtual environment. Presently at least Python 3.8 and higher is
     # officially supported.
-    $ python3.7 -m venv .venv
+    $ python3.8 -m venv .venv
 
     # Enter virtual environment to install dependencies.
     $ source .venv/bin/activate

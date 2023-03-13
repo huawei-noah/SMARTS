@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     zip_safe=True,
-    python_requires="~=3.7",
+    python_requires="~=3.8",
     install_requires=[
         "setuptools>=41.0.0,!=50.0",
         "smarts[camera_obs]==1.0.0",

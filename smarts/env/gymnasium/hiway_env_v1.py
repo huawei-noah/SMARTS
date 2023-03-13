@@ -128,7 +128,7 @@ class HiWayEnvV1(gym.Env):
             :attr:`ActionOptions.default`.
     """
 
-    metadata = {"render.modes": ["human"]}
+    metadata = {"render_modes": ["human"]}
     """Metadata for gym's use."""
 
     # define render_mode if your environment supports rendering
@@ -391,7 +391,7 @@ class HiWayEnvV1(gym.Env):
         Note:
             Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
         """
-        if "rgb_array" in self.metadata["render.modes"]:
+        if "rgb_array" in self.metadata["render_modes"]:
             if self._env_renderer is None:
                 from smarts.env.utils.record import AgentCameraRGBRender
 
