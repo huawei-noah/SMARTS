@@ -146,7 +146,6 @@ class Scenario:
             map_spec = Scenario.discover_map(self._root, 1.0, default_lane_width)
         self._road_map, self._road_map_hash = map_spec.builder_fn(map_spec)
         self._scenario_hash = path2hash(str(Path(self.root_filepath).resolve()))
-        self._map_spec = map_spec
 
         os.makedirs(self._log_dir, exist_ok=True)
 
@@ -991,9 +990,9 @@ class Scenario:
         return self._road_map
 
     @property
-    def map_spec(self) -> MapSpec:
+    def map_spec(self) -> Optional[MapSpec]:
         """The map spec for the road map used in this scenario."""
-        return self._map_spec
+        return self.road_map.map_spec
 
     @property
     def supports_sumo_traffic(self) -> bool:
