@@ -10,10 +10,16 @@ from smarts.sstudio.types import (
     Via,
 )
 
-begin_road_lane = [("E0", 1), ("E0", 2), ("E1", 0), ("E1", 1)]
+# begin_road_lane = [("E0", 1), ("E0", 2), ("E1", 0), ("E1", 1)]
+# first_via = (0, 1, 2)
+# second_via = (0, 1, 2)
+# third_via = (1, 2)
+
+begin_road_lane = [("E0", 1),]
 first_via = (0, 1, 2)
 second_via = (0, 1, 2)
 third_via = (1, 2)
+# This part should be reverted.
 
 route_comb = product(begin_road_lane, first_via, second_via, third_via)
 

@@ -1049,9 +1049,7 @@ class ViaSensor(Sensor):
             lane = self._plan.road_map.lane_by_id(lane_id)
             return lane.center_at_point(position)
 
-        # print(self._vias)
-        # input("Inside via sebsorsssssss")
-
+        print("Limit: ",self._acquisition_range**2)
         for via in self._vias:
             closest_position_on_lane = closest_point_on_lane(
                 tuple(vehicle_position), via.lane_id
@@ -1059,6 +1057,14 @@ class ViaSensor(Sensor):
             closest_position_on_lane = closest_position_on_lane[:2]
 
             dist_from_lane_sq = squared_dist(vehicle_position, closest_position_on_lane)
+
+            print(via.lane_id, 
+                "pos:", via.position,
+                "vp:", vehicle_position,
+                "cpl:", closest_position_on_lane,
+                "dist:", dist_from_lane_sq
+            )
+
             if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
@@ -1080,10 +1086,6 @@ class ViaSensor(Sensor):
             ):
                 self._consumed_via_points.add(via)
                 hit_points.append(point)
-
-        print(vehicle_position, "ViaPoints: ")
-        print(near_points)
-        # input()
 
         return (
             sorted(
