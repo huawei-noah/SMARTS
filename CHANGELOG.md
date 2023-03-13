@@ -13,9 +13,19 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added an actor capture manager interface, `ActorCaptureManager`, which describes a manager that handles the change of control of actors. Operations in an actor manager step should not cause conflict in the simulation.
 - Added a new entry tactic, `IdEntryTactic`, which provides the scenario the ability to select a specific actor for an agent to take over.
 - Registered a new `chase-via-points-agent-v0` agent in agent zoo, which can effectively chase via points across different road sections by using the waypoints.
+- Added a `SensorManager` which manages placing sensors on actors in the simulations.
+- The `VehicleState` now has the `bounding_box_points` property to get the vehicle minimum bounding box as a set of points.
+- Added engine configuration options for `core:debug`, `core:observation_workers`, and `core:reset_retries`.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
+- The `AgentType.Full` now includes `road_waypoints`, `accelerometer`, and `lane_positions`.
+- `ActionSpaceType` has been moved from `controller` to its own file.
+- `VehicleState` has been moved to its own file.
+- Sensors are no longer added and configured in the `agent_manager`. They are instead managed in the `sensor_manager`.
+- Renamed all terminology relating to actor to owner in `VehicleIndex`.
+- Renamed all terminology relating to shadow actor to shadower in `VehicleIndex`.
+- `Collision` has been moved from `smarts.core.observations` to `smarts.core.vehicle_state`.
 ### Deprecated
 ### Fixed
 - Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.
@@ -68,18 +78,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [1.0.8] # 2023-03-10
 ### Added
 - Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
-- Added a `SensorManager` which manages placing sensors on actors in the simulations.
-- The `VehicleState` now has the `bounding_box_points` property to get the vehicle minimum bounding box as a set of points.
-- Added engine configuration options for `core:debug`, `core:observation_workers`, and `core:reset_retries`.
 ### Changed
 - Changed the minimum supported Python version from 3.7 to 3.8
-- The `AgentType.Full` now includes `road_waypoints`, `accelerometer`, and `lane_positions`.
-- `ActionSpaceType` has been moved from `controller` to its own file.
-- `VehicleState` has been moved to its own file.
-- Sensors are no longer added and configured in the `agent_manager`. They are instead managed in the `sensor_manager`.
-- Renamed all terminology relating to actor to owner in `VehicleIndex`.
-- Renamed all terminology relating to shadow actor to shadower in `VehicleIndex`.
-- `Collision` has been moved from `smarts.core.observations` to `smarts.core.vehicle_state`.
 ### Deprecated
 ### Fixed
 - Fixed `hiway-v1` environment to use `"render_modes"` instead of `"render.modes"`.
