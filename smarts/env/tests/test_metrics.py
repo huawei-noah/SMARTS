@@ -40,7 +40,6 @@ def _intrfc_improper():
         {"accelerometer": False},
         {"max_episode_steps": None},
         {"neighborhood_vehicle_states": False},
-        {"road_waypoints": False},
         {"waypoint_paths": False},
         {
             "done_criteria": DoneCriteria(
@@ -74,7 +73,6 @@ def get_agent_spec(request):
         max_episode_steps=5,
         neighborhood_vehicle_states=True,
         waypoint_paths=True,
-        road_waypoints=True,
     )
     return AgentSpec(interface=dataclasses.replace(base_intrfc, **request.param))
 

@@ -146,27 +146,7 @@ def _get_env_specs(scenario: str):
         Dict[str, Any]: A parameter dictionary.
     """
 
-    if scenario == "1_to_2lane_left_turn_c":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "intersection"
-                / "1_to_2lane_left_turn_t"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "3lane_merge_single_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "merge"
-                / "3lane_single_agent"
-            ),
-            "num_agent": 1,
-        }
-    elif os.path.isdir(scenario):
+    if os.path.isdir(scenario):
         import re
 
         regexp_agent = re.compile(r"agents_\d+")

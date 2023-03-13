@@ -337,7 +337,6 @@ def _check_env(env: gym.Env):
             "accelerometer": bool(agent_intrfc.accelerometer),
             "max_episode_steps": bool(agent_intrfc.max_episode_steps),
             "neighborhood_vehicle_states": bool(agent_intrfc.neighborhood_vehicles),
-            "road_waypoints": bool(agent_intrfc.road_waypoints),
             "waypoint_paths": bool(agent_intrfc.waypoints),
             "done_criteria.collision": agent_intrfc.done_criteria.collision,
             "done_criteria.off_road": agent_intrfc.done_criteria.off_road,
