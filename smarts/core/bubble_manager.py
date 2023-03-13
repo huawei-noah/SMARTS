@@ -679,7 +679,6 @@ class BubbleManager:
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
-        # TODO MTA: Resolve potential issue if vehicle is not acquired
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         vehicle = sim.vehicle_index.switch_control_to_agent(
             sim,
@@ -690,7 +689,8 @@ class BubbleManager:
             recreate=False,
             agent_interface=agent_interface,
         )
-        sim.create_vehicle_in_providers(vehicle, agent_id)
+        if vehicle:
+            sim.create_vehicle_in_providers(vehicle, agent_id)
 
     def _prepare_sensors_for_agent_control(
         self, sim, vehicle_id, agent_id, agent_interface, bubble

@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import Any
 
 
-# TODO MTA: Construct this at reset and pass this to sensors
+# TODO MTA: Consider using EzPickle base
 @dataclass(frozen=True)
 class SimulationLocalConstants:
     """This is state that should only change every reset."""

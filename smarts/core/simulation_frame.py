@@ -50,14 +50,13 @@ class SimulationFrame:
     last_provider_state: Any
     step_count: int
     vehicle_collisions: Dict[str, List[Collision]]
-    # TODO MTA: this association should be between agents and sensors
     vehicles_for_agents: Dict[str, List[str]]
     vehicle_ids: Set[str]
     vehicle_states: Dict[str, VehicleState]
     vehicle_sensors: Dict[str, Dict[str, Any]]
 
     sensor_states: Any
-    # TODO MTA: this can be allowed here as long as it is only type information
+    # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None
     _ground_bullet_id: Optional[str] = None
 

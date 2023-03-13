@@ -104,7 +104,6 @@ class CameraSensor(Sensor):
         camera.teardown()
 
     def step(self, sim_frame, **kwargs):
-        # TODO MTA: Actor should always be in the states
         if not self._target_actor in sim_frame.actor_states_by_id:
             return
         self._follow_actor(

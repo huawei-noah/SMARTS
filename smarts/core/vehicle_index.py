@@ -21,12 +21,12 @@ import logging
 from copy import copy, deepcopy
 from io import StringIO
 from typing import (
+    Dict,
     FrozenSet,
     Iterator,
     List,
     NamedTuple,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Union,
@@ -44,7 +44,7 @@ from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
-from .sensors import Sensors, SensorState
+from .sensors import SensorState
 from .vehicle import Vehicle, VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
@@ -88,7 +88,7 @@ class VehicleIndex:
         self._2id_to_id = {}
 
         # {vehicle_id (fixed-length): <Vehicle>}
-        self._vehicles = {}
+        self._vehicles: Dict[str, Vehicle] = {}
 
         # {vehicle_id (fixed-length): <ControllerState>}
         self._controller_states = {}
@@ -492,15 +492,11 @@ class VehicleIndex:
             self._controlled_by[v_index] = tuple(entity._replace(shadower_id=b""))
 
     @clear_cache
-    def stop_agent_observation(self, vehicle_id):
+    def stop_agent_observation(self, vehicle_id) -> Vehicle:
         """Strip all sensors from a vehicle and stop all owners from watching the vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        # TODO MTA: Clean up sensors that are removed here.
-        # pytype: disable=attribute-error
-        Vehicle.detach_all_sensors_from_vehicle(vehicle)
-        # pytype: enable=attribute-error
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = self._controlled_by[v_index][0]
@@ -520,7 +516,11 @@ class VehicleIndex:
 
         ss = sim.sensor_manager.sensor_state_for_actor_id(vehicle_id)
         route = ss.get_plan(road_map).route
-        self.stop_agent_observation(vehicle_id)
+        vehicle = self.stop_agent_observation(vehicle_id)
+
+        # pytype: disable=attribute-error
+        Vehicle.detach_all_sensors_from_vehicle(vehicle)
+        # pytype: enable=attribute-error
 
         vehicle = self._vehicles[v_id]
         box_chassis = BoxChassis(
@@ -552,7 +552,6 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
 
         vehicle = self._vehicles[vehicle_id]
-        # TODO MTA: Reconsider how renderer is accessed.
         Vehicle.attach_sensors_to_vehicle(
             sim.sensor_manager,
             sim,
