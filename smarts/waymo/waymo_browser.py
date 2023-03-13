@@ -41,7 +41,7 @@ try:
 
     from pathos.multiprocessing import ProcessingPool as Pool
     from tabulate import tabulate
-    from smarts.waymo import scenario_pb2
+    from waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
     import sys
     from collections import namedtuple
@@ -1026,7 +1026,7 @@ def get_scenario_and_tag_dict(
     dataset = read_tfrecord_file(tfrecord_file)
     for record in dataset:
         scenario = scenario_pb2.Scenario()
-        scenario.ParseFromString(bytearray(record))
+        scenario.ParseFromString(bytes(record))
         scenario_id = scenario.scenario_id
         scenario_dict[scenario_id] = [scenario, None, None]
         tags_per_scenario[scenario_id] = []

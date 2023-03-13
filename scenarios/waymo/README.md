@@ -9,10 +9,7 @@ The SMARTS repository contains tools to assist with using the Waymo Motion Datas
 - `gen_sumo_map.py`: a command-line program that converts the map from a Waymo scenario to a SUMO map
 
 ## Setup
-Follow the SMARTS setup instructions in the main [README](https://github.com/huawei-noah/SMARTS/). Then install the `[waymo]` dependencies.
-```bash
-$ pip install -e .[waymo]
-```
+Follow the SMARTS setup instructions in the main [README](https://github.com/huawei-noah/SMARTS/).
 
 Download the dataset files from the [Waymo Motion Dataset](https://waymo.com/open/download/). It is recommended to download the dataset files from the `uncompressed/scenario/training_20s` folder as they have the full traffic capture for each scenario. Note: Waymo provides 2 different formats for the dataset files. SMARTS expects the `Scenario protos` format (not the `tf.Example protos` format). It is also recommended to use version 1.1 of the dataset, which includes enhanced map information.
 

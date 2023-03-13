@@ -42,17 +42,8 @@ from smarts.core.utils.math import (
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
-
-try:
-    # pytype: disable=import-error
-    from smarts.waymo import scenario_pb2
-    from smarts.waymo.map_pb2 import TrafficSignalLaneState
-
-    # pytype: enable=import-error
-except ImportError:
-    print(
-        "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
-    )
+from waymo_open_dataset.protos import scenario_pb2
+from waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -810,7 +801,7 @@ class Waymo(_TrajectoryDataset):
         dataset = read_tfrecord_file(self._dataset_spec["input_path"])
         for record in dataset:
             parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
+            parsed_scenario.ParseFromString(bytes(record))
             if parsed_scenario.scenario_id == scenario_id:
                 return parsed_scenario
         raise ValueError(

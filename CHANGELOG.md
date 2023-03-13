@@ -10,10 +10,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added `waymo_open_dataset` as a module at the SMARTS repo level, to be able to load waymo scenarios without any external packages
 ### Changed
 ### Deprecated
 ### Fixed
 ### Removed
+- Removed `waymo-open-dataset-tf-2-4-0` package as a dependency
 ### Security
 
 ## [1.0.8] # 2023-03-10

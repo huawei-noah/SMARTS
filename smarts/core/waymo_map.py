@@ -37,8 +37,8 @@ from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 from trimesh.exchange import gltf
-from smarts.waymo import scenario_pb2
-from smarts.waymo.map_pb2 import (
+from waymo_open_dataset.protos import scenario_pb2
+from waymo_open_dataset.protos.map_pb2 import (
     Crosswalk,
     LaneCenter,
     RoadLine,
@@ -924,7 +924,7 @@ class WaymoMap(RoadMapWithCaches):
                     f"Dataset file does not contain scenario with id: {scenario_id}"
                 )
             parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
+            parsed_scenario.ParseFromString(bytes(record))
             WaymoMap._scenario_cache[parsed_scenario.scenario_id] = parsed_scenario
             if parsed_scenario.scenario_id == scenario_id:
                 return parsed_scenario

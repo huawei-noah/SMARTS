@@ -57,10 +57,13 @@ def build_scenario(
                     f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n"
                 )
                 c.write(o.read())
-
             c.flush()
+
+            # Set the python path to the base dir so the script can find modules properly
+            env = os.environ.copy()
+            env["PYTHONPATH"] = Path(__file__).parents[2]
             subprocess.check_call(
-                [sys.executable, Path(c.name).name], cwd=scenario_root
+                [sys.executable, Path(c.name).name], cwd=scenario_root, env=env
             )
 
 
