@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 - Agent manager now has `add_and_emit_social_agent` to generate a new social agent that is immediately in control of a vehicle.
+- Added support for the [Argoverse 2 Motion Forecasting Dataset](https://www.argoverse.org/av2.html#forecasting-link) (see `scenarios/argoverse`)
 ### Changed
 - Changed the minimum supported Python version from 3.7 to 3.8
 ### Deprecated
@@ -25,7 +26,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [1.0.7] # 2023-03-04
 ### Added
 - Added objective, scenario description, and trained agent performance, to the Driving Smarts 2022 benchmark documentation.
-- Added support for the [Argoverse 2 Motion Forecasting Dataset](https://www.argoverse.org/av2.html#forecasting-link) (see `scenarios/argoverse`).
 ### Changed
 - Unique id suffix is removed from vehicle name while building agent vehicle in `VehicleIndex.build_agent_vehicle()` function. 
 ### Deprecated

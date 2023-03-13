@@ -1142,7 +1142,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return super().center_at_point(point)
 
         @lru_cache(8)
-        def _edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+        def _edges_at_point(
+            self, point: Point
+        ) -> Tuple[Optional[Point], Optional[Point]]:
             """Get the boundary points perpendicular to the center of the lane closest to the given
              world coordinate.
             Args:
@@ -1155,15 +1157,20 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
             reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
             # left_edge
-            left_edge_shape = self._lane_polygon[:reference_line_vertices_len]
-            left_offset = offset_along_shape(point[:2], left_edge_shape)
+            left_edge_shape = [
+                Point(x, y) for x, y in self._lane_polygon[:reference_line_vertices_len]
+            ]
+            left_offset = offset_along_shape(point, left_edge_shape)
             left_edge = position_at_shape_offset(left_edge_shape, left_offset)
 
             # right_edge
-            right_edge_shape = self._lane_polygon[
-                reference_line_vertices_len : len(self._lane_polygon) - 1
+            right_edge_shape = [
+                Point(x, y)
+                for x, y in self._lane_polygon[
+                    reference_line_vertices_len : len(self._lane_polygon) - 1
+                ]
             ]
-            right_offset = offset_along_shape(point[:2], right_edge_shape)
+            right_offset = offset_along_shape(point, right_edge_shape)
             right_edge = position_at_shape_offset(right_edge_shape, right_offset)
             return left_edge, right_edge
 
@@ -1883,7 +1890,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         lanepoint: LinkedLanePoint,
         lookahead: int,
         filter_road_ids: tuple,
-        point: Tuple[float, float, float],
+        point: Point,
     ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths starting at lanepoint
         up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""
