@@ -24,7 +24,7 @@ import weakref
 from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from .actor import ActorState, ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap

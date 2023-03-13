@@ -36,7 +36,7 @@ from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
 from . import config, models
-from .actor import ActorState, ActorRole
+from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .agents_provider import (

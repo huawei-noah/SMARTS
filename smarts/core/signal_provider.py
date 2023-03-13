@@ -19,9 +19,9 @@
 # THE SOFTWARE.
 from typing import Dict, Iterable, Optional, Set, Tuple
 
-from .actor import ActorState, ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
-from .provider import Provider, ProviderRecoveryFlags, ProviderState
+from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
 from .signals import SignalLightState, SignalState
@@ -49,6 +49,9 @@ class SignalProvider(Provider):
         # TAI: could allow for agents to hijack things like signals as well.
         # (Then the action space could just be the desired SignalLightState.)
         return set()
+
+    def set_manager(self, manager: ProviderManager):
+        pass
 
     @property
     def _provider_state(self) -> ProviderState:

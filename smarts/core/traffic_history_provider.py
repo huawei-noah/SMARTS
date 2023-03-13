@@ -26,7 +26,7 @@ from typing import Iterable, Optional, Set
 from cached_property import cached_property
 from shapely.geometry import Polygon
 
-from .actor import ActorState, ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose
 from .provider import ProviderManager, ProviderRecoveryFlags, ProviderState

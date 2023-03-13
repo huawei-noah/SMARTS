@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from typing import Iterable, Optional, Sequence, Set
 
-from smarts.core.actor import ActorState, ActorRole
+from smarts.core.actor import ActorRole, ActorState
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.provider import (
     Provider,

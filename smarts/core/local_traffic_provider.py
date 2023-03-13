@@ -36,7 +36,7 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from .actor import ActorState, ActorRole
+from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState

@@ -31,7 +31,7 @@ from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from smarts.core import gen_id
-from smarts.core.actor import ActorState, ActorRole
+from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
 from smarts.core.provider import (
