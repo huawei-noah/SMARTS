@@ -30,7 +30,7 @@ _UNSET = object()
 
 
 def _convert_truthy(t: str) -> bool:
-    """Convert value to a boolean. This should only allow ([Tt]rue)|([Ff]alse)|[\d].
+    """Convert value to a boolean. This should only allow ([Tt]rue)|([Ff]alse)|[\\d].
 
     This is necessary because bool("false") == True.
     Args:

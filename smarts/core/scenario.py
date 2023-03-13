@@ -105,7 +105,7 @@ class Scenario:
         scenario_root: str,
         traffic_specs: Sequence[str] = [],
         missions: Optional[Dict[str, Mission]] = None,
-        social_agents: Optional[Dict[str, SocialAgent]] = None,
+        social_agents: Optional[Dict[str, Tuple[Any, SocialAgent]]] = None,
         log_dir: Optional[str] = None,
         surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
         traffic_history: Optional[str] = None,
