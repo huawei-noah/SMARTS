@@ -74,14 +74,14 @@ Or for `scenarios/sumo/straight`, you can wrap the `trajectory_boid_agent` and `
 ## Setup and Running:
 ### External dependencies:
 Ubuntu 18.04
-Python 3.7.5 or higher
+Python 3.8 or higher
 Eclipse SUMO 1.8.0 or higher
 
 ```bash
 # 1. construct your virtual environment
 cd <project>
 ./install_deps.sh # skip if you have python installed
-python3.7 -m venv .venv
+python3.8 -m venv .venv
 . .venv/bin/activate
 pip install --upgrade pip
 pip install -e .
@@ -91,9 +91,9 @@ mkdir ./klws_replay
 
 # 3. Run the replay agent using the --write argument and with required agent's parameters (Like the klws_agent which requires you to pass in the speed parameter) to store the actions and inputs of agents to CRASH_DIR directory:
 CRASH_DIR=./klws_replay
-python3.7 examples/replay/replay_klws_agent.py scenarios/sumo/loop --save-dir $CRASH_DIR --speed 20 --write --headless
+python3.8 examples/replay/replay_klws_agent.py scenarios/sumo/loop --save-dir $CRASH_DIR --speed 20 --write --headless
 
 # 4. Now you can replay the agent's previous action by not using the --write to load the observations saved by the wrapper in CRASH_DIR directory:
-python3.7 examples/replay/replay_klws_agent.py scenarios/sumo/loop --save-dir $CRASH_DIR --speed 20 --headless
+python3.8 examples/replay/replay_klws_agent.py scenarios/sumo/loop --save-dir $CRASH_DIR --speed 20 --headless
 
 ```

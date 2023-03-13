@@ -12,7 +12,7 @@ jobs:
   auto-commit-linux:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.4.18-minimal
+    container: huaweinoah/smarts:v0.6.1-minimal
     steps:
       - name: Install packages
         run: |
@@ -26,10 +26,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: master 
+          ref: master
       - name: Install SMARTS
         run: |
-          python3.7 -m venv ${{env.venv_dir}}
+          python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip wheel
           pip install .[camera_obs,rllib,test,torch,train]
@@ -40,10 +40,10 @@ jobs:
       - name: Commit requirement changes
         uses: EndBug/add-and-commit@v7
         with:
-          add: 'requirements.txt'
+          add: "requirements.txt"
           branch: master
-          default_author: user_info 
-          message: 'GitHub Actions: Update requirements.txt'
+          default_author: user_info
+          message: "GitHub Actions: Update requirements.txt"
       - name: isort, Black, and prettier
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -56,5 +56,5 @@ jobs:
         with:
           add: '["*.py", "*.html", "*.js"]'
           branch: master
-          default_author: user_info 
-          message: 'GitHub Actions: Format'
+          default_author: user_info
+          message: "GitHub Actions: Format"

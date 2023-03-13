@@ -22,7 +22,7 @@ import math
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Sequence, Set
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from shapely.geometry import Polygon
 
@@ -161,10 +161,15 @@ class TrapManager:
         from smarts.core.smarts import SMARTS
 
         assert isinstance(sim, SMARTS)
-        captures_by_agent_id = defaultdict(list)
+        captures_by_agent_id: Dict[str, List[Tuple[str, Trap, Mission]]] = defaultdict(
+            list
+        )
 
         # Do an optimization to only check if there are pending agents.
-        if not sim.agent_manager.pending_agent_ids:
+        if (
+            not sim.agent_manager.pending_agent_ids
+            | sim.agent_manager.pending_social_agent_ids
+        ):
             return
 
         social_vehicle_ids: List[str] = [
@@ -184,7 +189,10 @@ class TrapManager:
             for v in vehicles.values()
         ]
 
-        for agent_id in sim.agent_manager.pending_agent_ids:
+        for agent_id in (
+            sim.agent_manager.pending_agent_ids
+            | sim.agent_manager.pending_social_agent_ids
+        ):
             trap = self._traps.get(agent_id)
 
             if trap is None:
@@ -224,29 +232,33 @@ class TrapManager:
                         ),
                     )
                 )
-                # TODO: Resolve overlap using a tree instead of just removing.
                 social_vehicle_ids.remove(v_id)
                 break
 
-        # Use fed in trapped vehicles.
-        agents_given_vehicle = set()
         used_traps = []
-        for agent_id in sim._agent_manager.pending_agent_ids:
-            if agent_id not in self._traps:
+        for agent_id in (
+            sim.agent_manager.pending_agent_ids
+            | sim.agent_manager.pending_social_agent_ids
+        ):
+            trap = self._traps.get(agent_id)
+
+            if trap is None:
                 continue
-
-            trap = self._traps[agent_id]
-
-            captures = captures_by_agent_id[agent_id]
 
             if not trap.ready(sim.elapsed_sim_time):
                 continue
 
-            vehicle = None
+            captures = captures_by_agent_id[agent_id]
+
+            vehicle: Optional[Vehicle] = None
             if len(captures) > 0:
                 vehicle_id, trap, mission = rand.choice(captures)
-                vehicle = sim.switch_control_to_agent(
-                    vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
+                vehicle = self._take_existing_vehicle(
+                    sim,
+                    vehicle_id,
+                    agent_id,
+                    mission,
+                    social=agent_id in sim.agent_manager.pending_social_agent_ids,
                 )
             elif trap.patience_expired(sim.elapsed_sim_time):
                 # Make sure there is not a vehicle in the same location
@@ -265,20 +277,21 @@ class TrapManager:
                     if overlapping:
                         continue
 
-                vehicle = TrapManager._make_vehicle(
-                    sim, agent_id, mission, trap.default_entry_speed
+                vehicle = TrapManager._make_new_vehicle(
+                    sim,
+                    agent_id,
+                    mission,
+                    trap.default_entry_speed,
+                    social=agent_id in sim.agent_manager.pending_social_agent_ids,
                 )
             else:
                 continue
-            if vehicle == None:
+            if vehicle is None:
                 continue
-            sim.create_vehicle_in_providers(vehicle, agent_id, True)
-            agents_given_vehicle.add(agent_id)
             used_traps.append((agent_id, trap))
 
-        if len(agents_given_vehicle) > 0:
+        if len(used_traps) > 0:
             self.remove_traps(used_traps)
-            sim.agent_manager.remove_pending_agent_ids(agents_given_vehicle)
 
     @property
     def traps(self) -> Dict[str, Trap]:
@@ -286,7 +299,32 @@ class TrapManager:
         return self._traps
 
     @staticmethod
-    def _make_vehicle(sim, agent_id, mission, initial_speed):
+    def _take_existing_vehicle(
+        sim, vehicle_id, agent_id, mission, social=False
+    ) -> Optional[Vehicle]:
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
+        if social:
+            # Not supported
+            return None
+        vehicle = sim.switch_control_to_agent(
+            vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
+        )
+        if vehicle is not None:
+            sim.agent_manager.remove_pending_agent_ids({agent_id})
+            sim.create_vehicle_in_providers(vehicle, agent_id, True)
+        return vehicle
+
+    @staticmethod
+    def _make_new_vehicle(
+        sim, agent_id, mission, initial_speed, social=False
+    ) -> Optional[Vehicle]:
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
+        if social:
+            return TrapManager._make_new_social_vehicle(sim, agent_id, initial_speed)
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         plan = Plan(sim.road_map, mission)
         # 3. Apply agent vehicle association.
@@ -302,11 +340,31 @@ class TrapManager:
             initial_speed=initial_speed,
             boid=False,
         )
+        if vehicle is not None:
+            sim.agent_manager.remove_pending_agent_ids({agent_id})
+            sim.create_vehicle_in_providers(vehicle, agent_id, True)
         return vehicle
+
+    @staticmethod
+    def _make_new_social_vehicle(sim, agent_id, initial_speed):
+        from smarts.core.smarts import SMARTS
+
+        sim: SMARTS = sim
+        social_agent_spec, social_agent_model = sim.scenario.social_agents[agent_id]
+
+        social_agent_model = replace(social_agent_model, initial_speed=initial_speed)
+        sim.agent_manager.add_and_emit_social_agent(
+            agent_id,
+            social_agent_spec,
+            social_agent_model,
+        )
+        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
+
+        return vehicles[0] if len(vehicles) else None
 
     def reset(self):
         """Resets to a pre-initialized state."""
-        self.captures_by_agent_id = defaultdict(list)
+        pass
 
     def teardown(self):
         """Clear internal state"""

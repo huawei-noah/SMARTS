@@ -5,7 +5,7 @@ do
     if [ -d "${policy}/tests" ]; then
         echo "Testing ${policy}"
         venv_dir=`mktemp -u -d`
-        python3.7 -m venv "${venv_dir}"
+        python3.8 -m venv "${venv_dir}"
         source "${venv_dir}/bin/activate"
         whl="$(find ${policy} | grep .whl | sort -n | tail -n1)"
         echo "Installing SMARTS"
