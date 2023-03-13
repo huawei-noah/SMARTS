@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from typing import Iterable, Optional, Sequence, Set
 
-from smarts.core.actor import ActorState, OwnerRole
+from smarts.core.actor import ActorState, ActorRole
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.provider import (
     Provider,
@@ -48,7 +48,7 @@ class MockProvider(Provider):
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
                     source=self.source_str,
-                    role=OwnerRole.Social,
+                    role=ActorRole.Social,
                 )
                 for vehicle_id, pose, speed in vehicles
             ],
@@ -125,7 +125,7 @@ class MockTrafficProvider(TrafficProvider):
                     dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
                     speed=speed,
                     source=self.source_str,
-                    role=OwnerRole.Social,
+                    role=ActorRole.Social,
                 )
                 for vehicle_id, pose, speed in vehicles
             ],

@@ -36,7 +36,7 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from .actor import ActorState, OwnerRole
+from .actor import ActorState, ActorRole
 from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
@@ -415,7 +415,7 @@ class LocalTrafficProvider(TrafficProvider):
         # (those should currently be removed from the simultation).
         return (
             isinstance(state, VehicleState)
-            and (state.role == OwnerRole.Social or state.role == OwnerRole.Unknown)
+            and (state.role == ActorRole.Social or state.role == ActorRole.Unknown)
             and self.road_map.nearest_lane(state.pose.point) is not None
         )
 
@@ -428,7 +428,7 @@ class LocalTrafficProvider(TrafficProvider):
             route = from_provider.route_for_vehicle(provider_actor.actor_id)
             assert not route or isinstance(route, RouteWithCache)
         provider_actor.source = self.source_str
-        provider_actor.role = OwnerRole.Social
+        provider_actor.role = ActorRole.Social
         xfrd_actor = _TrafficActor.from_state(provider_actor, self, route)
         self._my_actors[xfrd_actor.actor_id] = xfrd_actor
         if xfrd_actor.actor_id in self._other_actors:
@@ -562,7 +562,7 @@ class _TrafficActor:
             actor_id=vehicle_id,
             actor_type=vehicle_type,
             source=owner.source_str,
-            role=OwnerRole.Social,
+            role=ActorRole.Social,
             pose=Pose.from_center(position, Heading(heading)),
             dimensions=dimensions,
             vehicle_config_type=vclass,
@@ -1041,7 +1041,7 @@ class _TrafficActor:
             lane_ttre,
             ahead_dist,
             lane_coord,
-            behind_dist if bv_vs and bv_vs.role == OwnerRole.EgoAgent else None,
+            behind_dist if bv_vs and bv_vs.role == ActorRole.EgoAgent else None,
             nv_vs.actor_id if nv_vs else None,
         )
 
@@ -1405,7 +1405,7 @@ class _TrafficActor:
             return True
 
         # Smith vs. Neo
-        if traffic_veh.role in (OwnerRole.EgoAgent, OwnerRole.SocialAgent):
+        if traffic_veh.role in (ActorRole.EgoAgent, ActorRole.SocialAgent):
             if self._yield_to_agents == "never":
                 return True
             elif self._yield_to_agents == "always":

@@ -24,7 +24,7 @@ from concurrent import futures
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from envision.types import format_actor_id
-from smarts.core.actor import OwnerRole
+from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
@@ -615,7 +615,7 @@ class AgentManager:
             agent_model.initial_speed,
             boid=boid,
         )
-        role = OwnerRole.EgoAgent if trainable else OwnerRole.SocialAgent
+        role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
         for provider in sim.providers:
             if agent_interface.action not in provider.actions:
                 continue

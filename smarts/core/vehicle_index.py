@@ -40,7 +40,7 @@ from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
-from .actor import OwnerRole
+from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
@@ -63,10 +63,10 @@ def _2id(id_: str):
 class _ControlEntity(NamedTuple):
     vehicle_id: Union[bytes, str]
     owner_id: Union[bytes, str]
-    owner_role: OwnerRole
+    role: ActorRole
     shadower_id: Union[bytes, str]
     # Applies to shadower and owner
-    # TODO: Consider moving this to an OwnerRole field
+    # TODO: Consider moving this to an ActorRole field
     is_boid: bool
     is_hijacked: bool
     position: np.ndarray
@@ -163,8 +163,8 @@ class VehicleIndex:
     def agent_vehicle_ids(self) -> Set[str]:
         """A set of vehicle ids associated with an agent."""
         vehicle_ids = self._controlled_by[
-            (self._controlled_by["owner_role"] == OwnerRole.EgoAgent)
-            | (self._controlled_by["owner_role"] == OwnerRole.SocialAgent)
+            (self._controlled_by["role"] == ActorRole.EgoAgent)
+            | (self._controlled_by["role"] == ActorRole.SocialAgent)
         ]["vehicle_id"]
         return {self._2id_to_id[id_] for id_ in vehicle_ids}
 
@@ -174,7 +174,7 @@ class VehicleIndex:
     ) -> Set[str]:
         """A set of vehicle ids associated with traffic vehicles."""
         vehicle_ids = self._controlled_by[
-            self._controlled_by["owner_role"] == OwnerRole.Social
+            self._controlled_by["role"] == ActorRole.Social
         ]["vehicle_id"]
         return {
             self._2id_to_id[id_]
@@ -457,10 +457,10 @@ class VehicleIndex:
 
         v_index = self._controlled_by["vehicle_id"] == vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
-        owner_role = OwnerRole.SocialAgent if hijacking else OwnerRole.EgoAgent
+        role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
         self._controlled_by[v_index] = tuple(
             entity._replace(
-                owner_role=owner_role,
+                role=role,
                 owner_id=agent_id,
                 shadower_id=b"",
                 is_boid=boid,
@@ -536,7 +536,7 @@ class VehicleIndex:
         entity = _ControlEntity(*entity)
         self._controlled_by[v_index] = tuple(
             entity._replace(
-                owner_role=OwnerRole.Social,
+                role=ActorRole.Social,
                 owner_id=b"",
                 shadower_id=b"",
                 is_boid=False,
@@ -716,11 +716,11 @@ class VehicleIndex:
         self._2id_to_id[vehicle_id] = vehicle.id
         self._2id_to_id[agent_id] = original_agent_id
 
-        owner_role = OwnerRole.SocialAgent if hijacking else OwnerRole.EgoAgent
+        role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             owner_id=agent_id,
-            owner_role=owner_role,
+            role=role,
             shadower_id=b"",
             is_boid=boid,
             is_hijacked=hijacking,
@@ -750,15 +750,15 @@ class VehicleIndex:
         self._vehicles[vehicle_id] = vehicle
         self._2id_to_id[vehicle_id] = vehicle.id
 
-        owner_role = vehicle_state.role
-        assert owner_role not in (
-            OwnerRole.EgoAgent,
-            OwnerRole.SocialAgent,
-        ), f"role={owner_role} from {vehicle_state.source}"
+        role = vehicle_state.role
+        assert role not in (
+            ActorRole.EgoAgent,
+            ActorRole.SocialAgent,
+        ), f"role={role} from {vehicle_state.source}"
         entity = _ControlEntity(
             vehicle_id=vehicle_id,
             owner_id=owner_id,
-            owner_role=owner_role,
+            role=role,
             shadower_id=b"",
             is_boid=False,
             is_hijacked=False,
@@ -799,7 +799,7 @@ class VehicleIndex:
                 # E.g. [(<vehicle ID>, <owner ID>, <owner type>), ...]
                 ("vehicle_id", f"|S{VEHICLE_INDEX_ID_LENGTH}"),
                 ("owner_id", f"|S{VEHICLE_INDEX_ID_LENGTH}"),
-                ("owner_role", "B"),
+                ("role", "B"),
                 # XXX: Keeping things simple, this is currently assumed to be an agent.
                 #      We can add a shadower_role when needed
                 ("shadower_id", f"|S{VEHICLE_INDEX_ID_LENGTH}"),
@@ -823,7 +823,7 @@ class VehicleIndex:
         by["shadower_id"] = [str(truncate(p, 20)) for p in by["shadower_id"]]
         by["is_boid"] = [str(bool(x)) for x in by["is_boid"]]
         by["is_hijacked"] = [str(bool(x)) for x in by["is_hijacked"]]
-        by["owner_role"] = [str(OwnerRole(x)).split(".")[-1] for x in by["owner_role"]]
+        by["role"] = [str(ActorRole(x)).split(".")[-1] for x in by["role"]]
 
         # XXX: tableprint crashes when there's no data
         if by.size == 0:

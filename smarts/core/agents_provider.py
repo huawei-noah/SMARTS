@@ -24,7 +24,7 @@ import weakref
 from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-from .actor import ActorState, OwnerRole
+from .actor import ActorState, ActorRole
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
@@ -192,7 +192,7 @@ class AgentsProvider(Provider):
     def can_accept_actor(self, state: ActorState) -> bool:
         # for now, we force our actors to be vehicles...
         return isinstance(state, VehicleState) and (
-            state.role == OwnerRole.SocialAgent or state.role == OwnerRole.EgoAgent
+            state.role == ActorRole.SocialAgent or state.role == ActorRole.EgoAgent
         )
 
     def add_actor(

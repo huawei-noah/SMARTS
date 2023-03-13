@@ -22,7 +22,7 @@ from typing import Iterable, List, Sequence, Set
 
 import numpy as np
 
-from .actor import OwnerRole
+from .actor import ActorRole
 from .controllers import ActionSpaceType
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
@@ -84,7 +84,7 @@ class ExternalProvider(Provider):
     ):
         """Update vehicle states. Use `all_vehicle_states()` to look at previous states."""
         self._ext_vehicle_states = [
-            replace(vs, source=self.source_str, role=OwnerRole.External)
+            replace(vs, source=self.source_str, role=ActorRole.External)
             for vs in vehicle_states
         ]
         self._last_step_delta = step_delta

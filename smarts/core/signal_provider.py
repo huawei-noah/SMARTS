@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 from typing import Dict, Iterable, Optional, Set, Tuple
 
-from .actor import ActorState, OwnerRole
+from .actor import ActorState, ActorRole
 from .controllers import ActionSpaceType
 from .provider import Provider, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
@@ -68,7 +68,7 @@ class SignalProvider(Provider):
                         actor_id=feature.feature_id,
                         actor_type="signal",
                         source=self.source_str,
-                        role=OwnerRole.Signal,
+                        role=ActorRole.Signal,
                         state=SignalLightState.UNKNOWN,
                         stopping_pos=feature.geometry[0],
                         controlled_lanes=controlled_lanes,

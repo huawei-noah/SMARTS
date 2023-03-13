@@ -36,7 +36,7 @@ from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
 from . import config, models
-from .actor import ActorState, OwnerRole
+from .actor import ActorState, ActorRole
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
 from .agents_provider import (
@@ -671,7 +671,7 @@ class SMARTS(ProviderManager):
         one of which should assume management of it."""
         self._check_valid()
         self._stop_managing_with_providers(vehicle.id)
-        role = OwnerRole.EgoAgent if is_ego else OwnerRole.SocialAgent
+        role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         prev_provider = self._provider_for_actor(vehicle.id)
         for provider in self.providers:
@@ -761,7 +761,7 @@ class SMARTS(ProviderManager):
 
         # now try to find one who will take it...
         if isinstance(state, VehicleState):
-            state.role = OwnerRole.Social  # XXX ASSUMPTION: might use Unknown instead?
+            state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
         for new_provider in self.providers:
             if new_provider == provider:
                 continue

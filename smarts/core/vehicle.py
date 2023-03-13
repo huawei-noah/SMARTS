@@ -30,7 +30,7 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
 from . import models
-from .actor import OwnerRole
+from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -480,7 +480,7 @@ class Vehicle:
     def update_state(self, state: VehicleState, dt: float):
         """Update the vehicle's state"""
         state.updated = True
-        if state.role != OwnerRole.External:
+        if state.role != ActorRole.External:
             assert isinstance(self._chassis, BoxChassis)
             self.control(pose=state.pose, speed=state.speed, dt=dt)
             return
