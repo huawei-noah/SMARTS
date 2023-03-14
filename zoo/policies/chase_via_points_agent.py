@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from typing import List, Tuple
 from smarts.core.agent import Agent
 from smarts.core.observations import Observation
 from smarts.core.sensors import LANE_ID_CONSTANT
@@ -24,6 +24,7 @@ class ChaseViaPointsAgent(Agent):
 
         # Truncate all paths to be of the same length
         min_len = min(map(len, obs.waypoint_paths))
+        assert min_len >= LANE_CHANGE_DIST
         trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
         waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
         waypoints = np.array(waypoints, dtype=np.float64)
@@ -31,19 +32,20 @@ class ChaseViaPointsAgent(Agent):
         # Ego status
         ego_lane_id = obs.ego_vehicle_state.lane_id
         assert ego_lane_id is not LANE_ID_CONSTANT, f"Ego lane cannot be {ego_lane_id}."
-        ego_pos = obs.ego_vehicle_state.position[:2]    
-        ego_wp_ind = [path[0].lane_id for path in trunc_waypoints].index(ego_lane_id)
+        ego_pos = obs.ego_vehicle_state.position[:2]  
+        ego_wp_ind = get_nearest_index(waypoints, ego_pos[np.newaxis,:])[0]
 
         # Filter via points within LANE_CHANGE_DIST from ego.
         candidate_via_points = [via_point.position for via_point in obs.via_data.near_via_points if np.linalg.norm(via_point.position-ego_pos) <= LANE_CHANGE_DIST]
-        # No nearby via points
+        # No nearby via points. Hence, remain in same lane.
         if len(candidate_via_points) == 0:
-            return (obs.waypoint_paths[ego_wp_ind][0].speed_limit, 0)
+            return (obs.waypoint_paths[ego_wp_ind[0]][ego_wp_ind[1]].speed_limit, 0)
 
         # 
-        index = get_nearest_index(waypoints, np.array(candidate_via_points[0]))
-        print("Nearest waypoint", waypoints[index])
-        print("via point", candidate_via_points[0])
+        indices = get_nearest_index(waypoints, np.array(candidate_via_points))
+        print(indices,"indices eeeeeeeeeeeeeeee")
+        for index in indices:
+            print("via point", obs.waypoint_paths[index[0]][index[1]])
 
 
 
@@ -89,7 +91,7 @@ class ChaseViaPointsAgent(Agent):
         )
 
 
-def get_nearest_index(matrix:np.ndarray, points:np.ndarray)->Tuple[int,int]:
+def get_nearest_index(matrix:np.ndarray, points:np.ndarray, radius:float=2)->List[Tuple[int,int]]:
     assert len(matrix.shape) == 3
     assert matrix.shape[2] == 2
     assert len(points.shape) == 2
@@ -98,9 +100,14 @@ def get_nearest_index(matrix:np.ndarray, points:np.ndarray)->Tuple[int,int]:
     points_expanded = np.expand_dims(points,(1,2))
     diff = matrix - points_expanded
     dist = np.linalg.norm(diff, axis=-1)
-    index = np.argmin(dist)
-    ncol = dist.shape[1]
-    return index//ncol, index%ncol
+    indices = []
+    for ii in range(points.shape[0]):
+        index = np.argmin(dist[ii])
+        e = np.where(dist[ii] <= radius)
+        print(dist[ii], e,"ooooooooooooooooooo")
+        index_unravel = np.unravel_index(index, dist[ii].shape)
+        indices.append(index_unravel)
+    return indices
 
 
 import numpy as np
@@ -111,3 +118,5 @@ g.shape
 t = np.expand_dims(g,(1,2))
 q = f-t
 q[0]
+w = np.linalg.norm(q, axis=-1)
+c = np.array([[[3,1,1],[4,0,0]],[[-5,9,1],[6,3,2]]])

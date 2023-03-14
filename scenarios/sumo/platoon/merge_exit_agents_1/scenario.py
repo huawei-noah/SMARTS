@@ -37,7 +37,7 @@ for route in route_comb:
                 ),
                 Via(
                     "E2",
-                    lane_offset=80,
+                    lane_offset=30,
                     lane_index=route[2],
                     required_speed=18,
                 ),
