@@ -98,7 +98,7 @@ class SumoMapGenerator:
         edge_id: str,
         start_id: str,
         end_id: str,
-        shape_str: Tuple[List[float], List[float]],
+        shape_str: str,
         width: float = 5,
     ):
         edge = ET.SubElement(self.edges_root, "edge")
