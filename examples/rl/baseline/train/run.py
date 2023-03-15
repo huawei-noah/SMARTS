@@ -218,3 +218,9 @@ if __name__ == "__main__":
         raise Exception("When --mode=evaluate, --model option must be specified.")
 
     main(args)
+
+
+# Check scenario variation in loop training
+# Check reward training
+# Check each scenario lane change position
+# Remove  action = 0 in preprocess.step

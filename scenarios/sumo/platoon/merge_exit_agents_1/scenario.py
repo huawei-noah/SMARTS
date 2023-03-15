@@ -15,7 +15,10 @@ first_via = (0, 1, 2)
 second_via = (0, 1, 2)
 third_via = (1, 2)
 
-route_comb = product(begin_road_lane, first_via, second_via, third_via)
+route_comb = list(product(begin_road_lane, first_via, second_via, third_via))
+
+# Temporary
+route_comb = [(('E0', 1), 0, 0, 1),]
 
 leader_mission = []
 for route in route_comb:
@@ -25,19 +28,19 @@ for route in route_comb:
             via=(
                 Via(
                     "E2",
-                    lane_offset=50,
+                    lane_offset=20,
                     lane_index=route[1],
                     required_speed=10,
                 ),
                 Via(
                     "E2",
-                    lane_offset=190,
+                    lane_offset=150,
                     lane_index=route[2],
                     required_speed=18,
                 ),
                 Via(
                     "E2",
-                    lane_offset=290,
+                    lane_offset=270,
                     lane_index=route[3],
                     required_speed=13,
                 ),

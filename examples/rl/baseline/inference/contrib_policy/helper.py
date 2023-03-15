@@ -36,7 +36,7 @@ def plotter3d(
     # print("PLOTTER3D: OBSERVATION SHAPE INSIDE PLOTTER=",observation.shape)
 
     if isinstance(obs, np.ndarray):
-        print("PLOTTER3D: OBJECT IS ALREADY IN NUMPY FORMAT")
+        # print("PLOTTER3D: OBJECT IS ALREADY IN NUMPY FORMAT")
         obs = obs.copy()
     else:
         raise Exception("PLOTTER3D: INCORRECT FORMAT")
@@ -44,21 +44,21 @@ def plotter3d(
     # WARNING:matplotlib.image:Clipping input data to the valid range for
     # imshow with RGB data ([0..1] for floats or [0..255] for integers).
     if obs.dtype == np.float32 and np.amax(obs) > 1.0:
-        print("PLOTTER3D: CONVERTED IMAGE [0,255] float to [0,255] int")
+        # print("PLOTTER3D: CONVERTED IMAGE [0,255] float to [0,255] int")
         obs = (obs).astype(int)
     elif obs.dtype == np.float32 and np.amax(obs) <= 1.0:
-        print("PLOTTER3D: CONVERTED IMAGE [0,1] float to [0,255] int")
+        # print("PLOTTER3D: CONVERTED IMAGE [0,1] float to [0,255] int")
         obs = (obs * 255).astype(int)
     elif obs.dtype == int and np.amax(obs) > 1.0:
-        print("PLOTTER3D: OKAY IMAGE [0,255] int")
+        # print("PLOTTER3D: OKAY IMAGE [0,255] int")
         pass
     elif obs.dtype == np.uint8 and np.amax(obs) <= 255:
-        print("PLOTTER3D: OKAY IMAGE [0,255] int")
+        # print("PLOTTER3D: OKAY IMAGE [0,255] int")
         pass
     elif obs.dtype == np.int and np.amax(obs) <= 1.0:
         raise Exception("PLOTTER3D: ERROR IMAGE [0,1] int")
     else:
-        print(f"PLOTTER3D: ObsType: {obs.dtype}, max value {np.amax(obs)}")
+        # print(f"PLOTTER3D: ObsType: {obs.dtype}, max value {np.amax(obs)}")
         raise Exception("PLOTTER3D: UNKNOWN TYPE")
 
     if channel_order != "last" and channel_order != "first":

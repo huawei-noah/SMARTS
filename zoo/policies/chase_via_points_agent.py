@@ -1,7 +1,7 @@
 from typing import Sequence
 
 import numpy as np
-# from contrib_policy.helper import plotter3d
+from contrib_policy.helper import plotter3d
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB
@@ -26,7 +26,17 @@ class ChaseViaPointsAgent(Agent):
             "cannot be empty or None. Enable waypoint paths in agent interface."
         )
 
-        LANE_CHANGE_DIST = 70
+        for ind, wp in enumerate(obs.waypoint_paths):
+            print("+ Waypoint:", ind)
+            print("    Waypoints= ", wp[0].pos, wp[0].lane_id)
+            print("    Waypoints= ", wp[-1].pos, wp[-1].lane_id)
+        print(
+            "+ Leader: ", obs.ego_vehicle_state.lane_id, obs.ego_vehicle_state.position
+        )
+        print("+ NVP= ", obs.via_data.near_via_points)
+        print("+ Hit= ", obs.via_data.hit_via_points)
+
+        LANE_CHANGE_DIST = 80
 
         # Truncate all paths to be of the same length
         min_len = min(LANE_CHANGE_DIST, min(map(len, obs.waypoint_paths)))
@@ -44,45 +54,55 @@ class ChaseViaPointsAgent(Agent):
         via_points = np.array(
             [via_point.position for via_point in obs.via_data.near_via_points]
         )
-        wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
+        via_point_wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
+        print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
 
         # No nearby via points. Hence, remain in same lane.
         if via_point_ind is None:
-            # print("No via points within waypoint radius.")
-            # print(ego_wp_ind, wp_ind)
-            # rgb=filter(obs,res=self._res)
-            # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # input()
+            print("No via points within waypoint radius. \n")
+            rgb=filter(obs,res=self._res)
+            plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
+            if obs.ego_vehicle_state.position[0] > 470:
+                self._flag = 0
+                return (13.89, -1)
+
             return (obs.waypoint_paths[ego_wp_ind][0].speed_limit, 0)
 
         # Target via point is in the same path. Hence, remain in same lane.
-        if (
-            obs.waypoint_paths[ego_wp_ind][0].lane_id
-            == obs.waypoint_paths[wp_ind[0]][0].lane_id
-        ):
-            # print("Keep lane.")
-            # print(ego_wp_ind, wp_ind)
-            # rgb=filter(obs,res=self._res)
-            # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # input()
+        # if (
+        #     obs.waypoint_paths[ego_wp_ind][0].lane_id
+        #     == obs.waypoint_paths[wp_ind[0]][0].lane_id
+        # ):
+        if ego_wp_ind == via_point_wp_ind[0]:
+            print("Keep lane. \n")
+            rgb=filter(obs,res=self._res)
+            plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
+            if obs.ego_vehicle_state.position[0] > 470:
+                self._flag = 0
+                return (13.89, -1)
+
             return (obs.via_data.near_via_points[via_point_ind].required_speed, 0)
 
         # Change to left lane since target via point is on the left lane.
-        if ego_wp_ind < wp_ind[0]:
-            # print("Change lane left.")
-            # print(ego_wp_ind, wp_ind)
-            # rgb=filter(obs,res=self._res)
-            # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # input()
+        if ego_wp_ind < via_point_wp_ind[0]:
+            print("Change lane left. \n")
+            rgb=filter(obs,res=self._res)
+            plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
+            if obs.ego_vehicle_state.position[0] > 470:
+                self._flag = 0
+                return (13.89, -1)
+
             return (obs.via_data.near_via_points[via_point_ind].required_speed, 1)
 
         # Change to right lane since target via point is on the right lane.
-        if ego_wp_ind > wp_ind[0]:
-            # print("Change lane right.")
-            # print(ego_wp_ind, wp_ind)
-            # rgb=filter(obs,res=self._res)
-            # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # input()
+        if ego_wp_ind > via_point_wp_ind[0]:
+            print("Change lane right. \n")
+            rgb=filter(obs,res=self._res)
+            plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
+            if obs.ego_vehicle_state.position[0] > 480:
+                self._flag = 0
+                return (13.89, -1)
+
             return (obs.via_data.near_via_points[via_point_ind].required_speed, -1)
 
         raise Exception("ChaseViaPointsAgent did not catch any preprogrammed actions.")
