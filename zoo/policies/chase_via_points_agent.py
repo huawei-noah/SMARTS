@@ -55,11 +55,11 @@ class ChaseViaPointsAgent(Agent):
             [via_point.position for via_point in obs.via_data.near_via_points]
         )
         via_point_wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
-        print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
+        # print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
 
         # No nearby via points. Hence, remain in same lane.
         if via_point_ind is None:
-            print("No via points within waypoint radius. \n")
+            print("+ No via points within waypoint radius. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
             if obs.ego_vehicle_state.position[0] > 460:
@@ -70,7 +70,7 @@ class ChaseViaPointsAgent(Agent):
 
         # Target via point is in the same path. Hence, remain in same lane.
         if ego_wp_ind == via_point_wp_ind[0]:
-            print("Keep lane. \n")
+            print("+ Keep lane. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
             if obs.ego_vehicle_state.position[0] > 460:
@@ -81,7 +81,7 @@ class ChaseViaPointsAgent(Agent):
 
         # Change to left lane since target via point is on the left lane.
         if ego_wp_ind < via_point_wp_ind[0]:
-            print("Change lane left. \n")
+            print("+ Change lane left. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
             if obs.ego_vehicle_state.position[0] > 460:
@@ -92,7 +92,7 @@ class ChaseViaPointsAgent(Agent):
 
         # Change to right lane since target via point is on the right lane.
         if ego_wp_ind > via_point_wp_ind[0]:
-            print("Change lane right. \n")
+            print("+ Change lane right. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
             if obs.ego_vehicle_state.position[0] > 460:
