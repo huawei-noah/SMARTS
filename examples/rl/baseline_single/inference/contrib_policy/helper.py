@@ -1,6 +1,6 @@
-import matplotlib
 import pathlib
 
+import matplotlib
 import numpy as np
 
 
@@ -112,9 +112,9 @@ def plotter3d(
 def move_figure(f, x, y):
     """Move figure's upper left corner to pixel (x, y)"""
     backend = matplotlib.get_backend()
-    if backend == 'TkAgg':
+    if backend == "TkAgg":
         f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
-    elif backend == 'WXAgg':
+    elif backend == "WXAgg":
         f.canvas.manager.window.SetPosition((x, y))
     else:
         # This works for QT and GTK
