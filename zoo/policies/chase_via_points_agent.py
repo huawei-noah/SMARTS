@@ -12,12 +12,10 @@ from smarts.core.sensors import LANE_ID_CONSTANT
 
 class ChaseViaPointsAgent(Agent):
     def __init__(self):
-        top_down_rgb = (
-            RGB(
-                width=112,
-                height=112,
-                resolution=50 / 112,  # m/pixels
-            ),
+        top_down_rgb = RGB(
+            width=112,
+            height=112,
+            resolution=50 / 112,  # m/pixels
         )
         self._res = top_down_rgb.resolution
         self._flag = -1
