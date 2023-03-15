@@ -26,8 +26,10 @@ class ChaseViaPointsAgent(Agent):
             "cannot be empty or None. Enable waypoint paths in agent interface."
         )
 
+        LANE_CHANGE_DIST = 70
+
         # Truncate all paths to be of the same length
-        min_len = min(map(len, obs.waypoint_paths))
+        min_len = min(LANE_CHANGE_DIST, min(map(len, obs.waypoint_paths)))
         trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
         waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
         waypoints = np.array(waypoints, dtype=np.float64)
