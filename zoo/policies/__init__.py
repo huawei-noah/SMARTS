@@ -5,7 +5,7 @@ from smarts.core.agent_interface import (
     AgentInterface,
     AgentType,
     DoneCriteria,
-    RoadWaypoints,
+    RGB,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
@@ -64,9 +64,13 @@ register(
             max_episode_steps=None,
             neighborhood_vehicle_states=True,
             occupancy_grid_map=False,
-            top_down_rgb=False,
-            road_waypoints=RoadWaypoints(horizon=50),
-            waypoint_paths=Waypoints(lookahead=50),
+            top_down_rgb=RGB(
+                width=112,
+                height=112,
+                resolution=50 / 112,  # m/pixels
+            ),
+            road_waypoints=False,
+            waypoint_paths=Waypoints(lookahead=80),
             signals=False,
         ),
         agent_builder=ChaseViaPointsAgent,

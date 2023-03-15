@@ -1,3 +1,4 @@
+import matplotlib
 import pathlib
 
 import numpy as np
@@ -81,6 +82,8 @@ def plotter3d(
 
     fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False, figsize=(10, 10))
     fig.suptitle("PLOTTER3D")
+    fig.set_size_inches(5, 5, forward=True)
+    move_figure(fig, 0, 0)
 
     for row in range(0, rows):
         for col in range(0, columns):
@@ -104,6 +107,19 @@ def plotter3d(
         plt.pause(interval=pause)
 
     plt.close()
+
+
+def move_figure(f, x, y):
+    """Move figure's upper left corner to pixel (x, y)"""
+    backend = matplotlib.get_backend()
+    if backend == 'TkAgg':
+        f.canvas.manager.window.wm_geometry("+%d+%d" % (x, y))
+    elif backend == 'WXAgg':
+        f.canvas.manager.window.SetPosition((x, y))
+    else:
+        # This works for QT and GTK
+        # You can also use window.setGeometry
+        f.canvas.manager.window.move(x, y)
 
 
 def load_pkl(file):

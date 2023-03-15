@@ -559,8 +559,8 @@ class Vehicle:
             ViaSensor(
                 vehicle=vehicle,
                 plan=plan,
-                # At lane change time of 3s and speed of 13.89m/s, acquistion range = 3s x 13.89m/s = 41.67m.
-                lane_acquisition_range=40,
+                # At lane change time of 6s and speed of 13.89m/s, acquistion range = 6s x 13.89m/s = 83.34m.
+                lane_acquisition_range=80,
                 speed_accuracy=1.5,
             )
         )
