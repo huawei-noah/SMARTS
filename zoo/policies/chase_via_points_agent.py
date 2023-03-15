@@ -1,7 +1,7 @@
 from typing import Sequence
 
 import numpy as np
-from contrib_policy.helper import plotter3d
+# from contrib_policy.helper import plotter3d
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB
@@ -48,7 +48,7 @@ class ChaseViaPointsAgent(Agent):
 
         # No nearby via points. Hence, remain in same lane.
         if via_point_ind is None:
-            print("No via points within waypoint radius.")
+            # print("No via points within waypoint radius.")
             # print(ego_wp_ind, wp_ind)
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
@@ -60,7 +60,7 @@ class ChaseViaPointsAgent(Agent):
             obs.waypoint_paths[ego_wp_ind][0].lane_id
             == obs.waypoint_paths[wp_ind[0]][0].lane_id
         ):
-            print("Keep lane.")
+            # print("Keep lane.")
             # print(ego_wp_ind, wp_ind)
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
@@ -69,7 +69,7 @@ class ChaseViaPointsAgent(Agent):
 
         # Change to left lane since target via point is on the left lane.
         if ego_wp_ind < wp_ind[0]:
-            print("Change lane left.")
+            # print("Change lane left.")
             # print(ego_wp_ind, wp_ind)
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
@@ -78,7 +78,7 @@ class ChaseViaPointsAgent(Agent):
 
         # Change to right lane since target via point is on the right lane.
         if ego_wp_ind > wp_ind[0]:
-            print("Change lane right.")
+            # print("Change lane right.")
             # print(ego_wp_ind, wp_ind)
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
