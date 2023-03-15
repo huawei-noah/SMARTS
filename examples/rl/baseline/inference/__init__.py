@@ -25,6 +25,7 @@ def entry_point(**kwargs):
 
     agent_params = kwargs["agent_params"]
     agent_params.update({"top_down_rgb": interface.top_down_rgb})
+    agent_params.update({"action_space_type": interface.action})
 
     return AgentSpec(
         interface=interface,
