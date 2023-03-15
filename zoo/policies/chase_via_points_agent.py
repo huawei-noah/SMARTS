@@ -245,21 +245,3 @@ def rotate_axes(points: np.ndarray, theta: float) -> np.ndarray:
     rotated_points = (R.dot(points.T)).T
     return rotated_points
     # fmt: on
-
-
-# Some thoughts on presenting SMARTS support for external datasets.
-# We could address this in a separate PR too.
-
-# Consider putting up an example, in the example folder, on using Waymo map and traffic.
-# Add the Waymo example to the CI tests.
-
-# Consider updating how to use SMARTS for Waymo under Ecosystem section in ReadTheDocs.
-# In the Example section we could provide intructions to run a simple
-# ego agent (e.g., `AgentType.Laner`, etc) on a Waymo map with traffic.
-# We could also post a gif of the replayed Waymo scenario.
-# To reproduce the result, we could instruct the users to download the dataset and modify the dataset path in the provided script.
-
-# We could move readmes such as (i)`SMARTS/scenarios/waymo/README.md`, and (ii) `SMARTS/waymo_open_dataset/README.md`,
-# to ReadTheDocs.
-
-# An example Waymo gif which we could post:
