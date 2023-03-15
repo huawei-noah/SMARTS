@@ -41,7 +41,7 @@ try:
 
     from pathos.multiprocessing import ProcessingPool as Pool
     from tabulate import tabulate
-    from waymo_open_dataset.protos import scenario_pb2
+    from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 except (ModuleNotFoundError, ImportError):
     import sys
     from collections import namedtuple

@@ -17,6 +17,7 @@ curl https://raw.githubusercontent.com/waymo-research/waymo-open-dataset/master/
 
 3. Compile the proto files
 
+Run from the base directory of the SMARTS repo:
 ```sh
-protoc -I=. --python_out=. waymo_open_dataset/protos/scenario.proto && protoc -I=. --python_out=. waymo_open_dataset/protos/map.proto
+protoc -I=. --python_out=. smarts/waymo/waymo_open_dataset/protos/scenario.proto && protoc -I=. --python_out=. smarts/waymo/waymo_open_dataset/protos/map.proto
 ```

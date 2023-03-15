@@ -19,7 +19,7 @@ syntax = "proto2";
 
 package waymo.open_dataset;
 
-import "waymo_open_dataset/protos/map.proto";
+import "smarts/waymo/waymo_open_dataset/protos/map.proto";
 
 message ObjectState {
   // Coordinates of the center of the object bounding box.

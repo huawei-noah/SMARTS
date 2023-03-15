@@ -91,7 +91,6 @@ autodoc_mock_imports = [
     "tabulate",
     "tools",
     "torch",
-    "waymo_open_dataset",
 ]
 
 todo_include_todos = True
