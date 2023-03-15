@@ -62,7 +62,7 @@ class ChaseViaPointsAgent(Agent):
             print("No via points within waypoint radius. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            if obs.ego_vehicle_state.position[0] > 470:
+            if obs.ego_vehicle_state.position[0] > 480:
                 self._flag = 0
                 return (13.89, -1)
 
@@ -77,7 +77,7 @@ class ChaseViaPointsAgent(Agent):
             print("Keep lane. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            if obs.ego_vehicle_state.position[0] > 470:
+            if obs.ego_vehicle_state.position[0] > 480:
                 self._flag = 0
                 return (13.89, -1)
 
@@ -88,7 +88,7 @@ class ChaseViaPointsAgent(Agent):
             print("Change lane left. \n")
             rgb=filter(obs,res=self._res)
             plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            if obs.ego_vehicle_state.position[0] > 470:
+            if obs.ego_vehicle_state.position[0] > 480:
                 self._flag = 0
                 return (13.89, -1)
 
