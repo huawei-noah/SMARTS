@@ -17,6 +17,12 @@ An example SMARTS scenario is located `here <https://github.com/huawei-noah/SMAR
     scenario_id = "0000b6ab-e100-4f6b-aee8-b520b57c0530"
     scenario_path = Path("/home/user/argoverse/train/") / scenario_id
 
+Make sure you've installed the required dependencies:
+
+.. code-block:: sh
+
+    $ pip install -e .[argoverse]
+
 You can then run any of the examples with this scenario:
 
 .. code-block:: sh
