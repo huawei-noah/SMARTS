@@ -250,18 +250,12 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         self._surfaces: Dict[str, OpenDriveRoadNetwork.Surface] = {}
         self._roads: Dict[str, OpenDriveRoadNetwork.Road] = {}
         self._lanes: Dict[str, OpenDriveRoadNetwork.Lane] = {}
-        self._lanepoints = None
 
         # Reference to lanes' R tree
         self._lane_rtree = None
 
         self._load()
         self._waypoints_cache = OpenDriveRoadNetwork._WaypointsCache()
-        if map_spec.lanepoint_spacing is not None:
-            assert map_spec.lanepoint_spacing > 0
-            self._lanepoints = LanePoints.from_opendrive(
-                self, spacing=map_spec.lanepoint_spacing
-            )
 
     @classmethod
     def from_spec(
@@ -1709,6 +1703,11 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                     # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]
                 return None
+
+    @cached_property
+    def _lanepoints(self):
+        assert self._map_spec.lanepoint_spacing > 0
+        return LanePoints.from_opendrive(self, spacing=self._map_spec.lanepoint_spacing)
 
     def waypoint_paths(
         self,

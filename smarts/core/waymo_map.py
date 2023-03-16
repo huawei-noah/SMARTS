@@ -123,15 +123,7 @@ class WaymoMap(RoadMapWithCaches):
         self._no_composites = False  # for debugging purposes
         self._has_overpasses = False
         self._load_from_scenario(waymo_scenario)
-
         self._waypoints_cache = WaymoMap._WaypointsCache()
-        self._lanepoints = None
-        if map_spec.lanepoint_spacing is not None:
-            assert map_spec.lanepoint_spacing > 0
-            # XXX: this should be last here since LanePoints() calls road_network methods immediately
-            self._lanepoints = LanePoints.from_waymo(
-                self, spacing=map_spec.lanepoint_spacing
-            )
 
     def _calculate_normals(
         self, feat_id: int
@@ -1881,6 +1873,11 @@ class WaymoMap(RoadMapWithCaches):
                     # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]
                 return None
+
+    @cached_property
+    def _lanepoints(self):
+        assert self._map_spec.lanepoint_spacing > 0
+        return LanePoints.from_waymo(self, spacing=self._map_spec.lanepoint_spacing)
 
     def waypoint_paths(
         self,
