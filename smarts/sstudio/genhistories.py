@@ -24,10 +24,10 @@ import csv
 import logging
 import math
 import os
-from pathlib import Path
 import sqlite3
 import sys
 from collections import deque
+from pathlib import Path
 from typing import Any, Callable, Deque, Dict, Generator, Iterable, Optional
 
 import numpy as np
@@ -43,7 +43,6 @@ from smarts.core.utils.math import (
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
-
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -792,9 +791,9 @@ class Waymo(_TrajectoryDataset):
 
     def _get_scenario(self):
         try:
-            from waymo_open_dataset.protos import (
+            from waymo_open_dataset.protos import (  # pytype: disable=import-error
                 scenario_pb2,
-            )  # pytype: disable=import-error
+            )
         except ImportError:
             print(
                 "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
@@ -940,9 +939,9 @@ class Waymo(_TrajectoryDataset):
 
     def _encode_tl_state(self, waymo_state) -> SignalLightState:
         try:
-            from waymo_open_dataset.protos.map_pb2 import (
+            from waymo_open_dataset.protos.map_pb2 import (  # pytype: disable=import-error
                 TrafficSignalLaneState,
-            )  # pytype: disable=import-error
+            )
         except ImportError:
             print(
                 "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
@@ -1008,11 +1007,11 @@ class Argoverse(_TrajectoryDataset):
     def rows(self) -> Generator[Dict, None, None]:
         try:
             # pytype: disable=import-error
-            from av2.datasets.motion_forecasting.scenario_serialization import (
-                load_argoverse_scenario_parquet,
-            )
             from av2.datasets.motion_forecasting.data_schema import (
                 ObjectType as AvObjectType,
+            )
+            from av2.datasets.motion_forecasting.scenario_serialization import (
+                load_argoverse_scenario_parquet,
             )
 
             # pytype: enable=import-error

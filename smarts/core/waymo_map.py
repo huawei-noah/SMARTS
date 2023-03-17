@@ -35,7 +35,6 @@ import rtree
 from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
-from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos.map_pb2 import (
     Crosswalk,
@@ -45,6 +44,7 @@ from waymo_open_dataset.protos.map_pb2 import (
     StopSign,
 )
 
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 from smarts.sstudio.types import MapSpec
 from smarts.waymo.waymo_utils import WaymoDatasetError
 

@@ -142,7 +142,9 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         map_class = WaymoMap
     elif map_type == _ARGOVERSE_MAP:
         try:
-            from smarts.core.argoverse_map import ArgoverseMap  # pytype: disable=import-error
+            from smarts.core.argoverse_map import (
+                ArgoverseMap,  # pytype: disable=import-error
+            )
         except (ImportError, ModuleNotFoundError):
             print(sys.exc_info())
             print(
@@ -154,7 +156,9 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         return None, None
 
     if _existing_map:
-        if isinstance(_existing_map.obj, map_class) and _existing_map.obj.is_same_map(map_spec):
+        if isinstance(_existing_map.obj, map_class) and _existing_map.obj.is_same_map(
+            map_spec
+        ):
             return _existing_map.obj, _existing_map.map_hash
         _clear_cache()
 
