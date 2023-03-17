@@ -491,6 +491,125 @@ class LanePoints:
 
         return cls(shape_lps, spacing)
 
+    @classmethod
+    def from_argoverse(
+        cls,
+        argoverse_map,
+        spacing,
+    ):
+        """Computes the lane shape (start/shape/end) lanepoints for all lanes in
+        the network, the result of this function can be used to interpolate
+        lanepoints along lanes to the desired granularity.
+        """
+        from .argoverse_map import ArgoverseMap
+
+        assert type(argoverse_map) == ArgoverseMap
+
+        def _shape_lanepoints_along_lane(
+            lane: RoadMap.Lane,
+            lanepoint_by_lane_memo: dict,
+        ) -> Tuple[LinkedLanePoint, List[LinkedLanePoint]]:
+            lane_queue = queue.Queue()
+            lane_queue.put((lane, None))
+            shape_lanepoints = []
+            initial_lanepoint = None
+            while not lane_queue.empty():
+                curr_lane, previous_lp = lane_queue.get()
+                first_lanepoint = lanepoint_by_lane_memo.get(curr_lane.lane_id)
+                if first_lanepoint:
+                    if previous_lp:
+                        previous_lp.nexts.append(first_lanepoint)
+                    continue
+
+                lane_shape = curr_lane._centerline
+
+                assert (
+                    len(lane_shape) >= 2
+                ), f"{repr(lane_shape)} for lane_id={curr_lane.lane_id}"
+
+                vd = lane_shape[1] - lane_shape[0]
+                heading = Heading(vec_to_radians(vd[:2]))
+                orientation = fast_quaternion_from_angle(heading)
+
+                lane_width, _ = curr_lane.width_at_offset(0)
+                first_lanepoint = LinkedLanePoint(
+                    lp=LanePoint(
+                        lane=curr_lane,
+                        pose=Pose(position=lane_shape[0], orientation=orientation),
+                        lane_width=lane_width,
+                    ),
+                    nexts=[],
+                    is_inferred=False,
+                )
+
+                if previous_lp is not None:
+                    previous_lp.nexts.append(first_lanepoint)
+
+                if initial_lanepoint is None:
+                    initial_lanepoint = first_lanepoint
+
+                lanepoint_by_lane_memo[curr_lane.lane_id] = first_lanepoint
+                shape_lanepoints.append(first_lanepoint)
+                curr_lanepoint = first_lanepoint
+
+                for p1, p2 in zip(lane_shape[1:], lane_shape[2:]):
+                    vd = p2 - p1
+                    heading_ = Heading(vec_to_radians(vd[:2]))
+                    orientation_ = fast_quaternion_from_angle(heading_)
+                    lane_width, _ = curr_lane.width_at_offset(0)
+                    linked_lanepoint = LinkedLanePoint(
+                        lp=LanePoint(
+                            lane=curr_lane,
+                            pose=Pose(position=p1, orientation=orientation_),
+                            lane_width=lane_width,
+                        ),
+                        nexts=[],
+                        is_inferred=False,
+                    )
+
+                    shape_lanepoints.append(linked_lanepoint)
+                    curr_lanepoint.nexts.append(linked_lanepoint)
+                    curr_lanepoint = linked_lanepoint
+
+                # Add a lanepoint for the last point of the current lane
+                curr_lanepoint_lane = curr_lanepoint.lp.lane
+                lane_width, _ = curr_lanepoint_lane.width_at_offset(0)
+                last_linked_lanepoint = LinkedLanePoint(
+                    lp=LanePoint(
+                        lane=curr_lanepoint.lp.lane,
+                        pose=Pose(
+                            position=lane_shape[-1],
+                            orientation=curr_lanepoint.lp.pose.orientation,
+                        ),
+                        lane_width=lane_width,
+                    ),
+                    nexts=[],
+                    is_inferred=False,
+                )
+
+                shape_lanepoints.append(last_linked_lanepoint)
+                curr_lanepoint.nexts.append(last_linked_lanepoint)
+                curr_lanepoint = last_linked_lanepoint
+
+                for out_lane in curr_lane.outgoing_lanes:
+                    if out_lane and out_lane.is_drivable:
+                        lane_queue.put((out_lane, curr_lanepoint))
+            return initial_lanepoint, shape_lanepoints
+
+        roads = argoverse_map._roads
+        lanepoint_by_lane_memo = {}
+        shape_lps = []
+
+        for road in roads.values():
+            for lane in road.lanes:
+                if lane.is_drivable:
+                    _, new_lps = _shape_lanepoints_along_lane(
+                        lane, lanepoint_by_lane_memo
+                    )
+                    shape_lps += new_lps
+
+        return cls(shape_lps, spacing)
+
     @staticmethod
     def _build_kd_tree(linked_lps: Sequence[LinkedLanePoint]) -> KDTree:
         return KDTree(

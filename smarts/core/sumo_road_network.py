@@ -18,7 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
-import math
 import os
 import random
 from functools import lru_cache
@@ -27,13 +26,10 @@ from subprocess import check_output
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-import trimesh
-import trimesh.scene
 from cached_property import cached_property
 from shapely.geometry import Point as shPoint
 from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap
-from trimesh.exchange import gltf
 
 from smarts.sstudio.types import MapSpec
 
@@ -41,40 +37,12 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
-from .utils.geometry import buffered_shape, generate_meshes_from_polygons
+from .utils.geometry import buffered_shape
+from .utils.glb import make_map_glb, make_road_line_glb
 from .utils.math import inplace_unwrap, radians_to_vec, vec_2d
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip
-
-
-def _convert_camera(camera):
-    result = {
-        "name": camera.name,
-        "type": "perspective",
-        "perspective": {
-            "aspectRatio": camera.fov[0] / camera.fov[1],
-            "yfov": np.radians(camera.fov[1]),
-            "znear": float(camera.z_near),
-            # HACK: The trimesh gltf export doesn't include a zfar which Panda3D GLB
-            #       loader expects. Here we override to make loading possible.
-            "zfar": float(camera.z_near + 100),
-        },
-    }
-    return result
-
-
-gltf._convert_camera = _convert_camera
-
-
-class _GLBData:
-    def __init__(self, bytes_):
-        self._bytes = bytes_
-
-    def write_glb(self, output_path):
-        """Generate a `.glb` geometry file."""
-        with open(output_path, "wb") as f:
-            f.write(self._bytes)
 
 
 class SumoRoadNetwork(RoadMap):
@@ -282,15 +250,15 @@ class SumoRoadNetwork(RoadMap):
         return self._default_lane_width / SumoRoadNetwork.DEFAULT_LANE_WIDTH
 
     def to_glb(self, glb_dir):
-        lane_dividers, edge_dividers = self._compute_traffic_dividers()
         polys = self._compute_road_polygons()
-        map_glb = self._make_glb_from_polys(polys, lane_dividers, edge_dividers)
+        lane_dividers, edge_dividers = self._compute_traffic_dividers()
+        map_glb = make_map_glb(polys, self.bounding_box, lane_dividers, edge_dividers)
         map_glb.write_glb(Path(glb_dir) / "map.glb")
 
-        road_lines_glb = self._make_road_line_glb(edge_dividers)
+        road_lines_glb = make_road_line_glb(edge_dividers)
         road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
 
-        lane_lines_glb = self._make_road_line_glb(lane_dividers)
+        lane_lines_glb = make_road_line_glb(lane_dividers)
         lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     class Surface(RoadMap.Surface):
@@ -1279,44 +1247,6 @@ class SumoRoadNetwork(RoadMap):
             if new_coords:
                 lane_to_poly[lane_id] = (Polygon(new_coords), metadata)
 
-    def _make_road_line_glb(self, lines: List[List[Tuple[float, float]]]):
-        scene = trimesh.Scene()
-        for line_pts in lines:
-            vertices = [(*pt, 0.1) for pt in line_pts]
-            point_cloud = trimesh.PointCloud(vertices=vertices)
-            point_cloud.apply_transform(
-                trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
-            )
-            scene.add_geometry(point_cloud)
-        return _GLBData(gltf.export_glb(scene))
-
-    def _make_glb_from_polys(self, polygons, lane_dividers, edge_dividers):
-        scene = trimesh.Scene()
-        meshes = generate_meshes_from_polygons(polygons)
-        # Attach additional information for rendering as metadata in the map glb
-        metadata = {}
-
-        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
-        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
-        metadata["bounding_box"] = self._graph.getBoundary()
-
-        # lane markings information
-        metadata["lane_dividers"] = lane_dividers
-        metadata["edge_dividers"] = edge_dividers
-
-        for mesh in meshes:
-            mesh.visual = trimesh.visual.TextureVisuals(
-                material=trimesh.visual.material.PBRMaterial()
-            )
-
-            road_id = mesh.metadata["road_id"]
-            lane_id = mesh.metadata.get("lane_id")
-            name = f"{road_id}"
-            if lane_id is not None:
-                name += f"-{lane_id}"
-            scene.add_geometry(mesh, name, extras=mesh.metadata)
-        return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
-
     def _compute_traffic_dividers(self, threshold=1):
         lane_dividers = []  # divider between lanes with same traffic direction
         edge_dividers = []  # divider between lanes with opposite traffic direction
@@ -1473,7 +1403,8 @@ class SumoRoadNetwork(RoadMap):
         lp_spacing: float,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, that may not be evenly spaced,
-        returns the same number of Waypoints that are evenly spaced and start at point."""
+        returns the same number of Waypoints that are evenly spaced and start at point.
+        """
 
         continuous_variables = [
             "positions_x",
