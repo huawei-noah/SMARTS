@@ -79,6 +79,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :caption: Ecosystem
 
    ecosystem/sumo.rst
+   ecosystem/argoverse.rst
    ecosystem/waymo.rst
    ecosystem/rllib.rst
    ecosystem/ngsim.rst

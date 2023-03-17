@@ -28,9 +28,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
-from waymo_open_dataset.protos import map_pb2
-
 from smarts.core.waymo_map import WaymoMap
+from smarts.waymo.waymo_open_dataset.protos import map_pb2
 
 
 class SumoMapGenerator:
@@ -98,7 +97,7 @@ class SumoMapGenerator:
         edge_id: str,
         start_id: str,
         end_id: str,
-        shape_str: Tuple[List[float], List[float]],
+        shape_str: str,
         width: float = 5,
     ):
         edge = ET.SubElement(self.edges_root, "edge")
