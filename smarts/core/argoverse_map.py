@@ -97,11 +97,6 @@ class ArgoverseMap(RoadMapWithCaches):
         self._lane_rtree = None
         self._load_map_data()
         self._waypoints_cache = ArgoverseMap._WaypointsCache()
-        if map_spec.lanepoint_spacing is not None:
-            assert map_spec.lanepoint_spacing > 0
-            self._lanepoints = LanePoints.from_argoverse(
-                self, spacing=map_spec.lanepoint_spacing
-            )
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
@@ -908,6 +903,11 @@ class ArgoverseMap(RoadMapWithCaches):
                     # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]
                 return None
+
+    @cached_property
+    def _lanepoints(self):
+        assert self._map_spec.lanepoint_spacing > 0
+        return LanePoints.from_argoverse(self, spacing=self._map_spec.lanepoint_spacing)
 
     def waypoint_paths(
         self,
