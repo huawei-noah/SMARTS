@@ -47,7 +47,7 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade wheel
           pip install -r utils/setup/mac_requirements.txt
-          pip install -e .[camera_obs,opendrive,rllib,test,test_notebook,torch,train]
+          pip install -e .[camera_obs,opendrive,rllib,test,test_notebook,torch,train,argoverse]
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -58,6 +58,7 @@ jobs:
             --doctest-modules \
             -n auto \
             --ignore-glob="**/waymo_map.py" \
+            --ignore-glob="**/argoverse_map.py" \
             ${{matrix.tests}} \
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/env/tests/test_benchmark.py \

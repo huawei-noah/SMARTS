@@ -55,6 +55,7 @@ _UNKNOWN_MAP = 0
 _SUMO_MAP = 1
 _OPENDRIVE_MAP = 2
 _WAYMO_MAP = 3
+_ARGOVERSE_MAP = 4
 
 
 def find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
@@ -77,6 +78,9 @@ def find_mapfile_in_dir(map_dir: str) -> Tuple[int, str]:
             map_type = _OPENDRIVE_MAP
         elif ".tfrecord" in f:
             map_type = _WAYMO_MAP
+            map_path = os.path.join(map_dir, f)
+        elif "log_map_archive" in f:
+            map_type = _ARGOVERSE_MAP
             map_path = os.path.join(map_dir, f)
     return map_type, map_path
 
@@ -128,7 +132,20 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
 
     elif map_type == _WAYMO_MAP:
         from smarts.core.waymo_map import WaymoMap
+
         map_class = WaymoMap
+    elif map_type == _ARGOVERSE_MAP:
+        try:
+            from smarts.core.argoverse_map import (
+                ArgoverseMap,
+            )  # pytype: disable=import-error
+        except (ImportError, ModuleNotFoundError):
+            print(sys.exc_info())
+            print(
+                "You may not have installed the [argoverse] dependencies required to build and use Argoverse scenarios. Install them first using the command `pip install -e .[argoverse]` at the source directory."
+            )
+            return None, None
+        map_class = ArgoverseMap
     else:
         return None, None
 

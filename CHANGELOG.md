@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added support for the [Argoverse 2 Motion Forecasting Dataset](https://www.argoverse.org/av2.html#forecasting-link) (see `scenarios/argoverse`)
 - Added `waymo_open_dataset` as a module at the SMARTS repo level, to be able to load waymo scenarios without any external packages
 ### Changed
 ### Deprecated

@@ -32,9 +32,9 @@ from typing import Dict, Generator, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
-import trimesh
-import trimesh.scene
 from cached_property import cached_property
+
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 
 # pytype: disable=import-error
 
@@ -75,11 +75,9 @@ except ImportError:
 
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
-from trimesh.exchange import gltf
 
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
-from smarts.core.utils.geometry import generate_meshes_from_polygons
 from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.core.utils.math import (
     CubicPolynomial,
@@ -94,35 +92,6 @@ from smarts.sstudio.types import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint
-
-
-def _convert_camera(camera):
-    result = {
-        "name": camera.name,
-        "type": "perspective",
-        "perspective": {
-            "aspectRatio": camera.fov[0] / camera.fov[1],
-            "yfov": np.radians(camera.fov[1]),
-            "znear": float(camera.z_near),
-            # HACK: The trimesh gltf export doesn't include a zfar which Panda3D GLB
-            #       loader expects. Here we override to make loading possible.
-            "zfar": float(camera.z_near + 100),
-        },
-    }
-    return result
-
-
-gltf._convert_camera = _convert_camera
-
-
-class _GLBData:
-    def __init__(self, bytes_):
-        self._bytes = bytes_
-
-    def write_glb(self, output_path: str):
-        """Generate a geometry file."""
-        with open(output_path, "wb") as f:
-            f.write(self._bytes)
 
 
 @dataclass
@@ -763,32 +732,8 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         )
 
     def to_glb(self, glb_dir):
-        lane_dividers, edge_dividers = self._compute_traffic_dividers()
-        map_glb = self._make_glb_from_polys(lane_dividers, edge_dividers)
-        map_glb.write_glb(Path(glb_dir) / "map.glb")
-
-        road_lines_glb = self._make_road_line_glb(edge_dividers)
-        road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
-
-        lane_lines_glb = self._make_road_line_glb(lane_dividers)
-        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
-
-    def _make_road_line_glb(self, lines: List[List[Tuple[float, float]]]):
-        scene = trimesh.Scene()
-        for line_pts in lines:
-            vertices = [(*pt, 0.1) for pt in line_pts]
-            point_cloud = trimesh.PointCloud(vertices=vertices)
-            point_cloud.apply_transform(
-                trimesh.transformations.rotation_matrix(math.pi / 2, [-1, 0, 0])
-            )
-            scene.add_geometry(point_cloud)
-        return _GLBData(gltf.export_glb(scene))
-
-    def _make_glb_from_polys(self, lane_dividers, edge_dividers):
-        scene = trimesh.Scene()
         polygons = []
-        for lane_id in self._lanes:
-            lane = self._lanes[lane_id]
+        for lane_id, lane in self._lanes.items():
             metadata = {
                 "road_id": lane.road.road_id,
                 "lane_id": lane_id,
@@ -796,36 +741,18 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             }
             polygons.append((lane.shape(), metadata))
 
-        meshes = generate_meshes_from_polygons(polygons)
+        lane_dividers, edge_dividers = self._compute_traffic_dividers()
 
-        # Attach additional information for rendering as metadata in the map glb
-        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
-        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
-        metadata = {
-            "bounding_box": (
-                self.bounding_box.min_pt.x,
-                self.bounding_box.min_pt.y,
-                self.bounding_box.max_pt.x,
-                self.bounding_box.max_pt.y,
-            )
-        }
+        map_glb = make_map_glb(
+            polygons, self.bounding_box, lane_dividers, edge_dividers
+        )
+        map_glb.write_glb(Path(glb_dir) / "map.glb")
 
-        # lane markings information
-        metadata["lane_dividers"] = lane_dividers
-        metadata["edge_dividers"] = edge_dividers
+        road_lines_glb = make_road_line_glb(edge_dividers)
+        road_lines_glb.write_glb(Path(glb_dir) / "road_lines.glb")
 
-        for mesh in meshes:
-            mesh.visual = trimesh.visual.TextureVisuals(
-                material=trimesh.visual.material.PBRMaterial()
-            )
-
-            road_id = mesh.metadata["road_id"]
-            lane_id = mesh.metadata.get("lane_id")
-            name = f"{road_id}"
-            if lane_id is not None:
-                name += f"-{lane_id}"
-            scene.add_geometry(mesh, name, extras=mesh.metadata)
-        return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
+        lane_lines_glb = make_road_line_glb(lane_dividers)
+        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     def _compute_traffic_dividers(self):
         lane_dividers = []  # divider between lanes with same traffic direction
@@ -1215,7 +1142,9 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return super().center_at_point(point)
 
         @lru_cache(8)
-        def _edges_at_point(self, point: Point) -> Tuple[Point, Point]:
+        def _edges_at_point(
+            self, point: Point
+        ) -> Tuple[Optional[Point], Optional[Point]]:
             """Get the boundary points perpendicular to the center of the lane closest to the given
              world coordinate.
             Args:
@@ -1228,15 +1157,20 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
             reference_line_vertices_len = int((len(self._lane_polygon) - 1) / 2)
             # left_edge
-            left_edge_shape = self._lane_polygon[:reference_line_vertices_len]
-            left_offset = offset_along_shape(point[:2], left_edge_shape)
+            left_edge_shape = [
+                Point(x, y) for x, y in self._lane_polygon[:reference_line_vertices_len]
+            ]
+            left_offset = offset_along_shape(point, left_edge_shape)
             left_edge = position_at_shape_offset(left_edge_shape, left_offset)
 
             # right_edge
-            right_edge_shape = self._lane_polygon[
-                reference_line_vertices_len : len(self._lane_polygon) - 1
+            right_edge_shape = [
+                Point(x, y)
+                for x, y in self._lane_polygon[
+                    reference_line_vertices_len : len(self._lane_polygon) - 1
+                ]
             ]
-            right_offset = offset_along_shape(point[:2], right_edge_shape)
+            right_offset = offset_along_shape(point, right_edge_shape)
             right_edge = position_at_shape_offset(right_edge_shape, right_offset)
             return left_edge, right_edge
 
@@ -1766,7 +1700,8 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         width_threshold=None,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, return corresponding
-        Waypoints that may not be evenly spaced (due to lane change) but start at point."""
+        Waypoints that may not be evenly spaced (due to lane change) but start at point.
+        """
 
         continuous_variables = [
             "positions_x",
@@ -1785,7 +1720,6 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         skip_lanepoints = False
         index_skipped = []
         for idx, lanepoint in enumerate(path):
-
             if lanepoint.is_inferred and 0 < idx < len(path) - 1:
                 continue
 
@@ -1956,7 +1890,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         lanepoint: LinkedLanePoint,
         lookahead: int,
         filter_road_ids: tuple,
-        point: Tuple[float, float, float],
+        point: Point,
     ) -> List[List[Waypoint]]:
         """computes equally-spaced Waypoints for all lane paths starting at lanepoint
         up to lookahead waypoints ahead, constrained to filter_road_ids if specified."""
