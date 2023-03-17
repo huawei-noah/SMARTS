@@ -332,10 +332,12 @@ def gen_scenario(
             _update_artifacts(db_conn, artifact_paths, obj_hash)
 
     # Scenario metadata
+    artifact_paths = build_graph["scenario_metadata"]
+    obj_hash = pickle_hash(scenario.scenario_metadata, True)
     if _needs_build(
         db_conn, scenario.traffic, artifact_paths, obj_hash, map_needs_rebuild
     ):
-        with timeit("scenario metadata", logger.info):
+        with timeit("scenario_metadata", logger.info):
             gen_metadata(
                 scenario=output_dir,
                 scenario_metadata=scenario.scenario_metadata,
