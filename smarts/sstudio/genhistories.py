@@ -27,6 +27,7 @@ import os
 import sqlite3
 import sys
 from collections import deque
+from pathlib import Path
 from typing import Any, Callable, Deque, Dict, Generator, Iterable, Optional
 
 import numpy as np
@@ -42,17 +43,6 @@ from smarts.core.utils.math import (
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
-
-try:
-    # pytype: disable=import-error
-    from waymo_open_dataset.protos import scenario_pb2
-    from waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
-
-    # pytype: enable=import-error
-except ImportError:
-    print(
-        "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
-    )
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -800,6 +790,15 @@ class Waymo(_TrajectoryDataset):
         super().__init__(dataset_spec, output)
 
     def _get_scenario(self):
+        try:
+            from waymo_open_dataset.protos import (  # pytype: disable=import-error
+                scenario_pb2,
+            )
+        except ImportError:
+            print(
+                "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
+            )
+
         if "scenario_id" not in self._dataset_spec:
             errmsg = "Dataset spec requires scenario_id to be set"
             self._log.error(errmsg)
@@ -939,6 +938,15 @@ class Waymo(_TrajectoryDataset):
                 yield rows[j]
 
     def _encode_tl_state(self, waymo_state) -> SignalLightState:
+        try:
+            from waymo_open_dataset.protos.map_pb2 import (  # pytype: disable=import-error
+                TrafficSignalLaneState,
+            )
+        except ImportError:
+            print(
+                "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
+            )
+
         if waymo_state == TrafficSignalLaneState.LANE_STATE_STOP:
             return SignalLightState.STOP
         if waymo_state == TrafficSignalLaneState.LANE_STATE_CAUTION:
@@ -989,6 +997,103 @@ class Waymo(_TrajectoryDataset):
         return row[col_name]
 
 
+class Argoverse(_TrajectoryDataset):
+    """A tool for conversion of an Argoverse 2 dataset for use within SMARTS."""
+
+    def __init__(self, dataset_spec: Dict[str, Any], output: str):
+        super().__init__(dataset_spec, output)
+
+    @property
+    def rows(self) -> Generator[Dict, None, None]:
+        try:
+            # pytype: disable=import-error
+            from av2.datasets.motion_forecasting.data_schema import (
+                ObjectType as AvObjectType,
+            )
+            from av2.datasets.motion_forecasting.scenario_serialization import (
+                load_argoverse_scenario_parquet,
+            )
+
+            # pytype: enable=import-error
+        except ImportError:
+            print(
+                "You may not have installed the [argoverse] dependencies required to use the Argoverse 2 replay simulation. Install them first using the command `pip install -e .[argoverse]` at the source directory."
+            )
+
+        ALLOWED_TYPES = frozenset(
+            {
+                AvObjectType.VEHICLE,
+                AvObjectType.PEDESTRIAN,
+                AvObjectType.MOTORCYCLIST,
+                AvObjectType.CYCLIST,
+                AvObjectType.BUS,
+            }
+        )
+
+        def _lookup_agent_type(agent_type: AvObjectType) -> int:
+            # See decode_vehicle_type in traffic_history.py
+            if agent_type == AvObjectType.MOTORCYCLIST:
+                return 1  # motorcycle
+            elif agent_type == AvObjectType.VEHICLE:
+                return 2  # passenger
+            elif agent_type == AvObjectType.BUS:
+                return 3  # truck
+            elif agent_type in {AvObjectType.PEDESTRIAN, AvObjectType.CYCLIST}:
+                return 4  # pedestrian/bicycle
+            else:
+                return 0  # other
+
+        input_dir = Path(self._dataset_spec["input_path"])
+        scenario_id = input_dir.stem
+        parquet_file = input_dir / f"scenario_{scenario_id}.parquet"
+        scenario = load_argoverse_scenario_parquet(parquet_file)
+
+        # Normalize to start at 0, and convert to milliseconds
+        timestamps = (scenario.timestamps_ns - scenario.timestamps_ns[0]) * 1e-6
+
+        # The ego vehicle has a string ID, so we need to give it a unique int ID
+        all_ids = [int(t.track_id) for t in scenario.tracks if t.track_id != "AV"]
+        ego_id = max(all_ids) + 1
+
+        for track in scenario.tracks:
+            # Only use dynamic objects
+            if track.object_type not in ALLOWED_TYPES:
+                continue
+
+            if track.track_id == "AV":
+                is_ego = 1
+                vehicle_id = ego_id
+            else:
+                is_ego = 0
+                vehicle_id = int(track.track_id)
+            vehicle_type = _lookup_agent_type(track.object_type)
+
+            for obj_state in track.object_states:
+                row = dict()
+                row["vehicle_id"] = vehicle_id
+                row["type"] = vehicle_type
+                row["sim_time"] = timestamps[obj_state.timestep]
+                row["position_x"] = obj_state.position[0]
+                row["position_y"] = obj_state.position[1]
+                row["heading_rad"] = constrain_angle(
+                    (obj_state.heading - math.pi / 2) % (2 * math.pi)
+                )
+                row["speed"] = np.linalg.norm(np.array(obj_state.velocity))
+                row["lane_id"] = 0
+                row["is_ego_vehicle"] = is_ego
+
+                # Dimensions are not present in the Argoverse data. Setting these to 0
+                # means default values for each vehicle type will be used.
+                # See TrafficHistory.decode_vehicle_type().
+                row["length"] = 0
+                row["height"] = 0
+                row["width"] = 0
+                yield row
+
+    def column_val_in_row(self, row, col_name: str) -> Any:
+        return row[col_name]
+
+
 def import_dataset(
     dataset_spec: types.TrafficHistoryDataset,
     output_path: str,
@@ -1012,6 +1117,8 @@ def import_dataset(
         dataset = Interaction(dataset_dict, output)
     elif source == "Waymo":
         dataset = Waymo(dataset_dict, output)
+    elif source == "Argoverse":
+        dataset = Argoverse(dataset_dict, output)
     else:
         raise ValueError(
             f"unsupported TrafficHistoryDataset type: {dataset_spec.source_type}"

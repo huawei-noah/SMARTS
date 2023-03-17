@@ -32,11 +32,9 @@ from typing import Any, Dict, Generator, List, Optional, Sequence, Set, Tuple, U
 
 import numpy as np
 import rtree
-import trimesh
 from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
-from trimesh.exchange import gltf
 from waymo_open_dataset.protos import scenario_pb2
 from waymo_open_dataset.protos.map_pb2 import (
     Crosswalk,
@@ -46,6 +44,7 @@ from waymo_open_dataset.protos.map_pb2 import (
     StopSign,
 )
 
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 from smarts.sstudio.types import MapSpec
 from smarts.waymo.waymo_utils import WaymoDatasetError
 
@@ -54,7 +53,7 @@ from .lanepoints import LanePoints, LinkedLanePoint
 from .road_map import RoadMap, RoadMapWithCaches, Waypoint
 from .route_cache import RouteWithCache
 from .utils.file import read_tfrecord_file
-from .utils.geometry import buffered_shape, generate_meshes_from_polygons
+from .utils.geometry import buffered_shape
 from .utils.math import (
     inplace_unwrap,
     line_intersect_vectorized,
@@ -62,35 +61,6 @@ from .utils.math import (
     ray_boundary_intersect,
     vec_2d,
 )
-
-
-def _convert_camera(camera):
-    result = {
-        "name": camera.name,
-        "type": "perspective",
-        "perspective": {
-            "aspectRatio": camera.fov[0] / camera.fov[1],
-            "yfov": np.radians(camera.fov[1]),
-            "znear": float(camera.z_near),
-            # HACK: The trimesh gltf export doesn't include a zfar which Panda3D GLB
-            #       loader expects. Here we override to make loading possible.
-            "zfar": float(camera.z_near + 100),
-        },
-    }
-    return result
-
-
-gltf._convert_camera = _convert_camera
-
-
-class _GLBData:
-    def __init__(self, bytes_):
-        self._bytes = bytes_
-
-    def write_glb(self, output_path: str):
-        """Generate a geometry file."""
-        with open(output_path, "wb") as f:
-            f.write(self._bytes)
 
 
 class WaymoMap(RoadMapWithCaches):
@@ -295,7 +265,7 @@ class WaymoMap(RoadMapWithCaches):
                 if lane._feature_id == cand_lane._feature_id:
                     continue
                 # Don't check intersection with incoming/outgoing lanes
-                if cand_id in lane.incoming_lanes or cand_id in lane.outgoing_lanes:
+                if cand_lane in lane.incoming_lanes or cand_lane in lane.outgoing_lanes:
                     continue
                 # ... or lanes in same road (TAI?)
                 if lane.road == cand_lane.road:
@@ -992,14 +962,8 @@ class WaymoMap(RoadMapWithCaches):
 
     def to_glb(self, glb_dir):
         """Build a glb file for camera rendering and envision."""
-        glb = self._make_glb_from_polys()
-        glb.write_glb(Path(glb_dir) / "map.glb")
-
-    def _make_glb_from_polys(self):
-        scene = trimesh.Scene()
         polygons = []
-        for lane_id in self._lanes:
-            lane = self._lanes[lane_id]
+        for lane_id, lane in self._lanes.items():
             metadata = {
                 "road_id": lane.road.road_id,
                 "lane_id": lane_id,
@@ -1007,36 +971,13 @@ class WaymoMap(RoadMapWithCaches):
             }
             polygons.append((lane.shape(), metadata))
 
-        meshes = generate_meshes_from_polygons(polygons)
-
-        # Attach additional information for rendering as metadata in the map glb
-        # <2D-BOUNDING_BOX>: four floats separated by ',' (<FLOAT>,<FLOAT>,<FLOAT>,<FLOAT>),
-        # which describe x-minimum, y-minimum, x-maximum, and y-maximum
-        metadata = {
-            "bounding_box": (
-                self.bounding_box.min_pt.x,
-                self.bounding_box.min_pt.y,
-                self.bounding_box.max_pt.x,
-                self.bounding_box.max_pt.y,
-            )
-        }
-
-        # lane markings information
         lane_dividers = self._compute_traffic_dividers()
-        metadata["lane_dividers"] = lane_dividers
 
-        for mesh in meshes:
-            mesh.visual = trimesh.visual.TextureVisuals(
-                material=trimesh.visual.material.PBRMaterial()
-            )
+        map_glb = make_map_glb(polygons, self.bounding_box, lane_dividers, [])
+        map_glb.write_glb(Path(glb_dir) / "map.glb")
 
-            road_id = mesh.metadata["road_id"]
-            lane_id = mesh.metadata.get("lane_id")
-            name = f"{road_id}"
-            if lane_id is not None:
-                name += f"-{lane_id}"
-            scene.add_geometry(mesh, name, extras=mesh.metadata)
-        return _GLBData(gltf.export_glb(scene, extras=metadata, include_normals=True))
+        lane_lines_glb = make_road_line_glb(lane_dividers)
+        lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     def _compute_traffic_dividers(self):
         lane_dividers = []  # divider between lanes with same traffic direction
@@ -1933,7 +1874,8 @@ class WaymoMap(RoadMapWithCaches):
         lp_spacing: float,
     ) -> List[Waypoint]:
         """given a list of LanePoints starting near point, return corresponding
-        Waypoints that may not be evenly spaced (due to lane change) but start at point."""
+        Waypoints that may not be evenly spaced (due to lane change) but start at point.
+        """
 
         continuous_variables = [
             "positions_x",
@@ -1949,7 +1891,6 @@ class WaymoMap(RoadMapWithCaches):
             parameter: [] for parameter in (continuous_variables + discrete_variables)
         }
         for idx, lanepoint in enumerate(path):
-
             if lanepoint.is_inferred and 0 < idx < len(path) - 1:
                 continue
 

@@ -233,7 +233,8 @@ class RoadMap:
             """Returns a convex polygon representing this surface, buffered by buffered_width (which must be non-negative),
             where buffer_width is a buffer around the perimeter of the polygon.  In some situations, it may be desirable to
             also specify a `default_width`, in which case the returned polygon should have a convex shape where the
-            distance across it is no less than buffered_width + default_width at any point."""
+            distance across it is no less than buffered_width + default_width at any point.
+            """
             raise NotImplementedError()
 
         def contains_point(self, point: Point) -> bool:
@@ -295,7 +296,8 @@ class RoadMap:
         @property
         def index(self) -> int:
             """when not in_junction, 0 is outer / right-most (relative to lane heading) lane on road.
-            otherwise, index scheme is implementation-dependent, but must be deterministic."""
+            otherwise, index scheme is implementation-dependent, but must be deterministic.
+            """
             # TAI:  UK roads
             raise NotImplementedError()
 
@@ -697,7 +699,8 @@ class RoadMap:
         ) -> Optional[Tuple[RoadMap.Lane, float]]:
             """Returns a lane within the next junction along the route from beginning
             of the current lane to the returned lane it connects with in the junction,
-            and the distance to it from this offset, or (None, inf) if there aren't any."""
+            and the distance to it from this offset, or (None, inf) if there aren't any.
+            """
             raise NotImplementedError()
 
 
