@@ -28,9 +28,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple
 
-from smarts.waymo.waymo_open_dataset.protos import map_pb2
-
 from smarts.core.waymo_map import WaymoMap
+from smarts.waymo.waymo_open_dataset.protos import map_pb2
 
 
 class SumoMapGenerator:

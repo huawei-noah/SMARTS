@@ -42,9 +42,9 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 from smarts.sstudio import types
-from smarts.waymo.waymo_utils import WaymoDatasetError
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 from smarts.waymo.waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
+from smarts.waymo.waymo_utils import WaymoDatasetError
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
