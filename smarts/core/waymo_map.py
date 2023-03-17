@@ -35,17 +35,17 @@ import rtree
 from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
-from waymo_open_dataset.protos import scenario_pb2
-from waymo_open_dataset.protos.map_pb2 import (
+
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
+from smarts.sstudio.types import MapSpec
+from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
+from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (
     Crosswalk,
     LaneCenter,
     RoadLine,
     SpeedBump,
     StopSign,
 )
-
-from smarts.core.utils.glb import make_map_glb, make_road_line_glb
-from smarts.sstudio.types import MapSpec
 from smarts.waymo.waymo_utils import WaymoDatasetError
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
@@ -894,7 +894,7 @@ class WaymoMap(RoadMapWithCaches):
                     f"Dataset file does not contain scenario with id: {scenario_id}"
                 )
             parsed_scenario = scenario_pb2.Scenario()
-            parsed_scenario.ParseFromString(bytearray(record))
+            parsed_scenario.ParseFromString(bytes(record))
             WaymoMap._scenario_cache[parsed_scenario.scenario_id] = parsed_scenario
             if parsed_scenario.scenario_id == scenario_id:
                 return parsed_scenario

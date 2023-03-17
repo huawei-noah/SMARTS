@@ -1,0 +1,247 @@
+/* Copyright 2021 The Waymo Open Dataset Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+syntax = "proto2";
+
+package waymo.open_dataset;
+
+message Map {
+  // The full set of map features.
+  repeated MapFeature map_features = 1;
+
+  // A set of dynamic states per time step. These are ordered in consecutive
+  // time steps.
+  repeated DynamicState dynamic_states = 2;
+
+
+}
+
+message DynamicState {
+  // The timestamp associated with the dynamic feature data.
+  optional double timestamp_seconds = 1;
+
+  // The set of traffic signal states for the associated time step.
+  repeated TrafficSignalLaneState lane_states = 2;
+}
+
+message TrafficSignalLaneState {
+  // The ID for the MapFeature corresponding to the lane controlled by this
+  // traffic signal state.
+  optional int64 lane = 1;
+
+  enum State {
+    LANE_STATE_UNKNOWN = 0;
+
+    // States for traffic signals with arrows.
+    LANE_STATE_ARROW_STOP = 1;
+    LANE_STATE_ARROW_CAUTION = 2;
+    LANE_STATE_ARROW_GO = 3;
+
+    // Standard round traffic signals.
+    LANE_STATE_STOP = 4;
+    LANE_STATE_CAUTION = 5;
+    LANE_STATE_GO = 6;
+
+    // Flashing light signals.
+    LANE_STATE_FLASHING_STOP = 7;
+    LANE_STATE_FLASHING_CAUTION = 8;
+  }
+
+  // The state of the traffic signal.
+  optional State state = 2;
+
+  // The stopping point along the lane controlled by the traffic signal.
+  // This is the point where dynamic objects must stop when the signal is in a
+  // stop state.
+  optional MapPoint stop_point = 3;
+}
+
+message MapFeature {
+  // A unique ID to identify this feature.
+  optional int64 id = 1;
+
+  // Type specific data.
+  oneof feature_data {
+    LaneCenter lane = 3;
+    RoadLine road_line = 4;
+    RoadEdge road_edge = 5;
+    StopSign stop_sign = 7;
+    Crosswalk crosswalk = 8;
+    SpeedBump speed_bump = 9;
+  }
+}
+
+message MapPoint {
+  // Position in meters. The origin is an arbitrary location.
+  optional double x = 1;
+  optional double y = 2;
+  optional double z = 3;
+}
+
+// A segment of a lane with a given adjacent boundary.
+message BoundarySegment {
+  // The index into the lane's polyline where this lane boundary starts.
+  optional int32 lane_start_index = 1;
+
+  // The index into the lane's polyline where this lane boundary ends.
+  optional int32 lane_end_index = 2;
+
+  // The adjacent boundary feature ID of the MapFeature for the boundary. This
+  // can either be a RoadLine feature or a RoadEdge feature.
+  optional int64 boundary_feature_id = 3;
+
+  // The adjacent boundary type. If the boundary is a road edge instead of a
+  // road line, this will be set to TYPE_UNKNOWN.
+  optional RoadLine.RoadLineType boundary_type = 4;
+}
+
+message LaneNeighbor {
+  // The feature ID of the neighbor lane.
+  optional int64 feature_id = 1;
+
+  // The self adjacency segment.
+  // The other lane may only be a neighbor for only part of this lane. These
+  // indices define the points within this lane's polyline for which feature_id
+  // is a neighbor. If the lanes are neighbors at disjoint places (e.g., a
+  // median between them appears and then goes away) multiple neighbors will be
+  // listed. A lane change can only happen from this segment of this lane into
+  // the segment of the neighbor lane defined by neighbor_start_index and
+  // neighbor_end_index.
+  optional int32 self_start_index = 2;
+  optional int32 self_end_index = 3;
+
+  // The neighbor adjacency segment.
+  // These indices define the valid portion of the neighbor lane's polyline
+  // where that lane is a neighbor to this lane. A lane change can only happen
+  // into this segment of the neighbor lane from the segment of this lane
+  // defined by self_start_index and self_end_index.
+  optional int32 neighbor_start_index = 4;
+  optional int32 neighbor_end_index = 5;
+
+  // A list of segments within the self adjacency segment that have different
+  // boundaries between this lane and the neighbor lane. Each entry in this
+  // field contains the boundary type between this lane and the neighbor lane
+  // along with the indices into this lane's polyline where the boundary type
+  // begins and ends.
+  repeated BoundarySegment boundaries = 6;
+}
+
+message LaneCenter {
+  // The speed limit for this lane.
+  optional double speed_limit_mph = 1;
+
+  // Type of this lane.
+  enum LaneType {
+    TYPE_UNDEFINED = 0;
+    TYPE_FREEWAY = 1;
+    TYPE_SURFACE_STREET = 2;
+    TYPE_BIKE_LANE = 3;
+  }
+  optional LaneType type = 2;
+
+  // True if the lane interpolates between two other lanes.
+  optional bool interpolating = 3;
+
+  // The polyline data for the lane. A polyline is a list of points with
+  // segments defined between consecutive points.
+  repeated MapPoint polyline = 8;
+
+  // A list of IDs for lanes that this lane may be entered from.
+  repeated int64 entry_lanes = 9 [packed = true];
+
+  // A list of IDs for lanes that this lane may exit to.
+  repeated int64 exit_lanes = 10 [packed = true];
+
+  // The boundaries to the left of this lane. There may be different boundary
+  // types along this lane. Each BoundarySegment defines a section of the lane
+  // with a given boundary feature to the left. Note that some lanes do not have
+  // any boundaries (i.e. lane centers in intersections).
+  repeated BoundarySegment left_boundaries = 13;
+
+  // The boundaries to the right of this lane. See left_boundaries for details.
+  repeated BoundarySegment right_boundaries = 14;
+
+  // A list of neighbors to the left of this lane. Neighbor lanes
+  // include only adjacent lanes going the same direction.
+  repeated LaneNeighbor left_neighbors = 11;
+
+  // A list of neighbors to the right of this lane. Neighbor lanes
+  // include only adjacent lanes going the same direction.
+  repeated LaneNeighbor right_neighbors = 12;
+}
+
+message RoadEdge {
+  // Type of this road edge.
+  enum RoadEdgeType {
+    TYPE_UNKNOWN = 0;
+    // Physical road boundary that doesn't have traffic on the other side (e.g.,
+    // a curb or the k-rail on the right side of a freeway).
+    TYPE_ROAD_EDGE_BOUNDARY = 1;
+    // Physical road boundary that separates the car from other traffic
+    // (e.g. a k-rail or an island).
+    TYPE_ROAD_EDGE_MEDIAN = 2;
+  }
+
+  // The type of road edge.
+  optional RoadEdgeType type = 1;
+
+  // The polyline defining the road edge. A polyline is a list of points with
+  // segments defined between consecutive points.
+  repeated MapPoint polyline = 2;
+}
+
+message RoadLine {
+  // Type of this road line.
+  enum RoadLineType {
+    TYPE_UNKNOWN = 0;
+    TYPE_BROKEN_SINGLE_WHITE = 1;
+    TYPE_SOLID_SINGLE_WHITE = 2;
+    TYPE_SOLID_DOUBLE_WHITE = 3;
+    TYPE_BROKEN_SINGLE_YELLOW = 4;
+    TYPE_BROKEN_DOUBLE_YELLOW = 5;
+    TYPE_SOLID_SINGLE_YELLOW = 6;
+    TYPE_SOLID_DOUBLE_YELLOW = 7;
+    TYPE_PASSING_DOUBLE_YELLOW = 8;
+  }
+
+  // The type of the lane boundary.
+  optional RoadLineType type = 1;
+
+  // The polyline defining the road edge. A polyline is a list of points with
+  // segments defined between consecutive points.
+  repeated MapPoint polyline = 2;
+}
+
+message StopSign {
+  // The IDs of lane features controlled by this stop sign.
+  repeated int64 lane = 1;
+
+  // The position of the stop sign.
+  optional MapPoint position = 2;
+}
+
+message Crosswalk {
+  // The polygon defining the outline of the crosswalk. The polygon is assumed
+  // to be closed (i.e. a segment exists between the last point and the first
+  // point).
+  repeated MapPoint polygon = 1;
+}
+
+message SpeedBump {
+  // The polygon defining the outline of the speed bump. The polygon is assumed
+  // to be closed (i.e. a segment exists between the last point and the first
+  // point).
+  repeated MapPoint polygon = 1;
+}
