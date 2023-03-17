@@ -1077,7 +1077,7 @@ class TrafficHistoryDataset:
 class ScenarioMetadata:
     """Scenario data that does not have influence on simulation."""
 
-    actor_of_interest_re_filter: Optional[FrozenSet[str]] = None
+    actor_of_interest_re_filter: FrozenSet[str]
     """Vehicles with names that match this pattern are vehicles of interest."""
     actor_of_interest_color: SceneColors
     """The color that the vehicles of interest should have."""
