@@ -43,6 +43,9 @@ from smarts.core.utils.math import (
 )
 from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
+from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
+from smarts.waymo.waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
+
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -790,15 +793,6 @@ class Waymo(_TrajectoryDataset):
         super().__init__(dataset_spec, output)
 
     def _get_scenario(self):
-        try:
-            from waymo_open_dataset.protos import (
-                scenario_pb2,
-            )  # pytype: disable=import-error
-        except ImportError:
-            print(
-                "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
-            )
-
         if "scenario_id" not in self._dataset_spec:
             errmsg = "Dataset spec requires scenario_id to be set"
             self._log.error(errmsg)
@@ -938,15 +932,6 @@ class Waymo(_TrajectoryDataset):
                 yield rows[j]
 
     def _encode_tl_state(self, waymo_state) -> SignalLightState:
-        try:
-            from waymo_open_dataset.protos.map_pb2 import (
-                TrafficSignalLaneState,
-            )  # pytype: disable=import-error
-        except ImportError:
-            print(
-                "You may not have installed the [waymo] dependencies required to use the waymo replay simulation. Install them first using the command `pip install -e .[waymo]` at the source directory."
-            )
-
         if waymo_state == TrafficSignalLaneState.LANE_STATE_STOP:
             return SignalLightState.STOP
         if waymo_state == TrafficSignalLaneState.LANE_STATE_CAUTION:
