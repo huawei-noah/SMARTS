@@ -92,7 +92,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
             artifact_path = os.path.join(base_dir, f"{dataset.name}.shf")
             graph["traffic_histories"].append(artifact_path)
 
-    if scenario.scenario_metadata:
+    if scenario.scenario_metadata is not None:
         graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.json")]
 
     return graph
@@ -335,7 +335,7 @@ def gen_scenario(
     artifact_paths = build_graph["scenario_metadata"]
     obj_hash = pickle_hash(scenario.scenario_metadata, True)
     if _needs_build(
-        db_conn, scenario.traffic, artifact_paths, obj_hash, map_needs_rebuild
+        db_conn, scenario.scenario_metadata, artifact_paths, obj_hash, map_needs_rebuild
     ):
         with timeit("scenario_metadata", logger.info):
             gen_metadata(
