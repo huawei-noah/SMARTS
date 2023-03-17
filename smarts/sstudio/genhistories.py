@@ -24,10 +24,10 @@ import csv
 import logging
 import math
 import os
-from pathlib import Path
 import sqlite3
 import sys
 from collections import deque
+from pathlib import Path
 from typing import Any, Callable, Deque, Dict, Generator, Iterable, Optional
 
 import numpy as np
@@ -45,7 +45,6 @@ from smarts.sstudio import types
 from smarts.waymo.waymo_utils import WaymoDatasetError
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 from smarts.waymo.waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
-
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -992,11 +991,11 @@ class Argoverse(_TrajectoryDataset):
     def rows(self) -> Generator[Dict, None, None]:
         try:
             # pytype: disable=import-error
-            from av2.datasets.motion_forecasting.scenario_serialization import (
-                load_argoverse_scenario_parquet,
-            )
             from av2.datasets.motion_forecasting.data_schema import (
                 ObjectType as AvObjectType,
+            )
+            from av2.datasets.motion_forecasting.scenario_serialization import (
+                load_argoverse_scenario_parquet,
             )
 
             # pytype: enable=import-error

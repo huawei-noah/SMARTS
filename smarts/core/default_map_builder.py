@@ -137,8 +137,8 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
     elif map_type == _ARGOVERSE_MAP:
         try:
             from smarts.core.argoverse_map import (
-                ArgoverseMap,
-            )  # pytype: disable=import-error
+                ArgoverseMap,  # pytype: disable=import-error
+            )
         except (ImportError, ModuleNotFoundError):
             print(sys.exc_info())
             print(
