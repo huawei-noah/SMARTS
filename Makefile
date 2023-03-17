@@ -34,7 +34,7 @@ sanity-test: build-sanity-scenarios
 		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
 		./examples/tests/test_examples.py::test_examples[hiway_v1] \
 		./examples/tests/test_examples.py::test_examples[laner] \
-		./smarts/env/tests/test_social_agent.py::test_social_agents
+		./smarts/env/tests/test_social_agent.py::test_social_agents_not_in_env_obs_keys
 
 .PHONY: test-learning
 test-learning: build-all-scenarios
