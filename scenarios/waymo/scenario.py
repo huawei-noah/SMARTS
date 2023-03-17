@@ -3,8 +3,8 @@ from pathlib import Path
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
-dataset_path = None  # e.g. Path(__file__).parent.absolute() / "uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
-scenario_id = None  # e.g. "4f30f060069bbeb9"
+dataset_path = None  # e.g. "/home/user/waymo/uncompressed_scenario_training_20s_training_20s.tfrecord-00000-of-01000"
+scenario_id = None  # e.g. "ef903b7abf6fc0fa"
 
 traffic_histories = [
     t.TrafficHistoryDataset(
