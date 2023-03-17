@@ -125,6 +125,7 @@ class Scenario:
             self._traffic_specs = [os.path.join(traffic_path, route)]
         self._missions = missions or {}
         self._bubbles = Scenario._discover_bubbles(scenario_root)
+        self._metadata = Scenario._discover_metadata(scenario_root)
         self._social_agents = social_agents or {}
         self._surface_patches = surface_patches
         self._log_dir = self._resolve_log_dir(log_dir)
@@ -546,6 +547,16 @@ class Scenario:
         with open(path, "rb") as f:
             bubbles = pickle.load(f)
             return bubbles
+
+    @staticmethod
+    def _discover_metadata(scenario_root):
+        path = os.path.join(scenario_root, "build", "scenario_metadata.pkl")
+        if not os.path.exists(path):
+            return dict()
+
+        with open(path, "rb") as f:
+            metadata = pickle.load(f)
+            return metadata
 
     def set_ego_missions(self, ego_missions: Dict[str, Mission]):
         """Replaces the ego missions within the scenario.
@@ -1053,3 +1064,12 @@ class Scenario:
     def scenario_hash(self) -> str:
         """A hash of the scenario."""
         return self._scenario_hash
+
+    @property
+    def metadata(self) -> Dict:
+        """Scenario metadata values.
+
+        Returns:
+            Dict: The values.
+        """
+        return self._metadata or {}

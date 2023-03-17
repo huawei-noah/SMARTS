@@ -25,10 +25,12 @@ from __future__ import annotations
 import importlib.resources as pkg_resources
 import logging
 import os
+import re
 from enum import IntEnum
 from pathlib import Path
+from re import Pattern
 from threading import Lock
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
@@ -196,6 +198,8 @@ class Renderer:
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
         self._showbase_instance: _ShowBaseInstance = _ShowBaseInstance()
+        self._interest_filter: Optional[Pattern] = None
+        self._interest_color: Optional[SceneColors] = None
 
     @property
     def id(self):
@@ -304,7 +308,14 @@ class Renderer:
                     "Resolution", self._showbase_instance.getSize()
                 )
             self._dashed_lines_np = dashed_lines_np
-
+        if scenario_metadata := scenario.metadata:
+            if interest_pattern := scenario_metadata.get(
+                "actor_of_interest_re_filter", None
+            ):
+                self._interest_filter = re.compile(interest_pattern)
+                self._interest_color = scenario_metadata.get(
+                    "actor_of_interest_color", SceneColors.SocialAgent
+                )
         self._is_setup = True
 
     def render(self):
@@ -335,12 +346,28 @@ class Renderer:
     def __del__(self):
         self.destroy()
 
-    def create_vehicle_node(self, glb_model: str, vid: str, color, pose: Pose):
+    def set_interest(self, interest_filter: Pattern, interest_color: SceneColors):
+        """Sets the color of all vehicles that have ids that match the given pattern.
+
+        Args:
+            interest_filter (Pattern): The regular expression pattern to match.
+            interest_color (SceneColors): The color that the vehicle should show as.
+        """
+        assert isinstance(interest_filter, Pattern)
+        self._interest_filter = interest_filter
+        self._interest_color = interest_color
+
+    def create_vehicle_node(
+        self, glb_model: str, vid: str, color: SceneColors, pose: Pose
+    ):
         """Create a vehicle node."""
         with pkg_resources.path(models, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
-        node_path.setColor(color)
+        if self._interest_filter is not None and self._interest_color is not None:
+            node_path.setColor(self._interest_color.value)
+        else:
+            node_path.setColor(color.value)
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
@@ -350,7 +377,7 @@ class Renderer:
         """Add the vehicle node to the scene graph"""
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
-            self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
+            self._log.warning("Renderer ignoring invalid vehicle id: %s", vid)
             return
         # TAI: consider reparenting hijacked vehicles too?
         vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
@@ -359,7 +386,7 @@ class Renderer:
         """Move the specified vehicle node."""
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
-            self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
+            self._log.warning("Renderer ignoring invalid vehicle id: %s", vid)
             return
         pos, heading = pose.as_panda3d()
         vehicle_path.setPosHpr(*pos, heading, 0, 0)

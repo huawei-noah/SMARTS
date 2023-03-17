@@ -442,12 +442,11 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(
-        sim, vehicle_id, vehicle_state, vehicle_config_type
-    ) -> "Vehicle":
+    def build_social_vehicle(sim, vehicle_id, vehicle_state: VehicleState) -> "Vehicle":
         """Create a new unassociated vehicle."""
         dims = Dimensions.copy_with_defaults(
-            vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
+            vehicle_state.dimensions,
+            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
         )
         chassis = BoxChassis(
             pose=vehicle_state.pose,
@@ -456,7 +455,9 @@ class Vehicle:
             bullet_client=sim.bc,
         )
         return Vehicle(
-            id=vehicle_id, chassis=chassis, vehicle_config_type=vehicle_config_type
+            id=vehicle_id,
+            chassis=chassis,
+            vehicle_config_type=vehicle_state.vehicle_config_type,
         )
 
     @staticmethod
