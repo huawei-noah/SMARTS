@@ -69,7 +69,7 @@ class ChaseViaPointsAgent(Agent):
             return (obs.waypoint_paths[ego_wp_ind][0].speed_limit, 0)
 
         # Target via point is in the same path. Hence, remain in same lane.
-        if ego_wp_ind == via_point_wp_ind[0]:
+        if trunc_waypoints[ego_wp_ind][0].lane_id == trunc_waypoints[via_point_wp_ind[0]][0].lane_id:
             # print("+ Keep lane. \n")
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
