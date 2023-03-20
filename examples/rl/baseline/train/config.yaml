@@ -7,9 +7,11 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0  
   scenarios: 
-    # - straight_agents_1
-    # - fork_agents_1
-    - merge_exit_agents_1
+    # - sumo/platoon/straight_agents_1
+    - sumo/platoon/fork_agents_1
+    # - sumo/platoon/merge_exit_agents_1
+    # - argoverse/platoon/map_2_agents_1
+    # - argoverse/platoon/map_1_agents_1
 
   # PPO algorithm
   alg:

@@ -78,8 +78,6 @@ def main(args: argparse.Namespace):
         scenario_path = str(
             Path(__file__).resolve().parents[4]
             / "scenarios"
-            / "sumo"
-            / "platoon"
             / scenario
         )
         envs_train[f"{scenario}"] = make_env(
