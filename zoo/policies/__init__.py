@@ -65,9 +65,9 @@ register(
             neighborhood_vehicle_states=True,
             occupancy_grid_map=False,
             top_down_rgb=RGB(
-                width=112,
-                height=112,
-                resolution=50 / 112,  # m/pixels
+                width=256,
+                height=256,
+                resolution=50 / 256,  # m/pixels
             ),
             road_waypoints=False,
             waypoint_paths=Waypoints(lookahead=80),

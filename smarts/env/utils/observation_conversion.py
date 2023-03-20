@@ -35,7 +35,7 @@ from smarts.core.road_map import Waypoint
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
-_WAYPOINT_SHP = (4, 80)
+_WAYPOINT_SHP = (12, 80)
 _SIGNALS_SHP = (3,)
 _POSITION_SHP = (3,)
 _WAYPOINT_NAME_LIMIT = 50

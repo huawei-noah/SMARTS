@@ -20,7 +20,6 @@
 
 import logging
 import os
-import pathlib
 from functools import partial
 from typing import Optional
 

@@ -1,7 +1,7 @@
 from typing import Sequence
 
 import numpy as np
-# from contrib_policy.helper import plotter3d
+from contrib_policy.helper import plotter3d
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB
@@ -11,14 +11,14 @@ from smarts.core.sensors import LANE_ID_CONSTANT
 
 
 class ChaseViaPointsAgent(Agent):
-    # def __init__(self):
-        # top_down_rgb = RGB(
-        #     width=112,
-        #     height=112,
-        #     resolution=50 / 112,  # m/pixels
-        # )
-        # self._res = top_down_rgb.resolution
-        # self._flag = -1
+    def __init__(self):
+        top_down_rgb = RGB(
+            width=256,
+            height=256,
+            resolution=50 / 256,  # m/pixels
+        )
+        self._res = top_down_rgb.resolution
+        self._flag = -1
 
     def act(self, obs: Observation):
         assert obs.waypoint_paths, (
@@ -26,15 +26,15 @@ class ChaseViaPointsAgent(Agent):
             "cannot be empty or None. Enable waypoint paths in agent interface."
         )
 
-        # for ind, wp in enumerate(obs.waypoint_paths):
-        #     print("+ Waypoint:", ind)
-        #     print("    Waypoints= ", wp[0].pos, wp[0].lane_id)
-        #     print("    Waypoints= ", wp[-1].pos, wp[-1].lane_id)
-        # print(
-        #     "+ Leader: ", obs.ego_vehicle_state.lane_id, obs.ego_vehicle_state.position
-        # )
-        # print("+ NVP= ", obs.via_data.near_via_points)
-        # print("+ Hit= ", obs.via_data.hit_via_points)
+        for ind, wp in enumerate(obs.waypoint_paths):
+            print("+ Waypoint:", ind)
+            print("    Waypoints= ", wp[0].pos, wp[0].lane_id)
+            print("    Waypoints= ", wp[-1].pos, wp[-1].lane_id)
+        print(
+            "+ Leader: ", obs.ego_vehicle_state.lane_id, obs.ego_vehicle_state.position
+        )
+        print("+ NVP= ", obs.via_data.near_via_points)
+        print("+ Hit= ", obs.via_data.hit_via_points)
 
         LANE_CHANGE_DIST = 80
 
@@ -55,14 +55,14 @@ class ChaseViaPointsAgent(Agent):
             [via_point.position for via_point in obs.via_data.near_via_points]
         )
         via_point_wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
-        # print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
+        print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
 
         # No nearby via points. Hence, remain in same lane.
         if via_point_ind is None:
             # print("+ No via points within waypoint radius. \n")
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # if obs.ego_vehicle_state.position[0] > 460:
+            # if obs.ego_vehicle_state.position[0] > 190:
             #     self._flag = 0
             #     return (13.89, -1)
 
@@ -73,9 +73,9 @@ class ChaseViaPointsAgent(Agent):
             # print("+ Keep lane. \n")
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # if obs.ego_vehicle_state.position[0] > 460:
+            # if obs.ego_vehicle_state.position[0] > 190:
             #     self._flag = 0
-            #     return (13.89, -1)
+                # return (13.89, -1)
 
             return (obs.via_data.near_via_points[via_point_ind].required_speed, 0)
 
@@ -84,7 +84,7 @@ class ChaseViaPointsAgent(Agent):
             # print("+ Change lane left. \n")
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # if obs.ego_vehicle_state.position[0] > 460:
+            # if obs.ego_vehicle_state.position[0] > 190:
             #     self._flag = 0
             #     return (13.89, -1)
 
@@ -95,7 +95,7 @@ class ChaseViaPointsAgent(Agent):
             # print("+ Change lane right. \n")
             # rgb=filter(obs,res=self._res)
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-            # if obs.ego_vehicle_state.position[0] > 460:
+            # if obs.ego_vehicle_state.position[0] > 190:
             #     self._flag = 0
             #     return (13.89, -1)
 
@@ -150,7 +150,7 @@ def filter(obs: Observation, res):
     )
 
     # Superimpose waypoints onto rgb image
-    wps = waypoints[0:5, 3:, 0:3]
+    wps = waypoints[0:11, 3:, 0:3]
     for path in wps[:]:
         wps_valid = wps_to_pixels(
             wps=path,

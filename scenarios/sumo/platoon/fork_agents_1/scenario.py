@@ -15,11 +15,12 @@ begin_lane_idx = (0, 1)
 first_via = (0, 1)
 second_via = (0, 1)
 third_via = (0, 1)
-fourth_via = (0, 1)
 
 route_comb = product(
-    begin_lane_idx, first_via, second_via, third_via, fourth_via, end_road
+    begin_lane_idx, first_via, second_via, third_via, end_road
 )
+
+route_comb = [(1,0,1,0,"E_left"),]
 
 leader_mission = []
 for route in route_comb:
@@ -29,27 +30,21 @@ for route in route_comb:
             via=(
                 Via(
                     "E0",
-                    lane_offset=50,
-                    lane_index=route[1],
-                    required_speed=15,
-                ),
-                Via(
-                    "E0",
                     lane_offset=100,
-                    lane_index=route[2],
-                    required_speed=20,
-                ),
-                Via(
-                    "E0",
-                    lane_offset=150,
-                    lane_index=route[3],
+                    lane_index=route[1],
                     required_speed=13,
                 ),
                 Via(
-                    route[5],
-                    lane_offset=50,
-                    lane_index=route[4],
-                    required_speed=14,
+                    "E0",
+                    lane_offset=170,
+                    lane_index=route[2],
+                    required_speed=13,
+                ),
+                Via(
+                    route[4],
+                    lane_offset=30,
+                    lane_index=route[3],
+                    required_speed=13,
                 ),
             ),
         )

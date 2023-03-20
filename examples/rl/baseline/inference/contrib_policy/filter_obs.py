@@ -88,7 +88,7 @@ class FilterObs:
 
 
         # Superimpose waypoints onto rgb image
-        wps = obs["waypoint_paths"]["position"][0:3, 3:, 0:3]
+        wps = obs["waypoint_paths"]["position"][0:7, 3:, 0:3]
         for path in wps[:]:
             wps_valid = wps_to_pixels(
                 wps=path,

@@ -27,20 +27,26 @@ class Preprocess(gym.Wrapper):
         print("Policy initialised.")
 
     def _process(self, obs):
+        # if obs["ego_vehicle_state"]["position"][0] > 190:
+        #     plot = True
+        # else:
+        #     plot = False
+
         obs = self._filter_obs.filter(obs)
         obs = self._frame_stack.stack(obs)
         obs = self._make_dict.make(obs)
 
-        # from contrib_policy.helper import plotter3d
-        # print("-----------------------------")
-        # plotter3d(obs=obs["rgb"],rgb_gray=3,channel_order="first",pause=0)
-        # print("-----------------------------")
+        # if plot:
+        #     from contrib_policy.helper import plotter3d
+        #     print("-----------------------------")
+        #     plotter3d(obs=obs["rgb"],rgb_gray=3,channel_order="first",pause=0)
+        #     print("-----------------------------")
 
-        return obs
+        # return obs
 
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
-        action = 0
+        action = 1
         formatted_action = self._format_action.format(action)
         obs, reward, done, info = self.env.step(formatted_action)
         obs = self._process(obs)
