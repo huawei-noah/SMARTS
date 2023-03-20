@@ -42,7 +42,7 @@ class Preprocess(gym.Wrapper):
         #     plotter3d(obs=obs["rgb"],rgb_gray=3,channel_order="first",pause=0)
         #     print("-----------------------------")
 
-        # return obs
+        return obs
 
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
