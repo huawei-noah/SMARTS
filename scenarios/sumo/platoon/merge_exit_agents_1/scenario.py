@@ -10,15 +10,15 @@ from smarts.sstudio.types import (
     Via,
 )
 
-begin_road_lane = [("E0", 1), ("E0", 2), ("E1", 0), ("E1", 1)]
+begin_road_lane = [("E0", 1), ("E0", 2)]
 first_via = (0, 1, 2)
 second_via = (0, 1, 2)
-third_via = (1, 2)
+third_via = (0, 1, 2)
 
 route_comb = list(product(begin_road_lane, first_via, second_via, third_via))
 
 # Temporary
-route_comb = [(('E0', 1), 0, 0, 1),]
+# route_comb = [(('E0', 1), 0, 0, 1),]
 
 leader_mission = []
 for route in route_comb:
@@ -46,7 +46,7 @@ for route in route_comb:
                 ),
                 Via(
                     "E4",
-                    lane_offset=1,
+                    lane_offset=5,
                     lane_index=0,
                     required_speed=15,
                 ),
