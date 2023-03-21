@@ -26,15 +26,15 @@ class ChaseViaPointsAgent(Agent):
             "cannot be empty or None. Enable waypoint paths in agent interface."
         )
 
-        for ind, wp in enumerate(obs.waypoint_paths):
-            print("+ Waypoint:", ind)
-            print("    Waypoints= ", wp[0].pos, wp[0].lane_id)
-            print("    Waypoints= ", wp[-1].pos, wp[-1].lane_id)
-        print(
-            "+ Leader: ", obs.ego_vehicle_state.lane_id, obs.ego_vehicle_state.position
-        )
-        print("+ NVP= ", obs.via_data.near_via_points)
-        print("+ Hit= ", obs.via_data.hit_via_points)
+        # for ind, wp in enumerate(obs.waypoint_paths):
+        #     print("+ Waypoint:", ind)
+        #     print("    Waypoints= ", wp[0].pos, wp[0].lane_id)
+        #     print("    Waypoints= ", wp[-1].pos, wp[-1].lane_id)
+        # print(
+        #     "+ Leader: ", obs.ego_vehicle_state.lane_id, obs.ego_vehicle_state.position
+        # )
+        # print("+ NVP= ", obs.via_data.near_via_points)
+        # print("+ Hit= ", obs.via_data.hit_via_points)
 
         LANE_CHANGE_DIST = 80
 
