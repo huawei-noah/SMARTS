@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -21,7 +22,8 @@ traffic = t.Traffic(
             rate=400,
             actors={t.TrafficActor("car"): 1},
         ),
-    ]
+    ],
+    engine="SMARTS",
 )
 
 agent_prefabs = "scenarios.sumo.intersections.4lane_t.agent_prefabs"
@@ -61,12 +63,12 @@ zoo_agent_actor = t.SocialAgentActor(
 bubbles = [
     t.Bubble(
         zone=t.MapZone(start=("edge-west-WE", 0, 50), length=10, n_lanes=1),
-        margin=2,
+        margin=0,
         actor=zoo_agent_actor,
     ),
     t.Bubble(
         zone=t.PositionalZone(pos=(100, 100), size=(20, 20)),
-        margin=2,
+        margin=0,
         actor=motion_planner_actor,
     ),
 ]
@@ -99,6 +101,7 @@ gen_scenario(
         bubbles=bubbles,
         ego_missions=ego_missions,
         social_agent_missions=social_agent_missions,
+        scenario_metadata=t.ScenarioMetadata(r".*-1.*", Colors.Yellow),
     ),
     output_dir=Path(__file__).parent,
 )

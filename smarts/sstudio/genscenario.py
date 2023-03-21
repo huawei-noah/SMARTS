@@ -93,7 +93,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
             graph["traffic_histories"].append(artifact_path)
 
     if scenario.scenario_metadata is not None:
-        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.json")]
+        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.pkl")]
 
     return graph
 

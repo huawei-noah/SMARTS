@@ -30,7 +30,7 @@ from enum import IntEnum
 from pathlib import Path
 from re import Pattern
 from threading import Lock
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Union
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
@@ -56,7 +56,7 @@ from panda3d.core import (
 )
 
 from . import glsl, models
-from .colors import SceneColors
+from .colors import Colors, SceneColors
 from .coordinates import Pose
 from .masks import RenderMasks
 from .scenario import Scenario
@@ -346,25 +346,29 @@ class Renderer:
     def __del__(self):
         self.destroy()
 
-    def set_interest(self, interest_filter: Pattern, interest_color: SceneColors):
+    def set_interest(self, interest_filter: Pattern, interest_color: Colors):
         """Sets the color of all vehicles that have ids that match the given pattern.
 
         Args:
             interest_filter (Pattern): The regular expression pattern to match.
-            interest_color (SceneColors): The color that the vehicle should show as.
+            interest_color (Colors): The color that the vehicle should show as.
         """
         assert isinstance(interest_filter, Pattern)
         self._interest_filter = interest_filter
         self._interest_color = interest_color
 
     def create_vehicle_node(
-        self, glb_model: str, vid: str, color: SceneColors, pose: Pose
+        self, glb_model: str, vid: str, color: Union[Colors, SceneColors], pose: Pose
     ):
         """Create a vehicle node."""
         with pkg_resources.path(models, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
-        if self._interest_filter is not None and self._interest_color is not None:
+        if (
+            self._interest_filter is not None
+            and self._interest_color is not None
+            and self._interest_filter.match(vid)
+        ):
             node_path.setColor(self._interest_color.value)
         else:
             node_path.setColor(color.value)

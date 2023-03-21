@@ -50,7 +50,7 @@ from shapely.geometry import (
 from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
-from smarts.core.colors import Colors, SceneColors
+from smarts.core.colors import Colors
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
@@ -1077,9 +1077,9 @@ class TrafficHistoryDataset:
 class ScenarioMetadata:
     """Scenario data that does not have influence on simulation."""
 
-    actor_of_interest_re_filter: FrozenSet[str]
+    actor_of_interest_re_filter: str
     """Vehicles with names that match this pattern are vehicles of interest."""
-    actor_of_interest_color: SceneColors
+    actor_of_interest_color: Colors
     """The color that the vehicles of interest should have."""
 
 
