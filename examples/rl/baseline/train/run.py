@@ -218,7 +218,7 @@ if __name__ == "__main__":
     main(args)
 
 
-# Check scenario variation in loop training
-# Check reward training
-# Check each scenario lane change position
-# Remove  action = 0 in preprocess.step
+# Check scenario variation in loop training - 
+# Check reward training - done
+# Check each scenario lane change position - done
+# Remove  action = 0 in preprocess.step - done

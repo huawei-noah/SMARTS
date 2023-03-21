@@ -99,8 +99,8 @@ class HiWayEnvV1(gym.Env):
         agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
             needs that will be used to configure the environment.
         sim_name (str, optional): Simulation name. Defaults to None.
-        scenarios_order (ScenarioOrder, optional): Configures the order that
-            scenarios will provided over successive resets.
+        scenarios_order (ScenarioOrder, optional): Configures the order of
+            scenarios provided over successive resets.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool, optional): If True, enables visualization of observed
