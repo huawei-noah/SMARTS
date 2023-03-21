@@ -20,8 +20,6 @@ route_comb = product(
     begin_lane_idx, first_via, second_via, third_via, end_road
 )
 
-route_comb = [(1,0,1,0,"E_left"),]
-
 leader_mission = []
 for route in route_comb:
     leader_mission.append(
@@ -49,7 +47,6 @@ for route in route_comb:
             ),
         )
     )
-
 
 leader_actor = [
     SocialAgentActor(
