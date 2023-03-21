@@ -199,7 +199,7 @@ class Renderer:
         # but all Renderer objects share the same ShowBaseInstance.
         self._showbase_instance: _ShowBaseInstance = _ShowBaseInstance()
         self._interest_filter: Optional[Pattern] = None
-        self._interest_color: Optional[SceneColors] = None
+        self._interest_color: Optional[Union[Colors, SceneColors]] = None
 
     @property
     def id(self):
