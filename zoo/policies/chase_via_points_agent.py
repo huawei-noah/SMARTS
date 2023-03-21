@@ -55,7 +55,7 @@ class ChaseViaPointsAgent(Agent):
             [via_point.position for via_point in obs.via_data.near_via_points]
         )
         via_point_wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
-        print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
+        # print("ego_wp_ind=", ego_wp_ind,"; wp_ind=", via_point_wp_ind, "; via_point_ind=", via_point_ind)
 
         # No nearby via points. Hence, remain in same lane.
         if via_point_ind is None:
@@ -237,9 +237,10 @@ def wps_to_pixels(
     wps_rotated = rotate_axes(wps_delta, theta=ego_heading)
     wps_pixels = wps_rotated / np.array([res, res, res])
     wps_overlay = np.array([w / 2, h / 2, 0]) + wps_pixels * np.array([1, -1, 1])
-    wps_rint = np.rint(wps_overlay).astype(np.uint8)
-    wps_valid = wps_rint[(wps_rint[:,0] >= 0) & (wps_rint[:,0] < w) & (wps_rint[:,1] >= 0) & (wps_rint[:,1] < h)] 
-    return wps_valid
+    wps_rfloat = np.rint(wps_overlay)
+    wps_valid = wps_rfloat[(wps_rfloat[:,0] >= 0) & (wps_rfloat[:,0] < w) & (wps_rfloat[:,1] >= 0) & (wps_rfloat[:,1] < h)] 
+    wps_rint = wps_valid.astype(np.uint8)
+    return wps_rint
     # fmt: on
 
 

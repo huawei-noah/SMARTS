@@ -84,11 +84,8 @@ class FilterObs:
         rgb_noroad = replace_color(rgb=rgb, old_color=[self._road_color, self._lane_divider_color, self._edge_divider_color], new_color=self._no_color)
         rgb_ego = replace_color(rgb=rgb_noroad, old_color=[self._ego_color], new_color=self._traffic_color, mask=self._rgb_mask)
 
-        # Draw lead vehicle
-
-
         # Superimpose waypoints onto rgb image
-        wps = obs["waypoint_paths"]["position"][0:7, 3:, 0:3]
+        wps = obs["waypoint_paths"]["position"][0:11, 3:, 0:3]
         for path in wps[:]:
             wps_valid = wps_to_pixels(
                 wps=path,
@@ -186,9 +183,10 @@ def wps_to_pixels(
     wps_rotated = rotate_axes(wps_delta, theta=ego_heading)
     wps_pixels = wps_rotated / np.array([res, res, res])
     wps_overlay = np.array([w / 2, h / 2, 0]) + wps_pixels * np.array([1, -1, 1])
-    wps_rint = np.rint(wps_overlay).astype(np.uint8)
-    wps_valid = wps_rint[(wps_rint[:,0] >= 0) & (wps_rint[:,0] < w) & (wps_rint[:,1] >= 0) & (wps_rint[:,1] < h)] 
-    return wps_valid
+    wps_rfloat = np.rint(wps_overlay)
+    wps_valid = wps_rfloat[(wps_rfloat[:,0] >= 0) & (wps_rfloat[:,0] < w) & (wps_rfloat[:,1] >= 0) & (wps_rfloat[:,1] < h)] 
+    wps_rint = wps_valid.astype(np.uint8)
+    return wps_rint
     # fmt: on
 
 
