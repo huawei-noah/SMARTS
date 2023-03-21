@@ -22,8 +22,7 @@ traffic = t.Traffic(
             rate=400,
             actors={t.TrafficActor("car"): 1},
         ),
-    ],
-    engine="SMARTS",
+    ]
 )
 
 agent_prefabs = "scenarios.sumo.intersections.4lane_t.agent_prefabs"
@@ -63,12 +62,12 @@ zoo_agent_actor = t.SocialAgentActor(
 bubbles = [
     t.Bubble(
         zone=t.MapZone(start=("edge-west-WE", 0, 50), length=10, n_lanes=1),
-        margin=0,
+        margin=2,
         actor=zoo_agent_actor,
     ),
     t.Bubble(
         zone=t.PositionalZone(pos=(100, 100), size=(20, 20)),
-        margin=0,
+        margin=2,
         actor=motion_planner_actor,
     ),
 ]
