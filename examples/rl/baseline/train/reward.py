@@ -156,17 +156,30 @@ class Reward(gym.Wrapper):
                 # plotter3d(obs=rgb_masked,rgb_gray=3,channel_order="last",pause=0)
                 # print("-----------------------------")
 
+            if leader and leader_in_rgb:
+                # Get agent's waypoints
+                waypoints = agent_obs["waypoint_paths"]["position"]   
+
+                # Find the nearest waypoint paths to the ego
+                ego_pos = agent_obs["ego_vehicle_state"]["position"]
+                dist = np.linalg.norm(waypoints[:, 0, :] - ego_pos, axis=-1)
+                ego_wp_inds = np.where(dist == dist.min())[0]
+
+                # Find the nearest waypoint index, if any, to the leader
+                leader_wp_ind, leader_ind = _nearest_waypoint(
+                    waypoints, 
+                    np.array([leader["position"]]),
+                )
+
             # Rewards specific to "platooning" and "following" tasks
             if leader and leader_in_rgb:
 
                 # Reward for being in the same lane as the leader
-                ego_lane_idx = agent_obs["ego_vehicle_state"]["lane_index"]
-                leader_lane_idx = leader["lane_index"]
-                if ego_lane_idx == leader_lane_idx:
+                if (leader_ind is not None) and (leader_wp_ind[0] in ego_wp_inds):
                     reward[agent_id] += np.float64(1)
-                    # print(f"{agent_id}: In the same lane.")
-
-                via_point_wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
+                #     print(f"{agent_id}: In the same lane.")
+                # else:
+                #     print(f"{agent_id}: NOT the same lane.")
 
                 # Reward for being within x meters of leader
                 # if np.linalg.norm(ego_pos - leader_pos) < 15:
@@ -175,6 +188,7 @@ class Reward(gym.Wrapper):
 
             else:
                 reward[agent_id] -= np.float64(0.2)
+                # print(f"{agent_id}: Leader not found.")
 
         # print("^^^^^^^^^^^^^^")
         return reward
@@ -206,18 +220,33 @@ def _point_in_rectangle(x1, y1, x2, y2, x, y):
         return False
 
 
-def _nearest_point_to_waypoints(
-    matrix: np.ndarray, points: np.ndarray, radius: float = 2
+def _nearest_waypoint(
+    matrix: np.ndarray, points: np.ndarray, radius: float = 1
 ):
+    """
+    Returns 
+        (i) the `matrix` index of the nearest waypoint to the ego, which has a nearby `point`.
+        (ii) the `points` index which is nearby the nearest waypoint to the ego.
+    
+    Nearby is defined as a point within `radius` of a waypoint.
+        
+    Args:
+        matrix (np.ndarray): Waypoints matrix.
+        points (np.ndarray): Points matrix.
+        radius (float, optional): Nearby radius. Defaults to 2.
+
+    Returns:
+        Tuple[(int, int), Optional[int]] : `matrix` index of shape (a,b) and scalar `point` index.
+    """
     cur_point_index = ((np.intp(1e10), np.intp(1e10)), None)
 
     if points.shape == (0,):
         return cur_point_index
 
     assert len(matrix.shape) == 3
-    assert matrix.shape[2] == 2
+    assert matrix.shape[2] == 3
     assert len(points.shape) == 2
-    assert points.shape[1] == 2
+    assert points.shape[1] == 3
 
     points_expanded = np.expand_dims(points, (1, 2))
     diff = matrix - points_expanded
