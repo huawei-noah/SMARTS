@@ -166,6 +166,8 @@ class Reward(gym.Wrapper):
                     reward[agent_id] += np.float64(1)
                     # print(f"{agent_id}: In the same lane.")
 
+                via_point_wp_ind, via_point_ind = _nearest_point_to_waypoints(waypoints, via_points)
+
                 # Reward for being within x meters of leader
                 # if np.linalg.norm(ego_pos - leader_pos) < 15:
                 # reward[agent_id] += np.float64(1)
@@ -202,3 +204,29 @@ def _point_in_rectangle(x1, y1, x2, y2, x, y):
         return True
     else:
         return False
+
+
+def _nearest_point_to_waypoints(
+    matrix: np.ndarray, points: np.ndarray, radius: float = 2
+):
+    cur_point_index = ((np.intp(1e10), np.intp(1e10)), None)
+
+    if points.shape == (0,):
+        return cur_point_index
+
+    assert len(matrix.shape) == 3
+    assert matrix.shape[2] == 2
+    assert len(points.shape) == 2
+    assert points.shape[1] == 2
+
+    points_expanded = np.expand_dims(points, (1, 2))
+    diff = matrix - points_expanded
+    dist = np.linalg.norm(diff, axis=-1)
+    for ii in range(points.shape[0]):
+        index = np.argmin(dist[ii])
+        index_unravel = np.unravel_index(index, dist[ii].shape)
+        min_dist = dist[ii][index_unravel]
+        if min_dist <= radius and index_unravel[1] < cur_point_index[0][1]:
+            cur_point_index = (index_unravel, ii)
+
+    return cur_point_index
