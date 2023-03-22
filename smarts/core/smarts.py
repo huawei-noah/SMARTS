@@ -21,7 +21,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -502,6 +502,33 @@ class SMARTS(ProviderManager):
         assert isinstance(provider, Provider)
         provider.recovery_flags = recovery_flags
         self._providers.insert(index, provider)
+
+    def remove_provider(self, requested_type_or_provider: Union[type, Provider]):
+        """Remove a provider from the simulation.
+
+        Args:
+            requested_type (type | Provider): The type of the provider to remove or provider to remove.
+
+        Returns:
+            Optional[Provider]: The provider that was removed.
+        """
+        self._check_valid()
+        out_provider = None
+        if isinstance(requested_type_or_provider, type):
+            for i, provider in enumerate(self._providers):
+                if isinstance(provider, requested_type_or_provider):
+                    self._providers.pop(i)
+                    out_provider = provider
+        elif isinstance(requested_type_or_provider, Provider):
+            try:
+                self._providers.remove(requested_type_or_provider)
+            except ValueError:
+                pass
+            else:
+                out_provider = requested_type_or_provider
+        if isinstance(out_provider, TrafficProvider):
+            self._traffic_sims.remove(out_provider)
+        return out_provider
 
     def switch_ego_agents(self, agent_interfaces: Dict[str, AgentInterface]):
         """Change the ego agents in the simulation. Effective on the next reset."""
