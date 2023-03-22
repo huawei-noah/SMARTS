@@ -7,9 +7,9 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0  
   scenarios: 
-    # - sumo/platoon/straight_agents_1
+    - sumo/platoon/straight_agents_1
     - sumo/platoon/fork_agents_1
-    # - sumo/platoon/merge_exit_agents_1
+    - sumo/platoon/merge_exit_agents_1
     # - argoverse/platoon/map_2_agents_1
     # - argoverse/platoon/map_1_agents_1
 
@@ -17,16 +17,16 @@ smarts:
   alg:
     n_steps: 2048
     batch_size: 512
-    n_epochs: 3
+    n_epochs: 4
     target_kl: 0.1
 
   # Training over all scenarios
-  epochs: 1 # Number of training loops.
+  epochs: 200 # Number of training loops.
 
   # Training per scenario
   # train_steps: 4_096
   # checkpoint_freq: 4_096
-  train_steps: 2_000_000
+  train_steps: 10_000
   checkpoint_freq: 40_000 # Save a model every checkpoint_freq calls to env.step().
   eval_freq: 40_000 # Evaluate the trained model every eval_freq steps and save the best model.
   eval_eps: 30 # Number of evaluation epsiodes.
