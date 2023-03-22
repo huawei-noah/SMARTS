@@ -1,7 +1,7 @@
 smarts:
   # Environment
   head: False # If True, enables Envision display.
-  sumo_gui: True # If True, enables sumo-gui display.
+  sumo_gui: False # If True, enables sumo-gui display.
   num_stack: 3 # Number of frames to stack as input to policy network.
   seed: 42
   agent_locator: inference:contrib-agent-v0
@@ -10,8 +10,16 @@ smarts:
     - sumo/platoon/straight_agents_1
     - sumo/platoon/fork_agents_1
     - sumo/platoon/merge_exit_agents_1
-    # - argoverse/platoon/map_2_agents_1
     # - argoverse/platoon/map_1_agents_1
+    # - argoverse/platoon/map_2_agents_1
+    # - argoverse/platoon/map_3_agents_1
+    # - argoverse/platoon/map_4_agents_1
+    # - argoverse/platoon/map_5_agents_1
+    # - argoverse/platoon/map_6_agents_1
+    # - argoverse/platoon/map_7_agents_1
+    # - argoverse/platoon/map_8_agents_1
+    # - argoverse/platoon/map_9_agents_1
+    # - argoverse/platoon/map_10_agents_1
 
   # PPO algorithm
   alg:
@@ -21,12 +29,12 @@ smarts:
     target_kl: 0.1
 
   # Training over all scenarios
-  epochs: 200 # Number of training loops.
+  epochs: 400 # Number of training loops.
 
   # Training per scenario
   # train_steps: 4_096
   # checkpoint_freq: 4_096
-  train_steps: 10_000
-  checkpoint_freq: 40_000 # Save a model every checkpoint_freq calls to env.step().
+  train_steps: 5_000
+  checkpoint_freq: 5_000 # Save a model every checkpoint_freq calls to env.step().
   eval_freq: 40_000 # Evaluate the trained model every eval_freq steps and save the best model.
-  eval_eps: 30 # Number of evaluation epsiodes.
+  eval_eps: 10 # Number of evaluation epsiodes.
