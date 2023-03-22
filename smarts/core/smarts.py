@@ -1074,7 +1074,6 @@ class SMARTS(ProviderManager):
                         vehicle_state=vehicle,
                         actor_id=vehicle_id,
                         vehicle_id=vehicle_id,
-                        vehicle_config_type=vehicle.vehicle_config_type,
                     )
 
                 if not vehicle.updated:

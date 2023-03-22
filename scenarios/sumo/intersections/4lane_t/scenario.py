@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -99,6 +100,7 @@ gen_scenario(
         bubbles=bubbles,
         ego_missions=ego_missions,
         social_agent_missions=social_agent_missions,
+        scenario_metadata=t.ScenarioMetadata(r".*-1.*", Colors.Yellow),
     ),
     output_dir=Path(__file__).parent,
 )

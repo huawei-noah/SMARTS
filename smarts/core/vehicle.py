@@ -106,43 +106,43 @@ class VehicleConfig:
 VEHICLE_CONFIGS = {
     "passenger": VehicleConfig(
         vehicle_type="car",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=3.68, width=1.47, height=1.4),
         glb_model="simple_car.glb",
     ),
     "bus": VehicleConfig(
         vehicle_type="bus",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=7, width=2.25, height=3),
         glb_model="bus.glb",
     ),
     "coach": VehicleConfig(
         vehicle_type="coach",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=8, width=2.4, height=3.5),
         glb_model="coach.glb",
     ),
     "truck": VehicleConfig(
         vehicle_type="truck",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=5, width=1.91, height=1.89),
         glb_model="truck.glb",
     ),
     "trailer": VehicleConfig(
         vehicle_type="trailer",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=10, width=2.5, height=4),
         glb_model="trailer.glb",
     ),
     "pedestrian": VehicleConfig(
         vehicle_type="pedestrian",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=0.5, width=0.5, height=1.6),
         glb_model="pedestrian.glb",
     ),
     "motorcycle": VehicleConfig(
         vehicle_type="motorcycle",
-        color=SceneColors.SocialVehicle.value,
+        color=SceneColors.SocialVehicle,
         dimensions=Dimensions(length=2.5, width=1, height=1.4),
         glb_model="motorcycle.glb",
     ),
@@ -252,7 +252,7 @@ class Vehicle:
     #     self._chassis.speed = speed
 
     @property
-    def vehicle_color(self) -> Union[SceneColors, Tuple, None]:
+    def vehicle_color(self) -> Union[SceneColors, None]:
         """The color of this vehicle (generally used for rendering purposes.)"""
         self._assert_initialized()
         return self._color
@@ -390,9 +390,7 @@ class Vehicle:
         else:
             start_pose = Pose.from_center(start.position, start.heading)
 
-        vehicle_color = (
-            SceneColors.Agent.value if trainable else SceneColors.SocialAgent.value
-        )
+        vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
 
         if agent_interface.vehicle_type == "sedan":
             urdf_name = "vehicle"
@@ -442,12 +440,11 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(
-        sim, vehicle_id, vehicle_state, vehicle_config_type
-    ) -> "Vehicle":
+    def build_social_vehicle(sim, vehicle_id, vehicle_state: VehicleState) -> "Vehicle":
         """Create a new unassociated vehicle."""
         dims = Dimensions.copy_with_defaults(
-            vehicle_state.dimensions, VEHICLE_CONFIGS[vehicle_config_type].dimensions
+            vehicle_state.dimensions,
+            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
         )
         chassis = BoxChassis(
             pose=vehicle_state.pose,
@@ -456,7 +453,9 @@ class Vehicle:
             bullet_client=sim.bc,
         )
         return Vehicle(
-            id=vehicle_id, chassis=chassis, vehicle_config_type=vehicle_config_type
+            id=vehicle_id,
+            chassis=chassis,
+            vehicle_config_type=vehicle_state.vehicle_config_type,
         )
 
     @staticmethod
