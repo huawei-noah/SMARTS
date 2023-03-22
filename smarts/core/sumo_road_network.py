@@ -65,13 +65,6 @@ class SumoRoadNetwork(RoadMap):
         self._roads = dict()
         self._features = dict()
         self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
-        self._lanepoints = None
-        if map_spec.lanepoint_spacing is not None:
-            assert map_spec.lanepoint_spacing > 0
-            # XXX: this should be last here since LanePoints() calls road_network methods immediately
-            self._lanepoints = LanePoints.from_sumo(
-                self, spacing=map_spec.lanepoint_spacing
-            )
         self._load_traffic_lights()
 
     @staticmethod
@@ -934,6 +927,11 @@ class SumoRoadNetwork(RoadMap):
 
     def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
         return SumoRoadNetwork.Route.from_road_ids(self, road_ids)
+
+    @cached_property
+    def _lanepoints(self):
+        assert self._map_spec.lanepoint_spacing > 0
+        return LanePoints.from_sumo(self, spacing=self._map_spec.lanepoint_spacing)
 
     def waypoint_paths(
         self,

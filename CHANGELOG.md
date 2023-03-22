@@ -23,6 +23,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `waymo_open_dataset` as a module at the SMARTS repo level, to be able to load waymo scenarios without any external packages
 - Added vehicle of interest coloring through scenario studio. This lets the scenario color vehicles that match a certain pattern of vehicle id.
 ### Changed
+- Changed the `lanepoint_spacing` setting in `MapSpec` to be non-optional. Lanepoints are now generated lazily when waypoints are used.
 ### Deprecated
 ### Fixed
 ### Removed

@@ -363,8 +363,8 @@ class MapSpec:
 
     source: str
     """A path or URL or name uniquely designating the map source."""
-    lanepoint_spacing: Optional[float] = None
-    """If specified, the default distance between pre-generated Lane Points (Waypoints)."""
+    lanepoint_spacing: float = 1.0
+    """The default distance between pre-generated Lane Points (Waypoints)."""
     default_lane_width: Optional[float] = None
     """If specified, the default width (in meters) of lanes on this map."""
     shift_to_origin: bool = False
