@@ -11,6 +11,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 - Added vehicle of interest coloring through scenario studio. This lets the scenario color vehicles that match a certain pattern of vehicle id.
+- SMARTS now provides `remove_provider` to remove a provider from the simulation. Use carefully.
 ### Changed
 ### Deprecated
 ### Fixed
