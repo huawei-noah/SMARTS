@@ -21,7 +21,7 @@ setup(
         "smarts[camera_obs]==1.0.0",
         "numpy<=1.23.0,>=1.19",
         "dreamerv2==2.2.0",
-        "tensorflow==2.4.0",
+        "tensorflow~=2.7.0",
         "tensorflow-probability==0.12.2",
     ],
 )

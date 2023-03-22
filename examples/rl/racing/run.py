@@ -21,7 +21,10 @@ from ruamel.yaml import YAML
 
 from cli.studio import build_scenarios
 
-from . import utils
+try:
+    import utils
+except ImportError:
+    from . import utils
 
 warnings.simplefilter("ignore", category=DeprecationWarning)
 warnings.simplefilter("ignore", category=PendingDeprecationWarning)
