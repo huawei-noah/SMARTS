@@ -29,7 +29,7 @@ smarts:
     target_kl: 0.1
 
   # Training over all scenarios
-  epochs: 400 # Number of training loops.
+  epochs: 500 # Number of training loops.
 
   # Training per scenario
   # train_steps: 4_096
