@@ -54,6 +54,8 @@ from .utils.kinematics import (
 from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
+MAX_IMPATIENCE = 3.0
+
 
 def _safe_division(n: float, d: float, default=math.inf):
     """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
@@ -522,6 +524,8 @@ class _TrafficActor:
         self._wait_to_restart = float(self._vtype.get("jmWaitToRestart", 0.0))
         self._stopped_at_feat = dict()
         self._waiting_at_feat = defaultdict(float)
+        self._time_to_impatience = 3
+        self._current_impatience = 0
 
         self._max_angular_velocity = 26  # arbitrary, based on limited testing
         self._prev_angular_err = None
@@ -530,6 +534,10 @@ class _TrafficActor:
         self._bumper_wins_back = _TrafficActor._RelWindow(5)
 
         owner._actors_created += 1
+
+    @property
+    def _impatience(self):
+        return min(1, max(0, self._current_impatience))
 
     @classmethod
     def from_flow(cls, flow: Dict[str, Any], owner: LocalTrafficProvider):
@@ -1751,7 +1759,8 @@ class _TrafficActor:
             ),
             1e-13,
         )
-        min_time_cush = float(self._vtype.get("tau", 1.0))
+        tau = float(self._vtype.get("tau", 1.0))
+        min_time_cush = tau - tau * self._impatience
         if (
             not self._near_dest(min_time_cush * speed_denom)
             and time_cush < min_time_cush
@@ -1764,7 +1773,7 @@ class _TrafficActor:
             return 0
 
         space_cush = max(min(self._target_lane_win.gap, self._lane_win.gap), 1e-13)
-        if space_cush < self._min_space_cush:
+        if space_cush < self._min_space_cush - self._min_space_cush * self._impatience:
             if self.speed > 0:
                 severity = 4 * _safe_division(
                     (self._min_space_cush - space_cush), self._min_space_cush
@@ -1776,11 +1785,11 @@ class _TrafficActor:
 
         # magic numbers / weights here were just what looked reasonable in limited testing
         P = 0.0060 * (self._target_speed - my_speed)
-        I = -0.0150 / space_cush + -0.0333 / time_cush
+        I = (-0.0150 / space_cush + -0.0333 / time_cush) * (1 - self._impatience)
         D = -0.0010 * my_acc
         PID = (P + I + D) / dt
 
-        PID -= 0.02 * self._imperfection * random.random()
+        PID += 0.02 * self._imperfection * (random.random() - 0.5)
 
         PID = np.clip(PID, -1.0, 1.0)
 
@@ -1792,6 +1801,14 @@ class _TrafficActor:
     def compute_next_state(self, dt: float):
         """Pre-computes the next state for this traffic actor."""
         self._compute_lane_speeds()
+        if math.isclose(self.speed, 0, abs_tol=1.5):
+            self._current_impatience = min(
+                MAX_IMPATIENCE, self._current_impatience + dt / self._time_to_impatience
+            )
+        else:
+            self._current_impatience = max(
+                0, self._current_impatience - dt / self._time_to_impatience
+            )
 
         self._pick_lane(dt)
         self._check_speed(dt)
