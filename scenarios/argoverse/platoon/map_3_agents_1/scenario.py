@@ -1,48 +1,42 @@
 from pathlib import Path
-from itertools import product
-from pathlib import Path
-
-from smarts.sstudio.types import (
-    Route,
-    Mission,
-    SocialAgentActor,
-    EndlessMission,
-    TrapEntryTactic,
-)
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
+from smarts.sstudio.types import (
+    EndlessMission,
+    Mission,
+    Route,
+    SocialAgentActor,
+    TrapEntryTactic,
+)
 
-# scenario_path is a directory with the following structure:
-# /path/to/dataset/{scenario_id}
-# ├── log_map_archive_{scenario_id}.json
-# └── scenario_{scenario_id}.parquet
+PATH = "/home/kyber/workspace/argoverse_data/train"
+scenario_id = "c624608b-fd20-43c9-bc2c-c4181ce9dafa"
+scenario_path = Path(PATH) / scenario_id
 
-PATH = "/home/kyber/argoverse"
-scenario_id = "c624608b-fd20-43c9-bc2c-c4181ce9dafa"  # e.g. "0000b6ab-e100-4f6b-aee8-b520b57c0530"
-scenario_path = Path(PATH) / scenario_id  # e.g. Path("/home/user/argoverse/train/") / scenario_id
-
-lane_idx = (0,)
-end_road = ("road-353613894-353613949","road-353635854","road-353612658","road-353612841")
-
-route_comb = product(lane_idx,end_road)
+end_road = (
+    ("road-353613894-353613949",1),
+    ("road-353635854",0),
+    ("road-353612658",0),
+    ("road-353612841",0),
+)
+route_comb = end_road
 leader_mission = []
-ego_missions=[]
 for route in route_comb:
     leader_mission.append(
-        Mission(Route(
-            begin=("road-353614080-353614150",0,10),end=(route[1],0,"max")),
+        Mission(
+            Route(begin=("road-353614080-353614150", 0, 15), end=(route[0], route[1], "max")),
         )
     )
-    ego_missions.append(
-        EndlessMission(
-            begin=("road-353614080-353614150",0,5), 
-            entry_tactic=TrapEntryTactic(
-                wait_to_hijack_limit_s=0,
-                default_entry_speed=1,
-            ),
-        )
-    ) 
+
+ego_missions = EndlessMission(
+    begin=("road-353614080-353614150", 0, 5),
+    entry_tactic=TrapEntryTactic(
+        wait_to_hijack_limit_s=0,
+        default_entry_speed=1,
+    ),
+)
+
 leader_actor = [
     SocialAgentActor(
         name="Leader-007",
@@ -50,7 +44,6 @@ leader_actor = [
         initial_speed=1,
     )
 ]
-
 
 traffic_histories = [
     t.TrafficHistoryDataset(
@@ -60,10 +53,9 @@ traffic_histories = [
     )
 ]
 
-
 gen_scenario(
     t.Scenario(
-        social_agent_missions={"leader":(leader_actor, leader_mission)},
+        social_agent_missions={"leader": (leader_actor, leader_mission)},
         ego_missions=ego_missions,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         # traffic_histories=traffic_histories,
