@@ -127,6 +127,10 @@ supervisord.log
 supervisord.pid
 xdummy.log
 
+# Argoverse dataset
+log_map_archive_[a-z0-9-]*.json
+scenario_[a-z0-9-]*.parquet
+
 # replay data
 *.jsonl
 
