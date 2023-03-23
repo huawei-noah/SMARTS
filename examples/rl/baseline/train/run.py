@@ -76,9 +76,7 @@ def main(args: argparse.Namespace):
     envs_eval = {}
     for scenario in config.scenarios:
         scenario_path = str(
-            Path(__file__).resolve().parents[4]
-            / "scenarios"
-            / scenario
+            Path(__file__).resolve().parents[4] / "scenarios" / scenario
         )
         envs_train[f"{scenario}"] = make_env(
             env_id=config.env_id,
@@ -216,4 +214,3 @@ if __name__ == "__main__":
         raise Exception("When --mode=evaluate, --model option must be specified.")
 
     main(args)
-

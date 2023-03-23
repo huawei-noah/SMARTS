@@ -83,7 +83,7 @@ class ChaseViaPointsAgent(Agent):
             # plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
             # if obs.ego_vehicle_state.position[0] > 190:
             #     self._flag = 0
-                # return (13.89, -1)
+            #     return (13.89, -1)
 
             return (obs.via_data.near_via_points[via_point_ind].required_speed, 0)
 
@@ -112,9 +112,7 @@ class ChaseViaPointsAgent(Agent):
         raise Exception("ChaseViaPointsAgent did not catch any preprogrammed actions.")
 
 
-def _nearest_waypoint(
-    matrix: np.ndarray, points: np.ndarray, radius: float = 2
-):
+def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 2):
     cur_point_index = ((np.intp(1e10), np.intp(1e10)), None)
 
     if points.shape == (0,):

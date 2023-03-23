@@ -28,7 +28,9 @@ class Reward(gym.Wrapper):
 
         for agent_id, agent_obs in obs.items():
             # Accumulate total distance travelled
-            self._total_dist[agent_id] = self._total_dist.get(agent_id,0) + agent_obs['distance_travelled']
+            self._total_dist[agent_id] = (
+                self._total_dist.get(agent_id, 0) + agent_obs["distance_travelled"]
+            )
 
             # If agent is done
             if terminated[agent_id] == True:
@@ -158,7 +160,7 @@ class Reward(gym.Wrapper):
 
             if leader and leader_in_rgb:
                 # Get agent's waypoints
-                waypoints = agent_obs["waypoint_paths"]["position"]   
+                waypoints = agent_obs["waypoint_paths"]["position"]
 
                 # Find the nearest waypoint paths to the ego
                 ego_pos = agent_obs["ego_vehicle_state"]["position"]
@@ -167,7 +169,7 @@ class Reward(gym.Wrapper):
 
                 # Find the nearest waypoint index, if any, to the leader
                 leader_wp_ind, leader_ind = _nearest_waypoint(
-                    waypoints, 
+                    waypoints,
                     np.array([leader["position"]]),
                 )
 
@@ -211,25 +213,14 @@ def _get_neighbor_vehicles(obs, neighbor_name):
     return neighbors_dict
 
 
-def _point_in_rectangle(x1, y1, x2, y2, x, y):
-    # bottom-left (x1, y1)
-    # top-right (x2, y2)
-    if x > x1 and x < x2 and y > y1 and y < y2:
-        return True
-    else:
-        return False
-
-
-def _nearest_waypoint(
-    matrix: np.ndarray, points: np.ndarray, radius: float = 1
-):
+def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1):
     """
-    Returns 
+    Returns
         (i) the `matrix` index of the nearest waypoint to the ego, which has a nearby `point`.
         (ii) the `points` index which is nearby the nearest waypoint to the ego.
-    
+
     Nearby is defined as a point within `radius` of a waypoint.
-        
+
     Args:
         matrix (np.ndarray): Waypoints matrix.
         points (np.ndarray): Points matrix.
