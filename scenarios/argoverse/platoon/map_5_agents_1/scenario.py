@@ -13,7 +13,7 @@ from smarts.sstudio.types import (
 
 PATH = "argoverse/data"
 scenario_id = "044d20f3-f057-41e3-88d3-7ec909fbb967"
-scenario_path = Path(__file__).resolve().parents[5] / PATH / scenario_id
+scenario_path = Path(__file__).resolve().parents[4] / PATH / scenario_id
 
 start_road = "road-403529185"
 lane_idx = (0,)

@@ -27,14 +27,11 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip wheel
 
 # Install requirements.txt .
-COPY ./SMARTS/examples/rl/baseline/train/requirements.txt /tmp/requirements.txt
+COPY ./examples/rl/baseline/train/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-# Copy dataset.
-COPY ./argoverse/data /argoverse/data
-
 # Copy source files and install.
-COPY ./SMARTS /SMARTS
+COPY . /SMARTS
 WORKDIR /SMARTS
 RUN pip install -e .[camera_obs,argoverse]
 RUN pip install -e ./examples/rl/baseline/inference
