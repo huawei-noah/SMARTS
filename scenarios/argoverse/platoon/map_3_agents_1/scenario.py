@@ -15,27 +15,33 @@ scenario_id = "c624608b-fd20-43c9-bc2c-c4181ce9dafa"
 scenario_path = Path(PATH) / scenario_id
 
 end_road = (
-    ("road-353613894-353613949",1),
-    ("road-353635854",0),
-    ("road-353612658",0),
-    ("road-353612841",0),
+    ("road-353613894-353613949", 1),
+    ("road-353635854", 0),
+    ("road-353612658", 0),
+    ("road-353612841", 0),
 )
+
 route_comb = end_road
 leader_mission = []
 for route in route_comb:
     leader_mission.append(
         Mission(
-            Route(begin=("road-353614080-353614150", 0, 15), end=(route[0], route[1], "max")),
+            Route(
+                begin=("road-353614080-353614150", 0, 10),
+                end=(route[0], route[1], "max"),
+            ),
         )
     )
 
-ego_missions = EndlessMission(
-    begin=("road-353614080-353614150", 0, 5),
-    entry_tactic=TrapEntryTactic(
-        wait_to_hijack_limit_s=0,
-        default_entry_speed=1,
-    ),
-)
+ego_missions = [
+    EndlessMission(
+        begin=("road-353614080-353614150", 0, 5),
+        entry_tactic=TrapEntryTactic(
+            wait_to_hijack_limit_s=0,
+            default_entry_speed=1,
+        ),
+    )
+]
 
 leader_actor = [
     SocialAgentActor(

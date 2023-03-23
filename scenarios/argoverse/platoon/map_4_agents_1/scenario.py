@@ -11,33 +11,35 @@ from smarts.sstudio.types import (
     TrapEntryTactic,
 )
 
-
 PATH = "/home/kyber/workspace/argoverse_data/train"
 scenario_id = "c627814f-8880-4142-91c9-96b104c1bece"
 scenario_path = Path(PATH) / scenario_id
 
 end_road = (
-    ("road-394975904",0),
-    ("road-394976408-394976268",0),
-    ("road-394969208-394969285",1),
-    ("road-394976534",0),
+    ("road-394975904", 0),
+    ("road-394976408-394976268", 0),
+    ("road-394969208-394969285", 1),
+    ("road-394976534", 0),
 )
+
 route_comb = end_road
 leader_mission = []
 for route in route_comb:
     leader_mission.append(
         Mission(
-            Route(begin=("road-394969256", 0, 15), end=(route[0], route[1], "max")),
+            Route(begin=("road-394969256", 0, 10), end=(route[0], route[1], "max")),
         )
     )
 
-ego_missions = EndlessMission(
-    begin=("road-394969256", 0, 5),
-    entry_tactic=TrapEntryTactic(
-        wait_to_hijack_limit_s=0,
-        default_entry_speed=1,
-    ),
-)
+ego_missions = [
+    EndlessMission(
+        begin=("road-394969256", 0, 5),
+        entry_tactic=TrapEntryTactic(
+            wait_to_hijack_limit_s=0,
+            default_entry_speed=1,
+        ),
+    )
+]
 
 leader_actor = [
     SocialAgentActor(

@@ -16,9 +16,7 @@ first_via = (0, 1)
 second_via = (0, 1)
 third_via = (0, 1)
 
-route_comb = product(
-    begin_lane_idx, first_via, second_via, third_via, end_road
-)
+route_comb = product(begin_lane_idx, first_via, second_via, third_via, end_road)
 
 leader_mission = []
 for route in route_comb:
