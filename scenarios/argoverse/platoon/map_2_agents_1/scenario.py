@@ -20,8 +20,6 @@ start_road = "road-393322800-393322556"
 end_road = (
     "road-393323379",
     "road-393323344",
-    "road-393323215",
-    "road-393323179-393323328",
 )
 
 route_comb = product(lane_idx, end_road)

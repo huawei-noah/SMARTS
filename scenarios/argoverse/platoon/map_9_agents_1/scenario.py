@@ -17,7 +17,7 @@ scenario_path = Path(PATH) / scenario_id
 
 start_road = "road-213913284"
 lane_idx = (0,)
-end_road = ("road-213898051", "road-213898807", "road-213898188", "road-213898765")
+end_road = ("road-213898807", "road-213898188", "road-213898765")
 
 route_comb = product(lane_idx, end_road)
 leader_mission = []
