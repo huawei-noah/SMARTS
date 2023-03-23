@@ -11,9 +11,9 @@ from smarts.sstudio.types import (
     TrapEntryTactic,
 )
 
-PATH = "/home/kyber/workspace/argoverse_data/train"
+PATH = "argoverse/data"
 scenario_id = "617a2f19-867c-44f6-829d-078bdf375f56"
-scenario_path = Path(PATH) / scenario_id
+scenario_path = Path(__file__).resolve().parents[5] / PATH / scenario_id
 
 start_road = "road-353630756"
 lane_idx = (0,)
