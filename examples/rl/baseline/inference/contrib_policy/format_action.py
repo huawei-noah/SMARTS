@@ -56,8 +56,9 @@ def _discrete_continuous() -> Tuple[Callable[[int], np.ndarray], gym.Space]:
         0: [0, 1, 0],  # slow_down
         1: [0.1, 0, 0],  # keep_direction
         2: [0.3, 0, 0],  # keep_direction
-        3: [0.3, 0, -0.3],  # turn_left
-        4: [0.3, 0, 0.3],  # turn_right
+        3: [0.5, 0, 0],  # keep_direction
+        4: [0.3, 0, -0.3],  # turn_left
+        5: [0.3, 0, 0.3],  # turn_right
     }
 
     space = gym.spaces.Discrete(n=len(action_map))
