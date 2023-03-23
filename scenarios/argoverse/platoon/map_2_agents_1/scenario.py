@@ -15,43 +15,39 @@ PATH = "/home/kyber/workspace/argoverse_data/train"
 scenario_id = "0a0a71c5-2e02-432c-ade6-dff22bc659de"
 scenario_path = Path(PATH) / scenario_id
 
-first_via = (0, 1, 2)
-second_via = (0, 1, 2)
-third_via = (0, 1, 2)
-lane_idx = (0, 1)
-start_road = (
-    "road-393322800-393322556",
-    "road-393323181",
-    "road-393323224",
-    "road-393323350",
+lane_idx = (0,)
+start_road = "road-393322800-393322556"
+end_road = (
+    "road-393323379",
+    "road-393323344",
+    "road-393323215",
+    "road-393323179-393323328",
 )
-end_road = ("road-393323082-393322772", "road-393323379", "road-393323179-393323328")
 
-route_comb = product(start_road, lane_idx, first_via, second_via, third_via, end_road)
+route_comb = product(lane_idx, end_road)
 leader_mission = []
 for route in route_comb:
     leader_mission.append(
         Mission(
-            Route(begin=(route[0], 0, 10), end=(route[5], 0, "max")),
+            Route(begin=(start_road, 0, 10), end=(route[1], 0, "max")),
         )
     )
+
+ego_missions = [
+    EndlessMission(
+        begin=(start_road, 0, 5),
+        entry_tactic=TrapEntryTactic(
+            wait_to_hijack_limit_s=1,
+            default_entry_speed=1,
+        ),
+    )
+]
 
 leader_actor = [
     SocialAgentActor(
         name="Leader-007",
         agent_locator="zoo.policies:chase-via-points-agent-v0",
         initial_speed=1,
-    )
-]
-
-ego_missions = [
-    EndlessMission(
-        begin=("E_start", 1, 5),
-        start_time=1,
-        entry_tactic=TrapEntryTactic(
-            wait_to_hijack_limit_s=1,
-            default_entry_speed=1,
-        ),
     )
 ]
 
@@ -66,6 +62,7 @@ traffic_histories = [
 gen_scenario(
     t.Scenario(
         social_agent_missions={"leader": (leader_actor, leader_mission)},
+        ego_missions=ego_missions,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         # traffic_histories=traffic_histories,
     ),

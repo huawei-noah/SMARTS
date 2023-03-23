@@ -15,34 +15,33 @@ PATH = "/home/kyber/workspace/argoverse_data/train"
 scenario_id = "00a0a3e0-1508-45f2-9cf5-e427e1446a33"
 scenario_path = Path(PATH) / scenario_id
 
+start_road = "road-265524416"
+lane_idx = (0,)
+end_road = (
+    "road-265524329",
+    "road-265524682-265525006",
+    "road-265524695",
+    "road-265543753-265524440",
+)
 
-start_road_1 = ("road-265543685-265543751", "road-265545149-265545151")
-lane_idx_1 = (0, 1)
-start_road_2 = ("road-265524416",)
-lane_idx_2 = (0,)
-start_1 = product(start_road_1, lane_idx_1)
-start_2 = product(start_road_2, lane_idx_2)
-start = list(start_1) + list(start_2)
-end_road = ("road-265524329", "road-265524695", "road-265543753-265524440")
-
-route_comb = product(start, end_road)
+route_comb = product(lane_idx, end_road)
 leader_mission = []
-ego_missions = []
 for route in route_comb:
     leader_mission.append(
         Mission(
-            Route(begin=(route[0][0], route[0][1], 10), end=(route[1], 0, "max")),
+            Route(begin=(start_road, 0, 10), end=(route[1], 0, "max")),
         )
     )
-    ego_missions.append(
-        EndlessMission(
-            begin=(route[0][0], route[0][1], 5),
-            entry_tactic=TrapEntryTactic(
-                wait_to_hijack_limit_s=0,
-                default_entry_speed=1,
-            ),
-        )
+
+ego_missions = [
+    EndlessMission(
+        begin=(start_road, 0, 5),
+        entry_tactic=TrapEntryTactic(
+            wait_to_hijack_limit_s=0,
+            default_entry_speed=1,
+        ),
     )
+]
 
 leader_actor = [
     SocialAgentActor(
