@@ -24,7 +24,7 @@ leader_mission = []
 for route in route_comb:
     leader_mission.append(
         Mission(
-            Route(begin=(start_road, 0, 10), end=(route[1], 0, "max")),
+            Route(begin=(start_road, 0, 12), end=(route[1], 0, "max")),
         )
     )
 

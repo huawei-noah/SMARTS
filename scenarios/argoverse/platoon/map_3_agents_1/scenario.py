@@ -27,7 +27,7 @@ for route in route_comb:
     leader_mission.append(
         Mission(
             Route(
-                begin=("road-353614080-353614150", 0, 10),
+                begin=("road-353614080-353614150", 0, 12),
                 end=(route[0], route[1], "max"),
             ),
         )
