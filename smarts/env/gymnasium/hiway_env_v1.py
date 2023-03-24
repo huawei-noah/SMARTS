@@ -98,9 +98,9 @@ class StepReturn(IntEnum):
     """
 
     agent = auto()
-    """Generate per-agent step returns: rewards({id: float}), terminations({id: bool}), and truncations({id: bool})."""
+    """Generate per-agent step returns: rewards({id: float}), terminateds({id: bool}), and truncateds({id: bool})."""
     environment = auto()
-    """Generate environment step returns: reward(float), termination(bool), and truncation(bool)."""
+    """Generate environment step returns: reward(float), terminated(bool), and truncated(bool)."""
 
 
 class HiWayEnvV1(gym.Env):
