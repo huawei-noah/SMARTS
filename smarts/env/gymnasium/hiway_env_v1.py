@@ -138,6 +138,10 @@ class HiWayEnvV1(gym.Env):
             for how the formatting matches the action space. String version
             can be used instead. See :class:`~smarts.env.utils.action_conversion.ActionOptions`. Defaults to
             :attr:`~smarts.env.utils.action_conversion.ActionOptions.default`.
+        step_return_type (StepReturn, str): This configures between the environment
+            step return information (i.e. reward means the environment reward) and the per-agent
+            step return information (i.e. reward means rewards as key-value per agent). Defaults to
+            :attr:`~smarts.env.gymnasium.hiway_env_v1.StepReturn.agent`.
     """
 
     metadata = {"render_modes": ["human"]}
