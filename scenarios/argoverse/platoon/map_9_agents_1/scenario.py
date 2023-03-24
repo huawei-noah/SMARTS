@@ -33,7 +33,7 @@ ego_missions = [
         begin=(start_road, 0, 5),
         entry_tactic=TrapEntryTactic(
             wait_to_hijack_limit_s=0,
-            default_entry_speed=1,
+            default_entry_speed=14,
         ),
     )
 ]
