@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import logging
 import os
-from enum import IntEnum
+from enum import IntEnum, auto
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -88,6 +88,19 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
     headless=False,
     data_formatter_args=EnvisionDataFormatterArgs("base", enable_reduction=False),
 )
+
+
+class StepReturn(IntEnum):
+    """Configuration to determine the interface type of the step function.
+
+    This configures between the environment status return (i.e. reward means the environment reward) and the per-agent
+    status return (i.e. rewards means reward per agent).
+    """
+
+    agent = auto()
+    """Generate per-agent step returns: rewards({id: float}), terminations({id: bool}), and truncations({id: bool})."""
+    environment = auto()
+    """Generate environment step returns: reward(float), termination(bool), and truncation(bool)."""
 
 
 class HiWayEnvV1(gym.Env):
@@ -159,6 +172,7 @@ class HiWayEnvV1(gym.Env):
             ObservationOptions, str
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
+        step_return_type: Union[StepReturn, str] = StepReturn.agent,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -197,6 +211,11 @@ class HiWayEnvV1(gym.Env):
             traffic_sims += [sumo_traffic]
         smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
+
+        if isinstance(step_return_type, str):
+            self._step_return_type = StepReturn[step_return_type]
+        else:
+            self._step_return_type = step_return_type
 
         if isinstance(action_options, str):
             action_options = ActionOptions[action_options]
@@ -288,7 +307,7 @@ class HiWayEnvV1(gym.Env):
 
         assert all("score" in v for v in info.values())
 
-        if self._observations_formatter.observation_options == ObservationOptions.full:
+        if self._step_return_type == StepReturn.environment:
             return (
                 self._observations_formatter.format(observations),
                 sum(r for r in rewards.values()),
@@ -296,10 +315,7 @@ class HiWayEnvV1(gym.Env):
                 dones["__all__"],
                 info,
             )
-        elif self._observations_formatter.observation_options in (
-            ObservationOptions.multi_agent,
-            ObservationOptions.unformatted,
-        ):
+        elif self._step_return_type == StepReturn.agent:
             return (
                 self._observations_formatter.format(observations),
                 rewards,
@@ -308,7 +324,7 @@ class HiWayEnvV1(gym.Env):
                 info,
             )
         raise RuntimeError(
-            f"Invalid observation configuration using {self._observations_formatter.observation_options}"
+            f"Invalid observation configuration using {self._step_return_type}"
         )
 
     def reset(
