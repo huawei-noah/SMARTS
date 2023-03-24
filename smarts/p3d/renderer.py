@@ -26,11 +26,10 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import re
-from enum import IntEnum
 from pathlib import Path
 from re import Pattern
 from threading import Lock
-from typing import NamedTuple, Optional, Union
+from typing import Optional, Union
 
 import gltf
 from direct.showbase.ShowBase import ShowBase
@@ -54,24 +53,15 @@ from panda3d.core import (
     WindowProperties,
     loadPrcFileData,
 )
+
+from smarts.core import glsl, models
+from smarts.core.colors import Colors, SceneColors
+from smarts.core.coordinates import Pose
+from smarts.core.masks import RenderMasks
+from smarts.core.renderer_base import DEBUG_MODE, RendererBase
+from smarts.core.scenario import Scenario
+
 # pytype: enable=import-error
-
-from . import glsl, models
-from .colors import Colors, SceneColors
-from .coordinates import Pose
-from .masks import RenderMasks
-from .scenario import Scenario
-
-
-
-class DEBUG_MODE(IntEnum):
-    """The rendering debug information level."""
-
-    SPAM = 1
-    DEBUG = 2
-    INFO = 3
-    WARNING = 4
-    ERROR = 5
 
 
 class _ShowBaseInstance(ShowBase):
@@ -184,122 +174,6 @@ class _ShowBaseInstance(ShowBase):
             for np in hidden:
                 np.show()
 
-class RendererBase:
-    """The base class for renderering
-
-    Returns:
-        RendererBase: 
-    """
-    @property
-    def id(self):
-        """The id of the simulation rendered."""
-        raise NotImplementedError
-
-    @property
-    def is_setup(self) -> bool:
-        """If the renderer has been fully initialized."""
-        raise NotImplementedError
-
-    @property
-    def log(self) -> logging.Logger:
-        """The rendering logger."""
-        raise NotImplementedError
-
-    def remove_buffer(self, buffer):
-        """Remove the rendering buffer."""
-        raise NotImplementedError
-
-    def setup(self, scenario: Scenario):
-        """Initialize this renderer."""
-        raise NotImplementedError
-
-    def render(self):
-        """Render the scene graph of the simulation."""
-        raise NotImplementedError
-
-    def reset(self):
-        """Reset the render back to initialized state."""
-        raise NotImplementedError
-
-    def step(self):
-        """provided for non-SMARTS uses; normally not used by SMARTS."""
-        raise NotImplementedError
-
-    def sync(self, sim_frame):
-        """Update the current state of the vehicles within the renderer."""
-        raise NotImplementedError
-
-    def teardown(self):
-        """Clean up internal resources."""
-        raise NotImplementedError
-
-    def destroy(self):
-        """Destroy the renderer. Cleans up all remaining renderer resources."""
-        raise NotImplementedError
-
-
-    def create_vehicle_node(self, glb_model: str, vid: str, color, pose: Pose):
-        """Create a vehicle node."""
-        raise NotImplementedError
-
-    def begin_rendering_vehicle(self, vid: str, is_agent: bool):
-        """Add the vehicle node to the scene graph"""
-        raise NotImplementedError
-
-    def update_vehicle_node(self, vid: str, pose: Pose):
-        """Move the specified vehicle node."""
-        raise NotImplementedError
-
-    def remove_vehicle_node(self, vid: str):
-        """Remove a vehicle node"""
-        raise NotImplementedError
-
-    def camera_for_id(self, camera_id) -> "RendererBase.OffscreenCamera":
-        """Get a camera by its id."""
-        raise NotImplementedError
-
-    class OffscreenCamera(NamedTuple):
-        """A camera used for rendering images to a graphics buffer."""
-
-        renderer: Renderer
-
-        def wait_for_ram_image(self, img_format: str, retries=100):
-            """Attempt to acquire a graphics buffer."""
-            # Rarely, we see dropped frames where an image is not available
-            # for our observation calculations.
-            #
-            # We've seen this happen fairly reliable when we are initializing
-            # a multi-agent + multi-instance simulation.
-            #
-            # To deal with this, we can try to force a render and block until
-            # we are fairly certain we have an image in ram to return to the user
-            raise NotImplementedError
-
-        def update(self, pose: Pose, height: float):
-            """Update the location of the camera.
-            Args:
-                pose:
-                    The pose of the camera target.
-                height:
-                    The height of the camera above the camera target.
-            """
-            raise NotImplementedError
-
-        def teardown(self):
-            """Clean up internal resources."""
-            raise NotImplementedError
-
-    def build_offscreen_camera(
-        self,
-        name: str,
-        mask: int,
-        width: int,
-        height: int,
-        resolution: float,
-    ) -> Renderer.OffscreenCamera:
-        """Generates a new offscreen camera."""
-        raise NotImplementedError
-    
 
 class Renderer(RendererBase):
     """The utility used to render simulation geometry."""

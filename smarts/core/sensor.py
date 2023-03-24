@@ -46,6 +46,7 @@ from smarts.core.observations import (
     Vias,
 )
 from smarts.core.plan import Plan
+from smarts.core.renderer_base import RendererBase
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
 from smarts.core.utils.math import squared_dist
@@ -80,7 +81,7 @@ class CameraSensor(Sensor):
     def __init__(
         self,
         vehicle_state,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
         name: str,
         mask: int,
         width: int,
@@ -141,7 +142,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
     ):
         super().__init__(
             vehicle_state,
@@ -183,7 +184,7 @@ class OGMSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
     ):
         super().__init__(
             vehicle_state,
@@ -225,7 +226,7 @@ class RGBSensor(CameraSensor):
         width: int,
         height: int,
         resolution: float,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
     ):
         super().__init__(
             vehicle_state,
