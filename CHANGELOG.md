@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 - Fixed "rl/racing" `numpy` incompatibility.
+- Fixed an issue with SUMO maps where waypoints in junctions would not return all possible paths.
 ### Removed
 ### Security
 
