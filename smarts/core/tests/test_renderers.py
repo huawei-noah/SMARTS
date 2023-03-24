@@ -124,7 +124,7 @@ class RenderThread(threading.Thread):
             heading_=Heading(math.pi * 0.91),
         )
         self._rdr.create_vehicle_node(
-            "simple_car.glb", self._vid, SceneColors.SocialVehicle.value, pose
+            "simple_car.glb", self._vid, SceneColors.SocialVehicle, pose
         )
         self._rdr.begin_rendering_vehicle(self._vid, is_agent=False)
         for s in range(self._num_steps):

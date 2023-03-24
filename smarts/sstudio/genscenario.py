@@ -28,7 +28,7 @@ import logging
 import os
 import pickle
 import sqlite3
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -91,6 +91,9 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
             assert isinstance(dataset, types.TrafficHistoryDataset)
             artifact_path = os.path.join(base_dir, f"{dataset.name}.shf")
             graph["traffic_histories"].append(artifact_path)
+
+    if scenario.scenario_metadata is not None:
+        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.pkl")]
 
     return graph
 
@@ -327,6 +330,18 @@ def gen_scenario(
                 map_spec=map_spec,
             )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
+
+    # Scenario metadata
+    artifact_paths = build_graph["scenario_metadata"]
+    obj_hash = pickle_hash(scenario.scenario_metadata, True)
+    if _needs_build(
+        db_conn, scenario.scenario_metadata, artifact_paths, obj_hash, map_needs_rebuild
+    ):
+        with timeit("scenario_metadata", logger.info):
+            gen_metadata(
+                scenario=output_dir,
+                scenario_metadata=scenario.scenario_metadata,
+            )
 
 
 def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
@@ -658,3 +673,16 @@ def gen_traffic_histories(
                 )
         output_dir = os.path.join(scenario, "build")
         genhistories.import_dataset(hdsr, output_dir, map_bbox)
+
+
+def gen_metadata(scenario: str, scenario_metadata: types.ScenarioMetadata):
+    """Generate the metadata for the scenario
+
+    Args:
+        scenario (str):The scenario directory
+        scenario_metadata (types.ScenarioMetadata): _description_
+    """
+    _check_if_called_externally()
+    output_path = os.path.join(scenario, "build", "scenario_metadata.pkl")
+    with open(output_path, "wb") as f:
+        pickle.dump(asdict(scenario_metadata), f)
