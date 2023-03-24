@@ -28,7 +28,7 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 import numpy as np
 
-from smarts.core.agent_interface import AgentsAliveDoneCriteria
+from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
 from smarts.core.plan import Plan
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
@@ -334,6 +334,19 @@ class Sensors:
         return False
 
     @classmethod
+    def _actors_alive_done_check(
+        cls, vehicle_index, actors_alive: ActorsAliveDoneCriteria
+    ):
+        from smarts.core.vehicle_index import VehicleIndex
+        vehicle_index: VehicleIndex = vehicle_index
+
+        # TODO get vehicles by pattern
+        ## optimization is to get vehicles that were added and removed last step
+        ## store vehicles that match pattern
+        ## return True if any_vehicle_removed else False
+        return False
+
+    @classmethod
     def _is_done_with_events(cls, sim, agent_id, vehicle, sensor_state):
         interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         done_criteria = interface.done_criteria
@@ -354,6 +367,9 @@ class Sensors:
         agents_alive_done = cls._agents_alive_done_check(
             sim.agent_manager, done_criteria.agents_alive
         )
+        actors_alive_done = cls._actors_alive_done_check(
+            sim.vehicle_index, done_criteria.actors_alive
+        )
 
         done = not sim.resetting and (
             (is_off_road and done_criteria.off_road)
@@ -365,6 +381,7 @@ class Sensors:
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
             or agents_alive_done
+            or actors_alive_done
         )
 
         events = Events(
@@ -377,6 +394,7 @@ class Sensors:
             wrong_way=is_wrong_way,
             not_moving=is_not_moving,
             agents_alive_done=agents_alive_done,
+            actors_alive_done=actors_alive_done,
         )
 
         return done, events

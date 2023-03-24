@@ -194,6 +194,14 @@ class AgentsAliveDoneCriteria:
 
 
 @dataclass(frozen=True)
+class ActorsAliveDoneCriteria:
+    """Require actors to persist."""
+
+    actors_of_interest: str = r""
+    """Actors that should exist to continue this agent."""
+
+
+@dataclass(frozen=True)
 class EventConfiguration:
     """Configure the conditions in which an Event is triggered."""
 
@@ -225,6 +233,8 @@ class DoneCriteria:
     """
     agents_alive: Optional[AgentsAliveDoneCriteria] = None
     """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
+    actors_alive: Optional[ActorsAliveDoneCriteria] = None
+    """If set, triggers the ego agent to be done based on actors existing in the simulation."""
 
 
 @dataclass
