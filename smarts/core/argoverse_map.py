@@ -69,6 +69,7 @@ class ArgoverseMap(RoadMapWithCaches):
             LaneMarkType.DOUBLE_DASH_WHITE,
             LaneMarkType.SOLID_WHITE,
             LaneMarkType.SOLID_DASH_WHITE,
+            LaneMarkType.NONE,
         }
     )
 
@@ -197,7 +198,7 @@ class ArgoverseMap(RoadMapWithCaches):
                     left_id = cur_seg.left_neighbor_id
                     if (
                         left_id is not None
-                        and left_mark == LaneMarkType.DASHED_WHITE
+                        and left_mark in ArgoverseMap.LANE_MARKINGS
                         and left_id in self._avm.vector_lane_segments
                     ):
                         # There is a valid lane to the left, so add it and continue
@@ -311,9 +312,22 @@ class ArgoverseMap(RoadMapWithCaches):
                         left_mark = cur_seg.left_lane_marking.mark_type
                         lane = self.lane_by_id(f"lane-{cur_seg.id}")
                         left_boundary = [(p[0], p[1]) for p in lane.left_pts]
-                        if left_mark in ArgoverseMap.LANE_MARKINGS:
+
+                        lane_cl = self._avm.get_lane_segment_centerline(cur_seg.id)
+                        left_cl = self._avm.get_lane_segment_centerline(
+                            cur_seg.left_neighbor_id
+                        )
+                        lane_dir = lane_cl[1] - lane_cl[0]
+                        left_dir = left_cl[1] - left_cl[0]
+                        angle = np.arccos(
+                            np.dot(lane_dir, left_dir)
+                            / (np.linalg.norm(lane_dir) * np.linalg.norm(left_dir))
+                        )
+                        same_dir = angle < 0.1
+
+                        if left_mark in ArgoverseMap.LANE_MARKINGS and same_dir:
                             lane_dividers.append(left_boundary)
-                        elif left_mark in ArgoverseMap.ROAD_MARKINGS:
+                        else:
                             road_dividers.append(left_boundary)
                         processed_ids.append(cur_seg.id)
                         cur_seg = self._avm.vector_lane_segments[
