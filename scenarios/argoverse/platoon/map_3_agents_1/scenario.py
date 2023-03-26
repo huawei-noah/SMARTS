@@ -17,7 +17,7 @@ scenario_path = Path(__file__).resolve().parents[4] / PATH / scenario_id
 end_road = (
     ("road-353613894-353613949", 1),
     ("road-353635854", 0),
-    ("road-353612658", 0),
+    ("road-353612903-353612658", 1),
     ("road-353612841", 0),
 )
 
