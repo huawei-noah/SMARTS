@@ -294,7 +294,7 @@ class ArgoverseMap(RoadMapWithCaches):
         processed_ids = []
 
         for lane_seg in self._avm.get_scenario_lane_segments():
-            if lane_seg.id in processed_ids:
+            if lane_seg.id in processed_ids or lane_seg.is_intersection:
                 continue
             if lane_seg.right_neighbor_id is None:
                 cur_seg = lane_seg

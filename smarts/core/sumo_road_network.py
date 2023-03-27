@@ -943,22 +943,33 @@ class SumoRoadNetwork(RoadMap):
         if route:
             if route.roads:
                 road_ids = [road.road_id for road in route.roads]
-            else:
-                road_ids = self._resolve_in_junction(pose)
-            if road_ids:
-                return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
-        closest_lps = self._lanepoints.closest_lanepoints(
-            [pose], within_radius=within_radius
-        )
-        closest_lane = closest_lps[0].lane
-        # TAI: the above lines could be replaced by:
-        # closest_lane = self.nearest_lane(pose.position, radius=within_radius)
+                if road_ids:
+                    return self._waypoint_paths_along_route(
+                        pose.point, lookahead, road_ids
+                    )
+
         waypoint_paths = []
-        for lane in closest_lane.road.lanes:
-            waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
+        wp_lanes = self._resolve_in_junction(pose)
+        if wp_lanes:
+            for lane in wp_lanes:
+                road_ids = [lane.road.road_id] + [
+                    r.road_id for r in lane.road.outgoing_roads
+                ]
+                waypoint_paths += self._waypoint_paths_along_route(
+                    pose.point, lookahead, road_ids
+                )
+        else:
+            closest_lps = self._lanepoints.closest_lanepoints(
+                [pose], within_radius=within_radius
+            )
+            closest_lane = closest_lps[0].lane
+            # TAI: the above lines could be replaced by:
+            # closest_lane = self.nearest_lane(pose.position, radius=within_radius)
+            for lane in closest_lane.road.lanes:
+                waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
-    def _resolve_in_junction(self, pose: Pose) -> List[str]:
+    def _resolve_in_junction(self, pose: Pose) -> List[RoadMap.Lane]:
         # This is so that the waypoints don't jump between connections
         # when we don't know which lane we're on in a junction.
         # We take the 10 closest lanepoints then filter down to that which has
@@ -969,14 +980,19 @@ class SumoRoadNetwork(RoadMap):
         lane = closest_lps[0].lane
         if not lane.in_junction:
             return []
-        road_ids = [lane.road.road_id]
-        next_roads = lane.road.outgoing_roads
-        assert (
-            len(next_roads) <= 1
-        ), "A junction is expected to have <= 1 outgoing roads"
-        if next_roads:
-            road_ids.append(next_roads[0].road_id)
-        return road_ids
+
+        wp_lanes = []
+        for incoming_lane in lane.incoming_lanes:
+            for junction_lane in incoming_lane.outgoing_lanes:
+                if junction_lane.in_junction and junction_lane.contains_point(
+                    pose.point
+                ):
+                    next_lanes = junction_lane.outgoing_lanes
+                    assert (
+                        len(next_lanes) <= 1
+                    ), "A junction is expected to have <= 1 outgoing lanes"
+                    wp_lanes.append(junction_lane)
+        return wp_lanes
 
     def _waypoint_paths_along_route(
         self, point: Point, lookahead: int, route: Sequence[str]
