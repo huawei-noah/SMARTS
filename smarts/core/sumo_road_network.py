@@ -944,14 +944,20 @@ class SumoRoadNetwork(RoadMap):
             if route.roads:
                 road_ids = [road.road_id for road in route.roads]
                 if road_ids:
-                    return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
+                    return self._waypoint_paths_along_route(
+                        pose.point, lookahead, road_ids
+                    )
 
         waypoint_paths = []
         wp_lanes = self._resolve_in_junction(pose)
         if wp_lanes:
             for lane in wp_lanes:
-                road_ids = [lane.road.road_id] + [r.road_id for r in lane.road.outgoing_roads]
-                waypoint_paths += self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
+                road_ids = [lane.road.road_id] + [
+                    r.road_id for r in lane.road.outgoing_roads
+                ]
+                waypoint_paths += self._waypoint_paths_along_route(
+                    pose.point, lookahead, road_ids
+                )
         else:
             closest_lps = self._lanepoints.closest_lanepoints(
                 [pose], within_radius=within_radius
@@ -978,7 +984,9 @@ class SumoRoadNetwork(RoadMap):
         wp_lanes = []
         for incoming_lane in lane.incoming_lanes:
             for junction_lane in incoming_lane.outgoing_lanes:
-                if junction_lane.in_junction and junction_lane.contains_point(pose.point):
+                if junction_lane.in_junction and junction_lane.contains_point(
+                    pose.point
+                ):
                     next_lanes = junction_lane.outgoing_lanes
                     assert (
                         len(next_lanes) <= 1
