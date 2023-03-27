@@ -24,6 +24,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 - Fixed "rl/racing" `numpy` incompatibility.
+- Fixed an issue with SUMO maps where waypoints in junctions would not return all possible paths.
 - Fixed an issue in Argoverse maps where adjacent lanes would sometimes not be grouped in the same road.
 ### Removed
 ### Security
