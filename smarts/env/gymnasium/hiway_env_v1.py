@@ -99,8 +99,8 @@ class HiWayEnvV1(gym.Env):
         agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
             needs that will be used to configure the environment.
         sim_name (str, optional): Simulation name. Defaults to None.
-        scenarios_order (ScenarioOrder, optional): Configures the order that
-            scenarios will provided over successive resets.
+        scenarios_order (ScenarioOrder, optional): Configures the order of
+            scenarios provided over successive resets.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool, optional): If True, enables visualization of observed
@@ -148,7 +148,7 @@ class HiWayEnvV1(gym.Env):
         scenarios: Sequence[str],
         agent_interfaces: Dict[str, AgentInterface],
         sim_name: Optional[str] = None,
-        scenarios_order: bool = True,
+        scenarios_order: ScenarioOrder = ScenarioOrder.Scrambled,
         headless: bool = False,
         visdom: bool = False,
         fixed_timestep_sec: float = 0.1,
