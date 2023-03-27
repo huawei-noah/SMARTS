@@ -148,7 +148,7 @@ class HiWayEnvV1(gym.Env):
         scenarios: Sequence[str],
         agent_interfaces: Dict[str, AgentInterface],
         sim_name: Optional[str] = None,
-        scenarios_order: bool = True,
+        scenarios_order: ScenarioOrder = ScenarioOrder.Scrambled,
         headless: bool = False,
         visdom: bool = False,
         fixed_timestep_sec: float = 0.1,
