@@ -352,7 +352,7 @@ class Sensors:
         pattern = re.compile(actors_alive.actors_of_interest)
         ## TODO optimization to get vehicles that were added and removed last step
         ## TODO second optimization to check for already known vehicles
-        for vehicle_id in vehicle_index.vehicle_ids:
+        for vehicle_id in vehicle_index.vehicle_ids():
             # get vehicles by pattern
             if pattern.match(vehicle_id):
                 sensor_state.seen_interest_actors = True
