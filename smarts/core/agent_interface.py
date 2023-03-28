@@ -200,6 +200,11 @@ class ActorsAliveDoneCriteria:
     actors_of_interest: str = r""
     """Actors that should exist to continue this agent."""
 
+    strict: bool = True
+    """If strict the agent will be done instantly if an actor of interest is not available
+    immediately.
+    """
+
 
 @dataclass(frozen=True)
 class EventConfiguration:

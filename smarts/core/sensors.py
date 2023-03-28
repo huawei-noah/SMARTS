@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import re
 import sys
 import time
 import weakref
@@ -295,9 +296,9 @@ class Sensors:
 
     @classmethod
     def _agents_alive_done_check(
-        cls, agent_manager, agents_alive: AgentsAliveDoneCriteria
+        cls, agent_manager, agents_alive: Optional[AgentsAliveDoneCriteria]
     ):
-        if not agents_alive:
+        if agents_alive is None:
             return False
 
         if (
@@ -335,15 +336,33 @@ class Sensors:
 
     @classmethod
     def _actors_alive_done_check(
-        cls, vehicle_index, actors_alive: ActorsAliveDoneCriteria
+        cls,
+        vehicle_index,
+        sensor_state,
+        actors_alive: Optional[ActorsAliveDoneCriteria],
     ):
+        if actors_alive is None:
+            return False
+
+        sensor_state: SensorState = sensor_state
         from smarts.core.vehicle_index import VehicleIndex
+
         vehicle_index: VehicleIndex = vehicle_index
 
-        # TODO get vehicles by pattern
-        ## optimization is to get vehicles that were added and removed last step
-        ## store vehicles that match pattern
-        ## return True if any_vehicle_removed else False
+        pattern = re.compile(actors_alive.actors_of_interest)
+        ## TODO optimization to get vehicles that were added and removed last step
+        ## TODO second optimization to check for already known vehicles
+        for vehicle_id in vehicle_index.vehicle_ids:
+            # get vehicles by pattern
+            if pattern.match(vehicle_id):
+                sensor_state.seen_interest_actors = True
+                return False
+        if actors_alive.strict or sensor_state.seen_interest_actors:
+            # if agent requires the actor to exist immediately
+            # OR if previously seen relevant actors but no actors match anymore
+            return True
+
+        ## if never seen a relevant actor
         return False
 
     @classmethod
@@ -368,7 +387,7 @@ class Sensors:
             sim.agent_manager, done_criteria.agents_alive
         )
         actors_alive_done = cls._actors_alive_done_check(
-            sim.vehicle_index, done_criteria.actors_alive
+            sim.vehicle_index, sensor_state, done_criteria.actors_alive
         )
 
         done = not sim.resetting and (
@@ -537,10 +556,20 @@ class SensorState:
         self._max_episode_steps = max_episode_steps
         self._plan = plan
         self._step = 0
+        self._seen_interest_actors = False
 
     def step(self):
         """Update internal state."""
         self._step += 1
+
+    @property
+    def seen_interest_actors(self) -> bool:
+        """If a relevant actor has been spotted before."""
+        return self._seen_interest_actors
+
+    @seen_interest_actors.setter
+    def seen_interest_actors(self, value: bool):
+        self._seen_interest_actors = value
 
     @property
     def reached_max_episode_steps(self) -> bool:
