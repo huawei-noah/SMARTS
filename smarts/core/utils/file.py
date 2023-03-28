@@ -82,7 +82,7 @@ def unpack(obj):
     if isinstance(obj, dict):
         return {key: unpack(value) for key, value in obj.items()}
     elif isinstance(obj, (list, np.ndarray)):
-        return tuple(unpack(value) for value in obj)
+        return [unpack(value) for value in obj]
     elif isnamedtupleinstance(obj):
         return {key: unpack(value) for key, value in obj._asdict().items()}
     elif isdataclass(obj):
