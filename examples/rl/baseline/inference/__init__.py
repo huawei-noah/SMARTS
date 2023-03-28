@@ -9,7 +9,6 @@ from smarts.zoo.registry import register
 def entry_point(**kwargs):
     interface = AgentInterface(
         action=ActionSpaceType.Continuous,
-        # action=ActionSpaceType.ActuatorDynamic,
         drivable_area_grid_map=False,
         lane_positions=True,
         lidar_point_cloud=False,
@@ -17,9 +16,9 @@ def entry_point(**kwargs):
         road_waypoints=False,
         signals=False,
         top_down_rgb=RGB(
-            width=112,
-            height=112,
-            resolution=50 / 112,  # m/pixels
+            width=128,
+            height=128,
+            resolution=80 / 128,  # m/pixels
         ),
     )
 

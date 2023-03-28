@@ -109,16 +109,6 @@ class FilterObs:
         # fmt: on
 
 
-# def draw_vehicle(rgb, position, heading, resolution, new_color)->np.ndarray:
-
-#     neighbours = [neighbor for neighbor in zip(
-#         obs["neighborhood_vehicle_states"]["id"],
-#         obs["neighborhood_vehicle_states"]["heading"],
-#         obs["neighborhood_vehicle_states"]["position"]) if neighbor_name in neighbor[0]]
-
-#     return rgb
-
-
 def replace_color(
     rgb: np.ndarray,
     old_color: Sequence[np.ndarray],
