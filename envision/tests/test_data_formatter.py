@@ -81,7 +81,7 @@ def covered_data():
                 actor_id="agent_007",
                 lane_id="NE-NW",
                 events=Events(
-                    [], False, False, False, False, False, False, False, True
+                    [], False, False, False, False, False, False, False, True, False
                 ),
                 driven_path=[(4, 4), (2, 2)],
                 point_cloud=[[1, 3], [4, 2]],
@@ -129,6 +129,7 @@ def covered_data():
                     0,
                     0,
                     1,
+                    0
                 ),  # events
                 [
                     [[4, 5, 3, 2.24, 1, 4, 10, 0, 4.96]],
@@ -167,7 +168,7 @@ def complex_data():
                         actor_id="agent_007",
                         lane_id="NE-NW",
                         events=Events(
-                            [], False, False, False, False, False, False, False, True
+                            [], False, False, False, False, False, False, False, True, False
                         ),
                     )
                     for i in range(2)
@@ -193,7 +194,7 @@ def complex_data():
                         2,
                         -3.14,
                         20,
-                        [[], 0, 0, 0, 0, 0, 0, 0, 1],
+                        [[], 0, 0, 0, 0, 0, 0, 0, 1, 0],
                         [],
                         [],
                         [],
@@ -209,7 +210,7 @@ def complex_data():
                         2,
                         -3.14,
                         20,
-                        [[], 0, 0, 0, 0, 0, 0, 0, 1],
+                        [[], 0, 0, 0, 0, 0, 0, 0, 1, 0],
                         [],
                         [],
                         [],
