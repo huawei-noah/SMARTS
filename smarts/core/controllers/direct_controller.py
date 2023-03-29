@@ -67,7 +67,7 @@ class DirectController:
         target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
 
         if isinstance(chassis, BoxChassis):
-            # Since BoxChassis does not use pybullet for force-to-motion computations (only collision detection),
+            # Since BoxChassis does not use the physics simulation for force-to-motion computations (only collision detection),
             # we have to update the position and other state here (instead of pybullet.stepSimulation()).
             heading_vec = radians_to_vec(vehicle.heading)
             dpos = heading_vec * vehicle.speed * dt

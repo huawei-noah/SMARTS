@@ -35,6 +35,8 @@ MAX_PYBULLET_FREQ = 240
 
 
 class BulletSimulation(PhysicsSimulation):
+    """The pybullet implementation of the physics simulation.
+    """
     def __init__(self) -> None:
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
@@ -48,14 +50,14 @@ class BulletSimulation(PhysicsSimulation):
         self._pybullet_period = 0.1
         self._map_bb = None
         self._ground_bullet_id = None
+        self._max_pybullet_freq: int = config()(
+            "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
+        )
 
     def initialize(self, fixed_timestep_sec: float):
         self._bullet_client.resetSimulation()
         self._bullet_client.configureDebugVisualizer(
             pybullet.COV_ENABLE_GUI, 0  # pylint: disable=no-member
-        )
-        max_pybullet_freq = config()(
-            "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
         )
         # PyBullet defaults the timestep to 240Hz. Several parameters are tuned with
         # this value in mind. For example the number of solver iterations and the error
@@ -67,11 +69,11 @@ class BulletSimulation(PhysicsSimulation):
         # then we will step pybullet multiple times ourselves as necessary
         # to account for the time delta on each SMARTS step.
         self._pybullet_period = (
-            fixed_timestep_sec if fixed_timestep_sec else 1 / max_pybullet_freq
+            fixed_timestep_sec if fixed_timestep_sec else 1 / self._max_pybullet_freq
         )
         self._bullet_client.setPhysicsEngineParameter(
             fixedTimeStep=self._pybullet_period,
-            numSubSteps=int(self._pybullet_period * max_pybullet_freq),
+            numSubSteps=int(self._pybullet_period * self._max_pybullet_freq),
             numSolverIterations=10,
             solverResidualThreshold=0.001,
             # warmStartingFactor=0.99

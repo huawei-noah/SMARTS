@@ -194,7 +194,7 @@ class LaneFollowingController:
         velocity_error_damping_term = (speed_error - state.speed_error) / sim.last_dt
         # 5.5 is the gain of feedforward term for throttle. This term is
         # directly related to the steering angle, this is added to further
-        # enhance the speed tracking performance. TODO: currently, the bullet
+        # enhance the speed tracking performance. TODO: currently, the bullet model
         # does not provide the lateral acceleration which is needed for
         # calculating the front lateral force. we need to replace the coefficient
         # with better approximation of the front lateral forces using explicit

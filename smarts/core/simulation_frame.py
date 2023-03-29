@@ -23,7 +23,7 @@ import logging
 import re
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, FrozenSet, List, Optional, Set
 
 from smarts.core.actor import ActorState
 from smarts.core.agent_interface import AgentInterface
@@ -58,7 +58,7 @@ class SimulationFrame:
     interest_filter: re.Pattern
     # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None
-    _collision_filter: Set[str] = None
+    _collision_filter: FrozenSet[str] = frozenset()
 
     @cached_property
     def agent_ids(self) -> Set[str]:
