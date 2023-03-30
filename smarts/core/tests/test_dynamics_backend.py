@@ -24,10 +24,10 @@ import math
 import numpy as np
 import pytest
 
-from smarts.core.chassis import AckermannChassis
-from smarts.core.coordinates import Heading, Pose
 from smarts.bullet import pybullet
 from smarts.bullet.pybullet import bullet_client as bc
+from smarts.core.chassis import AckermannChassis
+from smarts.core.coordinates import Heading, Pose
 
 
 @pytest.fixture

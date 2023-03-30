@@ -24,10 +24,10 @@ from typing import List, Sequence, Tuple
 import numpy as np
 import psutil
 
-from .lidar_sensor_params import SensorParams
 from ..bullet import pybullet
-from .utils.math import batches, rotate_quat
 from ..bullet.pybullet import bullet_client as bc
+from .lidar_sensor_params import SensorParams
+from .utils.math import batches, rotate_quat
 
 
 class Lidar:

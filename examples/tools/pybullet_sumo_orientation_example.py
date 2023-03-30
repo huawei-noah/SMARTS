@@ -4,13 +4,13 @@ from typing import Dict
 
 import numpy as np
 
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.actor import ActorRole
 from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.bullet import pybullet
-from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle
 from smarts.core.vehicle_state import VehicleState
 

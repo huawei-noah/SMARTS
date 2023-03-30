@@ -4,14 +4,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.bullet import pybullet
-from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240

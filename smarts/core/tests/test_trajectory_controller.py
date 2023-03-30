@@ -27,6 +27,8 @@ import numpy as np
 import pytest
 import yaml
 
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core import models
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
@@ -34,8 +36,6 @@ from smarts.core.controllers import (
     TrajectoryTrackingControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.bullet import pybullet
-from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 time_step = 0.1

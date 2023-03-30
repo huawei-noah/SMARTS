@@ -23,9 +23,9 @@ from typing import NamedTuple, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import Pose
 from smarts.bullet import pybullet
 from smarts.bullet.pybullet import bullet_client as bc
+from smarts.core.coordinates import Pose
 
 
 class BulletClient:

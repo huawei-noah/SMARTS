@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from typing import Any
-from smarts.core.coordinates import BoundingBox
 
+from smarts.core.coordinates import BoundingBox
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.vehicle_index import VehicleIndex
 
@@ -76,8 +76,7 @@ class PhysicsSimulation:
 
     @property
     def simulation_bounding_box(self) -> BoundingBox:
-        """Get the current bounding box of the simulation.
-        """
+        """Get the current bounding box of the simulation."""
         raise NotImplementedError
 
     @property

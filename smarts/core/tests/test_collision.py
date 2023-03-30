@@ -27,6 +27,8 @@ import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core import models
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.chassis import AckermannChassis, BoxChassis
@@ -34,8 +36,6 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.bullet import pybullet
-from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
