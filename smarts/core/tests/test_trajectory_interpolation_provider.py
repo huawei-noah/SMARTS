@@ -25,9 +25,8 @@ import numpy as np
 import pytest
 
 import smarts.sstudio.types as t
-from smarts.bullet import pybullet
+from smarts.bullet.bullet_simulation import BulletSimulation
 from smarts.bullet.chassis import BulletBoxChassis
-from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers.trajectory_interpolation_controller import (
@@ -151,13 +150,15 @@ def scenario():
 
 
 @pytest.fixture
-def bullet_client():
-    client = bc.BulletClient(pybullet.DIRECT)
-    yield client
-    client.disconnect()
+def bullet_simulation():
+    simulation = BulletSimulation()
+    yield simulation
+    simulation.teardown()
 
 
-def test_trajectory_interpolation_controller(controller_actions, bullet_client):
+def test_trajectory_interpolation_controller(
+    controller_actions, bullet_simulation: BulletSimulation
+):
     dt = 0.1
     i, j = np.ix_([TrajectoryField.X_INDEX, TrajectoryField.Y_INDEX], [0])
 
@@ -169,7 +170,7 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
             pose=Pose.from_center(original_position, original_heading),
             speed=initial_speed,
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
-            bullet_client=bullet_client,
+            bullet_client=bullet_simulation.client,
         )
         vehicle = Vehicle(vehicle_id, chassis)
 
