@@ -14,3 +14,11 @@ On a different terminal
 ```bash
 $ scl envision start
 ```
+
+Inference and evaluation instructions
+```bash
+$ scl zoo install examples/rl/platoon/inference
+
+$ scl benchmark run driving_smarts_2023 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
+
+```

@@ -35,7 +35,13 @@ try:
 
     register(
         id="platoon-v0",
-        entry_point="smarts.env.gymnasium.platoon_env:platoon_v0_env",
+        entry_point="smarts.env.gymnasium.platoon_env:platoon_env",
+        disable_env_checker=True,
+    )
+
+    register(
+        id="driving-smarts-v2023",
+        entry_point="smarts.env.gymnasium.driving_smarts_2023_env:driving_smarts_2023_env",
         disable_env_checker=True,
     )
 

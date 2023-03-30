@@ -7,41 +7,27 @@ benchmark:
     For context see: 
         - https://codalab.lisn.upsaclay.fr/competitions/
         - https://smarts-project.github.io/archive/
-  eval_episodes: 50
+  eval_episodes: 3
   debug:
-    serial: False
+    serial: True
   shared_env_kwargs:
     seed: 42
     headless: true
   envs:
-    standard:
-      loc: "smarts.env:driving-smarts-v2023.1"
-      scenarios:
-        - 1_to_2lane_left_turn_c
-        - 1_to_2lane_left_turn_t
-        - 3lane_merge_multi_agent
-        - 3lane_merge_single_agent
-        - 3lane_cruise_multi_agent
-        - 3lane_cruise_single_agent
-        - 3lane_cut_in
-        - 3lane_overtake
-      kwargs:
-        seed: 42
-    standard:
-      loc: "smarts.env:driving-smarts-v2023.2"
-      scenarios:
-        - 1_to_2lane_left_turn_c
-        - 1_to_2lane_left_turn_t
-        - 3lane_merge_multi_agent
-        - 3lane_merge_single_agent
-        - 3lane_cruise_multi_agent
-        - 3lane_cruise_single_agent
-        - 3lane_cut_in
-        - 3lane_overtake
-      kwargs:
-        seed: 42
-    standard:
-      loc: "smarts.env:driving-smarts-v2023.3"
+    # standard:
+    #   loc: "smarts.env:driving-smarts-v2023"
+    #   scenarios:
+    #     - 1_to_2lane_left_turn_c
+    #   kwargs:
+    #     seed: 42
+    # turns:
+    #   loc: "smarts.env:driving-smarts-v2023"
+    #   scenarios:
+    #     - 1_to_2lane_left_turn_c
+    #   kwargs:
+    #     seed: 42
+    platoon:
+      loc: "smarts.env:platoon"
       scenarios:
         - 1_to_2lane_left_turn_c
         - 1_to_2lane_left_turn_t

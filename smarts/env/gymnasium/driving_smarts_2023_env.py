@@ -27,8 +27,6 @@ from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
     AgentInterface,
-    AgentsAliveDoneCriteria,
-    AgentsListAlive,
     DoneCriteria,
     NeighborhoodVehicles,
     Waypoints,
@@ -46,7 +44,7 @@ SUPPORTED_ACTION_TYPES = (
 )
 
 
-def platoon_env(
+def driving_smarts_2023_env(
     scenario: str,
     agent_interface: AgentInterface,
     seed: int = 42,
@@ -121,7 +119,7 @@ def platoon_env(
     env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
         agent_interfaces=agent_interfaces,
-        sim_name="Platoon",
+        sim_name="Driving_Smarts_2023",
         headless=headless,
         visdom=visdom,
         seed=seed,
@@ -176,14 +174,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         on_shoulder=False,
         wrong_way=False,
         not_moving=False,
-        agents_alive=AgentsAliveDoneCriteria(
-            agent_lists_alive=[
-                AgentsListAlive(
-                    agents_list=["social-agent-leader-Leader-007"],
-                    minimum_agents_alive_in_list=1,
-                )
-            ]
-        ),
+        agents_alive=None,
     )
     max_episode_steps = 1000
     waypoints_lookahead = 80

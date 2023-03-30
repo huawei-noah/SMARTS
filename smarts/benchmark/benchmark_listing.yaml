@@ -2,7 +2,7 @@
 ---
 benchmarks:
 
-  driving_smarts_2022:
+  driving_smarts:
     name: "Driving SMARTS 2022"
     versions:
       -
@@ -17,7 +17,7 @@ benchmarks:
     versions:
       -
         version: 0.0
-        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v2023.benchmark_from_configs"
+        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
         requirements: ["ray<=2.2.0,>2.0"]
         params: 
           benchmark_config: ${{smarts.benchmark.driving_smarts.v2023}}/config.yaml
