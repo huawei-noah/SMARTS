@@ -144,7 +144,7 @@ def run(
 # pytype: enable=name-error
 
 
-if __name__ == "__main__":
+def main():
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
@@ -181,3 +181,7 @@ if __name__ == "__main__":
             plane_body_id,
             n_steps=int(1e6),
         )
+
+
+if __name__ == "__main__":
+    main()
