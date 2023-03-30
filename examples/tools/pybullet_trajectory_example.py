@@ -4,8 +4,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
 from smarts.bullet.pybullet import bullet_client as bc
-from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
             vehicle = Vehicle(
                 id="vehicle",
-                chassis=AckermannChassis(
+                chassis=BulletAckermannChassis(
                     pose=pose,
                     bullet_client=client,
                 ),

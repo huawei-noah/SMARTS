@@ -25,8 +25,8 @@ import numpy as np
 import pytest
 
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletBoxChassis
 from smarts.bullet.pybullet import bullet_client as bc
-from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
 
@@ -57,7 +57,7 @@ def speed():
 @pytest.fixture
 def social_vehicle(position, heading, speed, bullet_client):
     pose = Pose.from_center(position, heading)
-    chassis = BoxChassis(
+    chassis = BulletBoxChassis(
         pose=pose,
         speed=speed,
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
@@ -101,7 +101,7 @@ def test_update_from_traffic_sim(social_vehicle, provider_vehicle):
 
 
 def test_create_social_vehicle(bullet_client):
-    chassis = BoxChassis(
+    chassis = BulletBoxChassis(
         pose=Pose.from_center((0, 0, 0), Heading(0)),
         speed=0,
         dimensions=Dimensions(length=3, width=1, height=1),
@@ -125,7 +125,7 @@ def test_create_social_vehicle(bullet_client):
 
 def test_vehicle_bounding_box(bullet_client):
     pose = Pose.from_center((1, 1, 0), Heading(0))
-    chassis = BoxChassis(
+    chassis = BulletBoxChassis(
         pose=pose,
         speed=0,
         dimensions=Dimensions(length=3, width=1, height=1),

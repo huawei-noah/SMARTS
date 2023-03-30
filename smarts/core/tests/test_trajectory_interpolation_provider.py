@@ -26,10 +26,10 @@ import pytest
 
 import smarts.sstudio.types as t
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletBoxChassis
 from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.chassis import BoxChassis
 from smarts.core.controllers.trajectory_interpolation_controller import (
     TrajectoryField,
     TrajectoryInterpolationController,
@@ -165,7 +165,7 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
         original_position = trajectory[i, j].reshape(2)
         original_heading = Heading(trajectory[TrajectoryField.THETA_INDEX][0])
         initial_speed = trajectory[TrajectoryField.VEL_INDEX][0]
-        chassis = BoxChassis(
+        chassis = BulletBoxChassis(
             pose=Pose.from_center(original_position, original_heading),
             speed=initial_speed,
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,

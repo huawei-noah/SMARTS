@@ -2,8 +2,8 @@ import math
 from pathlib import Path
 
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
 from smarts.bullet.pybullet import bullet_client as bc
-from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         pose = pose = Pose.from_center((0, 0, 0), Heading(0))
         vehicle = Vehicle(
             id="vehicle",
-            chassis=AckermannChassis(
+            chassis=BulletAckermannChassis(
                 pose=pose,
                 bullet_client=client,
             ),

@@ -22,8 +22,8 @@ from typing import Optional, Tuple
 import numpy as np
 
 from smarts.core.bezier_motion_planner import BezierMotionPlanner
-from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.physics.chassis import BoxChassis
 
 
 class MotionPlannerControllerState:

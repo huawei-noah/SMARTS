@@ -28,9 +28,9 @@ import pytest
 import yaml
 
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
 from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core import models
-from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
@@ -78,7 +78,7 @@ def vehicle(bullet_client, vehicle_controller_file, fixed_timestep_sec=time_step
     pose = Pose.from_center((0, 0, 0), Heading(0))
     vehicle1 = Vehicle(
         id="vehicle",
-        chassis=AckermannChassis(
+        chassis=BulletAckermannChassis(
             pose=pose,
             bullet_client=bullet_client,
             vehicle_filepath=vehicle_controller_file[0],

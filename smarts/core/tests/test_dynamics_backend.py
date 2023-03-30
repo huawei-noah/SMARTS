@@ -25,8 +25,8 @@ import numpy as np
 import pytest
 
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
 from smarts.bullet.pybullet import bullet_client as bc
-from smarts.core.chassis import AckermannChassis
 from smarts.core.coordinates import Heading, Pose
 
 
@@ -39,7 +39,7 @@ def bullet_client():
 
 @pytest.fixture
 def chassis(bullet_client):
-    return AckermannChassis(
+    return BulletAckermannChassis(
         Pose.from_center([0, 0, 0], Heading(math.pi * 0.5)), bullet_client
     )
 

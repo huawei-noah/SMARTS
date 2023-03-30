@@ -28,11 +28,12 @@ import pytest
 from helpers.scenario import temp_scenario
 
 from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis, BulletBoxChassis
 from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core import models
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
-from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Heading, Pose
+from smarts.core.physics.chassis import AckermannChassis, BoxChassis
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -86,11 +87,11 @@ def step_with_pose_delta(bv: BoxChassis, steps, pose_delta: np.ndarray, speed: f
 def test_collision(bullet_client: bc.BulletClient):
     """Spawn overlap to check for the most basic collision"""
 
-    chassis = AckermannChassis(
+    chassis = BulletAckermannChassis(
         Pose.from_center([0, 0, 0], Heading(-math.pi * 0.5)), bullet_client
     )
 
-    b_chassis = BoxChassis(
+    b_chassis = BulletBoxChassis(
         Pose.from_center([0, 0, 0], Heading(0)),
         speed=0,
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
@@ -109,11 +110,11 @@ def test_collision(bullet_client: bc.BulletClient):
 def test_non_collision(bullet_client: bc.BulletClient):
     """Spawn without overlap to check for the most basic collision"""
 
-    chassis = AckermannChassis(
+    chassis = BulletAckermannChassis(
         Pose.from_center([0, 0, 0], Heading(-math.pi * 0.5)), bullet_client
     )
 
-    b_chassis = BoxChassis(
+    b_chassis = BulletBoxChassis(
         Pose.from_center([0, 10, 0], Heading(0)),
         speed=0,
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
@@ -128,11 +129,11 @@ def test_non_collision(bullet_client: bc.BulletClient):
 
 def test_collision_collide_with_standing_vehicle(bullet_client: bc.BulletClient):
     """Run a vehicle at a standing vehicle as fast as possible."""
-    chassis = AckermannChassis(
+    chassis = BulletAckermannChassis(
         Pose.from_center([10, 0, 0], Heading(math.pi * 0.5)), bullet_client
     )
 
-    b_chassis = BoxChassis(
+    b_chassis = BulletBoxChassis(
         Pose.from_center([0, 0, 0], Heading(0)),
         speed=0,
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
@@ -159,14 +160,14 @@ def test_box_chassis_collision(bullet_client: bc.BulletClient):
         solverResidualThreshold=0.001,
     )
 
-    chassis = BoxChassis(
+    chassis = BulletBoxChassis(
         Pose.from_center([0, 0, 0], Heading(-0.5 * math.pi)),
         speed=10,
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
 
-    b_chassis = BoxChassis(
+    b_chassis = BulletBoxChassis(
         Pose.from_center([0, 0, 0], Heading(0.5 * math.pi)),
         speed=0,
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
@@ -197,10 +198,10 @@ def _joust(wkc: AckermannChassis, bkc: AckermannChassis, steps, throttle=1):
 
 def test_collision_joust(bullet_client: bc.BulletClient):
     """Run two agents at each other to test for clipping."""
-    white_knight_chassis = AckermannChassis(
+    white_knight_chassis = BulletAckermannChassis(
         Pose.from_center([10, 0, 0], Heading(math.pi * 0.5)), bullet_client
     )
-    black_knight_chassis = AckermannChassis(
+    black_knight_chassis = BulletAckermannChassis(
         Pose.from_center([-10, 0, 0], Heading(-math.pi * 0.5)), bullet_client
     )
 
@@ -223,10 +224,10 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
     original_vehicle_dimensions = VEHICLE_CONFIGS["passenger"].dimensions
 
     shared_heading = Heading(0)
-    chassis = AckermannChassis(
+    chassis = BulletAckermannChassis(
         Pose.from_center([0, 0, 0], shared_heading), bullet_client
     )
-    chassis_n = BoxChassis(
+    chassis_n = BulletBoxChassis(
         Pose.from_center(
             [
                 0,
@@ -239,7 +240,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
-    chassis_e = BoxChassis(
+    chassis_e = BulletBoxChassis(
         Pose.from_center(
             [
                 (original_vehicle_dimensions.width + separation_for_collision_error),
@@ -252,7 +253,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
-    chassis_s = BoxChassis(
+    chassis_s = BulletBoxChassis(
         Pose.from_center(
             [
                 0,
@@ -265,7 +266,7 @@ def test_ackerman_chassis_size_unchanged(bullet_client: bc.BulletClient):
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
-    chassis_w = BoxChassis(
+    chassis_w = BulletBoxChassis(
         Pose.from_center(
             [
                 -(original_vehicle_dimensions.width + separation_for_collision_error),

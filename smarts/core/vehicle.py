@@ -26,12 +26,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from smarts.bullet.chassis import BulletAckermannChassis, BulletBoxChassis
 from smarts.core.agent_interface import AgentInterface
+from smarts.core.physics.chassis import AckermannChassis, BoxChassis, Chassis
 from smarts.core.plan import Mission, Plan
 
 from . import models
 from .actor import ActorRole
-from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
 from .sensors import (
@@ -319,7 +320,7 @@ class Vehicle:
                 logger.warning(
                     "setting vehicle dimensions on a AckermannChassis not yet supported"
                 )
-            chassis = AckermannChassis(
+            chassis = BulletAckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
                 vehicle_filepath=vehicle_filepath,
@@ -329,7 +330,7 @@ class Vehicle:
                 initial_speed=initial_speed,
             )
         else:
-            chassis = BoxChassis(
+            chassis = BulletBoxChassis(
                 pose=start_pose,
                 speed=initial_speed,
                 dimensions=chassis_dims,
@@ -351,7 +352,7 @@ class Vehicle:
             vehicle_state.dimensions,
             VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
         )
-        chassis = BoxChassis(
+        chassis = BulletBoxChassis(
             pose=vehicle_state.pose,
             speed=vehicle_state.speed,
             dimensions=dims,

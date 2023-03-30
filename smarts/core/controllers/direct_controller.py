@@ -22,8 +22,8 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose
+from smarts.core.physics.chassis import AckermannChassis, BoxChassis
 from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
 
 
