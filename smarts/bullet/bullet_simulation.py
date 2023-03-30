@@ -27,8 +27,8 @@ from smarts.core import config, models
 from smarts.core.coordinates import BoundingBox
 from smarts.core.physics.physics_simulation import PhysicsSimulation
 from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle_index import VehicleIndex
 
 MAX_PYBULLET_FREQ = 240
@@ -36,17 +36,28 @@ MAX_PYBULLET_FREQ = 240
 
 class BulletSimulation(PhysicsSimulation):
     """The pybullet implementation of the physics simulation.
+
+    This can configure GUI with SMARTS_BULLET_GUI=[MAC|LINUX|OFF].
     """
     def __init__(self) -> None:
+        gui: str = config()("bullet", "gui", default="OFF", cast=lambda s: s.upper())
+
+        self._bullet_mode = pybullet.pybullet.DIRECT # pylint: disable=no-member
+        if gui == "LINUX":
+            self._bullet_mode == pybullet.GUI # pylint: disable=no-member
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
-        self._bullet_client = pybullet.SafeBulletClient(
-            pybullet.DIRECT
-        )  # pylint: disable=no-member
+        if gui == "MAC":
+            from smarts.bullet.bullet import BulletClient
+            self._bullet_client = BulletClient(pybullet.GUI) # pylint: disable=no-member
+        else:
+            self._bullet_client = pybullet.SafeBulletClient(
+                self._bullet_mode
+            )  # pylint: disable=no-member
         self._pybullet_period = 0.1
         self._map_bb = None
         self._ground_bullet_id = None

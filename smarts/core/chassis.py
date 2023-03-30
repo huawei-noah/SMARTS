@@ -33,8 +33,8 @@ from shapely.geometry import box as shapely_box
 from smarts.core import models
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.tire_models import TireForces
-from smarts.core.utils import pybullet
-from smarts.core.utils.bullet import (
+from smarts.bullet import pybullet
+from smarts.bullet.bullet import (
     BulletBoxShape,
     BulletPositionConstraint,
     ContactPoint,
@@ -47,7 +47,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.bullet.pybullet import bullet_client as bc
 
 with pkg_resources.path(models, "vehicle.urdf") as path:
     DEFAULT_VEHICLE_FILEPATH = str(path.absolute())

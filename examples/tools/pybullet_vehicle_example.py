@@ -7,8 +7,8 @@ from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240

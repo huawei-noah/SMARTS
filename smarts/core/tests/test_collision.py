@@ -34,8 +34,8 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t

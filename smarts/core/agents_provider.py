@@ -92,7 +92,7 @@ class AgentsProvider(Provider):
         self._my_agent_actors = dict()
 
     def sync(self, provider_state):
-        # Here we don't care what other providers are doing (pybullet cares for us).
+        # Here we don't care what other providers are doing (physics simulation cares for us).
         # The removal of missing actors is done in perform_agent_actions() instead of here
         # b/c these are agent actors and so get removed when they are done.
         pass

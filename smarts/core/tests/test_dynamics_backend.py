@@ -26,8 +26,8 @@ import pytest
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 
 
 @pytest.fixture

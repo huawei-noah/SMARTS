@@ -26,8 +26,8 @@ import pytest
 
 from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.bullet import pybullet
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
 
 

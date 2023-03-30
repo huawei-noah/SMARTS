@@ -71,10 +71,8 @@ from .simulation_frame import SimulationFrame
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
-from .utils import pybullet
 from .utils.id import Id
 from .utils.math import rounder_for_dt
-from .utils.pybullet import bullet_client as bc
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
 from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle
@@ -220,8 +218,6 @@ class SMARTS(ProviderManager):
             self._trap_manager,
             IdActorCaptureManager(),
         ]
-
-        self._map_bb = None
 
     def step(
         self,
