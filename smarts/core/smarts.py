@@ -39,8 +39,6 @@ from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
 
-from ..bullet import pybullet
-from ..bullet.pybullet import bullet_client as bc
 from . import config, models
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
@@ -1056,13 +1054,13 @@ class SMARTS(ProviderManager):
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
         # (and needs to remain registered in Traci during this step).
 
-    def _pybullet_provider_sync(self, provider_state: ProviderState):
+    def _provider_sync(self, provider_state: ProviderState):
         current_actor_ids = {v.actor_id for v in provider_state.actors}
         previous_sv_ids = self._vehicle_index.social_vehicle_ids()
         exited_actors = previous_sv_ids - current_actor_ids
         self._teardown_vehicles_and_agents(exited_actors)
 
-        # Update our pybullet world given this provider state
+        # Update our simulation given this provider state
         dt = provider_state.dt or self._last_dt
         for vehicle in provider_state.actors:
             if not isinstance(vehicle, VehicleState):
@@ -1086,7 +1084,7 @@ class SMARTS(ProviderManager):
                     )
 
                 if not vehicle.updated:
-                    # Note: update_state() happens *after* pybullet has been stepped.
+                    # Note: update_state() happens *after* physics has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
 
     @property
@@ -1153,7 +1151,7 @@ class SMARTS(ProviderManager):
                 provider.sync(provider_state)
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
-        self._pybullet_provider_sync(provider_state)
+        self._provider_sync(provider_state)
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -1324,7 +1322,7 @@ class SMARTS(ProviderManager):
         else:
             self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._fixed_timestep_sec = fixed_timestep_sec
-        self._is_setup = False  # need to re-setup pybullet
+        self._is_setup = False  # need to re-initialize
 
     @property
     def last_dt(self) -> float:
