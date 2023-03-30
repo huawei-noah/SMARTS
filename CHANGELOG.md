@@ -10,12 +10,21 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.0.10] # 2023-03-27
+### Added
 - Added vehicle of interest coloring through scenario studio. This lets the scenario color vehicles that match a certain pattern of vehicle id.
 - SMARTS now provides `remove_provider` to remove a provider from the simulation. Use carefully.
 ### Changed
 ### Deprecated
 ### Fixed
 - Fixed "rl/racing" `numpy` incompatibility.
+- Fixed an issue with SUMO maps where waypoints in junctions would not return all possible paths.
 - Fixed an issue in Argoverse maps where adjacent lanes would sometimes not be grouped in the same road.
 ### Removed
 ### Security
