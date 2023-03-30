@@ -98,7 +98,7 @@ class BulletSimulation(PhysicsSimulation):
 
     def initialize_ground(self, resource_path, map_bb):
         plane_path = resource_path  # self._scenario.plane_filepath
-        if not os.path.exists(plane_path):
+        if resource_path is None or not os.path.exists(plane_path):
             with pkg_resources.path(models, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
