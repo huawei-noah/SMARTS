@@ -305,17 +305,19 @@ class MetricsBase(gym.Wrapper):
 
 
 class Metrics(gym.Wrapper):
-    """Metrics class wraps an underlying _Metrics class. The underlying
-    _Metrics class computes agents' performance metrics in a SMARTS
+    """Metrics class wraps an underlying MetricsBase class. The underlying
+    MetricsBase class computes agents' performance metrics in a SMARTS
     environment. Whereas, this Metrics class is a basic gym.Wrapper class
-    which prevents external users from accessing or modifying attributes
-    beginning with an underscore, to ensure security of the metrics computed.
+    which prevents external users from accessing or modifying (i) protected 
+    attributes or (ii) attributes beginning with an underscore, to ensure
+    security of the metrics computed.
 
     Args:
         env (gym.Env): A gym.Env to be wrapped.
 
     Raises:
-        AttributeError: Upon accessing an attribute beginning with an underscore.
+        AttributeError: Upon accessing (i) a protected attribute or (ii) an 
+        attribute beginning with an underscore.
 
     Returns:
         gym.Env: A wrapped gym.Env which computes agents' performance metrics.
@@ -324,6 +326,17 @@ class Metrics(gym.Wrapper):
     def __init__(self, env: gym.Env):
         env = MetricsBase(env)
         super().__init__(env)
+
+    def __getattr__(self, name: str):
+        """Returns an attribute with ``name``, unless ``name`` starts with an underscore."""
+        if name == "_np_random":
+            raise AttributeError(
+                "Can't access `_np_random` of a wrapper, use `self.unwrapped._np_random` or `self.np_random`."
+            )
+        elif name.startswith("_") or name in ["smarts",]:
+            raise AttributeError(f"accessing private attribute '{name}' is prohibited")
+        
+        return getattr(self.env, name)
 
 
 def _check_env(env: gym.Env):
