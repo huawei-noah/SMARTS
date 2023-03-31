@@ -87,18 +87,20 @@ def get_scenario(request):
 
     if request.param == "single_agent_intersection":
         scenario = str(
-            Path(__file__).resolve().parents[2]
+            Path(__file__).resolve().parents[3]
             / "scenarios"
-            / "intersection"
-            / "1_to_1lane_left_turn_c"
+            / "sumo"
+            / "intersections"
+            / "1_to_1lane_left_turn_c_agents_1"
         )
         num_agents = 1
     elif request.param == "multi_agent_merge":
         scenario = str(
-            Path(__file__).resolve().parents[2]
+            Path(__file__).resolve().parents[3]
             / "scenarios"
+            / "sumo"
             / "merge"
-            / "3lane_multi_agent"
+            / "3lane_agents_2"
         )
         num_agents = 2
 

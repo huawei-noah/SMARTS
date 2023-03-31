@@ -110,10 +110,11 @@ def intersection_v0_env(
 
     scenarios = [
         str(
-            pathlib.Path(__file__).absolute().parents[1]
+            pathlib.Path(__file__).absolute().parents[2]
             / "scenarios"
-            / "intersection"
-            / "1_to_1lane_left_turn_c"
+            / "sumo"
+            / "intersections"
+            / "1_to_1lane_left_turn_c_agents_1"
         )
     ]
     build_scenarios(scenarios=scenarios)
