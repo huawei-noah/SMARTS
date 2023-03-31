@@ -62,7 +62,22 @@ class Data:
 
 
 class Score(NamedTuple):
-    """This describes the final score given by processing observations through the metrics."""
+    """This describes the final score given by processing observations through the metrics.
+    
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        |             | Range  | Remarks                                                                                             |
+        +=============+========+=====================================================================================================+
+        | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
+        +-------------+--------+-----------------------------------------------------------------------------------------------------+    
+    """
 
     completion: float
     humanness: float
@@ -185,9 +200,9 @@ class MetricsBase(gym.Wrapper):
         self._cur_agents = set(self.env.agent_interfaces.keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
-        self._scen = self.env.scenario
-        self._scen_name = self.env.scenario.name
-        self._road_map = self.env.scenario.road_map
+        self._scen = self.env.smarts.scenario
+        self._scen_name = self.env.smarts.scenario.name
+        self._road_map = self.env.smarts.scenario.road_map
 
         # fmt: off
         if self._scen_name not in self._records:
@@ -250,19 +265,6 @@ class MetricsBase(gym.Wrapper):
         "Humanness", "Rules", and one total combined score named "Overall"
         on the wrapped environment.
 
-        +-------------+--------+-----------------------------------------------------------------------------------------------------+
-        |             | Range  | Remarks                                                                                             |
-        +=============+========+=====================================================================================================+
-        | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
-        +-------------+--------+-----------------------------------------------------------------------------------------------------+
-        | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
-        +-------------+--------+-----------------------------------------------------------------------------------------------------+
-        | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
-        +-------------+--------+-----------------------------------------------------------------------------------------------------+
-        | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
-        +-------------+--------+-----------------------------------------------------------------------------------------------------+
-        | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
-        +-------------+--------+-----------------------------------------------------------------------------------------------------+
 
         Returns:
             Dict[str, float]: Contains "Overall", "Completion", "Time",
