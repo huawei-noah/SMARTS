@@ -511,7 +511,7 @@ class Trip:
     """The type of the vehicle"""
     depart: float = 0
     """Start time in seconds."""
-    actor: TrafficActor = field(init=False)
+    actor: Optional[TrafficActor] = field(default=None)
     """The traffic actor model (usually vehicle) that will be used for the trip."""
 
     def __post_init__(self):

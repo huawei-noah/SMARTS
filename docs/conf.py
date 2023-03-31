@@ -77,6 +77,7 @@ apidoc_extra_args = [
     "--templatedir=_templates/apidoc",
 ]
 autodoc_mock_imports = [
+    "av2",
     "cpuinfo",
     "cv2",
     "gymnasium",

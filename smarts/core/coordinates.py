@@ -223,7 +223,7 @@ class Heading(float):
         counter-clockwise.
         """
         h = Heading(bullet_heading)
-        h.source = "bullet"
+        h._source = "bullet"
         return h
 
     @classmethod
@@ -232,7 +232,7 @@ class Heading(float):
         and turns counter-clockwise.
         """
         h = Heading(math.radians(p3d_heading))
-        h.source = "p3d"
+        h._source = "p3d"
         return h
 
     @classmethod
@@ -240,8 +240,13 @@ class Heading(float):
         """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
         heading = Heading.flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
-        h.source = "sumo"
+        h._source = "sumo"
         return h
+
+    @property
+    def source(self) -> Optional[str]:
+        """The source of this heading."""
+        return getattr(self, "_source", None)
 
     @property
     def as_panda3d(self):
