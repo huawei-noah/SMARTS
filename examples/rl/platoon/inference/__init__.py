@@ -22,9 +22,11 @@ def entry_point(**kwargs):
         ),
     )
 
-    agent_params = kwargs["agent_params"]
-    agent_params.update({"top_down_rgb": interface.top_down_rgb})
-    agent_params.update({"action_space_type": interface.action})
+    agent_params = {
+        "top_down_rgb": interface.top_down_rgb,
+        "action_space_type": interface.action,
+        "num_stack": 3, # Number of frames to stack as input to policy network.
+    }
 
     return AgentSpec(
         interface=interface,

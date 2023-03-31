@@ -1,7 +1,7 @@
 from typing import Sequence
 
 import numpy as np
-from contrib_policy.helper import plotter3d
+# from contrib_policy.helper import plotter3d
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB

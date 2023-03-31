@@ -11,7 +11,7 @@ class Policy(Agent):
     """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
 
-    def __init__(self, config=None, top_down_rgb=None, action_space_type=None):
+    def __init__(self, num_stack, top_down_rgb, action_space_type):
         """All policy initialization matters, including loading of model, is
         performed here. To be implemented by the user.
         """
@@ -22,29 +22,14 @@ class Policy(Agent):
         from contrib_policy.format_action import FormatAction
         from contrib_policy.frame_stack import FrameStack
         from contrib_policy.make_dict import MakeDict
-        from contrib_policy.utils import objdict
-
-        from smarts.core.agent_interface import RGB
-        from smarts.core.controllers import ActionSpaceType
 
         model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
         self.model = sb3lib.PPO.load(model_path)
 
-        if config == None:
-            config = objdict({"num_stack": 3})
-        if top_down_rgb == None:
-            top_down_rgb = RGB(
-                width=128,
-                height=128,
-                resolution=57 / 128,  # m/pixels
-            )
-        if action_space_type == None:
-            action_space_type = ActionSpaceType.Continuous
-
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
-            num_stack=config.num_stack,
+            num_stack=num_stack,
             stack_axis=0,
         )
         self._frame_stack.reset()
