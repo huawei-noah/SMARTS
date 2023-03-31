@@ -949,15 +949,34 @@ class SumoRoadNetwork(RoadMap):
                     )
 
         waypoint_paths = []
-        wp_lanes = self._resolve_in_junction(pose)
-        if wp_lanes:
-            for lane in wp_lanes:
-                road_ids = [lane.road.road_id] + [
-                    r.road_id for r in lane.road.outgoing_roads
-                ]
-                waypoint_paths += self._waypoint_paths_along_route(
-                    pose.point, lookahead, road_ids
-                )
+        junction_paths = self._resolve_in_junction(pose)
+        if junction_paths:
+            for lanes in junction_paths:
+                lane = lanes[0]
+                road_ids = [lane.road.road_id for lane in lanes]
+                new_paths = lane._waypoint_paths_at(pose.point, lookahead, road_ids)
+                for path in new_paths:
+
+                    def _angle_between(pose, wp):
+                        heading_vec = pose.heading.direction_vector()
+                        wp_vec = wp.pos - pose.position[:2]
+                        angle = np.arccos(
+                            np.dot(heading_vec, wp_vec)
+                            / (np.linalg.norm(heading_vec) * np.linalg.norm(wp_vec))
+                        )
+                        return angle
+
+                    # Filter out any waypoints that are behind the vehicle
+                    wps = [wp for wp in path if _angle_between(pose, wp) < np.pi / 2]
+                    if len(wps) < 1:
+                        continue
+
+                    # Only include paths that start in the junction, or are close to the vehicle
+                    if (
+                        self.lane_by_id(wps[0].lane_id).in_junction
+                        or np.linalg.norm(wps[0].pos - pose.position[:2]) < 5.0
+                    ):
+                        waypoint_paths.append(wps)
         else:
             closest_lps = self._lanepoints.closest_lanepoints(
                 [pose], within_radius=within_radius
@@ -969,7 +988,7 @@ class SumoRoadNetwork(RoadMap):
                 waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
 
-    def _resolve_in_junction(self, pose: Pose) -> List[RoadMap.Lane]:
+    def _resolve_in_junction(self, pose: Pose) -> List[List[Lane]]:
         # This is so that the waypoints don't jump between connections
         # when we don't know which lane we're on in a junction.
         # We take the 10 closest lanepoints then filter down to that which has
@@ -977,22 +996,34 @@ class SumoRoadNetwork(RoadMap):
         # a potentially closer lane that is on a different junction connection.
         closest_lps = self._lanepoints.closest_lanepoints([pose], within_radius=None)
         closest_lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
-        lane = closest_lps[0].lane
+        lane: RoadMap.Lane = closest_lps[0].lane
         if not lane.in_junction:
             return []
 
-        wp_lanes = []
-        for incoming_lane in lane.incoming_lanes:
-            for junction_lane in incoming_lane.outgoing_lanes:
-                if junction_lane.in_junction and junction_lane.contains_point(
-                    pose.point
-                ):
-                    next_lanes = junction_lane.outgoing_lanes
-                    assert (
-                        len(next_lanes) <= 1
-                    ), "A junction is expected to have <= 1 outgoing lanes"
-                    wp_lanes.append(junction_lane)
-        return wp_lanes
+        # Trace back to the lane that leads into the junction
+        assert len(lane.incoming_lanes) == 1
+        inc_lane = lane.incoming_lanes[0]
+        while inc_lane.in_junction:
+            assert len(inc_lane.incoming_lanes) == 1
+            inc_lane = inc_lane.incoming_lanes[0]
+        assert not inc_lane.in_junction
+
+        # Create all paths through the junction
+        junction_paths = []
+        for junction_lane in inc_lane.outgoing_lanes:
+            if not junction_lane.in_junction:
+                continue  # Skip outgoing lanes that are not in a junction
+
+            lanes = [junction_lane]
+            while junction_lane.in_junction:
+                assert (
+                    len(junction_lane.outgoing_lanes) <= 1
+                ), "A junction is expected to have <= 1 outgoing lanes"
+                next_lane = junction_lane.outgoing_lanes[0]
+                lanes.append(next_lane)
+                junction_lane = next_lane
+            junction_paths.append(lanes)
+        return junction_paths
 
     def _waypoint_paths_along_route(
         self, point: Point, lookahead: int, route: Sequence[str]
