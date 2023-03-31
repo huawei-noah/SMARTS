@@ -29,13 +29,11 @@ benchmark:
     platoon:
       loc: "smarts.env:platoon"
       scenarios:
-        - 1_to_2lane_left_turn_c
-        - 1_to_2lane_left_turn_t
-        - 3lane_merge_multi_agent
-        - 3lane_merge_single_agent
-        - 3lane_cruise_multi_agent
-        - 3lane_cruise_single_agent
-        - 3lane_cut_in
-        - 3lane_overtake
+        - scenarios/sumo/platoon/straight_agents_1
+        # - scenarios/sumo/platoon/fork_agents_1
+        # - scenarios/sumo/platoon/merge_exit_agents_1
+        # - scenarios/argoverse/platoon/map_3_agents_1
+        # - scenarios/argoverse/platoon/map_4_agents_1
+        # - scenarios/argoverse/platoon/map_5_agents_1
       kwargs:
         seed: 42

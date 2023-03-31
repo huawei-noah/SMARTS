@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import logging
 import os
+from pathlib import Path
 from typing import List, Tuple
 
 import gymnasium as gym
@@ -142,11 +143,12 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     env_args = {}
     for env_name, env_config in benchmark_args["envs"].items():
         for scenario in env_config["scenarios"]:
+            scenario_path = str(Path(__file__).resolve().parents[3] / scenario)
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
             env_args[f"{env_name}-{scenario}"] = dict(
                 env=env_config["loc"],
-                scenario=scenario,
+                scenario=scenario_path,
                 kwargs=kwargs,
             )
     named_scores = []
