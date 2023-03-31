@@ -62,7 +62,7 @@ class Data:
 
 
 class Score(NamedTuple):
-    """This describes the final score given by processing observations through the metrics.
+    """Describes the final score given by processing observations through the metrics.
     
         +-------------+--------+-----------------------------------------------------------------------------------------------------+
         |             | Range  | Remarks                                                                                             |
