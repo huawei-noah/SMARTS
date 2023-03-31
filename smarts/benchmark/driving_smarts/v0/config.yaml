@@ -21,14 +21,14 @@ benchmark:
     standard:
       loc: "smarts.env:driving-smarts-competition-v0"
       scenarios:
-        - 1_to_2lane_left_turn_c
-        - 1_to_2lane_left_turn_t
-        - 3lane_merge_multi_agent
-        - 3lane_merge_single_agent
-        - 3lane_cruise_multi_agent
-        - 3lane_cruise_single_agent
-        - 3lane_cut_in
-        - 3lane_overtake
+        - scenarios/sumo/intersections/1_to_2lane_left_turn_c_agents_1
+        - scenarios/sumo/intersections/1_to_2lane_left_turn_t_agents_1
+        - scenarios/sumo/merge/3lane_agents_1
+        - scenarios/sumo/merge/3lane_agents_2
+        - scenarios/sumo/straight/3lane_cruise_agents_1
+        - scenarios/sumo/straight/3lane_cruise_agents_3
+        - scenarios/sumo/straight/3lane_cut_in_agents_1
+        - scenarios/sumo/straight/3lane_overtake_agents_1
       kwargs:
         seed: 42
     # bubble: # reserved for bubble env

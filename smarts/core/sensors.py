@@ -40,7 +40,6 @@ from .lidar import Lidar
 from .lidar_sensor_params import SensorParams
 from .masks import RenderMasks
 from .observations import (
-    Collision,
     DrivableAreaGridMap,
     EgoVehicleObservation,
     GridMapMetadata,
