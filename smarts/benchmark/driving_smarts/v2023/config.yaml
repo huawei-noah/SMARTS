@@ -17,13 +17,13 @@ benchmark:
     # standard:
     #   loc: "smarts.env:driving-smarts-v2023"
     #   scenarios:
-    #     - 1_to_2lane_left_turn_c
+    #     - scenarios/sumo/straight/3lane_cruise_agents_1
     #   kwargs:
     #     seed: 42
     # turns:
     #   loc: "smarts.env:driving-smarts-v2023"
     #   scenarios:
-    #     - 1_to_2lane_left_turn_c
+    #     - scenarios/sumo/intersections/1_to_2lane_left_turn_c_agents_1
     #   kwargs:
     #     seed: 42
     platoon:
