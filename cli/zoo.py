@@ -83,16 +83,11 @@ def manager(port):
 @click.argument(
     "agent_paths",
     type=click.Path(exists=True),
-    metavar="<script>",
+    metavar="<agent_path>",
     nargs=-1,
     required=True,
 )
 def install_agents(agent_paths):
-    if not agent_paths:
-        # nargs=-1 in combination with a default value is not supported
-        # if agent_paths is not given, set the known two zoo agent paths as default
-        agent_paths = ["zoo/policies/open-agent", "zoo/policies/rl-agent"]
-
     pip_install_cmd = [
         "pip",
         "install",
