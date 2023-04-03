@@ -8,13 +8,13 @@ from smarts.core.agent_interface import AgentInterface
 
 
 class Preprocess(gym.Wrapper):
-    def __init__(self, env: gym.Env, config, agent_interface: AgentInterface):
+    def __init__(self, env: gym.Env, agent_interface: AgentInterface):
         super().__init__(env)
 
         self._filter_obs = FilterObs(top_down_rgb=agent_interface.top_down_rgb)
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
-            num_stack=config.num_stack,
+            num_stack=3,
             stack_axis=0,
         )
         self._frame_stack.reset()

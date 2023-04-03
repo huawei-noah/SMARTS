@@ -7,13 +7,13 @@ smarts:
   env_id: smarts.env:platoon-v0  
   scenarios: 
     # - scenarios/sumo/platoon/straight_agents_1
-    # - scenarios/sumo/platoon/fork_agents_1
+    - scenarios/sumo/platoon/fork_agents_1
     # - scenarios/sumo/platoon/merge_exit_agents_1
     ## - scenarios/argoverse/platoon/map_1_agents_1
     ## - scenarios/argoverse/platoon/map_2_agents_1
-    - scenarios/argoverse/platoon/map_3_agents_1
-    - scenarios/argoverse/platoon/map_4_agents_1
-    - scenarios/argoverse/platoon/map_5_agents_1
+    # - scenarios/argoverse/platoon/map_3_agents_1
+    # - scenarios/argoverse/platoon/map_4_agents_1
+    # - scenarios/argoverse/platoon/map_5_agents_1
     ## - scenarios/argoverse/platoon/map_6_agents_1
     ## - scenarios/argoverse/platoon/map_7_agents_1
     ## - scenarios/argoverse/platoon/map_8_agents_1
