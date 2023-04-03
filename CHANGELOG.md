@@ -13,7 +13,20 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+### Removed
+### Security
+
+## [1.0.11] # 2023-04-02
+### Added
+### Changed
+- Moved benchmark scenarios into SMARTS/scenarios folder.
+- Simplified the scenario loading code in driving_smarts benchmark.
+- The `"hiway-v1"` environment now uses `ScenarioOrder` configuration rather than a boolean.
+### Deprecated
+### Fixed
 - Fix case where heading source attribute could be undefined.
+- Updated interaction aware motion prediciton zoo agent to work with smarts.
+- Edge dividers no longer flow through intersections in Argoverse 2 maps.
 ### Removed
 ### Security
 
