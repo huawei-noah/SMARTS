@@ -117,8 +117,10 @@ class MetricsBase(gym.Wrapper):
             return result
 
         dones = {"__all__": False}
+        # Caters to environments which return multi-agent observation
         if isinstance(terminated, dict):
             dones = {k: v or truncated[k] for k, v in terminated.items()}
+        # Caters to environments which return single-agent observation
         elif isinstance(terminated, bool):
             if terminated or truncated:
                 dones["__all__"] = True

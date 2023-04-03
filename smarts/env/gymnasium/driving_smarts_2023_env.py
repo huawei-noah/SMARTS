@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 import logging
-import os
 from functools import partial
 from typing import Optional
 
@@ -34,6 +33,7 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.utils.observation_conversion import ObservationOptions
+from smarts.env.utils.scenario import get_scenario_specs
 from smarts.sstudio.scenario_construction import build_scenario
 
 logger = logging.getLogger(__file__)
@@ -95,7 +95,7 @@ def driving_smarts_2023_env(
     )
 
     # Build scenario
-    env_specs = _get_env_specs(scenario)
+    env_specs = get_scenario_specs(scenario)
     build_scenario(scenario=env_specs["scenario"])
 
     # Resolve agent interface
@@ -129,36 +129,6 @@ def driving_smarts_2023_env(
     )
 
     return env
-
-
-def _get_env_specs(scenario: str):
-    """Returns the appropriate environment parameters for each scenario.
-
-    Args:
-        scenario (str): Scenario
-
-    Returns:
-        Dict[str, Any]: A parameter dictionary.
-    """
-
-    if os.path.isdir(scenario):
-        import re
-
-        regexp_agent = re.compile(r"agents_\d+")
-        regexp_num = re.compile(r"\d+")
-        matches_agent = regexp_agent.search(scenario)
-        if not matches_agent:
-            raise Exception(
-                f"Scenario path should match regexp of 'agents_\\d+', but got {scenario}"
-            )
-        num_agent = regexp_num.search(matches_agent.group(0))
-
-        return {
-            "scenario": str(scenario),
-            "num_agent": int(num_agent.group(0)),
-        }
-    else:
-        raise Exception(f"Unknown scenario {scenario}.")
 
 
 def resolve_agent_interface(agent_interface: AgentInterface):
