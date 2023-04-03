@@ -742,6 +742,19 @@ class ArgoverseMap(RoadMapWithCaches):
                         return True
             return False
 
+        @lru_cache(maxsize=4)
+        def shape(
+            self, buffer_width: float = 0.0, default_width: Optional[float] = None
+        ) -> Polygon:
+            leftmost_lane = self.lane_at_index(len(self.lanes) - 1)
+            rightmost_lane = self.lane_at_index(0)
+            left_pts = leftmost_lane.lane_seg.left_lane_boundary.xyz[:, :2]
+            right_pts = rightmost_lane.lane_seg.right_lane_boundary.xyz[:, :2]
+            polygon_pts = np.concatenate(
+                (left_pts, right_pts[::-1], np.array([left_pts[0]]))
+            )
+            return Polygon(polygon_pts)
+
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
         assert road, f"ArgoverseMap got request for unknown road_id: '{road_id}'"
