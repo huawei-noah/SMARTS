@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- `Trip.actor` field is now effective. Previously `actor` had no effect.
 ### Removed
 ### Security
 
