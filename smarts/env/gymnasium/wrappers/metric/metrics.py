@@ -138,6 +138,11 @@ class MetricsBase(gym.Wrapper):
             # Compute all cost functions.
             costs = Costs()
             for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
+                if getattr(self._config, field.name).w == 0:
+                    d = field.name
+                    print(field.name, getattr(self._config, d))
+                    input()
+                    continue
                 cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
                 new_costs = cost_func(road_map=self._road_map, obs=base_obs)
                 costs = _add_dataclass(new_costs, costs)
@@ -229,7 +234,7 @@ class MetricsBase(gym.Wrapper):
             self._records[self._scen_name] = {
                 agent_name: Data(
                     record=Record(
-                        copletion=Completion(dist_tot=10),
+                        completion=Completion(dist_tot=10),
                         # completion=Completion(
                         #     dist_tot=get_dist(
                         #         road_map=self._road_map,

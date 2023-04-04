@@ -12,7 +12,7 @@ class Time:
 @dataclass
 class DistToObstacles:
     w: float = 0.15
-    ignore: list = field(default_factory=list)
+    ignore: list = field(default_factory=lambda:[None])
 
 @dataclass
 class Gap:
@@ -50,7 +50,7 @@ def dict_to_class(recv:dict) -> MetricParams:
     for key1, value1 in recv.items():
         for key2, value2 in value1.items():
             obj = getattr(params,key1)
-            assert getattr(obj,key2)
+            assert key2 in obj.__dataclass_fields__
             setattr(obj, key2, value2)
 
     return params

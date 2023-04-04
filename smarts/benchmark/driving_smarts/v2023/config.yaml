@@ -49,6 +49,6 @@ benchmark:
       kwargs:
         seed: 42
       metric_params:
-        dist_completed: {w: 0.35, wrt: Leader-007, power: 23}
+        dist_completed: {w: 0.35, wrt: Leader-007}
         time: {w: 0}
         gap: {w: 0.25}
