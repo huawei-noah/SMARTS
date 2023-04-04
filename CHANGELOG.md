@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.
 - `Trip.actor` field is now effective. Previously `actor` had no effect.
 ### Removed
 ### Security
