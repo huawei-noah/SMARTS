@@ -197,7 +197,7 @@ class AgentsAliveDoneCriteria:
 class ActorsAliveDoneCriteria:
     """Require actors to persist."""
 
-    actors_of_interest: Tuple[str] = tuple()
+    actors_of_interest: Tuple[str, ...] = ()
     """Actors that should exist to continue this agent."""
 
     strict: bool = True
