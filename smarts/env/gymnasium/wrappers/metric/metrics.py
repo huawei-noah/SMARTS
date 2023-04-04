@@ -21,7 +21,8 @@
 import copy
 import functools
 from dataclasses import dataclass, fields
-from typing import Any, Dict, NamedTuple, Set, TypeVar
+from pathlib import Path
+from typing import Any, Dict, NamedTuple, Optional, Set, TypeVar
 
 import gymnasium as gym
 import numpy as np
@@ -32,6 +33,7 @@ from smarts.core.observations import Observation
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
+from smarts.core.utils.import_utils import import_module_from_file
 from smarts.env.gymnasium.wrappers.metric.completion import (
     Completion,
     CompletionFuncs,
@@ -96,7 +98,7 @@ class MetricsError(Exception):
 class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
-    def __init__(self, env: gym.Env, config:MetricParams):
+    def __init__(self, env: gym.Env, formula_path:Optional[Path]):
         super().__init__(env)
         # _check_env(env)
         self._scen: Scenario
@@ -106,7 +108,15 @@ class MetricsBase(gym.Wrapper):
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
         self._records = {}
-        self._config: MetricParams = config
+        
+        # Import scoring formula
+        if formula_path:
+            import_module_from_file("Formula", formula_path)
+        else:
+            from formula import Formula
+
+        Formula.
+
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
@@ -224,9 +234,10 @@ class MetricsBase(gym.Wrapper):
             print(self._scen.metadata)
             # input("ssssssssssssssssssssssssssssss22222222222222sssssss")
 
-            f = self.env.smarts.traffic_sims
-            g = f[0].route_for_vehicle("Leader-007").road_length
-            print("\n---\n",f, "\n---\n", g)
+            # if self._config.
+            # f = self.env.smarts.traffic_sims
+            # g = f[0].route_for_vehicle("Leader-007").road_length
+            # print("\n---\n",f, "\n---\n", g)
 
 
             input("ssssssssssssssssssssssssssssss22222222222222sssssss")
@@ -354,8 +365,8 @@ class Metrics(gym.Wrapper):
         gym.Env: A wrapped gym.Env which computes agents' performance metrics.
     """
 
-    def __init__(self, env: gym.Env, config):
-        env = MetricsBase(env, config)
+    def __init__(self, env: gym.Env, formula_path:Path):
+        env = MetricsBase(env, formula_path)
         super().__init__(env)
 
     def __getattr__(self, name: str):

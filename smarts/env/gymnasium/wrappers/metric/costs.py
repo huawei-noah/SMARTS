@@ -34,8 +34,9 @@ class Costs:
     """Performance cost values."""
 
     collisions: int = 0
+    comfort: float = 0
     dist_to_obstacles: float = 0
-    jerk_angular: float = 0
+    gap_between_vehicles: float = 0
     jerk_linear: float = 0
     lane_center_offset: float = 0
     off_road: int = 0
@@ -45,6 +46,23 @@ class Costs:
 
 def _collisions(road_map: RoadMap, obs: Observation) -> Costs:
     return Costs(collisions=len(obs.events.collisions))
+
+def _comfort() -> Callable[[RoadMap, Observation], Costs]:
+    mean = 0
+    step = 0
+
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, obs: Observation) -> Costs:
+        nonlocal mean, step
+
+        pos_1 = vehicle_index.vehicle_position()
+        pos_2 = vehicle_index.vehicle_position()
+        pos_3 = vehicle_index.vehicle_position()
+
+        j_gap = pos_1 + pos_2 + pos_3
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
+        return Costs(comfort=0)
+
+    return func
 
 
 def _dist_to_obstacles() -> Callable[[RoadMap, Observation], Costs]:
@@ -133,20 +151,7 @@ def _gap_between_vehicles() -> Callable[[RoadMap, Observation], Costs]:
 
         j_gap = pos_1 + pos_2 + pos_3
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
-
-    return func
-
-def _jerk_angular() -> Callable[[RoadMap, Observation], Costs]:
-    mean = 0
-    step = 0
-
-    # TODO: The output of this cost function should be normalised and bounded to [0,1].
-    def func(road_map: RoadMap, obs: Observation) -> Costs:
-        nonlocal mean, step
-
-        j_a = np.linalg.norm(obs.ego_vehicle_state.angular_jerk)
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_a)
-        return Costs(jerk_angular=mean)
+        return Costs(gap_between_vehicles=0)
 
     return func
 
@@ -267,11 +272,11 @@ class CostFuncs:
     running mean cost over number of time steps, for a given scenario."""
 
     collisions: Callable[[RoadMap, Observation], Costs] = _collisions
+    comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
     dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
-    # jerk_angular: Callable[[RoadMap, Observation], Costs] = _jerk_angular() # Currently not used.
+    gap_between_vehicles: Callable[[RoadMap, Observation], Costs] = _gap_between_vehicles()
     jerk_linear: Callable[[RoadMap, Observation], Costs] = _jerk_linear()
     lane_center_offset: Callable[[RoadMap, Observation], Costs] = _lane_center_offset()
     off_road: Callable[[RoadMap, Observation], Costs] = _off_road
     speed_limit: Callable[[RoadMap, Observation], Costs] = _speed_limit()
     wrong_way: Callable[[RoadMap, Observation], Costs] = _wrong_way()
-    gap_between_vehicles: Callable[[RoadMap, Observation], Costs] = _gap_between_vehicles()

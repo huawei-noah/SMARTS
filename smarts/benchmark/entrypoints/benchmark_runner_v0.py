@@ -31,7 +31,6 @@ import ray
 from smarts.benchmark.driving_smarts import load_config
 from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metric.metrics import Metrics, Score
-from smarts.env.gymnasium.wrappers.metric.params import dict_to_class
 from smarts.zoo import registry as agent_registry
 
 LOG_WORKERS = False
@@ -53,8 +52,7 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
         agent_interface=agent_registry.make(locator=agent_locator).interface,
         **env_config["kwargs"],
     )
-    metric_params = dict_to_class(env_config["metric_params"])
-    env = Metrics(env, config=metric_params)
+    env = Metrics(env, formula_path=env_config["metric_formula"])
     agents = {
         agent_id: agent_registry.make_agent(locator=agent_locator)
         for agent_id in env.agent_ids
@@ -143,18 +141,19 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     if message is not None:
         print(message)
     env_args = {}
+    root_dir = Path(__file__).resolve().parents[3]
     for env_name, env_config in benchmark_args["envs"].items():
+        metric_formula = env_config.get("metric_formula",None)
+        if metric_formula is not None:
+            metric_formula = root_dir / metric_formula
         for scenario in env_config["scenarios"]:
-            scenario_path = str(Path(__file__).resolve().parents[3] / scenario)
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
-            metric_params = dict(benchmark_args.get("shared_metric_params", {}))
-            metric_params.update(env_config.get("metric_params", {}))
             env_args[f"{env_name}-{scenario}"] = dict(
                 env=env_config["loc"],
-                scenario=scenario_path,
+                scenario=str(root_dir / scenario),
                 kwargs=kwargs,
-                metric_params=metric_params,
+                metric_formula=metric_formula,
             )
     named_scores = []
 

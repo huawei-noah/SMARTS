@@ -13,15 +13,20 @@ benchmark:
   shared_env_kwargs:
     seed: 42
     headless: True
-  shared_metric_params:
-    dist_completed: {w: 0.35, wrt: self}
-    time: {w: 0.25}
-    dist_to_obstacles: {w: 0.15, ignore: [ego, Leader-007]}
-    gap: {w: 0}
-    jerk_linear: {w: 0.15}
-    lane_center_offset: {w: 0.1}
-    speed_limit: {w: 0}
-    wrong_way: {w: 0}
+  # shared_metric_params:
+  #   collisions: {w: 0.1}
+  #   comfort: {w: 0.1}
+  #   dist_completed: {w: 0.35, wrt: self}
+  #   time: {w: 0.25}
+  #   dist_to_obstacles: {w: 0.15, ignore: [ego, Leader-007]}
+  #   gap_between_vehicles: {w: 0, interest: [Leader-007]}
+  #   jerk_linear: {w: 0.15}
+  #   lane_center_offset: {w: 0.1}
+  #   speed_limit: {w: 0}
+  #   wrong_way: {w: 0}
+  #   dist_completed: {w: 0.35, wrt: Leader-007}
+  #   time: {w: 0}
+  #   gap: {w: 0.25}
   envs:
     # standard:
     #   loc: "smarts.env:driving-smarts-v2023"
@@ -48,7 +53,4 @@ benchmark:
         # - scenarios/argoverse/platoon/map_5_agents_1
       kwargs:
         seed: 42
-      metric_params:
-        dist_completed: {w: 0.35, wrt: Leader-007}
-        time: {w: 0}
-        gap: {w: 0.25}
+      metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py
