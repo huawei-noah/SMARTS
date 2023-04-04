@@ -23,11 +23,11 @@ from typing import Any, Callable, Dict
 
 import numpy as np
 
-from smarts.core.coordinates import Heading, Point
+from smarts.core.coordinates import Point
 from smarts.core.observations import Observation
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import running_mean
-
+from smarts.core.vehicle_index import VehicleIndex
 
 @dataclass(frozen=True)
 class Costs:
@@ -120,6 +120,21 @@ def _dist_to_obstacles() -> Callable[[RoadMap, Observation], Costs]:
 
     return func
 
+def _gap_between_vehicles() -> Callable[[RoadMap, Observation], Costs]:
+    mean = 0
+    step = 0
+
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, obs: Observation) -> Costs:
+        nonlocal mean, step
+
+        pos_1 = vehicle_index.vehicle_position()
+        pos_2 = vehicle_index.vehicle_position()
+        pos_3 = vehicle_index.vehicle_position()
+
+        j_gap = pos_1 + pos_2 + pos_3
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
+
+    return func
 
 def _jerk_angular() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
@@ -259,3 +274,4 @@ class CostFuncs:
     off_road: Callable[[RoadMap, Observation], Costs] = _off_road
     speed_limit: Callable[[RoadMap, Observation], Costs] = _speed_limit()
     wrong_way: Callable[[RoadMap, Observation], Costs] = _wrong_way()
+    gap_between_vehicles: Callable[[RoadMap, Observation], Costs] = _gap_between_vehicles()

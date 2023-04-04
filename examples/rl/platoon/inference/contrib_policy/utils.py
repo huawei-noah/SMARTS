@@ -1,4 +1,4 @@
-class objdict(dict):
+class ObjDict(dict):
     def __getattr__(self, name):
         if name in self:
             return self[name]

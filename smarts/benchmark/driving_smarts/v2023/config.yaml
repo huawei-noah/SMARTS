@@ -13,6 +13,15 @@ benchmark:
   shared_env_kwargs:
     seed: 42
     headless: True
+  shared_metric_params:
+    dist_completed: {w: 0.35, wrt: self}
+    time: {w: 0.25}
+    dist_to_obstacles: {w: 0.15, ignore: [ego, Leader-007]}
+    gap: {w: 0}
+    jerk_linear: {w: 0.15}
+    lane_center_offset: {w: 0.1}
+    speed_limit: {w: 0}
+    wrong_way: {w: 0}
   envs:
     # standard:
     #   loc: "smarts.env:driving-smarts-v2023"
@@ -32,10 +41,14 @@ benchmark:
         # - scenarios/sumo/platoon/straight_agents_1
         # - scenarios/sumo/platoon/fork_agents_1
         # - scenarios/sumo/platoon/merge_exit_agents_1
-        - scenarios/sumo/platoon/fork_sumo_t_agents_1
-        # - scenarios/sumo/platoon/straight_sumo_t_agents_1
+        # - scenarios/sumo/platoon/fork_sumo_t_agents_1
+        - scenarios/sumo/platoon/straight_sumo_t_agents_1
         # - scenarios/argoverse/platoon/map_3_agents_1
         # - scenarios/argoverse/platoon/map_4_agents_1
         # - scenarios/argoverse/platoon/map_5_agents_1
       kwargs:
         seed: 42
+      metric_params:
+        dist_completed: {w: 0.35, wrt: Leader-007, power: 23}
+        time: {w: 0}
+        gap: {w: 0.25}

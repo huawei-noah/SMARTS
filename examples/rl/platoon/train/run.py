@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # Load inference module to register agent
 import inference
 from contrib_policy import network
-from contrib_policy.utils import objdict
+from contrib_policy.utils import ObjDict
 
 import argparse
 import warnings
@@ -36,7 +36,7 @@ def main(args: argparse.Namespace):
     # Load config file.
     parent_dir = Path(__file__).resolve().parent
     config_file = yaml.safe_load((parent_dir / "config.yaml").read_text())
-    config = objdict(config_file["smarts"])
+    config = ObjDict(config_file["smarts"])
 
     # Load env config.
     config.mode = args.mode

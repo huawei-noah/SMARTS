@@ -37,6 +37,7 @@ from smarts.env.gymnasium.wrappers.metric.completion import (
     CompletionFuncs,
     get_dist,
 )
+from smarts.env.gymnasium.wrappers.metric.params import MetricParams
 from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 
@@ -95,9 +96,9 @@ class MetricsError(Exception):
 class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
-    def __init__(self, env: gym.Env):
+    def __init__(self, env: gym.Env, config:MetricParams):
         super().__init__(env)
-        _check_env(env)
+        # _check_env(env)
         self._scen: Scenario
         self._scen_name: str
         self._road_map: RoadMap
@@ -105,6 +106,7 @@ class MetricsBase(gym.Wrapper):
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
         self._records = {}
+        self._config: MetricParams = config
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
@@ -129,7 +131,7 @@ class MetricsBase(gym.Wrapper):
         if isinstance(next(iter(obs.values())), dict):
             obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
-        for agent_name in obs:
+        for agent_name in obs.keys():
             base_obs: Observation = info[agent_name]["env_obs"]
             self._steps[agent_name] += 1
 
@@ -205,20 +207,36 @@ class MetricsBase(gym.Wrapper):
         self._scen = self.env.smarts.scenario
         self._scen_name = self.env.smarts.scenario.name
         self._road_map = self.env.smarts.scenario.road_map
+        self._vehicle_index = self.env.smarts.vehicle_index
+        # self._sim = self.env.smarts
 
         # fmt: off
         if self._scen_name not in self._records:
-            _check_scen(self._scen)
+            # _check_scen(self._scen)
+            print(self._scen_name)
+            print("INSIDE RESET METRICSSSSSSSSSSSSSSSSSSSSSS")
+            print(self._scen.missions)
+            print(self._scen.metadata)
+            # input("ssssssssssssssssssssssssssssss22222222222222sssssss")
+
+            f = self.env.smarts.traffic_sims
+            g = f[0].route_for_vehicle("Leader-007").road_length
+            print("\n---\n",f, "\n---\n", g)
+
+
+            input("ssssssssssssssssssssssssssssss22222222222222sssssss")
+
             self._records[self._scen_name] = {
                 agent_name: Data(
                     record=Record(
-                        completion=Completion(
-                            dist_tot=get_dist(
-                                road_map=self._road_map,
-                                point_a=Point(*self._scen.missions[agent_name].start.position),
-                                point_b=self._scen.missions[agent_name].goal.position,    
-                            )
-                        ),
+                        copletion=Completion(dist_tot=10),
+                        # completion=Completion(
+                        #     dist_tot=get_dist(
+                        #         road_map=self._road_map,
+                        #         point_a=Point(*self._scen.missions[agent_name].start.position),
+                        #         point_b=self._scen.missions[agent_name].goal.position,    
+                        #     )
+                        # ),
                         costs=Costs(),
                         counts=Counts(),
                     ),
@@ -272,6 +290,10 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains "Overall", "Completion", "Time",
             "Humanness", and "Rules" scores.
         """
+        # Weights
+        w_completion_time = 0.70
+        w_humanness = 0.15
+        w_rules = 0.15
 
         counts_list, costs_list, completion_list = zip(
             *[
@@ -295,7 +317,9 @@ class MetricsBase(gym.Wrapper):
         humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
         rules = _rules(costs=costs_tot, agents_tot=agents_tot)
         time = _time(counts=counts_tot)
-        overall = completion * (1 - time) * humanness * rules
+        overall = w_completion_time*(completion * (1 - time)) \
+                    + w_humanness*humanness \
+                    + w_rules*rules
 
         return Score(
             completion=completion,
@@ -325,8 +349,8 @@ class Metrics(gym.Wrapper):
         gym.Env: A wrapped gym.Env which computes agents' performance metrics.
     """
 
-    def __init__(self, env: gym.Env):
-        env = MetricsBase(env)
+    def __init__(self, env: gym.Env, config):
+        env = MetricsBase(env, config)
         super().__init__(env)
 
     def __getattr__(self, name: str):
