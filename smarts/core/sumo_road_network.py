@@ -135,12 +135,7 @@ class SumoRoadNetwork(RoadMap):
         """Generate a road network from the given map specification."""
         net_file = SumoRoadNetwork._map_path(map_spec)
 
-        import multiprocessing
-
-        junction_check_proc = multiprocessing.Process(
-            target=cls._check_junctions, args=(net_file,), daemon=True
-        )
-        junction_check_proc.start()
+        cls._check_junctions(net_file)
 
         # Connections to internal lanes are implicit. If `withInternal=True` is
         # set internal junctions and the connections from internal lanes are
@@ -168,7 +163,6 @@ class SumoRoadNetwork(RoadMap):
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
 
-        junction_check_proc.join()
         return cls(G, net_file, map_spec)
 
     def _load_traffic_lights(self):
