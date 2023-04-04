@@ -21,7 +21,7 @@ import collections.abc as collections_abc
 import logging
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import IntEnum
 from sys import maxsize
 from typing import (
@@ -518,7 +518,15 @@ class Trip:
         object.__setattr__(
             self,
             "actor",
-            TrafficActor(name=self.vehicle_name, vehicle_type=self.vehicle_type),
+            (
+                replace(
+                    self.actor, name=self.vehicle_name, vehicle_type=self.vehicle_type
+                )
+                if self.actor is not None
+                else TrafficActor(
+                    name=self.vehicle_name, vehicle_type=self.vehicle_type
+                )
+            ),
         )
 
     @property
