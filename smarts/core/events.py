@@ -42,3 +42,5 @@ class Events(NamedTuple):
     agents_alive_done: bool
     """True if all configured co-simulating agents are done (if any), else False. 
     This is useful for cases when the vehicle is related to other vehicles."""
+    actors_alive_done: bool
+    """True if described actors have left the simulation."""

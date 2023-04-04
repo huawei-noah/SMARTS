@@ -26,6 +26,7 @@ from typing import Optional
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
+    ActorsAliveDoneCriteria,
     AgentInterface,
     AgentsAliveDoneCriteria,
     AgentsListAlive,
@@ -147,13 +148,17 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         on_shoulder=False,
         wrong_way=False,
         not_moving=False,
-        agents_alive=AgentsAliveDoneCriteria(
-            agent_lists_alive=[
-                AgentsListAlive(
-                    agents_list=["social-agent-leader-Leader-007"],
-                    minimum_agents_alive_in_list=1,
-                )
-            ]
+        # agents_alive=AgentsAliveDoneCriteria(
+        #     agent_lists_alive=[
+        #         AgentsListAlive(
+        #             agents_list=["social-agent-leader-Leader-007"],
+        #             minimum_agents_alive_in_list=1,
+        #         )
+        #     ]
+        # ),
+        actors_alive=ActorsAliveDoneCriteria(
+            actors_of_interest="Leader-007",
+            strict=True,
         ),
     )
     max_episode_steps = 1000

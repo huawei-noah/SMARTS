@@ -51,6 +51,8 @@ class Reward(gym.Wrapper):
                     pass
                 elif agent_obs["events"]["agents_alive_done"]:
                     print(f"{agent_id}: Agents alive done triggered.")
+                elif agent_obs["events"]["actors_alive_done"]:
+                    print(f"{agent_id}: Actors alive done triggered.")
                 else:
                     print("Events: ", agent_obs["events"])
                     raise Exception("Episode ended for unknown reason.")
@@ -67,13 +69,18 @@ class Reward(gym.Wrapper):
 
         leader_name = "Leader-007"
         leader = None
+        max_agent_steps_completed = 0
         for agent_id, agent_obs in obs.items():
             neighbor_vehicles = _get_neighbor_vehicles(
                 obs=agent_obs, neighbor_name=leader_name
             )
+            max_agent_steps_completed = max(max_agent_steps_completed, agent_obs["steps_completed"])
             if neighbor_vehicles:
                 leader = neighbor_vehicles[0]
                 break
+
+        if leader == None and max_agent_steps_completed == 1:
+            raise Exception("Leader is not present on ego's first step.")
 
         for agent_id, agent_obs in obs.items():
             # Penalty for colliding
