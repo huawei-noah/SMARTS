@@ -115,9 +115,6 @@ class MetricsBase(gym.Wrapper):
             costs = Costs()
             for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
                 if not getattr(self._params, field.name).active:
-                    d = field.name
-                    print(d, getattr(self._params, d))
-                    input("Skipping cost computation ------------")
                     continue
                 cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
                 new_costs = cost_func(road_map=self._road_map, obs=base_obs)
@@ -128,16 +125,18 @@ class MetricsBase(gym.Wrapper):
 
             if dones[agent_name]:
                 self._done_agents.add(agent_name)
+                # Only these termination reasons are considered by the current metrics.
                 if not (
                     base_obs.events.reached_goal
                     or len(base_obs.events.collisions)
                     or base_obs.events.off_road
                     or base_obs.events.reached_max_episode_steps
+                    or (base_obs.events.actors_alive_done and self._params.dist_completed.active and self._params.dist_completed.wrt is not "self")
                 ):
                     raise MetricsError(
-                        "Expected reached_goal, collisions, off_road, or " 
-                        "max_episode_steps to be true on agent done, but got "
-                        f"events: {base_obs.events}."
+                        "Expected reached_goal, collisions, off_road, " 
+                        "max_episode_steps, or actors_alive_done, to be true "
+                        f"on agent done, but got events: {base_obs.events}."
                     )
 
                 # Update stored counts.
