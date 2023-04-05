@@ -3,13 +3,11 @@ import numpy as np
 from dataclasses import dataclass, field, fields
 from typing import Dict, NewType, TypeVar
 
-from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
+from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
-from smarts.env.gymnasium.wrappers.metric.metrics import Data, Record
+from smarts.env.gymnasium.wrappers.metric.metrics import Data
 from smarts.env.gymnasium.wrappers.metric.completion import (
     Completion,
-    CompletionFuncs,
-    get_dist,
 )
 
 @dataclass
