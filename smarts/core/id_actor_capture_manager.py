@@ -78,6 +78,8 @@ class IdActorCaptureManager(ActorCaptureManager):
         self._actor_for_agent.clear()
         missions: Dict[str, Mission] = scenario.missions
         for agent_id, mission in missions.items():
+            if mission is None:
+                continue
             if not isinstance(mission.entry_tactic, IdEntryTactic):
                 continue
             self._actor_for_agent[mission.entry_tactic.actor_id] = (agent_id, mission)
