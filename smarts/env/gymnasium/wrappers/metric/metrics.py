@@ -19,12 +19,11 @@
 # THE SOFTWARE.
 
 import copy
-from dataclasses import dataclass, fields
+from dataclasses import fields
 from pathlib import Path
-from typing import Any, Dict, NamedTuple, Optional, Set, TypeVar
+from typing import Any, Dict, Optional, Set, TypeVar
 
 import gymnasium as gym
-import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.coordinates import Point
@@ -43,6 +42,7 @@ from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Data, Record
 
+
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
 
@@ -52,7 +52,7 @@ class MetricsError(Exception):
 class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
-    def __init__(self, env: gym.Env, formula_path:Optional[Path]):
+    def __init__(self, env: gym.Env, formula_path: Optional[Path]):
         super().__init__(env)
         # _check_env(env)
         self._scen: Scenario
@@ -62,15 +62,16 @@ class MetricsBase(gym.Wrapper):
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
         self._records = {}
-        
+
         # Import scoring formula
         if formula_path:
-            import_module_from_file("Formula", formula_path)
+            import_module_from_file("custom_formula", formula_path)
+            from custom_formula import Formula
         else:
             from formula import Formula
 
         self._formula = Formula()
-
+        self._params = self._formula.params()
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
@@ -183,7 +184,6 @@ class MetricsBase(gym.Wrapper):
         if self._scen_name not in self._records:
             # _check_scen(self._scen)
             print(self._scen_name)
-            print("INSIDE RESET METRICSSSSSSSSSSSSSSSSSSSSSS")
             print(self._scen.missions)
             print(self._scen.metadata)
             # input("ssssssssssssssssssssssssssssss22222222222222sssssss")
@@ -192,9 +192,6 @@ class MetricsBase(gym.Wrapper):
             # f = self.env.smarts.traffic_sims
             # g = f[0].route_for_vehicle("Leader-007").road_length
             # print("\n---\n",f, "\n---\n", g)
-
-
-            input("ssssssssssssssssssssssssssssss22222222222222sssssss")
 
             self._records[self._scen_name] = {
                 agent_name: Data(
@@ -251,11 +248,11 @@ class MetricsBase(gym.Wrapper):
 
     def score(self) -> Score:
         """
-        Computes score according to environment specific formula from the 
+        Computes score according to environment specific formula from the
         Formula class.
 
         Returns:
-            Dict[str, float]: Contains key-value pairs denoting score 
+            Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
         return self._formula.score(self._records)
@@ -265,7 +262,7 @@ class Metrics(gym.Wrapper):
     """Metrics class wraps an underlying MetricsBase class. The underlying
     MetricsBase class computes agents' performance metrics in a SMARTS
     environment. Whereas, this Metrics class is a basic gym.Wrapper class
-    which prevents external users from accessing or modifying (i) protected 
+    which prevents external users from accessing or modifying (i) protected
     attributes or (ii) attributes beginning with an underscore, to ensure
     security of the metrics computed.
 
@@ -273,14 +270,14 @@ class Metrics(gym.Wrapper):
         env (gym.Env): A gym.Env to be wrapped.
 
     Raises:
-        AttributeError: Upon accessing (i) a protected attribute or (ii) an 
+        AttributeError: Upon accessing (i) a protected attribute or (ii) an
         attribute beginning with an underscore.
 
     Returns:
         gym.Env: A wrapped gym.Env which computes agents' performance metrics.
     """
 
-    def __init__(self, env: gym.Env, formula_path:Path):
+    def __init__(self, env: gym.Env, formula_path: Path):
         env = MetricsBase(env, formula_path)
         super().__init__(env)
 
@@ -290,9 +287,11 @@ class Metrics(gym.Wrapper):
             raise AttributeError(
                 "Can't access `_np_random` of a wrapper, use `self.unwrapped._np_random` or `self.np_random`."
             )
-        elif name.startswith("_") or name in ["smarts",]:
+        elif name.startswith("_") or name in [
+            "smarts",
+        ]:
             raise AttributeError(f"accessing private attribute '{name}' is prohibited")
-        
+
         return getattr(self.env, name)
 
 

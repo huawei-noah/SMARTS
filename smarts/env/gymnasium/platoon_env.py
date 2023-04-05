@@ -43,9 +43,7 @@ from smarts.sstudio.scenario_construction import build_scenario
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
-SUPPORTED_ACTION_TYPES = (
-    ActionSpaceType.Continuous,
-)
+SUPPORTED_ACTION_TYPES = (ActionSpaceType.Continuous,)
 
 
 def platoon_env(

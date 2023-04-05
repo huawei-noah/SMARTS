@@ -143,7 +143,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     env_args = {}
     root_dir = Path(__file__).resolve().parents[3]
     for env_name, env_config in benchmark_args["envs"].items():
-        metric_formula = env_config.get("metric_formula",None)
+        metric_formula = env_config.get("metric_formula", None)
         if metric_formula is not None:
             metric_formula = root_dir / metric_formula
         for scenario in env_config["scenarios"]:

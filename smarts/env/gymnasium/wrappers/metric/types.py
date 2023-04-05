@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 
-from smarts.env.gymnasium.wrappers.metric.completion import (
-    Completion,
-    CompletionFuncs,
-)
+from smarts.env.gymnasium.wrappers.metric.completion import Completion, CompletionFuncs
 from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 

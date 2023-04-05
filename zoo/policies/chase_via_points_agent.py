@@ -1,13 +1,14 @@
 from typing import Sequence
 
 import numpy as np
-# from contrib_policy.helper import plotter3d
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB
 from smarts.core.colors import Colors
 from smarts.core.observations import Observation
 from smarts.core.sensors import LANE_ID_CONSTANT
+
+# from contrib_policy.helper import plotter3d
 
 
 class ChaseViaPointsAgent(Agent):

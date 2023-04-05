@@ -1,36 +1,75 @@
-from dataclasses import dataclass, field, fields
-from typing import Dict
+from dataclasses import dataclass
+from typing import List, Optional
 
-
- 
 
 @dataclass
-class MetricParams:
-    dist_completed: DistCompleted = DistCompleted()
-    time: Time = Time()
-    dist_to_obstacles: DistToObstacles = DistToObstacles()
-    gap: Gap = Gap()
-    jerk_linear : JerkLinear = JerkLinear()
-    lane_center_offset: LaneCenterOffset = LaneCenterOffset()
-    speed_limit : SpeedLimit = SpeedLimit()
-    wrong_way: WrongWay = WrongWay()
+class Collisions:
+    active: bool = False
 
-def dict_to_class(recv:dict) -> MetricParams:
-    params = MetricParams()
-    for key1, value1 in recv.items():
-        for key2, value2 in value1.items():
-            obj = getattr(params,key1)
-            assert key2 in obj.__dataclass_fields__
-            setattr(obj, key2, value2)
 
-    return params
+@dataclass
+class Comfort:
+    active: bool = False
 
-# def make_metrics_params(config:Dict):
-#     from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs
 
-#     params = {}
-#     for field in fields(CostFuncs):
-#         if config.
-#         params[field.name]
-#     for key1, value1 in recv.items():
-#         for key2, value2 in value1.items():
+@dataclass
+class DistCompleted:
+    active: bool = True
+    wrt: str = "self"
+
+
+@dataclass
+class DistToObstacles:
+    active: bool = True
+    ignore: Optional[List[str]] = None
+
+
+@dataclass
+class GapBetweenVehicles:
+    active: bool = False
+    interest: str = "Leader-007"
+
+
+@dataclass
+class JerkLinear:
+    active: bool = True
+
+
+@dataclass
+class LaneCenterOffset:
+    active: bool = True
+
+
+@dataclass
+class OffRoad:
+    active: bool = False
+
+
+@dataclass
+class SpeedLimit:
+    active: bool = True
+
+
+@dataclass
+class Time:
+    active: bool = True
+
+
+@dataclass
+class WrongWay:
+    active: bool = True
+
+
+@dataclass
+class Params:
+    collisions = Collisions()
+    comfort = Comfort()
+    dist_completed = DistCompleted()
+    dist_to_obstacles = DistToObstacles()
+    gap_between_vehicles = GapBetweenVehicles()
+    jerk_linear = JerkLinear()
+    lane_center_offset = LaneCenterOffset()
+    off_road = OffRoad()
+    speed_limit = SpeedLimit()
+    time = Time()
+    wrong_way = WrongWay()

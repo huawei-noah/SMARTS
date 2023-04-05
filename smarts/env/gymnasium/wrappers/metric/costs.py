@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict
+from typing import Callable
 
 import numpy as np
 
@@ -28,6 +28,7 @@ from smarts.core.observations import Observation
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
+
 
 @dataclass(frozen=True)
 class Costs:
@@ -46,6 +47,7 @@ class Costs:
 
 def _collisions(road_map: RoadMap, obs: Observation) -> Costs:
     return Costs(collisions=len(obs.events.collisions))
+
 
 def _comfort() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
@@ -137,6 +139,7 @@ def _dist_to_obstacles() -> Callable[[RoadMap, Observation], Costs]:
         return Costs(dist_to_obstacles=mean)
 
     return func
+
 
 def _gap_between_vehicles() -> Callable[[RoadMap, Observation], Costs]:
     mean = 0
@@ -272,9 +275,11 @@ class CostFuncs:
     running mean cost over number of time steps, for a given scenario."""
 
     collisions: Callable[[RoadMap, Observation], Costs] = _collisions
-    # comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
+    comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
     dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
-    # gap_between_vehicles: Callable[[RoadMap, Observation], Costs] = _gap_between_vehicles()
+    gap_between_vehicles: Callable[
+        [RoadMap, Observation], Costs
+    ] = _gap_between_vehicles()
     jerk_linear: Callable[[RoadMap, Observation], Costs] = _jerk_linear()
     lane_center_offset: Callable[[RoadMap, Observation], Costs] = _lane_center_offset()
     off_road: Callable[[RoadMap, Observation], Costs] = _off_road

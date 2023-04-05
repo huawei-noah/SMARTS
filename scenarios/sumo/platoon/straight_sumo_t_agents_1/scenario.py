@@ -6,14 +6,14 @@ from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio.types import (
     Distribution,
-    Trip,
+    EndlessMission,
     Flow,
     Route,
     Scenario,
+    ScenarioMetadata,
     Traffic,
     TrafficActor,
-    EndlessMission,
-    ScenarioMetadata,
+    Trip,
 )
 
 normal = TrafficActor(
@@ -40,7 +40,7 @@ route_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
     for com in combinations(route_opt, elems)
-] * 10 
+] * 10
 
 traffic = {}
 for name, routes in enumerate(route_comb):

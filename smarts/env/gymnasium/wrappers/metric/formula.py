@@ -1,66 +1,45 @@
 import functools
-import numpy as np
-from dataclasses import dataclass, field, fields
+from dataclasses import fields
 from typing import Dict, NewType, TypeVar
 
+import numpy as np
+
+from smarts.env.gymnasium.wrappers.metric.completion import Completion
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
+from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Data
-from smarts.env.gymnasium.wrappers.metric.completion import (
-    Completion,
-)
-
-@dataclass
-class DistCompleted:
-    wrt: str = "self"
-
-@dataclass
-class DistToObstacles:
-    ignore: list = field(default_factory=lambda:[None])
-
-@dataclass
-class GapBetweenVehicles:
-    leader="Leader-007"
-
-@dataclass
-class Params:
-    # collisions: int = 0
-    # comfort: float = 0
-    dist_completed = DistCompleted()
-    dist_to_obstacles = DistToObstacles()
-    gap_between_vehicles = GapBetweenVehicles()
-    # jerk_linear: float = 0
-    # lane_center_offset: float = 0
-    # off_road: int = 0
-    # speed_limit: float = 0
-    # time: int = 0
-    # wrong_way: float = 0
-
 
 Score = NewType("Score", Dict[str, float])
+
 
 class FormulaBase:
     def __init__(self):
         pass
 
-    def params(self)->Params:
-        return Params()
-
-    def score(self)->Score:
+    def params(self) -> Params:
         raise NotImplementedError
+
+    def score(self) -> Score:
+        raise NotImplementedError
+
 
 class Formula(FormulaBase):
     def __init__(self):
+        print("NOOOOOOOOOOOOOOOOOOO, BASE FORMULA")
         pass
 
-    def score(self, records:Dict[str, Data]) -> Score:
+    def params(self) -> Params:
+        return Params()
+
+    def score(self, records: Dict[str, Data]) -> Score:
         """
         Computes four sub-component scores, namely, "Completion", "Time",
         "Humanness", "Rules", and one total combined score named "Overall"
         on the wrapped environment.
 
         Describes the final score given by processing observations through the metrics.
-        
+
             +-------------+--------+-----------------------------------------------------------------------------------------------------+
             |             | Range  | Remarks                                                                                             |
             +=============+========+=====================================================================================================+
@@ -73,8 +52,8 @@ class Formula(FormulaBase):
             | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
             +-------------+--------+-----------------------------------------------------------------------------------------------------+
             | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+    
-                
+            +-------------+--------+-----------------------------------------------------------------------------------------------------+
+
         Returns:
             Dict[str, float]: Contains "Overall", "Completion", "Time",
             "Humanness", and "Rules" scores.
@@ -102,15 +81,17 @@ class Formula(FormulaBase):
         humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
         rules = _rules(costs=costs_tot, agents_tot=agents_tot)
         time = _time(counts=counts_tot)
-        overall = completion * (1 - time)*humanness*rules
+        overall = completion * (1 - time) * humanness * rules
 
-        return Score({
-            "dist_to_completion":completion,
-            "humanness":humanness,
-            "rules":rules,
-            "time":time,
-            "overall":overall,
-        })
+        return Score(
+            {
+                "dist_to_completion": completion,
+                "humanness": humanness,
+                "rules": rules,
+                "time": time,
+                "overall": overall,
+            }
+        )
 
 
 T = TypeVar("T", Completion, Costs, Counts)
@@ -125,6 +106,7 @@ def _add_dataclass(first: T, second: T) -> T:
     output = first.__class__(**new)
 
     return output
+
 
 def _completion(completion: Completion) -> float:
     """

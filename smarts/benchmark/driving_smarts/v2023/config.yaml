@@ -13,7 +13,6 @@ benchmark:
   shared_env_kwargs:
     seed: 42
     headless: True
-  #   dist_completed: {w: 0.35, wrt: Leader-007}
   envs:
     # standard:
     #   loc: "smarts.env:driving-smarts-v2023"
