@@ -42,6 +42,7 @@ from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Data, Record
 from smarts.core.road_map import RoadMap
+from smarts.core.vehicle_index import VehicleIndex
 
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
@@ -61,6 +62,7 @@ class MetricsBase(gym.Wrapper):
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
+        self._vehicle_index: VehicleIndex 
         self._records = {}
 
         # Import scoring formula
@@ -83,22 +85,29 @@ class MetricsBase(gym.Wrapper):
         if len(obs) == 0:
             return result
 
-        dones = {"__all__": False}
-        # Caters to environments which return multi-agent observation
+        dones = {}
         if isinstance(terminated, dict):
+            # Caters to environments which use (i) ObservationOptions.multi_agent,
+            # (ii) ObservationOptions.unformated, and (iii) ObservationOptions.default .
             dones = {k: v or truncated[k] for k, v in terminated.items()}
-        # Caters to environments which return single-agent observation
         elif isinstance(terminated, bool):
+            # Caters to environments which use ObservationOptions.full .
             if terminated or truncated:
                 dones["__all__"] = True
+            else:
+                dones["__all__"] = False
             dones.update({a: d["done"] for a, d in info.items()})
 
-        print(type(obs))
-
         if isinstance(next(iter(obs.values())), dict):
-            obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
+            # Caters to environments which use (i) ObservationOptions.multi_agent,
+            # (ii) ObservationOptions.full, and (iii) ObservationOptions.default .
+            active_agents = [agent_id for agent_id, agent_obs in obs.items() if agent_obs["active"]]
+        else:
+            # Caters to environments which uses (i) ObservationOptions.unformated .
+            active_agents = list(obs.keys())
+
         # fmt: off
-        for agent_name in obs.keys():
+        for agent_name in active_agents:
             base_obs: Observation = info[agent_name]["env_obs"]
             self._steps[agent_name] += 1
 
@@ -183,7 +192,7 @@ class MetricsBase(gym.Wrapper):
 
         if self._scen_name in self._records.keys():
             return result 
-            
+
         # _check_scen(self._scen)
         completion = Completion()
 
