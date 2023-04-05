@@ -64,7 +64,7 @@ mdurl==0.1.2
 ml-dtypes==0.0.4
 msgpack==1.0.5
 multidict==6.0.4
-networkx==3.0
+networkx==3.1
 numpy==1.23.5
 nvidia-ml-py==11.495.46
 oauthlib==3.2.2
