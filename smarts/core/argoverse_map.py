@@ -98,6 +98,7 @@ class ArgoverseMap(RoadMapWithCaches):
         self._lane_rtree = None
         self._load_map_data()
         self._waypoints_cache = ArgoverseMap._WaypointsCache()
+        self._last_junction_lane = None
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
@@ -936,6 +937,22 @@ class ArgoverseMap(RoadMapWithCaches):
         assert self._map_spec.lanepoint_spacing > 0
         return LanePoints.from_argoverse(self, spacing=self._map_spec.lanepoint_spacing)
 
+    def _resolve_in_junction(self, junction_lane: RoadMap.Lane) -> List[List[str]]:
+        # There are no paths we can trace back through the junction, so return
+        if len(junction_lane.road.incoming_roads) == 0:
+            return []
+
+        # Trace back to the road that leads into the junction
+        inc_road: RoadMap.Road = junction_lane.road.incoming_roads[0]
+        paths = []
+        # road_ids = [road.road_id for road in inc_road.outgoing_roads]
+        for out_road in inc_road.outgoing_roads:
+            road_ids = [out_road.road_id] + [
+                road.road_id for road in out_road.outgoing_roads
+            ]
+            paths.append(road_ids)
+        return paths
+
     def waypoint_paths(
         self,
         pose: Pose,
@@ -948,11 +965,27 @@ class ArgoverseMap(RoadMapWithCaches):
             road_ids = [road.road_id for road in route.roads]
         if road_ids:
             return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
+
         closest_lps = self._lanepoints.closest_lanepoints(
             [pose], within_radius=within_radius
         )
-        closest_lane = closest_lps[0].lane
+        closest_lane: RoadMap.Lane = closest_lps[0].lane
+
         waypoint_paths = []
+        if closest_lane.in_junction:
+            junction_lane = closest_lane
+            closest_lanes = [lp.lane for lp in closest_lps]
+            if self._last_junction_lane and self._last_junction_lane in closest_lanes:
+                junction_lane = self._last_junction_lane
+            paths = self._resolve_in_junction(junction_lane)
+            for road_ids in paths:
+                waypoint_paths += self._waypoint_paths_along_route(
+                    pose.point, lookahead, road_ids
+                )
+            self._last_junction_lane = junction_lane
+            return waypoint_paths
+
+        self._last_junction_lane = None
         for lane in closest_lane.road.lanes:
             waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)

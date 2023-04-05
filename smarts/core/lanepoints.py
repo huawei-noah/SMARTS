@@ -881,7 +881,7 @@ class LanePoints:
             k=maximum_count,
             filter_composites=True,
         )
-        return [l_lps[0].lp for l_lps in linked_lanepoints]
+        return [l_lps.lp for l_lps in linked_lanepoints[0]]
 
     def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
         """Returns the closest lanepoint on the given lane to the given world coordinate."""
