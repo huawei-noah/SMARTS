@@ -189,6 +189,13 @@ class MetricsBase(gym.Wrapper):
         self._road_map = self.env.smarts.scenario.road_map
         self._vehicle_index = self.env.smarts.vehicle_index
 
+        self._cost_funcs = {
+            agent_name: make_cost_funcs(self._params
+                
+            ) 
+            for agent_name in self._cur_agents
+        }
+
         if self._scen_name in self._records.keys():
             return result 
 

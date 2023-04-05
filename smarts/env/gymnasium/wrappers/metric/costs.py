@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Dict
 
 import numpy as np
 
@@ -55,6 +55,26 @@ def _comfort() -> Callable[[RoadMap, Observation], Costs]:
 
     def func(road_map: RoadMap, vehicle_index: VehicleIndex, obs: Observation) -> Costs:
         nonlocal mean, step
+
+        pos_1 = vehicle_index.vehicle_position()
+        pos_2 = vehicle_index.vehicle_position()
+        pos_3 = vehicle_index.vehicle_position()
+
+        j_gap = pos_1 + pos_2 + pos_3
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
+        return Costs(comfort=0)
+
+    return func
+
+
+def _dist_to_destination(start_pos:Point, end_pos:Point) -> Callable[[RoadMap, Observation], Costs]:
+    mean = 0
+    step = 0
+    start_pos = start_pos
+    end_pos = end_pos
+
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done:Dict[str,bool], obs: Observation) -> Costs:
+        nonlocal mean, step, start_pos, end_pos
 
         pos_1 = vehicle_index.vehicle_position()
         pos_2 = vehicle_index.vehicle_position()
@@ -269,11 +289,10 @@ def _wrong_way() -> Callable[[RoadMap, Observation], Costs]:
     return func
 
 
-@dataclass(frozen=True)
-class CostFuncs:
-    """Functions to compute performance costs. Each cost function computes the
-    running mean cost over number of time steps, for a given scenario."""
-
+"""Functions to compute performance costs. Each cost function computes the
+running mean cost over number of time steps, for a given scenario."""
+COST_FUNCS = {
+    dist_to_destination: Callable[[RoadMap, Observation], Costs]
     collisions: Callable[[RoadMap, Observation], Costs] = _collisions
     comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
     dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
@@ -285,3 +304,7 @@ class CostFuncs:
     off_road: Callable[[RoadMap, Observation], Costs] = _off_road
     speed_limit: Callable[[RoadMap, Observation], Costs] = _speed_limit()
     wrong_way: Callable[[RoadMap, Observation], Costs] = _wrong_way()
+}
+
+
+def make_cost_funcs():

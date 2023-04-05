@@ -38,6 +38,12 @@ MAXIMUM_OFFROAD_DIST = 300
 class Completion:
     """Parameters to compute the percentage of scenario tasks completed."""
 
+    start_pos: Point
+    """Start position of vehicle.
+    """
+    end_pos: Point
+    """End position of vehicle.
+    """
     dist_remainder: float = 0
     """Shortest road distance between current position and goal position.
     """
