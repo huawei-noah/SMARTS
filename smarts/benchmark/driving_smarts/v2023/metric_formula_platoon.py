@@ -8,13 +8,22 @@ from smarts.env.gymnasium.wrappers.metric.completion import Completion
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
+from smarts.env.gymnasium.wrappers.metric.params import Params, DistCompleted
 from smarts.env.gymnasium.wrappers.metric.types import Data
 
 
 class Formula(FormulaBase):
     def __init__(self):
-        print("YESSSSSSSSSSSSSSS, ENV SPECIFIC FORMULA")
         pass
+
+    def params(self) -> Params:
+        params = Params(
+            dist_completed=DistCompleted(
+                active = True,
+                wrt = "Leader-007",
+            ),
+        )
+        return params
 
     def score(self, records: Dict[str, Data]) -> Score:
         """

@@ -41,7 +41,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Data, Record
-
+from smarts.core.road_map import RoadMap
 
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
@@ -93,6 +93,8 @@ class MetricsBase(gym.Wrapper):
                 dones["__all__"] = True
             dones.update({a: d["done"] for a, d in info.items()})
 
+        print(type(obs))
+
         if isinstance(next(iter(obs.values())), dict):
             obs = {agent_id: o for agent_id, o in obs.items() if o["active"]}
         # fmt: off
@@ -103,10 +105,10 @@ class MetricsBase(gym.Wrapper):
             # Compute all cost functions.
             costs = Costs()
             for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
-                if getattr(self._config, field.name).w == 0:
+                if not getattr(self._params, field.name).active:
                     d = field.name
-                    print(field.name, getattr(self._config, d))
-                    input()
+                    print(d, getattr(self._params, d))
+                    input("Skipping cost computation ------------")
                     continue
                 cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
                 new_costs = cost_func(road_map=self._road_map, obs=base_obs)
@@ -178,43 +180,45 @@ class MetricsBase(gym.Wrapper):
         self._scen_name = self.env.smarts.scenario.name
         self._road_map = self.env.smarts.scenario.road_map
         self._vehicle_index = self.env.smarts.vehicle_index
-        # self._sim = self.env.smarts
 
-        # fmt: off
-        if self._scen_name not in self._records:
-            # _check_scen(self._scen)
-            print(self._scen_name)
-            print(self._scen.missions)
-            print(self._scen.metadata)
-            # input("ssssssssssssssssssssssssssssss22222222222222sssssss")
+        if self._scen_name in self._records.keys():
+            return result 
+            
+        # _check_scen(self._scen)
+        completion = Completion()
 
-            # if self._config.
-            # f = self.env.smarts.traffic_sims
-            # g = f[0].route_for_vehicle("Leader-007").road_length
-            # print("\n---\n",f, "\n---\n", g)
+        # Compute total scenario distance with respect to specified vehicle.
+        if self._params.dist_completed.active and self._params.dist_completed.wrt is not "self":
+            vehicle_name = self._params.dist_completed.wrt
+            traffic_sims = self.env.smarts.traffic_sims
+            routes = [traffic_sim.route_for_vehicle(vehicle_name) for traffic_sim in traffic_sims]
+            route = [route for route in routes if route is not None]
+            assert len(route) == 1, "Multiple traffic sims contain the vehicle of interest."
+            completion = Completion(dist_tot = route[0].road_length)
 
+        for agent_name in self._cur_agents:
+            if self._params.dist_completed.active and self._params.dist_completed.wrt == "self":
+                completion = Completion(
+                    dist_tot=get_dist(
+                        road_map=self._road_map,
+                        point_a=Point(*self._scen.missions[agent_name].start.position),
+                        point_b=self._scen.missions[agent_name].goal.position,    
+                    )
+                )
             self._records[self._scen_name] = {
                 agent_name: Data(
                     record=Record(
-                        completion=Completion(dist_tot=10),
-                        # completion=Completion(
-                        #     dist_tot=get_dist(
-                        #         road_map=self._road_map,
-                        #         point_a=Point(*self._scen.missions[agent_name].start.position),
-                        #         point_b=self._scen.missions[agent_name].goal.position,    
-                        #     )
-                        # ),
+                        completion=completion,
                         costs=Costs(),
                         counts=Counts(),
                     ),
                     cost_funcs=CostFuncs(),
                     completion_funcs=CompletionFuncs(),
                 )
-                for agent_name in self._cur_agents
             }
-        # fmt: on
 
         return result
+
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
@@ -282,7 +286,8 @@ class Metrics(gym.Wrapper):
         super().__init__(env)
 
     def __getattr__(self, name: str):
-        """Returns an attribute with ``name``, unless ``name`` starts with an underscore."""
+        """Returns an attribute with ``name``, unless ``name`` is a restricted 
+        attribute or starts with an underscore."""
         if name == "_np_random":
             raise AttributeError(
                 "Can't access `_np_random` of a wrapper, use `self.unwrapped._np_random` or `self.np_random`."

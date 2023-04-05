@@ -26,7 +26,6 @@ class FormulaBase:
 
 class Formula(FormulaBase):
     def __init__(self):
-        print("NOOOOOOOOOOOOOOOOOOO, BASE FORMULA")
         pass
 
     def params(self) -> Params:
