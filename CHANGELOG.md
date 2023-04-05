@@ -10,7 +10,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added an actor capture manager interface, `ActorCaptureManager`, which describes a manger that handles the change of control of actors. Operations in an actor manager step should not cause conflict in the simulation.
+- Added a new entry tactic, `IdEntryTactic`, which provides the scenario the ability to select a specific actor for an agent to take over.
 ### Changed
+- The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 ### Deprecated
 ### Fixed
 - Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.

@@ -26,6 +26,7 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from shapely.geometry import Polygon
 
+from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.file import replace
@@ -70,13 +71,12 @@ class Trap:
         return True
 
 
-class TrapManager:
+class TrapManager(ActorCaptureManager):
     """Facilitates agent hijacking of actors"""
 
     def __init__(self):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[str, Trap] = {}
-        self._cancelled_agents: Set[str] = set()
 
     def init_traps(self, road_map, missions, sim):
         """Set up the traps used to capture actors."""
@@ -84,13 +84,14 @@ class TrapManager:
 
         assert isinstance(sim, SMARTS)
         self._traps.clear()
+        cancelled_agents: Set[str] = []
         for agent_id, mission in missions.items():
-            self.add_trap_for_agent(
+            if not self.add_trap_for_agent(
                 agent_id, mission, road_map, sim.elapsed_sim_time, reject_expired=True
-            )
-        if len(self._cancelled_agents) > 0:
-            sim.agent_manager.teardown_ego_agents(self._cancelled_agents)
-            self._cancelled_agents.clear()
+            ):
+                cancelled_agents.add(agent_id)
+        if len(cancelled_agents) > 0:
+            sim.agent_manager.teardown_ego_agents(cancelled_agents)
 
     def add_trap_for_agent(
         self,
@@ -121,10 +122,9 @@ class TrapManager:
             mission = replace(mission, entry_tactic=default_entry_tactic())
 
         if not isinstance(mission.entry_tactic, TrapEntryTactic):
-            return False
+            return True
 
-        entry_tactic = mission.entry_tactic
-        assert isinstance(entry_tactic, TrapEntryTactic)
+        entry_tactic: TrapEntryTactic = mission.entry_tactic
         # Do not add trap if simulation time is specified and patience already expired
         patience_expired = mission.start_time + entry_tactic.wait_to_hijack_limit_s
         if reject_expired and patience_expired < sim_time:
@@ -133,7 +133,6 @@ class TrapManager:
                 + f"`{mission.start_time}` and `{patience_expired}` because simulation skipped to "
                 f"simulation time `{sim_time}`"
             )
-            self._cancelled_agents.add(agent_id)
             return False
 
         plan = Plan(road_map, mission)
@@ -298,77 +297,10 @@ class TrapManager:
         """The traps in this manager."""
         return self._traps
 
-    @staticmethod
-    def _take_existing_vehicle(
-        sim, vehicle_id, agent_id, mission, social=False
-    ) -> Optional[Vehicle]:
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
-        if social:
-            # Not supported
-            return None
-        vehicle = sim.switch_control_to_agent(
-            vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
-        )
-        if vehicle is not None:
-            sim.agent_manager.remove_pending_agent_ids({agent_id})
-            sim.create_vehicle_in_providers(vehicle, agent_id, True)
-        return vehicle
-
-    @staticmethod
-    def _make_new_vehicle(
-        sim, agent_id, mission, initial_speed, social=False
-    ) -> Optional[Vehicle]:
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
-        if social:
-            return TrapManager._make_new_social_vehicle(sim, agent_id, initial_speed)
-        agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
-        plan = Plan(sim.road_map, mission)
-        # 3. Apply agent vehicle association.
-        vehicle = sim.vehicle_index.build_agent_vehicle(
-            sim,
-            agent_id,
-            agent_interface,
-            plan,
-            sim.scenario.vehicle_filepath,
-            sim.scenario.tire_parameters_filepath,
-            True,
-            sim.scenario.surface_patches,
-            initial_speed=initial_speed,
-            boid=False,
-        )
-        if vehicle is not None:
-            sim.agent_manager.remove_pending_agent_ids({agent_id})
-            sim.create_vehicle_in_providers(vehicle, agent_id, True)
-        return vehicle
-
-    @staticmethod
-    def _make_new_social_vehicle(sim, agent_id, initial_speed):
-        from smarts.core.smarts import SMARTS
-
-        sim: SMARTS = sim
-        social_agent_spec, social_agent_model = sim.scenario.social_agents[agent_id]
-
-        social_agent_model = replace(social_agent_model, initial_speed=initial_speed)
-        sim.agent_manager.add_and_emit_social_agent(
-            agent_id,
-            social_agent_spec,
-            social_agent_model,
-        )
-        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
-
-        return vehicles[0] if len(vehicles) else None
-
-    def reset(self):
-        """Resets to a pre-initialized state."""
-        pass
+    def reset(self, scenario, sim):
+        self.init_traps(scenario.road_map, scenario.missions, sim)
 
     def teardown(self):
-        """Clear internal state"""
-        self.reset()
         self._traps.clear()
 
     def _mission2trap(self, road_map, mission: Mission, default_zone_dist: float = 6.0):
