@@ -5,7 +5,7 @@ from typing import Dict, NewType, TypeVar
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
-from smarts.env.gymnasium.wrappers.metric.types import Data
+from smarts.env.gymnasium.wrappers.metric.metrics import Data
 from smarts.env.gymnasium.wrappers.metric.completion import (
     Completion,
 )
@@ -102,7 +102,7 @@ class Formula(FormulaBase):
         humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
         rules = _rules(costs=costs_tot, agents_tot=agents_tot)
         time = _time(counts=counts_tot)
-        overall = completion * (1 - time)*humanness*rules
+        overall =completion * (1 - time)*humanness*rules
 
         return Score({
             "dist_to_completion":completion,

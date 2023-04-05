@@ -272,9 +272,9 @@ class CostFuncs:
     running mean cost over number of time steps, for a given scenario."""
 
     collisions: Callable[[RoadMap, Observation], Costs] = _collisions
-    comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
+    # comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
     dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
-    gap_between_vehicles: Callable[[RoadMap, Observation], Costs] = _gap_between_vehicles()
+    # gap_between_vehicles: Callable[[RoadMap, Observation], Costs] = _gap_between_vehicles()
     jerk_linear: Callable[[RoadMap, Observation], Costs] = _jerk_linear()
     lane_center_offset: Callable[[RoadMap, Observation], Costs] = _lane_center_offset()
     off_road: Callable[[RoadMap, Observation], Costs] = _off_road
