@@ -189,19 +189,18 @@ def diff_unpackable(obj, other_obj):
             s = value
         return s
 
-    def process(o, oo, o_oo):
-        nonlocal obj
-        if isinstance(o, (dict, defaultdict)):
-            t_o = sort(o)
+    def process(obj, other_obj, current_comparison):
+        if isinstance(obj, (dict, defaultdict)):
+            t_o = sort(obj)
             assert isinstance(t_o, dict)
-            t_oo = sort(oo)
+            t_oo = sort(other_obj)
             assert isinstance(t_oo, dict)
             comps.append((t_o.keys(), t_oo.keys()))
             comps.append((t_o.values(), t_oo.values()))
-        elif isinstance(o, Sequence) and not isinstance(o, (str)):
-            comps.append((sort(o), sort(oo)))
-        elif o != oo:
-            return f"{o}!={oo} in {o_oo}"
+        elif isinstance(obj, Sequence) and not isinstance(obj, (str)):
+            comps.append((sort(obj), sort(other_obj)))
+        elif obj != other_obj:
+            return f"{obj}!={other_obj} in {current_comparison}"
         return ""
 
     comps = []
