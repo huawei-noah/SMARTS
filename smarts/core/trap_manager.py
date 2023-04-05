@@ -84,11 +84,12 @@ class TrapManager(ActorCaptureManager):
 
         assert isinstance(sim, SMARTS)
         self._traps.clear()
-        cancelled_agents: Set[str] = []
+        cancelled_agents: Set[str] = set()
         for agent_id, mission in missions.items():
-            if not self.add_trap_for_agent(
+            added, expired = self.add_trap_for_agent(
                 agent_id, mission, road_map, sim.elapsed_sim_time, reject_expired=True
-            ):
+            )
+            if expired and not added:
                 cancelled_agents.add(agent_id)
         if len(cancelled_agents) > 0:
             sim.agent_manager.teardown_ego_agents(cancelled_agents)
@@ -100,7 +101,7 @@ class TrapManager(ActorCaptureManager):
         road_map,
         sim_time: float,
         reject_expired: bool = False,
-    ) -> bool:
+    ) -> Tuple[bool, bool]:
         """Add a new trap to capture an actor for the given agent.
 
         :param agent_id: The agent to associate to this trap.
@@ -113,7 +114,7 @@ class TrapManager(ActorCaptureManager):
         :type sim_time: float
         :param reject_expired: If traps should be ignored if their patience would already be
             expired on creation
-        :type reject_expired: bool
+        :type reject_expired: Tuple[bool, bool] If the trap was added and if the trap is already expired.
         """
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
@@ -122,9 +123,9 @@ class TrapManager(ActorCaptureManager):
             mission = replace(mission, entry_tactic=default_entry_tactic())
 
         if not isinstance(mission.entry_tactic, TrapEntryTactic):
-            return True
+            return False, False
 
-        entry_tactic: TrapEntryTactic = mission.entry_tactic
+        entry_tactic: TrapEntryTactic = mission.entry_tactic # pytype: disable=annotation-type-mismatch
         # Do not add trap if simulation time is specified and patience already expired
         patience_expired = mission.start_time + entry_tactic.wait_to_hijack_limit_s
         if reject_expired and patience_expired < sim_time:
@@ -133,12 +134,12 @@ class TrapManager(ActorCaptureManager):
                 + f"`{mission.start_time}` and `{patience_expired}` because simulation skipped to "
                 f"simulation time `{sim_time}`"
             )
-            return False
+            return False, True
 
         plan = Plan(road_map, mission)
         trap = self._mission2trap(road_map, plan.mission)
         self._traps[agent_id] = trap
-        return True
+        return True, False
 
     def remove_traps(self, used_traps):
         """Remove the given used traps."""
