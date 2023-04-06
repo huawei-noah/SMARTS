@@ -65,7 +65,7 @@ class MetricsBase(gym.Wrapper):
         self._done_agents: Set[str]
         self._vehicle_index: VehicleIndex
         self._cost_funcs: Dict[str, CostFuncs]
-        self._records = {}
+        self._records_detailed: Dict[str,Dict[str,Costs]] = {}
 
         # Import scoring formula
         if formula_path:
@@ -246,6 +246,12 @@ class MetricsBase(gym.Wrapper):
                 )
                 for agent_name in self._cur_agents
             }
+
+            # At end of each episode
+            # + Average over agents
+            # + Then is a running mean averaged over each episode
+            # + Keep count of number of episodes, to join with parallel workers later
+            # self._cumulative_records = Costs()
 
         return result
 
