@@ -298,6 +298,30 @@ def _wrong_way() -> Callable[[RoadMap, Observation], Costs]:
 
 
 """Functions to compute performance costs. Each cost function computes the
+running cost over time steps, for a given scenario."""
+# COST_FUNCS = {
+#     dist_to_destination: Callable[[RoadMap, Observation], Costs]
+#     collisions: Callable[[RoadMap, Observation], Costs] = _collisions
+#     comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
+#     dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
+#     gap_between_vehicles: Callable[
+#         [RoadMap, Observation], Costs
+#     ] = _gap_between_vehicles()
+#     jerk_linear: Callable[[RoadMap, Observation], Costs] = _jerk_linear()
+#     lane_center_offset: Callable[[RoadMap, Observation], Costs] = _lane_center_offset()
+#     off_road: Callable[[RoadMap, Observation], Costs] = _off_road
+#     speed_limit: Callable[[RoadMap, Observation], Costs] = _speed_limit()
+#     wrong_way: Callable[[RoadMap, Observation], Costs] = _wrong_way()
+# }
+
+
+def make_cost_funcs(params:Params, **kwargs) -> CostFuncs:
+
+    for 
+
+
+    return 
+
 
 def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
     """

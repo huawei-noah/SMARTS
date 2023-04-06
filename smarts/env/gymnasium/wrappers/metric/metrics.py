@@ -32,12 +32,7 @@ from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.utils.import_utils import import_module_from_file
-from smarts.env.gymnasium.wrappers.metric.completion import (
-    Completion,
-    CompletionFuncs,
-    get_dist,
-)
-from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
+from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs, get_dist
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Data, Record
@@ -65,6 +60,7 @@ class MetricsBase(gym.Wrapper):
         self._done_agents: Set[str]
         self._vehicle_index: VehicleIndex 
         self._records = {}
+        self._cost_funcs = {}
 
         # Import scoring formula
         if formula_path:
@@ -189,16 +185,7 @@ class MetricsBase(gym.Wrapper):
         self._scen_name = self.env.smarts.scenario.name
         self._road_map = self.env.smarts.scenario.road_map
         self._vehicle_index = self.env.smarts.vehicle_index
-
-        self._cost_funcs = {
-            agent_name: make_cost_funcs(self._params
-                
-            ) 
-            for agent_name in self._cur_agents
-        }
-
-        if self._scen_name in self._records.keys():
-            return result 
+        self._cost_funcs = {}
 
         # _check_scen(self._scen)
         end_point:Point = Point(0,0,0)
@@ -224,15 +211,15 @@ class MetricsBase(gym.Wrapper):
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_point,    
                     )
+            self._cost_funcs[agent_name] = make_cost_funcs(dist_tot,end_point)
+
+        if self._scen_name in self._records.keys():
+            return result 
+        else:
             self._records[self._scen_name] = {
-                agent_name: Data(
-                    record=Record(
-                        completion=completion,
-                        costs=Costs(),
-                        counts=Counts(),
-                    ),
-                    cost_funcs=CostFuncs(),
-                    completion_funcs=CompletionFuncs(),
+                agent_name: Record(
+                    costs=Costs(),
+                    counts=Counts(),
                 )
             }
 
