@@ -26,7 +26,6 @@ from typing import Dict, NewType, TypeVar
 
 import numpy as np
 
-from smarts.env.gymnasium.wrappers.metric.completion import Completion
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.params import Params
@@ -115,7 +114,7 @@ class Formula(FormulaBase):
         )
 
 
-T = TypeVar("T", Completion, Costs, Counts)
+T = TypeVar("T", Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:

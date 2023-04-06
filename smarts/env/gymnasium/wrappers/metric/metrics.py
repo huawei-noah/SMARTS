@@ -235,11 +235,11 @@ class MetricsBase(gym.Wrapper):
             $ env.records()
             $ {
                   scen1: {
-                      agent1: Record(completion, costs, counts),
-                      agent2: Record(completion, costs, counts),
+                      agent1: Record(costs, counts),
+                      agent2: Record(costs, counts),
                   },
                   scen2: {
-                      agent1: Record(completion, costs, counts),
+                      agent1: Record(costs, counts),
                   },
               }
 
@@ -252,7 +252,7 @@ class MetricsBase(gym.Wrapper):
         for scen, agents in self._records.items():
             records[scen] = {}
             for agent, data in agents.items():
-                records[scen][agent] = copy.deepcopy(data.record)
+                records[scen][agent] = copy.deepcopy(data)
 
         return records
 
@@ -357,7 +357,7 @@ def _check_scen(scen: Scenario):
         )
 
 
-T = TypeVar("T", Completion, Costs, Counts)
+T = TypeVar("T", Costs, Counts)
 
 
 def _add_dataclass(first: T, second: T) -> T:

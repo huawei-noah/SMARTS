@@ -323,6 +323,12 @@ def make_cost_funcs(params:Params, **kwargs) -> CostFuncs:
     return 
 
 
+class CostError(Exception):
+    """Raised when computation of cost functions fail."""
+
+    pass
+
+
 def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
     """
     Computes the shortest route distance from point_a to point_b in the road
