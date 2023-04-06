@@ -39,10 +39,11 @@ logger = logging.getLogger(__name__)
 
 class RaySensorResolver(SensorResolver):
     """A version of the sensor resolver that uses "ray" in its underlying implementation.
-    
+
     Args:
         process_count_override (Optional[int]): An override for how many workers should be used.
     """
+
     def __init__(self, process_count_override: Optional[int] = None) -> None:
         conf: Config = config()
         self._num_observation_workers = (
@@ -53,7 +54,7 @@ class RaySensorResolver(SensorResolver):
         if not ray.is_initialized():
             ray.init(
                 num_cpus=self._num_observation_workers,
-                log_to_driver=conf("ray", "log_to_driver", default=False, cast=bool)
+                log_to_driver=conf("ray", "log_to_driver", default=False, cast=bool),
             )
         self._sim_local_constants: SimulationLocalConstants = None
         self._current_workers = []
@@ -69,7 +70,7 @@ class RaySensorResolver(SensorResolver):
         """
         if len(self._current_workers) != count:
             # we need to cache because using options(name) is extremely slow
-            self._current_workers =[
+            self._current_workers = [
                 ProcessWorker.options(
                     name=f"sensor_worker_{i}", get_if_exists=True
                 ).remote()
@@ -86,7 +87,6 @@ class RaySensorResolver(SensorResolver):
         bullet_client,
     ):
         observations, dones, updated_sensors = {}, {}, {}
-
 
         ray_actors = self.get_ray_worker_actors(self._num_observation_workers)
         len_workers = len(ray_actors)

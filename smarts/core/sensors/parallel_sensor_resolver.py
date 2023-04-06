@@ -329,7 +329,12 @@ class ProcessWorker:
 
     def stop(self):
         """Sends a stop signal to the worker."""
-        self._parent_connection.send(self.WorkerDone())
+        try:
+            self._parent_connection.send(self.WorkerDone())
+        except ImportError:
+            # Python is shutting down.
+            if not self._parent_connection.closed:
+                self._parent_connection.close()
 
     @property
     def running(self) -> bool:

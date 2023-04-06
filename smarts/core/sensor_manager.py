@@ -52,21 +52,25 @@ class SensorManager:
             "core", "observation_workers", default=0, cast=int
         )
         parallel_resolver = ParallelSensorResolver
-        if (backing := config()("core", "sensor_parallelization", default="mp")) == "ray":
+        if (
+            backing := config()("core", "sensor_parallelization", default="mp")
+        ) == "ray":
             try:
                 import ray
+
                 from smarts.ray.sensors.ray_sensor_resolver import RaySensorResolver
+
                 parallel_resolver = RaySensorResolver
             except ImportError:
                 pass
         elif backing == "mp":
             pass
         else:
-            raise LookupError(f"SMARTS_CORE_SENSOR_PARALLELIZATION={backing} is not a valid option.")
+            raise LookupError(
+                f"SMARTS_CORE_SENSOR_PARALLELIZATION={backing} is not a valid option."
+            )
         self._sensor_resolver = (
-            parallel_resolver()
-            if observation_workers > 0
-            else LocalSensorResolver()
+            parallel_resolver() if observation_workers > 0 else LocalSensorResolver()
         )
 
     def step(self, sim_frame: SimulationFrame, renderer):
