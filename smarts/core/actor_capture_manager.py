@@ -55,7 +55,7 @@ class ActorCaptureManager:
 
         assert isinstance(sim, SMARTS)
         if social:
-            return cls._make_new_social_vehicle(sim, agent_id, initial_speed)
+            return cls.__make_new_social_vehicle(sim, agent_id, initial_speed)
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         plan = Plan(sim.road_map, mission)
         # 3. Apply agent vehicle association.
@@ -77,7 +77,7 @@ class ActorCaptureManager:
         return vehicle
 
     @staticmethod
-    def _make_new_social_vehicle(sim, agent_id, initial_speed):
+    def __make_new_social_vehicle(sim, agent_id, initial_speed):
         from smarts.core.smarts import SMARTS
 
         sim: SMARTS = sim
