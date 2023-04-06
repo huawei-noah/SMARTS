@@ -945,7 +945,6 @@ class ArgoverseMap(RoadMapWithCaches):
         # Trace back to the road that leads into the junction
         inc_road: RoadMap.Road = junction_lane.road.incoming_roads[0]
         paths = []
-        # road_ids = [road.road_id for road in inc_road.outgoing_roads]
         for out_road in inc_road.outgoing_roads:
             road_ids = [out_road.road_id] + [
                 road.road_id for road in out_road.outgoing_roads
@@ -979,9 +978,24 @@ class ArgoverseMap(RoadMapWithCaches):
                 junction_lane = self._last_junction_lane
             paths = self._resolve_in_junction(junction_lane)
             for road_ids in paths:
-                waypoint_paths += self._waypoint_paths_along_route(
+                new_paths = self._waypoint_paths_along_route(
                     pose.point, lookahead, road_ids
                 )
+                for path in new_paths:
+
+                    def _angle_between(pose, wp):
+                        heading_vec = pose.heading.direction_vector()
+                        wp_vec = wp.pos - pose.position[:2]
+                        angle = np.arccos(
+                            np.dot(heading_vec, wp_vec)
+                            / (np.linalg.norm(heading_vec) * np.linalg.norm(wp_vec))
+                        )
+                        return angle
+
+                    # Filter out any waypoints that are behind the vehicle
+                    wps = [wp for wp in path if _angle_between(pose, wp) < np.pi / 1.5]
+                    if len(wps) > 0:
+                        waypoint_paths.append(wps)
             self._last_junction_lane = junction_lane
             return waypoint_paths
 
