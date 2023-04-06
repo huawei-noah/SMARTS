@@ -623,6 +623,9 @@ class IdEntryTactic(EntryTactic):
     actor_id: str
     """The id of the actor to take over."""
 
+    time_range: Tuple[float, float] = (0, maxsize)
+    """Defines a specific simulation time range where this will look for an actor."""
+
 
 @dataclass(frozen=True)
 class Mission:

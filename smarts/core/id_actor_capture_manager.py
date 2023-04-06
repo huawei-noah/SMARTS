@@ -49,10 +49,15 @@ class IdActorCaptureManager(ActorCaptureManager):
             for v_id in sim.vehicle_index.social_vehicle_ids()
             if not sim.vehicle_index.vehicle_is_hijacked(v_id)
         }
-
+        sim.elapsed_sim_time
         used_actors = []
-        for actor_id, (agent_id, mission) in (
-            (a, b) for a, b in self._actor_for_agent.items() if a in social_vehicle_ids
+        for actor_id, agent_id, mission in (
+            (a, b, m)
+            for a, (b, m) in self._actor_for_agent.items()
+            if m.entry_tactic.time_range[0]
+            <= sim.elapsed_sim_time
+            <= m.entry_tactic.time_range[1]
+            and a in social_vehicle_ids
         ):
             vehicle: Optional[Vehicle] = self._take_existing_vehicle(
                 sim,

@@ -125,7 +125,9 @@ class TrapManager(ActorCaptureManager):
         if not isinstance(mission.entry_tactic, TrapEntryTactic):
             return False, False
 
-        entry_tactic: TrapEntryTactic = mission.entry_tactic # pytype: disable=annotation-type-mismatch
+        entry_tactic: TrapEntryTactic = (
+            mission.entry_tactic
+        )  # pytype: disable=annotation-type-mismatch
         # Do not add trap if simulation time is specified and patience already expired
         patience_expired = mission.start_time + entry_tactic.wait_to_hijack_limit_s
         if reject_expired and patience_expired < sim_time:
