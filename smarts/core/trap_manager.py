@@ -168,8 +168,8 @@ class TrapManager(ActorCaptureManager):
         )
 
         # Do an optimization to only check if there are pending agents.
-        if (
-            not sim.agent_manager.pending_agent_ids
+        if not (
+            sim.agent_manager.pending_agent_ids
             | sim.agent_manager.pending_social_agent_ids
         ):
             return
