@@ -29,6 +29,8 @@ from scipy.spatial.distance import cdist
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
 from smarts import VERSION
+from smarts.core.actor_capture_manager import ActorCaptureManager
+from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.utils.logging import timeit
 
@@ -191,7 +193,11 @@ class SMARTS(ProviderManager):
         self._vehicle_states = []
 
         self._bubble_manager = None
-        self._trap_manager: Optional[TrapManager] = None
+        self._trap_manager: TrapManager = TrapManager()
+        self._actor_capture_managers: List[ActorCaptureManager] = [
+            self._trap_manager,
+            IdActorCaptureManager(),
+        ]
 
         self._ground_bullet_id = None
         self._map_bb = None
@@ -288,8 +294,9 @@ class SMARTS(ProviderManager):
             self._vehicle_index.sync()
         with timeit("Stepping through bubble manager", self._log.debug):
             self._bubble_manager.step(self)
-        with timeit("Stepping through trap manager", self._log.debug):
-            self._trap_manager.step(self)
+        with timeit("Stepping through actor capture managers", self._log.debug):
+            for actor_capture_manager in self._actor_capture_managers:
+                actor_capture_manager.step(self)
 
         # 4. Calculate observation and reward
         # We pre-compute vehicle_states here because we *think* the users will
@@ -426,8 +433,8 @@ class SMARTS(ProviderManager):
                 vehicle_ids_to_teardown |= set(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._reset_providers()
-            assert self._trap_manager
-            self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
+            for actor_capture_manager in self._actor_capture_managers:
+                actor_capture_manager.reset(scenario, self)
             self._agent_manager.init_ego_agents()
             if self._renderer:
                 self._sync_vehicles_to_renderer()
@@ -471,8 +478,8 @@ class SMARTS(ProviderManager):
 
         self._agent_manager.setup_agents()
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
-        self._trap_manager = TrapManager()
-        self._trap_manager.init_traps(scenario.road_map, scenario.missions, self)
+        for actor_capture_manager in self._actor_capture_managers:
+            actor_capture_manager.reset(scenario, self)
 
         self._harmonize_providers(provider_state)
         self._last_provider_state = provider_state
@@ -841,8 +848,9 @@ class SMARTS(ProviderManager):
         if self._bubble_manager is not None:
             self._bubble_manager.teardown()
             self._bubble_manager = None
+        for actor_capture_manager in self._actor_capture_managers:
+            actor_capture_manager.teardown()
         if self._trap_manager is not None:
-            self._trap_manager.teardown()
             self._trap_manager = None
 
         self._ground_bullet_id = None

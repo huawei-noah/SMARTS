@@ -597,14 +597,14 @@ class Traffic:
 
 @dataclass(frozen=True)
 class EntryTactic:
-    """The tactic that the simulation should use to acquire a vehicle for an actor."""
+    """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
     pass
 
 
 @dataclass(frozen=True)
 class TrapEntryTactic(EntryTactic):
-    """An entry tactic that repurposes a pre-existing vehicle for an actor."""
+    """An entry tactic that repurposes a pre-existing vehicle for an agent."""
 
     wait_to_hijack_limit_s: float
     """The amount of seconds a hijack will wait to get a vehicle before defaulting to a new vehicle"""
@@ -614,6 +614,21 @@ class TrapEntryTactic(EntryTactic):
     """The prefixes of vehicles to avoid hijacking"""
     default_entry_speed: Optional[float] = None
     """The speed that the vehicle starts at when the hijack limit expiry emits a new vehicle"""
+
+
+@dataclass(frozen=True)
+class IdEntryTactic(EntryTactic):
+    """An entry tactic which repurposes a pre-existing actor for an agent. Selects that actor by id."""
+
+    actor_id: str
+    """The id of the actor to take over."""
+
+    patience: float = 0.1
+    """Defines the amount of time this tactic will wait for an actor."""
+
+    def __post_init__(self):
+        assert isinstance(self.actor_id, str)
+        assert isinstance(self.patience, (float, int))
 
 
 @dataclass(frozen=True)

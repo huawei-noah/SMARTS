@@ -4,7 +4,6 @@ from pathlib import Path
 from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-from smarts.sstudio.types import Distribution
 
 seed(42)
 
@@ -21,7 +20,7 @@ traffic = t.Traffic(
             actors={
                 t.TrafficActor(
                     name="car",
-                    speed=Distribution(mean=0.5, sigma=0.8),
+                    speed=t.Distribution(mean=0.5, sigma=0.8),
                     vehicle_type=random.choice(
                         ["passenger", "coach", "bus", "trailer", "truck"]
                     ),
@@ -29,7 +28,10 @@ traffic = t.Traffic(
             },
         )
         for route in [("445633931", "445633932"), ("445633932", "445633931")] * 12
-    ]
+    ],
+    trips=[
+        t.Trip("target", route=t.RandomRoute(), depart=0.5),
+    ],
 )
 
 laner_actor = t.SocialAgentActor(
@@ -41,7 +43,15 @@ gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
         social_agent_missions={
-            "all": ([laner_actor], [t.Mission(route=t.RandomRoute())])
+            "all": (
+                [laner_actor],
+                [
+                    t.Mission(
+                        route=t.RandomRoute(),
+                        entry_tactic=t.IdEntryTactic("target", patience=10),
+                    )
+                ],
+            )
         },
         bubbles=[
             t.Bubble(
