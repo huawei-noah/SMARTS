@@ -58,7 +58,7 @@ class ActorCaptureManager:
             return cls.__make_new_social_vehicle(sim, agent_id, initial_speed)
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         plan = Plan(sim.road_map, mission)
-        # 3. Apply agent vehicle association.
+        # Apply agent vehicle association.
         vehicle = sim.vehicle_index.build_agent_vehicle(
             sim,
             agent_id,

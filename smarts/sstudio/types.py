@@ -624,7 +624,7 @@ class IdEntryTactic(EntryTactic):
     """The id of the actor to take over."""
 
     patience: float = 0.1
-    """Defines a the amount of time this tactic will wait for an actor."""
+    """Defines the amount of time this tactic will wait for an actor."""
 
     def __post_init__(self):
         assert isinstance(self.actor_id, str)
