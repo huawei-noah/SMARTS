@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 
+
 @dataclass
 class Record:
     """Stores an agent's scenario-completion, performance-count, and

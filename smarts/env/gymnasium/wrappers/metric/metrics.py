@@ -26,19 +26,24 @@ from typing import Any, Dict, Optional, Set, TypeVar
 import gymnasium as gym
 
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.coordinates import Point
+from smarts.core.coordinates import Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.utils.import_utils import import_module_from_file
-from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs, get_dist
+from smarts.core.vehicle_index import VehicleIndex
+from smarts.env.gymnasium.wrappers.metric.costs import (
+    CostFuncs,
+    Costs,
+    Done,
+    get_dist,
+    make_cost_funcs,
+)
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
-from smarts.env.gymnasium.wrappers.metric.types import Data, Record
-from smarts.core.road_map import RoadMap
-from smarts.core.vehicle_index import VehicleIndex
-from smarts.core.coordinates import RefLinePoint
+from smarts.env.gymnasium.wrappers.metric.types import Record
+
 
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
@@ -58,9 +63,9 @@ class MetricsBase(gym.Wrapper):
         self._cur_agents: Set[str]
         self._steps: Dict[str, int]
         self._done_agents: Set[str]
-        self._vehicle_index: VehicleIndex 
+        self._vehicle_index: VehicleIndex
+        self._cost_funcs: Dict[str, CostFuncs]
         self._records = {}
-        self._cost_funcs = {}
 
         # Import scoring formula
         if formula_path:
@@ -98,7 +103,9 @@ class MetricsBase(gym.Wrapper):
         if isinstance(next(iter(obs.values())), dict):
             # Caters to environments which use (i) ObservationOptions.multi_agent,
             # (ii) ObservationOptions.full, and (iii) ObservationOptions.default .
-            active_agents = [agent_id for agent_id, agent_obs in obs.items() if agent_obs["active"]]
+            active_agents = [
+                agent_id for agent_id, agent_obs in obs.items() if agent_obs["active"]
+            ]
         else:
             # Caters to environments which uses (i) ObservationOptions.unformated .
             active_agents = list(obs.keys())
@@ -110,11 +117,8 @@ class MetricsBase(gym.Wrapper):
 
             # Compute all cost functions.
             costs = Costs()
-            for field in fields(self._records[self._scen_name][agent_name].cost_funcs):
-                if not getattr(self._params, field.name).active:
-                    continue
-                cost_func = getattr(self._records[self._scen_name][agent_name].cost_funcs, field.name)
-                new_costs = cost_func(road_map=self._road_map, obs=base_obs)
+            for _, cost_func in self._cost_funcs[agent_name].items():
+                new_costs = cost_func(road_map=self._road_map, done=Done(dones[agent_name]), obs=base_obs)
                 costs = _add_dataclass(new_costs, costs)
 
             # Update stored costs.
@@ -188,43 +192,62 @@ class MetricsBase(gym.Wrapper):
         self._cost_funcs = {}
 
         # _check_scen(self._scen)
-        end_point:Point = Point(0,0,0)
-        dist_tot:float = 0
 
         # Compute end point and total scenario distance with respect to specified vehicle.
-        if self._params.dist_to_destination.active and self._params.dist_to_destination.wrt != "self":
-            vehicle_name = self._params.dist_to_destination.wrt
-            traffic_sims = self.env.smarts.traffic_sims
-            traffic_sim = [traffic_sim for traffic_sim in traffic_sims if traffic_sim.manages_actor(vehicle_name)]
-            assert len(traffic_sim) == 1, "Multiple traffic sims contain the vehicle of interest."
-            traffic_sim = traffic_sim[0]
-            dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
-            end_point: Point = self._road_map.road_by_id(dest_road).lane_at_index(0).from_lane_coord(RefLinePoint(s=1e10))
-            route = traffic_sim.route_for_vehicle(vehicle_name)
-            dist_tot: float = route.road_length
+        if self._params.dist_to_destination.active:
+            if self._params.dist_to_destination.wrt != "self":
+                vehicle_name = self._params.dist_to_destination.wrt
+                traffic_sims = self.env.smarts.traffic_sims
+                traffic_sim = [
+                    traffic_sim
+                    for traffic_sim in traffic_sims
+                    if traffic_sim.manages_actor(vehicle_name)
+                ]
+                assert (
+                    len(traffic_sim) == 1
+                ), "Multiple traffic sims contain the vehicle of interest."
+                traffic_sim = traffic_sim[0]
+                dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
+                end_pos = (
+                    self._road_map.road_by_id(dest_road)
+                    .lane_at_index(0)
+                    .from_lane_coord(RefLinePoint(s=1e10))
+                )
+                route = traffic_sim.route_for_vehicle(vehicle_name)
+                dist_tot = route.road_length
+        else:
+            end_pos = Point(0, 0, 0)
+            dist_tot = 0
 
         for agent_name in self._cur_agents:
-            if self._params.dist_to_destination.active and self._params.dist_to_destination.wrt == "self":
-                end_point = self._scen.missions[agent_name].goal.position
-                dist_tot=get_dist(
-                        road_map=self._road_map,
-                        point_a=Point(*self._scen.missions[agent_name].start.position),
-                        point_b=end_point,    
-                    )
-            self._cost_funcs[agent_name] = make_cost_funcs(dist_tot,end_point)
+            if (
+                self._params.dist_to_destination.active
+                and self._params.dist_to_destination.wrt == "self"
+            ):
+                end_pos = self._scen.missions[agent_name].goal.position
+                dist_tot = get_dist(
+                    road_map=self._road_map,
+                    point_a=Point(*self._scen.missions[agent_name].start.position),
+                    point_b=end_pos,
+                )
+            self._cost_funcs[agent_name] = make_cost_funcs(
+                params=self._params,
+                dist_to_destination={
+                    "end_pos": end_pos,
+                    "dist_tot": dist_tot,
+                },
+            )
 
-        if self._scen_name in self._records.keys():
-            return result 
-        else:
+        if self._scen_name not in self._records.keys():
             self._records[self._scen_name] = {
                 agent_name: Record(
                     costs=Costs(),
                     counts=Counts(),
                 )
+                for agent_name in self._cur_agents
             }
 
         return result
-
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
@@ -292,7 +315,7 @@ class Metrics(gym.Wrapper):
         super().__init__(env)
 
     def __getattr__(self, name: str):
-        """Returns an attribute with ``name``, unless ``name`` is a restricted 
+        """Returns an attribute with ``name``, unless ``name`` is a restricted
         attribute or starts with an underscore."""
         if name == "_np_random":
             raise AttributeError(

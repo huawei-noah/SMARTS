@@ -29,7 +29,6 @@ import numpy as np
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.types import Data
 
 Score = NewType("Score", Dict[str, float])
 
@@ -52,7 +51,7 @@ class Formula(FormulaBase):
     def params(self) -> Params:
         return Params()
 
-    def score(self, records: Dict[str, Data]) -> Score:
+    def score(self, records) -> Score:
         """
         Computes four sub-component scores, namely, "Completion", "Time",
         "Humanness", "Rules", and one total combined score named "Overall"
@@ -93,7 +92,7 @@ class Formula(FormulaBase):
         costs_tot: Costs = functools.reduce(
             lambda a, b: _add_dataclass(a, b), costs_list
         )
-        completion_tot: Completion = functools.reduce(
+        completion_tot = functools.reduce(
             lambda a, b: _add_dataclass(a, b), completion_list
         )
 
@@ -128,7 +127,7 @@ def _add_dataclass(first: T, second: T) -> T:
     return output
 
 
-def _completion(completion: Completion) -> float:
+def _completion(completion) -> float:
     """
     Proportion of scenarios tasks completed.
 
