@@ -18,16 +18,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import dataclass
-from typing import Callable, Dict
-
 import numpy as np
+from dataclasses import dataclass
+from typing import Callable, Dict, NewType
 
-from smarts.core.coordinates import Point
+from smarts.core.coordinates import Heading, Point
 from smarts.core.observations import Observation
+from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
+from smarts.env.gymnasium.wrappers.metric.params import Params
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class Costs:
 
     collisions: int = 0
     comfort: float = 0
+    dist_to_destination: float = 0
     dist_to_obstacles: float = 0
     gap_between_vehicles: float = 0
     jerk_linear: float = 0
@@ -43,6 +45,10 @@ class Costs:
     off_road: int = 0
     speed_limit: float = 0
     wrong_way: float = 0
+
+
+Done = NewType("Done", bool)
+CostFuncs = NewType("CostFuncs", Dict[str, Callable[[RoadMap, Observation], Costs]])
 
 
 def _collisions(road_map: RoadMap, obs: Observation) -> Costs:
@@ -67,22 +73,24 @@ def _comfort() -> Callable[[RoadMap, Observation], Costs]:
     return func
 
 
-def _dist_to_destination(start_pos:Point, end_pos:Point) -> Callable[[RoadMap, Observation], Costs]:
+def _dist_to_destination(end_pos:Point=Point(0,0,0),dist_tot:float=0) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
-    start_pos = start_pos
     end_pos = end_pos
+    dist_tot = dist_tot
 
-    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done:Dict[str,bool], obs: Observation) -> Costs:
-        nonlocal mean, step, start_pos, end_pos
+    def func(road_map: RoadMap, done:Done, obs: Observation) -> Costs:
+        nonlocal mean, step, end_pos, dist_tot
 
-        pos_1 = vehicle_index.vehicle_position()
-        pos_2 = vehicle_index.vehicle_position()
-        pos_3 = vehicle_index.vehicle_position()
-
-        j_gap = pos_1 + pos_2 + pos_3
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
-        return Costs(comfort=0)
+        if not done:
+            return Costs(dist_to_destination=-1)
+        elif obs.events.reached_goal:
+            return Costs(dist_to_destination=0)
+        else:
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            dist_remainder = get_dist(road_map=road_map, point_a=cur_pos, point_b=end_pos)
+            dist_remainder_capped = min(dist_remainder, dist_tot) # Cap remainder distance
+            return Costs(dist_to_destination=dist_remainder_capped/dist_tot)
 
     return func
 
@@ -290,21 +298,50 @@ def _wrong_way() -> Callable[[RoadMap, Observation], Costs]:
 
 
 """Functions to compute performance costs. Each cost function computes the
-running mean cost over number of time steps, for a given scenario."""
-COST_FUNCS = {
-    dist_to_destination: Callable[[RoadMap, Observation], Costs]
-    collisions: Callable[[RoadMap, Observation], Costs] = _collisions
-    comfort: Callable[[RoadMap, Observation], Costs] = _comfort()
-    dist_to_obstacles: Callable[[RoadMap, Observation], Costs] = _dist_to_obstacles()
-    gap_between_vehicles: Callable[
-        [RoadMap, Observation], Costs
-    ] = _gap_between_vehicles()
-    jerk_linear: Callable[[RoadMap, Observation], Costs] = _jerk_linear()
-    lane_center_offset: Callable[[RoadMap, Observation], Costs] = _lane_center_offset()
-    off_road: Callable[[RoadMap, Observation], Costs] = _off_road
-    speed_limit: Callable[[RoadMap, Observation], Costs] = _speed_limit()
-    wrong_way: Callable[[RoadMap, Observation], Costs] = _wrong_way()
-}
 
+def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
+    """
+    Computes the shortest route distance from point_a to point_b in the road
+    map. Both points should lie on a road in the road map. Key assumption about
+    the road map: Any two given points on the road map have valid routes in 
+    both directions.
+    
+    Args:
+        road_map: Scenario road map.
+        point_a: A point, in world-map coordinates, which lies on a road.
+        point_b: A point, in world-map coordinates, which lies on a road.
 
-def make_cost_funcs():
+    Returns:
+        float: Shortest road distance between two points in the road map.
+    """
+
+    def _get_dist(start: Point, end: Point) -> float:
+        mission = Mission(
+            start=Start(
+                position=start.as_np_array,
+                heading=Heading(0),
+                from_front_bumper=False,
+            ),
+            goal=PositionalGoal(
+                position=end,
+                radius=3,
+            ),
+        )
+        plan = Plan(road_map=road_map, mission=mission, find_route=False)
+        plan.create_route(mission=mission, radius=20)
+        from_route_point = RoadMap.Route.RoutePoint(pt=start)
+        to_route_point = RoadMap.Route.RoutePoint(pt=end)
+
+        dist_tot = plan.route.distance_between(
+            start=from_route_point, end=to_route_point
+        )
+        if dist_tot == None:
+            raise CostError("Unable to find road on route near given points.")
+        elif dist_tot < 0:
+            raise CostError(
+                "Path from start point to end point flows in "
+                "the opposite direction of the generated route."
+            )
+        return dist_tot
+
+    return _get_dist(point_a, point_b)
