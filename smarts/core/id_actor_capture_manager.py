@@ -58,6 +58,7 @@ class IdActorCaptureManager(ActorCaptureManager):
             for a, (b, m) in self._actor_for_agent.items()
             if m.start_time <= sim.elapsed_sim_time and a in social_vehicle_ids
         ):
+            assert isinstance(mission.entry_tactic, IdEntryTactic)
             patience_expiry = mission.start_time + mission.entry_tactic.patience
             if sim.elapsed_sim_time > patience_expiry:
                 self._log.error(
