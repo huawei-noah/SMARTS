@@ -53,7 +53,12 @@ def bullet_simulation(fixed_timestep_sec=time_step):
 
 
 def step_with_vehicle_commands(
-    bv: AckermannChassis, bullet_simulation: BulletSimulation, steps, throttle=0, brake=0, steering=0
+    bv: AckermannChassis,
+    bullet_simulation: BulletSimulation,
+    steps,
+    throttle=0,
+    brake=0,
+    steering=0,
 ):
     collisions = []
     for _ in range(steps):
@@ -63,7 +68,13 @@ def step_with_vehicle_commands(
     return collisions
 
 
-def step_with_pose_delta(bv: BoxChassis, bullet_simulation: BulletSimulation, steps, pose_delta: np.ndarray, speed: float):
+def step_with_pose_delta(
+    bv: BoxChassis,
+    bullet_simulation: BulletSimulation,
+    steps,
+    pose_delta: np.ndarray,
+    speed: float,
+):
     collisions = []
     for _ in range(steps):
         cur_pose = bv.pose
@@ -129,7 +140,9 @@ def test_collision_collide_with_standing_vehicle(bullet_simulation: BulletSimula
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_simulation.client,
     )
-    collisions = step_with_vehicle_commands(chassis, bullet_simulation, steps=1000, throttle=1, steering=0)
+    collisions = step_with_vehicle_commands(
+        chassis, bullet_simulation, steps=1000, throttle=1, steering=0
+    )
     collided_bullet_ids = set([c.bullet_id for c in collisions])
     GROUND_ID = 0
     assert len(collisions) > 0
