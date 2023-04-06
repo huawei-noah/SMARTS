@@ -72,6 +72,7 @@ class Config:
             raise FileNotFoundError(f"Configuration file not found at {config_file}")
 
         self._config.read(str(config_file.absolute()))
+        print(f"Using configuration from: {config_file.absolute()}")
 
     @property
     def environment_prefix(self):

@@ -21,11 +21,12 @@
 # THE SOFTWARE.
 import concurrent.futures
 import logging
-from typing import Any, Dict, Optional, Set
+from typing import Optional, Set
 
 import ray
 
 from smarts.core import config
+from smarts.core.configuration import Config
 from smarts.core.sensors import SensorResolver, Sensors
 from smarts.core.serialization.default import dumps, loads
 from smarts.core.simulation_frame import SimulationFrame
@@ -37,25 +38,44 @@ logger = logging.getLogger(__name__)
 
 
 class RaySensorResolver(SensorResolver):
+    """A version of the sensor resolver that uses "ray" in its underlying implementation.
+    
+    Args:
+        process_count_override (Optional[int]): An override for how many workers should be used.
+    """
     def __init__(self, process_count_override: Optional[int] = None) -> None:
-        cluster_cpus = ray.cluster_resources()["CPU"]
+        conf: Config = config()
         self._num_observation_workers = (
-            min(
-                config()("ray", "observation_workers", default=128, cast=int),
-                cluster_cpus,
-            )
+            conf("core", "observation_workers", default=128, cast=int)
             if process_count_override == None
             else max(1, process_count_override)
         )
+        if not ray.is_initialized():
+            ray.init(
+                num_cpus=self._num_observation_workers,
+                log_to_driver=conf("ray", "log_to_driver", default=False, cast=bool)
+            )
         self._sim_local_constants: SimulationLocalConstants = None
+        self._current_workers = []
 
-    def get_actors(self, count):
-        return [
-            ProcessWorker.options(
-                name=f"sensor_worker_{i}", get_if_exists=True
-            ).remote()
-            for i in range(count)
-        ]
+    def get_ray_worker_actors(self, count: int):
+        """Get the current "ray" worker actors.
+
+        Args:
+            count (int): The number of workers to get.
+
+        Returns:
+            Any: The "ray" remote worker handles.
+        """
+        if len(self._current_workers) != count:
+            # we need to cache because using options(name) is extremely slow
+            self._current_workers =[
+                ProcessWorker.options(
+                    name=f"sensor_worker_{i}", get_if_exists=True
+                ).remote()
+                for i in range(count)
+            ]
+        return self._current_workers
 
     def observe(
         self,
@@ -66,10 +86,9 @@ class RaySensorResolver(SensorResolver):
         bullet_client,
     ):
         observations, dones, updated_sensors = {}, {}, {}
-        if not ray.is_initialized():
-            ray.init()
 
-        ray_actors = self.get_actors(self._num_observation_workers)
+
+        ray_actors = self.get_ray_worker_actors(self._num_observation_workers)
         len_workers = len(ray_actors)
 
         tasks = []
@@ -79,12 +98,13 @@ class RaySensorResolver(SensorResolver):
         ):
             # Update remote state (if necessary)
             remote_sim_frame = ray.put(dumps(sim_frame))
-            if (
+            if self._sim_local_constants is None or (
                 self._sim_local_constants.road_map_hash
                 != sim_local_constants.road_map_hash
             ):
+                remote_sim_local_constants = ray.put(dumps(sim_local_constants))
                 for a in ray_actors:
-                    a.update_local_constants(dumps(sim_local_constants))
+                    a.update_local_constants.remote(remote_sim_local_constants)
 
             # Start remote tasks
             agent_ids_for_grouping = list(agent_ids)
@@ -128,7 +148,7 @@ class RaySensorResolver(SensorResolver):
                     dones.update(ds)
                     updated_sensors.update(u_sens)
 
-            with timeit(f"merging observations", logger.info):
+            with timeit("merging observations", logger.info):
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
                     observations[agent_id] = replace(observations[agent_id], **r_obs)
@@ -141,7 +161,7 @@ class RaySensorResolver(SensorResolver):
             sensor_state.step()
 
 
-@ray.remote()
+@ray.remote
 class ProcessWorker:
     def __init__(self) -> None:
         self._simulation_local_constants: Optional[SimulationLocalConstants] = None
@@ -150,7 +170,7 @@ class ProcessWorker:
         self._simulation_local_constants = loads(sim_local_constants)
 
     def do_work(self, remote_sim_frame, agent_ids):
-        sim_frame = loads(ray.get(remote_sim_frame))
-        Sensors.observe_serializable_sensor_batch(
+        sim_frame = loads(remote_sim_frame)
+        return Sensors.observe_serializable_sensor_batch(
             sim_frame, self._simulation_local_constants, agent_ids
         )
