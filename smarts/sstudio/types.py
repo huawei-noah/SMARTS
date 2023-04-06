@@ -623,8 +623,12 @@ class IdEntryTactic(EntryTactic):
     actor_id: str
     """The id of the actor to take over."""
 
-    time_range: Tuple[float, float] = (0, maxsize)
-    """Defines a specific simulation time range where this will look for an actor."""
+    patience: float = 0.1
+    """Defines a the amount of time this tactic will wait for an actor."""
+
+    def __post_init__(self):
+        assert isinstance(self.actor_id, str)
+        assert isinstance(self.patience, (float, int))
 
 
 @dataclass(frozen=True)

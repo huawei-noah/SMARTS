@@ -36,7 +36,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=scenarios,
-        agent_specs=agent_specs,
+        agent_interfaces={a_id: ags.interface for a_id, ags in agent_specs.items()},
         headless=headless,
         sumo_headless=True,
     )
