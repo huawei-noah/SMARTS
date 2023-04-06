@@ -19,7 +19,7 @@ class Comfort:
 
 
 @dataclass
-class DistCompleted:
+class DistToDestination:
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -108,7 +108,7 @@ class WrongWay:
 class Params:
     collisions:Collisions= Collisions()
     comfort:Comfort = Comfort()
-    dist_completed:DistCompleted = DistCompleted()
+    dist_to_destination:DistToDestination = DistToDestination()
     dist_to_obstacles:DistToObstacles = DistToObstacles()
     gap_between_vehicles:GapBetweenVehicles = GapBetweenVehicles()
     jerk_linear:JerkLinear = JerkLinear()

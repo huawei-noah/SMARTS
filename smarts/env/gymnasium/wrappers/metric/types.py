@@ -4,7 +4,6 @@ from smarts.env.gymnasium.wrappers.metric.completion import Completion, Completi
 from smarts.env.gymnasium.wrappers.metric.costs import CostFuncs, Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 
-
 @dataclass
 class Record:
     """Stores an agent's scenario-completion, performance-count, and

@@ -43,6 +43,7 @@ from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Data, Record
 from smarts.core.road_map import RoadMap
 from smarts.core.vehicle_index import VehicleIndex
+from smarts.core.coordinates import RefLinePoint
 
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
@@ -91,7 +92,7 @@ class MetricsBase(gym.Wrapper):
             # (ii) ObservationOptions.unformated, and (iii) ObservationOptions.default .
             dones = {k: v or truncated[k] for k, v in terminated.items()}
         elif isinstance(terminated, bool):
-            # Caters to environments which use ObservationOptions.full .
+            # Caters to environments which use (i) ObservationOptions.full .
             if terminated or truncated:
                 dones["__all__"] = True
             else:
@@ -200,26 +201,29 @@ class MetricsBase(gym.Wrapper):
             return result 
 
         # _check_scen(self._scen)
-        completion = Completion()
+        end_point:Point = Point(0,0,0)
+        dist_tot:float = 0
 
-        # Compute total scenario distance with respect to specified vehicle.
-        if self._params.dist_completed.active and self._params.dist_completed.wrt is not "self":
-            vehicle_name = self._params.dist_completed.wrt
+        # Compute end point and total scenario distance with respect to specified vehicle.
+        if self._params.dist_to_destination.active and self._params.dist_to_destination.wrt != "self":
+            vehicle_name = self._params.dist_to_destination.wrt
             traffic_sims = self.env.smarts.traffic_sims
-            routes = [traffic_sim.route_for_vehicle(vehicle_name) for traffic_sim in traffic_sims]
-            route = [route for route in routes if route is not None]
-            assert len(route) == 1, "Multiple traffic sims contain the vehicle of interest."
-            completion = Completion(dist_tot = route[0].road_length)
+            traffic_sim = [traffic_sim for traffic_sim in traffic_sims if traffic_sim.manages_actor(vehicle_name)]
+            assert len(traffic_sim) == 1, "Multiple traffic sims contain the vehicle of interest."
+            traffic_sim = traffic_sim[0]
+            dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
+            end_point: Point = self._road_map.road_by_id(dest_road).lane_at_index(0).from_lane_coord(RefLinePoint(s=1e10))
+            route = traffic_sim.route_for_vehicle(vehicle_name)
+            dist_tot: float = route.road_length
 
         for agent_name in self._cur_agents:
-            if self._params.dist_completed.active and self._params.dist_completed.wrt == "self":
-                completion = Completion(
-                    dist_tot=get_dist(
+            if self._params.dist_to_destination.active and self._params.dist_to_destination.wrt == "self":
+                end_point = self._scen.missions[agent_name].goal.position
+                dist_tot=get_dist(
                         road_map=self._road_map,
                         point_a=Point(*self._scen.missions[agent_name].start.position),
-                        point_b=self._scen.missions[agent_name].goal.position,    
+                        point_b=end_point,    
                     )
-                )
             self._records[self._scen_name] = {
                 agent_name: Data(
                     record=Record(
