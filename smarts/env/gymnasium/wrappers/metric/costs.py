@@ -233,8 +233,8 @@ def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
 
         if obs.events.off_road:
             # When vehicle is off road, the lane_center_offset cost
-            # (i.e., j_lc) is set as zero.
-            j_lc = 0
+            # (i.e., j_lco) is set as zero.
+            j_lco = 0
         else:
             # Vehicle's offset along the lane
             ego_pos = obs.ego_vehicle_state.position
@@ -249,10 +249,10 @@ def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
             # reflinepoint.t = signed distance from lane center
             norm_dist_from_center = reflinepoint.t / lane_hwidth
 
-            # J_LC : Lane center offset
-            j_lc = norm_dist_from_center**2
+            # j_lco : Lane center offset
+            j_lco = norm_dist_from_center**2
 
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_lc)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_lco)
         return Costs(lane_center_offset=mean)
 
     return func
@@ -281,7 +281,7 @@ def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
         if obs.events.off_road:
             # When vehicle is off road, the speed_limit cost (i.e., j_v) is
             # set as zero.
-            j_v = 0
+            j_speed_limit = 0
         else:
             # Nearest lane's speed limit.
             ego_speed = obs.ego_vehicle_state.speed
@@ -295,9 +295,9 @@ def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
             # Excess speed beyond speed limit.
             overspeed = ego_speed - speed_limit if ego_speed > speed_limit else 0
             overspeed_norm = min(overspeed / (0.5 * speed_limit), 1)
-            j_v = overspeed_norm**2
+            j_speed_limit = overspeed_norm**2
 
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_v)
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_speed_limit)
         return Costs(speed_limit=mean)
 
     return func
