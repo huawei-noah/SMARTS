@@ -50,7 +50,7 @@ class Formula(FormulaBase):
             Params: Cost function parameters.
         """
         params = Params(
-            confort=Comfort(
+            comfort=Comfort(
                 active=False,
             ),
             dist_to_destination=DistToDestination(

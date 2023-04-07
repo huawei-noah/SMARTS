@@ -229,6 +229,12 @@ class MetricsBase(gym.Wrapper):
                     "end_pos": end_pos,
                     "dist_tot": dist_tot,
                 },
+                dist_to_obstacles={
+                    "ignore": self._params.dist_to_obstacles.ignore,
+                },
+                gap_between_vehicles={
+                    "interest": self._params.gap_between_vehicles.interest,
+                }
             )
 
         # Create new entry in records_sum for new scenarios.

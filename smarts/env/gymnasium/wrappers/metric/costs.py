@@ -193,14 +193,15 @@ def _dist_to_obstacles(
     return func
 
 
-def _gap_between_vehicles() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _gap_between_vehicles(interest:str) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
+    interest = interest
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step
+        nonlocal mean, step, interest
 
         pos_1 = vehicle_index.vehicle_position()
         pos_2 = vehicle_index.vehicle_position()

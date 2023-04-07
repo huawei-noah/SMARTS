@@ -168,7 +168,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
         log_workers=log_workers,
     ):
         named_scores.append((name, score))
-        print(f"Scoring {name}...")
+        print(f"Scoring {name} ...")
 
     def format_one_line_scores(named_scores: List[Tuple[str, Score]]):
         name_just = 30
@@ -188,7 +188,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             f"- {k}: {v/scenario_count}" for k, v in score_sum._asdict().items()
         )
 
-    print("Evaluation complete...")
+    print("Evaluation complete ...")
     print()
     print(format_one_line_scores(named_scores))
     print()
