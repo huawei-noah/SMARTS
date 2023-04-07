@@ -19,9 +19,8 @@
 # THE SOFTWARE.
 
 import copy
-from dataclasses import fields
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Set, TypeVar, Union
+from typing import Any, Dict, Optional, Set
 
 import gymnasium as gym
 
@@ -43,7 +42,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Record
-
+from smarts.env.gymnasium.wrappers.metric.utils import add_dataclass, op_dataclass, multiply, divide
 
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
@@ -121,7 +120,7 @@ class MetricsBase(gym.Wrapper):
                     road_map=self._road_map, done=Done(dones[agent_name]), obs=base_obs
                 )
                 if dones[agent_name]:
-                    costs = _add_dataclass(new_costs, costs)
+                    costs = add_dataclass(new_costs, costs)
 
             if dones[agent_name] == False:
                 # Skip the rest, if agent is not done yet.
@@ -157,10 +156,10 @@ class MetricsBase(gym.Wrapper):
                 goals=base_obs.events.reached_goal,
                 max_steps=self.env.agent_interfaces[agent_name].max_episode_steps,
             )
-            self._records_sum[self._scen_name][agent_name].counts = _add_dataclass(
+            self._records_sum[self._scen_name][agent_name].counts = add_dataclass(
                 counts, self._records_sum[self._scen_name][agent_name].counts
             )
-            self._records_sum[self._scen_name][agent_name].costs = _add_dataclass(
+            self._records_sum[self._scen_name][agent_name].costs = add_dataclass(
                 costs, self._records_sum[self._scen_name][agent_name].costs
             )
 
@@ -277,8 +276,8 @@ class MetricsBase(gym.Wrapper):
             for agent, data in agents.items():
                 data_copy = copy.deepcopy(data)
                 records[scen][agent] = Record(
-                    costs=_op_dataclass(
-                        data_copy.costs, data_copy.counts.episodes, _divide
+                    costs=op_dataclass(
+                        data_copy.costs, data_copy.counts.episodes, divide
                     ),
                     counts=data_copy.counts,
                 )
@@ -294,7 +293,8 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
-        return self._formula.score(records=self.records(), params=self._params)
+        records_sum_copy = copy.deepcopy(self._records_sum)
+        return self._formula.score(records_sum=records_sum_copy)
 
 
 class Metrics(gym.Wrapper):
@@ -384,37 +384,3 @@ def _check_scen(scen: Scenario):
             "Expected all agents to have PositionalGoal, but agents have goal type "
             "{0}".format(goal_types)
         )
-
-
-T = TypeVar("T", Costs, Counts)
-
-
-def _add_dataclass(first: T, second: T) -> T:
-    assert type(first) is type(second)
-    new = {}
-    for field in fields(first):
-        new[field.name] = getattr(first, field.name) + getattr(second, field.name)
-    output = first.__class__(**new)
-
-    return output
-
-
-def _op_dataclass(
-    first: T,
-    second: Union[int, float],
-    op: Callable[[Union[int, float], Union[int, float]], float],
-) -> T:
-    new = {}
-    for field in fields(first):
-        new[field.name] = op(getattr(first, field.name), second)
-    output = first.__class__(**new)
-
-    return output
-
-
-def _multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
-    return float(value * multiplier)
-
-
-def _divide(value: Union[int, float], divider: Union[int, float]) -> float:
-    return float(value / divider)

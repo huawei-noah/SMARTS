@@ -37,6 +37,7 @@ from smarts.env.gymnasium.wrappers.metric.params import (
     Params,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
+from smarts.env.gymnasium.wrappers.metric.utils import add_dataclass, op_dataclass, multiply, divide
 
 
 class Formula(FormulaBase):
@@ -71,7 +72,7 @@ class Formula(FormulaBase):
         )
         return params
 
-    def score(self, records: Dict[str, Dict[str, Record]], params: Params) -> Score:
+    def score(self, records_sum: Dict[str, Dict[str, Record]]) -> Score:
         """
         Computes four sub-component scores, namely, "Distance to Destination",
         "Time", "Humanness", "Rules", and one total combined score named
@@ -96,25 +97,24 @@ class Formula(FormulaBase):
             "Humanness", and "Rules" scores.
         """
 
-        counts_list, costs_list, completion_list = zip(
+        counts_list, costs_list = zip(
             *[
-                (data.record.counts, data.record.costs, data.record.completion)
-                for agents in records.values()
-                for data in agents.values()
+                (record.counts, record.costs)
+                for scen, val in records_sum.items()
+                for agent, record in val.items()
             ]
-        )
+        ) # <--- check correctness of averaging here
+
         agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
         counts_tot: Counts = functools.reduce(
-            lambda a, b: _add_dataclass(a, b), counts_list
+            lambda a, b: add_dataclass(a, b), counts_list
         )
         costs_tot: Costs = functools.reduce(
-            lambda a, b: _add_dataclass(a, b), costs_list
-        )
-        completion_tot = functools.reduce(
-            lambda a, b: _add_dataclass(a, b), completion_list
+            lambda a, b: add_dataclass(a, b), costs_list
         )
 
-        dist_to_destination = _dist_to_destination(completion=completion_tot)
+        # <------ Check summing of different values according to intended formula
+        dist_to_destination = _dist_to_destination(costs=costs_tot, agents_tot=agents_tot)
         humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
         rules = _rules(costs=costs_tot, agents_tot=agents_tot)
         time = _time(counts=counts_tot)
@@ -127,55 +127,20 @@ class Formula(FormulaBase):
 
         return Score(
             {
+                "overall": overall,
                 "dist_to_destination": dist_to_destination,
+                "time": time,
                 "humanness": humanness,
                 "rules": rules,
-                "time": time,
-                "overall": overall,
             }
         )
 
 
-T = TypeVar("T", Costs, Counts)
-
-
-def _add_dataclass(first: T, second: T) -> T:
-    assert type(first) is type(second)
-    new = {}
-    for field in fields(first):
-        sum = getattr(first, field.name) + getattr(second, field.name)
-        new[field.name] = sum
-    output = first.__class__(**new)
-
-    return output
-
-
-def _completion(completion) -> float:
-    """
-    Proportion of scenarios tasks completed.
-
-    Args:
-        completion (Completion): Scenario tasks completed.
-
-    Returns:
-        float: Normalized completion value = [0, 1]. Completion value should be
-            maximized. The higher the value, the better it is.
-    """
-    return (completion.dist_tot - completion.dist_remainder) / completion.dist_tot
+def _dist_to_destination(costs:Costs, agents_tot:int) -> float:
+    return costs.dist_to_destination / agents_tot
 
 
 def _humanness(costs: Costs, agents_tot: int) -> float:
-    """
-    Humanness indicator.
-
-    Args:
-        costs (Costs): Performance cost values.
-        agents_tot (int): Number of agents simulated.
-
-    Returns:
-        float: Normalized humanness value = [0, 1]. Humanness value should be
-            maximized. The higher the value, the better it is.
-    """
     humanness_to_minimize = np.array(
         [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
     )
@@ -184,31 +149,10 @@ def _humanness(costs: Costs, agents_tot: int) -> float:
 
 
 def _rules(costs: Costs, agents_tot: int) -> float:
-    """
-    Traffic rules compliance.
-
-    Args:
-        costs (Costs): Performance cost values.
-        agents_tot (int): Number of agents simulated.
-
-    Returns:
-        float: Normalized rules value = [0, 1]. Rules value should be maximized.
-            The higher the value, the better it is.
-    """
     rules_to_minimize = np.array([costs.speed_limit, costs.wrong_way])
     rules_to_minimize = np.mean(rules_to_minimize, dtype=float) / agents_tot
     return 1 - rules_to_minimize
 
 
 def _time(counts: Counts) -> float:
-    """
-    Time taken to complete scenario.
-
-    Args:
-        counts (Counts): Performance count values.
-
-    Returns:
-        float: Normalized time value = (0, 1]. Time value should be minimized.
-            The lower the value, the better it is.
-    """
     return counts.steps_adjusted / counts.max_steps
