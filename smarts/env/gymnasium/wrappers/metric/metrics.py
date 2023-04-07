@@ -21,7 +21,7 @@
 import copy
 from dataclasses import fields
 from pathlib import Path
-from typing import Any, Dict, Optional, Set, TypeVar
+from typing import Any, Callable, Dict, Optional, Set, TypeVar, Union
 
 import gymnasium as gym
 
@@ -206,7 +206,7 @@ class MetricsBase(gym.Wrapper):
             end_pos = Point(0, 0, 0)
             dist_tot = 0
 
-        # Refresh cost functions for every episode
+        # Refresh cost functions for every episode.
         for agent_name in self._cur_agents:
             if (
                 self._params.dist_to_destination.active
@@ -265,7 +265,7 @@ class MetricsBase(gym.Wrapper):
             for agent, data in agents.items():
                 data_copy = copy.deepcopy(data)
                 records[scen][agent] = Record(
-                    costs = data_copy.costs/data_copy.counts.episodes,
+                    costs = _op_dataclass(data_copy.costs,data_copy.counts.episodes,_divide),
                     counts = data_copy.counts
                 )
 
@@ -379,8 +379,21 @@ def _add_dataclass(first: T, second: T) -> T:
     assert type(first) is type(second)
     new = {}
     for field in fields(first):
-        sum = getattr(first, field.name) + getattr(second, field.name)
-        new[field.name] = sum
+        new[field.name] = getattr(first, field.name) + getattr(second, field.name)
     output = first.__class__(**new)
 
     return output
+
+def _op_dataclass(first: T, second: Union[int,float], op:Callable[[Union[int,float],Union[int,float]],float]) -> T:
+    new = {}
+    for field in fields(first):
+        new[field.name] = op(getattr(first, field.name), second)
+    output = first.__class__(**new)
+
+    return output
+
+def _multiply(value:Union[int,float], multiplier:Union[int,float])->float:
+    return float(value * multiplier)
+
+def _divide(value:Union[int,float], divider:Union[int,float])->float:
+    return float(value / divider)
