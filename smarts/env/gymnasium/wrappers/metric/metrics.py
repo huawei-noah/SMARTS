@@ -65,7 +65,7 @@ class MetricsBase(gym.Wrapper):
         self._done_agents: Set[str]
         self._vehicle_index: VehicleIndex
         self._cost_funcs: Dict[str, CostFuncs]
-        self._records_detailed: Dict[str,Dict[str,Costs]] = {}
+        self._records_sum: Dict[str,Dict[str,Record]] = {}
 
         # Import scoring formula
         if formula_path:
@@ -110,7 +110,6 @@ class MetricsBase(gym.Wrapper):
             # Caters to environments which uses (i) ObservationOptions.unformated .
             active_agents = list(obs.keys())
 
-        # fmt: off
         for agent_name in active_agents:
             base_obs: Observation = info[agent_name]["env_obs"]
             self._steps[agent_name] += 1
@@ -119,59 +118,47 @@ class MetricsBase(gym.Wrapper):
             costs = Costs()
             for _, cost_func in self._cost_funcs[agent_name].items():
                 new_costs = cost_func(road_map=self._road_map, done=Done(dones[agent_name]), obs=base_obs)
-                costs = _add_dataclass(new_costs, costs)
+                if dones[agent_name]:
+                    costs = _add_dataclass(new_costs, costs)
 
-            # Update stored costs.
-            self._records[self._scen_name][agent_name].record.costs = costs
+            if dones[agent_name] == False:
+                continue
 
-            if dones[agent_name]:
-                self._done_agents.add(agent_name)
-                # Only these termination reasons are considered by the current metrics.
-                if not (
-                    base_obs.events.reached_goal
-                    or len(base_obs.events.collisions)
-                    or base_obs.events.off_road
-                    or base_obs.events.reached_max_episode_steps
-                    or (base_obs.events.actors_alive_done and self._params.dist_completed.active and self._params.dist_completed.wrt is not "self")
-                ):
-                    raise MetricsError(
-                        "Expected reached_goal, collisions, off_road, " 
-                        "max_episode_steps, or actors_alive_done, to be true "
-                        f"on agent done, but got events: {base_obs.events}."
-                    )
-
-                # Update stored counts.
-                counts = Counts(
-                    episodes=1,
-                    steps=self._steps[agent_name],
-                    steps_adjusted=min(
-                        self._steps[agent_name],
-                        self.env.agent_interfaces[agent_name].max_episode_steps
-                    ),
-                    goals=base_obs.events.reached_goal,
-                    max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
-                )
-                self._records[self._scen_name][agent_name].record.counts = _add_dataclass(
-                    counts, 
-                    self._records[self._scen_name][agent_name].record.counts
+            self._done_agents.add(agent_name)
+            # Only these termination reasons are considered by the current metrics.
+            if not (
+                base_obs.events.reached_goal
+                or len(base_obs.events.collisions)
+                or base_obs.events.off_road
+                or base_obs.events.reached_max_episode_steps
+                or (base_obs.events.actors_alive_done and self._params.dist_completed.active and self._params.dist_completed.wrt is not "self")
+            ):
+                raise MetricsError(
+                    "Expected reached_goal, collisions, off_road, " 
+                    "max_episode_steps, or actors_alive_done, to be true "
+                    f"on agent done, but got events: {base_obs.events}."
                 )
 
-                # Update percentage of scenario tasks completed.
-                completion = Completion(dist_tot=self._records[self._scen_name][agent_name].record.completion.dist_tot)
-                for field in fields(self._records[self._scen_name][agent_name].completion_funcs):
-                    completion_func = getattr(
-                        self._records[self._scen_name][agent_name].completion_funcs,
-                        field.name,
-                    )
-                    new_completion = completion_func(
-                        road_map=self._road_map,
-                        obs=base_obs,
-                        initial_compl=completion,
-                    )
-                    completion = _add_dataclass(new_completion, completion)
-                self._records[self._scen_name][agent_name].record.completion = completion
+            # Update stored counts and costs.
+            counts = Counts(
+                episodes=1,
+                steps=self._steps[agent_name],
+                steps_adjusted=min(
+                    self._steps[agent_name],
+                    self.env.agent_interfaces[agent_name].max_episode_steps
+                ),
+                goals=base_obs.events.reached_goal,
+                max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
+            )
+            self._records_sum[self._scen_name][agent_name].record.counts = _add_dataclass(
+                counts, 
+                self._records_sum[self._scen_name][agent_name].record.counts
+            )
+            self._records_sum[self._scen_name][agent_name].record.costs = _add_dataclass(
+                costs, 
+                self._records_sum[self._scen_name][agent_name].record.costs
+            )
 
-        # fmt: on
         if dones["__all__"] is True:
             assert (
                 self._done_agents == self._cur_agents
@@ -219,6 +206,7 @@ class MetricsBase(gym.Wrapper):
             end_pos = Point(0, 0, 0)
             dist_tot = 0
 
+        # Refresh cost functions for every episode
         for agent_name in self._cur_agents:
             if (
                 self._params.dist_to_destination.active
@@ -238,20 +226,14 @@ class MetricsBase(gym.Wrapper):
                 },
             )
 
-        if self._scen_name not in self._records.keys():
-            self._records[self._scen_name] = {
+        if self._scen_name not in self._records_sum.keys():
+            self._records_sum[self._scen_name] = {
                 agent_name: Record(
                     costs=Costs(),
                     counts=Counts(),
                 )
                 for agent_name in self._cur_agents
             }
-
-            # At end of each episode
-            # + Average over agents
-            # + Then is a running mean averaged over each episode
-            # + Keep count of number of episodes, to join with parallel workers later
-            # self._cumulative_records = Costs()
 
         return result
 
@@ -278,10 +260,14 @@ class MetricsBase(gym.Wrapper):
         """
 
         records = {}
-        for scen, agents in self._records.items():
+        for scen, agents in self._records_sum.items():
             records[scen] = {}
             for agent, data in agents.items():
-                records[scen][agent] = copy.deepcopy(data)
+                data_copy = copy.deepcopy(data)
+                records[scen][agent] = Record(
+                    costs = data_copy.costs/data_copy.counts.episodes,
+                    counts = data_copy.counts
+                )
 
         return records
 
@@ -294,7 +280,7 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
-        return self._formula.score(self._records)
+        return self._formula.score(self.records())
 
 
 class Metrics(gym.Wrapper):
