@@ -361,11 +361,8 @@ def make_cost_funcs(params: Params, **kwargs) -> CostFuncs:
     for field in CostFuncsBase.__dataclass_fields__:
         if getattr(params, field).active:
             func = getattr(CostFuncsBase, field)
-            args = kwargs.get(field)
-            if args != None:
-                cost_funcs[field] = func(args)
-            else:
-                cost_funcs[field] = func()
+            args = kwargs.get(field,{})
+            cost_funcs[field] = func(**args)
 
     return cost_funcs
 
