@@ -29,6 +29,7 @@ import numpy as np
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.params import Params
+from smarts.env.gymnasium.wrappers.metric.types import Record
 
 Score = NewType("Score", Dict[str, float])
 
@@ -40,7 +41,7 @@ class FormulaBase:
     def params(self) -> Params:
         raise NotImplementedError
 
-    def score(self) -> Score:
+    def score(self, records:Dict[str, Dict[str, Record]], params:Params) -> Score:
         raise NotImplementedError
 
 
@@ -51,13 +52,14 @@ class Formula(FormulaBase):
     def params(self) -> Params:
         return Params()
 
-    def score(self, records) -> Score:
+    def score(self, records:Dict[str, Dict[str, Record]], params:Params) -> Score:
         """
         Computes four sub-component scores, namely, "Completion", "Time",
         "Humanness", "Rules", and one total combined score named "Overall"
         on the wrapped environment.
 
-        Describes the final score given by processing observations through the metrics.
+        Describes the final score given by processing observations through
+        the metrics.
 
             +-------------+--------+-----------------------------------------------------------------------------------------------------+
             |             | Range  | Remarks                                                                                             |

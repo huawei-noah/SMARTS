@@ -131,7 +131,7 @@ class MetricsBase(gym.Wrapper):
                 or len(base_obs.events.collisions)
                 or base_obs.events.off_road
                 or base_obs.events.reached_max_episode_steps
-                or (base_obs.events.actors_alive_done and self._params.dist_completed.active and self._params.dist_completed.wrt is not "self")
+                or (base_obs.events.actors_alive_done and self._params.dist_to_destination.active and self._params.dist_to_destination.wrt != "self")
             ):
                 raise MetricsError(
                     "Expected reached_goal, collisions, off_road, " 
@@ -150,13 +150,13 @@ class MetricsBase(gym.Wrapper):
                 goals=base_obs.events.reached_goal,
                 max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
             )
-            self._records_sum[self._scen_name][agent_name].record.counts = _add_dataclass(
+            self._records_sum[self._scen_name][agent_name].counts = _add_dataclass(
                 counts, 
-                self._records_sum[self._scen_name][agent_name].record.counts
+                self._records_sum[self._scen_name][agent_name].counts
             )
-            self._records_sum[self._scen_name][agent_name].record.costs = _add_dataclass(
+            self._records_sum[self._scen_name][agent_name].costs = _add_dataclass(
                 costs, 
-                self._records_sum[self._scen_name][agent_name].record.costs
+                self._records_sum[self._scen_name][agent_name].costs
             )
 
         if dones["__all__"] is True:
@@ -280,7 +280,7 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
-        return self._formula.score(self.records())
+        return self._formula.score(records=self.records(), params=self._params)
 
 
 class Metrics(gym.Wrapper):

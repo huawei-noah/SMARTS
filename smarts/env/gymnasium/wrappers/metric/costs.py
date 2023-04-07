@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 from dataclasses import dataclass
-from typing import Callable, Dict, NewType
+from typing import Callable, Dict, List, NewType
 
 import numpy as np
 
@@ -106,15 +106,17 @@ def _dist_to_destination(
     return func
 
 
-def _dist_to_obstacles() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _dist_to_obstacles(ignore:List[str]) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
+    safe_time = 3 # Safe driving distance expressed in time. Units:seconds. 
+    ignore = ignore
 
     def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
-        nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist
+        nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist, safe_time, ignore
 
         # Ego's position and heading with respect to the map's coordinate system.
         # Note: All angles returned by smarts is with respect to the map's coordinate system.
@@ -124,7 +126,7 @@ def _dist_to_obstacles() -> Callable[[RoadMap, Done, Observation], Costs]:
         ego_pos = ego.position
 
         # Set obstacle distance threshold using 3-second rule
-        obstacle_dist_th = ego.speed * 3
+        obstacle_dist_th = ego.speed * safe_time
         if obstacle_dist_th == 0:
             return Costs(dist_to_obstacles=0)
 
@@ -139,6 +141,13 @@ def _dist_to_obstacles() -> Callable[[RoadMap, Done, Observation], Costs]:
             nghb_state
             for nghb_state in nghbs_state
             if nghb_state[1] <= obstacle_dist_th
+        ]
+        if len(nghbs_state) == 0:
+            return Costs(dist_to_obstacles=0)
+
+        # Filter neighbors to be ignored.
+        nghbs_state = [
+            nghb_state for nghb_state in nghbs_state if nghb_state[0].id not in ignore
         ]
         if len(nghbs_state) == 0:
             return Costs(dist_to_obstacles=0)
