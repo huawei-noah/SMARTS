@@ -65,7 +65,7 @@ class MetricsBase(gym.Wrapper):
         self._done_agents: Set[str]
         self._vehicle_index: VehicleIndex
         self._cost_funcs: Dict[str, CostFuncs]
-        self._records_sum: Dict[str,Dict[str,Record]] = {}
+        self._records_sum: Dict[str, Dict[str, Record]] = {}
 
         # Import scoring formula
         if formula_path:
@@ -117,11 +117,14 @@ class MetricsBase(gym.Wrapper):
             # Compute all cost functions.
             costs = Costs()
             for _, cost_func in self._cost_funcs[agent_name].items():
-                new_costs = cost_func(road_map=self._road_map, done=Done(dones[agent_name]), obs=base_obs)
+                new_costs = cost_func(
+                    road_map=self._road_map, done=Done(dones[agent_name]), obs=base_obs
+                )
                 if dones[agent_name]:
                     costs = _add_dataclass(new_costs, costs)
 
             if dones[agent_name] == False:
+                # Skip the rest, if agent is not done yet.
                 continue
 
             self._done_agents.add(agent_name)
@@ -131,10 +134,14 @@ class MetricsBase(gym.Wrapper):
                 or len(base_obs.events.collisions)
                 or base_obs.events.off_road
                 or base_obs.events.reached_max_episode_steps
-                or (base_obs.events.actors_alive_done and self._params.dist_to_destination.active and self._params.dist_to_destination.wrt != "self")
+                or (
+                    base_obs.events.actors_alive_done
+                    and self._params.dist_to_destination.active
+                    and self._params.dist_to_destination.wrt != "self"
+                )
             ):
                 raise MetricsError(
-                    "Expected reached_goal, collisions, off_road, " 
+                    "Expected reached_goal, collisions, off_road, "
                     "max_episode_steps, or actors_alive_done, to be true "
                     f"on agent done, but got events: {base_obs.events}."
                 )
@@ -145,18 +152,16 @@ class MetricsBase(gym.Wrapper):
                 steps=self._steps[agent_name],
                 steps_adjusted=min(
                     self._steps[agent_name],
-                    self.env.agent_interfaces[agent_name].max_episode_steps
+                    self.env.agent_interfaces[agent_name].max_episode_steps,
                 ),
                 goals=base_obs.events.reached_goal,
-                max_steps=self.env.agent_interfaces[agent_name].max_episode_steps
+                max_steps=self.env.agent_interfaces[agent_name].max_episode_steps,
             )
             self._records_sum[self._scen_name][agent_name].counts = _add_dataclass(
-                counts, 
-                self._records_sum[self._scen_name][agent_name].counts
+                counts, self._records_sum[self._scen_name][agent_name].counts
             )
             self._records_sum[self._scen_name][agent_name].costs = _add_dataclass(
-                costs, 
-                self._records_sum[self._scen_name][agent_name].costs
+                costs, self._records_sum[self._scen_name][agent_name].costs
             )
 
         if dones["__all__"] is True:
@@ -226,6 +231,7 @@ class MetricsBase(gym.Wrapper):
                 },
             )
 
+        # Create new entry in records_sum for new scenarios.
         if self._scen_name not in self._records_sum.keys():
             self._records_sum[self._scen_name] = {
                 agent_name: Record(
@@ -265,8 +271,10 @@ class MetricsBase(gym.Wrapper):
             for agent, data in agents.items():
                 data_copy = copy.deepcopy(data)
                 records[scen][agent] = Record(
-                    costs = _op_dataclass(data_copy.costs,data_copy.counts.episodes,_divide),
-                    counts = data_copy.counts
+                    costs=_op_dataclass(
+                        data_copy.costs, data_copy.counts.episodes, _divide
+                    ),
+                    counts=data_copy.counts,
                 )
 
         return records
@@ -384,7 +392,12 @@ def _add_dataclass(first: T, second: T) -> T:
 
     return output
 
-def _op_dataclass(first: T, second: Union[int,float], op:Callable[[Union[int,float],Union[int,float]],float]) -> T:
+
+def _op_dataclass(
+    first: T,
+    second: Union[int, float],
+    op: Callable[[Union[int, float], Union[int, float]], float],
+) -> T:
     new = {}
     for field in fields(first):
         new[field.name] = op(getattr(first, field.name), second)
@@ -392,8 +405,10 @@ def _op_dataclass(first: T, second: Union[int,float], op:Callable[[Union[int,flo
 
     return output
 
-def _multiply(value:Union[int,float], multiplier:Union[int,float])->float:
+
+def _multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
     return float(value * multiplier)
 
-def _divide(value:Union[int,float], divider:Union[int,float])->float:
+
+def _divide(value: Union[int, float], divider: Union[int, float]) -> float:
     return float(value / divider)

@@ -41,7 +41,7 @@ class FormulaBase:
     def params(self) -> Params:
         raise NotImplementedError
 
-    def score(self, records:Dict[str, Dict[str, Record]], params:Params) -> Score:
+    def score(self, records: Dict[str, Dict[str, Record]], params: Params) -> Score:
         raise NotImplementedError
 
 
@@ -52,7 +52,7 @@ class Formula(FormulaBase):
     def params(self) -> Params:
         return Params()
 
-    def score(self, records:Dict[str, Dict[str, Record]], params:Params) -> Score:
+    def score(self, records: Dict[str, Dict[str, Record]], params: Params) -> Score:
         """
         Computes four sub-component scores, namely, "Completion", "Time",
         "Humanness", "Rules", and one total combined score named "Overall"

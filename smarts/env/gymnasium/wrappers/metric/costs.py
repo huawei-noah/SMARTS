@@ -106,13 +106,15 @@ def _dist_to_destination(
     return func
 
 
-def _dist_to_obstacles(ignore:List[str]) -> Callable[[RoadMap, Done, Observation], Costs]:
+def _dist_to_obstacles(
+    ignore: List[str],
+) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
     rel_heading_th = np.pi * 179 / 180
     w_dist = 0.05
-    safe_time = 3 # Safe driving distance expressed in time. Units:seconds. 
+    safe_time = 3  # Safe driving distance expressed in time. Units:seconds.
     ignore = ignore
 
     def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
@@ -183,7 +185,9 @@ def _dist_to_obstacles(ignore:List[str]) -> Callable[[RoadMap, Done, Observation
         di = np.array([nghb_state[1] for nghb_state in nghbs_state])
         j_dist_to_obstacles = np.amax(np.exp(-w_dist * di))
 
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_dist_to_obstacles)
+        mean, step = running_mean(
+            prev_mean=mean, prev_step=step, new_val=j_dist_to_obstacles
+        )
         return Costs(dist_to_obstacles=mean)
 
     return func
@@ -370,7 +374,7 @@ def make_cost_funcs(params: Params, **kwargs) -> CostFuncs:
     for field in CostFuncsBase.__dataclass_fields__:
         if getattr(params, field).active:
             func = getattr(CostFuncsBase, field)
-            args = kwargs.get(field,{})
+            args = kwargs.get(field, {})
             cost_funcs[field] = func(**args)
 
     return cost_funcs

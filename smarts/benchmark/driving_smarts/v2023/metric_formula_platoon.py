@@ -29,14 +29,26 @@ import numpy as np
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
-from smarts.env.gymnasium.wrappers.metric.params import Comfort, DistToDestination, DistToObstacles, GapBetweenVehicles, Params
+from smarts.env.gymnasium.wrappers.metric.params import (
+    Comfort,
+    DistToDestination,
+    DistToObstacles,
+    GapBetweenVehicles,
+    Params,
+)
 from smarts.env.gymnasium.wrappers.metric.types import Record
+
 
 class Formula(FormulaBase):
     def __init__(self):
         pass
 
     def params(self) -> Params:
+        """Return parameters to configure and initialize cost functions.
+
+        Returns:
+            Params: Cost function parameters.
+        """
         params = Params(
             confort=Comfort(
                 active=False,
@@ -47,7 +59,10 @@ class Formula(FormulaBase):
             ),
             dist_to_obstacles=DistToObstacles(
                 active=True,
-                ignore=["ego","Leader-007"]  # <------- Ego is not ignored yet !!!!!!!!!!!
+                ignore=[
+                    "ego",
+                    "Leader-007",
+                ],  # <------- Ego is not ignored yet !!!!!!!!!!!
             ),
             gap_between_vehicles=GapBetweenVehicles(
                 active=False,
@@ -56,31 +71,28 @@ class Formula(FormulaBase):
         )
         return params
 
-    def score(self, records:Dict[str, Dict[str, Record]], params:Params) -> Score:
+    def score(self, records: Dict[str, Dict[str, Record]], params: Params) -> Score:
         """
-        Computes four sub-component scores, namely, "Completion", "Time",
-        "Humanness", "Rules", and one total combined score named "Overall"
-        on the wrapped environment.
+        Computes four sub-component scores, namely, "Distance to Destination",
+        "Time", "Humanness", "Rules", and one total combined score named
+        "Overall" on the wrapped environment.
 
-        Describes the final score given by processing observations through
-        the metrics.
-
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            |             | Range  | Remarks                                                                                             |
-            +=============+========+=====================================================================================================+
-            | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        +-------------------+--------+-----------------------------------------------------------+
+        |                   | Range  | Remarks                                                   |
+        +===================+========+===========================================================+
+        | Overall           | [0, 1] | Total score. The higher, the better.                      |
+        +-------------------+--------+-----------------------------------------------------------+
+        | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
+        +-------------------+--------+-----------------------------------------------------------+
+        | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
+        +-------------------+--------+-----------------------------------------------------------+
+        | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
+        +-------------------+--------+-----------------------------------------------------------+
+        | Rules             | [0, 1] | Traffic rules compliance. The higher, the better.         |
+        +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Dict[str, float]: Contains "Overall", "Completion", "Time",
+            Dict[str, float]: Contains "Overall", "DistToDestination", "Time",
             "Humanness", and "Rules" scores.
         """
 
@@ -102,15 +114,20 @@ class Formula(FormulaBase):
             lambda a, b: _add_dataclass(a, b), completion_list
         )
 
-        completion = _completion(completion=completion_tot)
+        dist_to_destination = _dist_to_destination(completion=completion_tot)
         humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
         rules = _rules(costs=costs_tot, agents_tot=agents_tot)
         time = _time(counts=counts_tot)
-        overall = completion * (1 - time) * humanness * rules
+        overall = (
+            0.35 * (1 - dist_to_destination)
+            + 0.30 * (1 - time)
+            + 0.25 * humanness
+            + 0.10 * rules
+        )
 
         return Score(
             {
-                "dist_to_completion": completion,
+                "dist_to_destination": dist_to_destination,
                 "humanness": humanness,
                 "rules": rules,
                 "time": time,

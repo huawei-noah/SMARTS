@@ -58,14 +58,14 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
         for agent_id in env.agent_ids
     }
 
-    observation, info = env.reset()
+    obs, info = env.reset()
     current_resets = 0
     try:
         while current_resets < episodes:
             try:
                 action = {
-                    agent_id: agents[agent_id].act(obs)
-                    for agent_id, obs in observation.items()
+                    agent_id: agents[agent_id].act(agent_obs)
+                    for agent_id, agent_obs in obs.items()
                 }
                 # assert env.action_space.contains(action)
             except Exception:
@@ -76,10 +76,10 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
                     raise
                 terminated, truncated = False, True
             else:
-                observation, reward, terminated, truncated, info = env.step(action)
+                obs, reward, terminated, truncated, info = env.step(action)
             if terminated["__all__"] or truncated["__all__"]:
                 current_resets += 1
-                observation, info = env.reset()
+                obs, info = env.reset()
     finally:
         score = env.score()
         env.close()
@@ -143,9 +143,11 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     env_args = {}
     root_dir = Path(__file__).resolve().parents[3]
     for env_name, env_config in benchmark_args["envs"].items():
-        metric_formula = env_config.get("metric_formula", None)
-        if metric_formula is not None:
-            metric_formula = root_dir / metric_formula
+        metric_formula = (
+            root_dir / x
+            if (x := env_config.get("metric_formula", None)) != None
+            else None
+        )
         for scenario in env_config["scenarios"]:
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
@@ -190,7 +192,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     print()
     print(format_one_line_scores(named_scores))
     print()
-    print("`Driving SMARTS` averaged result:")
+    print("Driving SMARTS result:")
     print(format_scores_total(named_scores, len(env_args)))
 
 
