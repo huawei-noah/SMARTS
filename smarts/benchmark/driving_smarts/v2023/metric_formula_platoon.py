@@ -127,10 +127,10 @@ class Formula(FormulaBase):
         rules = _rules(costs=costs_final)
         time = costs_final.steps
         overall = (
-            0.35 * (1 - dist_to_destination)
-            + 0.30 * (1 - time)
-            + 0.25 * humanness
-            + 0.10 * rules
+            0.50 * (1 - dist_to_destination)
+            + 0.25 * (1 - time)
+            + 0.20 * humanness
+            + 0.05 * rules
         )
 
         return Score(
