@@ -837,9 +837,9 @@ class VehicleIndex:
         )
 
         by["position"] = [", ".join([f"{x:.2f}" for x in p]) for p in by["position"]]
-        by["actor_id"] = [truncate(p, 20) for p in by["actor_id"]]
-        by["vehicle_id"] = [truncate(p, 20) for p in by["vehicle_id"]]
-        by["shadow_actor_id"] = [truncate(p, 20) for p in by["shadow_actor_id"]]
+        by["actor_id"] = [str(truncate(p, 20)) for p in by["actor_id"]]
+        by["vehicle_id"] = [str(truncate(p, 20)) for p in by["vehicle_id"]]
+        by["shadow_actor_id"] = [str(truncate(p, 20)) for p in by["shadow_actor_id"]]
         by["is_boid"] = [str(bool(x)) for x in by["is_boid"]]
         by["is_hijacked"] = [str(bool(x)) for x in by["is_hijacked"]]
         by["actor_role"] = [str(ActorRole(x)).split(".")[-1] for x in by["actor_role"]]

@@ -348,7 +348,9 @@ class Sensors:
 
         vehicle_index: VehicleIndex = vehicle_index
 
-        pattern = re.compile(actors_alive.actors_of_interest)
+        pattern = re.compile(
+            "|".join(rf"(?:{aoi})" for aoi in actors_alive.actors_of_interest)
+        )
         ## TODO optimization to get vehicles that were added and removed last step
         ## TODO second optimization to check for already known vehicles
         for vehicle_id in vehicle_index.vehicle_ids():

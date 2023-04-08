@@ -20,7 +20,7 @@
 import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
@@ -197,7 +197,7 @@ class AgentsAliveDoneCriteria:
 class ActorsAliveDoneCriteria:
     """Require actors to persist."""
 
-    actors_of_interest: str = r""
+    actors_of_interest: Tuple[str, ...] = ()
     """Actors that should exist to continue this agent."""
 
     strict: bool = True

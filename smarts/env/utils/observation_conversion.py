@@ -579,6 +579,13 @@ events_actors_alive_done_space_format = StandardSpaceFormat(
     _DISCRETE2_SPACE,
 )
 
+events_actors_alive_done_space_format = StandardSpaceFormat(
+    lambda obs: np.int64(obs.events.actors_alive_done),
+    lambda _: True,
+    "actors_alive_done",
+    _DISCRETE2_SPACE,
+)
+
 events_agents_alive_done_space_format = StandardSpaceFormat(
     lambda obs: np.int64(obs.events.agents_alive_done),
     lambda _: True,
