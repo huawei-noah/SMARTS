@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from dataclasses import dataclass
-from typing import List, Optional
+from dataclasses import dataclass, field
+from typing import List
 
 
 @dataclass
@@ -66,7 +66,7 @@ class DistToObstacles:
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
     """
-    ignore: Optional[List[str]] = None
+    ignore: List[str] = field(default_factory=lambda: [])
 
 
 @dataclass
