@@ -32,3 +32,7 @@ def op_dataclass(
 
 def divide(value: Union[int, float], divider: Union[int, float]) -> float:
     return float(value / divider)
+
+
+def multiply(value: Union[int, float], divider: Union[int, float]) -> float:
+    return float(value * divider)

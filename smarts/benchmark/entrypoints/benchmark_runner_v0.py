@@ -117,7 +117,7 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers
 
 def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
     for name, env_config in env_args.items():
-        print(f"Evaluating {name}...")
+        print(f"\nEvaluating {name}...")
         name, score = _eval_worker_local(
             name=name,
             env_config=env_config,
@@ -135,12 +135,14 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
         agent_loctor(str): Locator string for the registered agent.
         debug_log(bool): Whether the benchmark should log to stdout.
     """
-    print(f"Starting `{benchmark_args['name']}` benchmark.")
-    debug = benchmark_args.get("debug", {})
+    print(f"\n\n<-- Starting `{benchmark_args['name']}` benchmark. -->")
     message = benchmark_args.get("message")
     if message is not None:
         print(message)
-    env_args = {}
+
+    debug = benchmark_args.get("debug", {})
+    iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
+
     root_dir = Path(__file__).resolve().parents[3]
     for env_name, env_config in benchmark_args["envs"].items():
         metric_formula = (
@@ -148,6 +150,8 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             if (x := env_config.get("metric_formula", None)) != None
             else None
         )
+
+        env_args = {}
         for scenario in env_config["scenarios"]:
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
@@ -157,43 +161,32 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
                 kwargs=kwargs,
                 metric_formula=metric_formula,
             )
-    named_scores = []
 
-    iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
+        named_scores = []
+        for name, score in iterator(
+            env_args=env_args,
+            benchmark_args=benchmark_args,
+            agent_locator=agent_locator,
+            log_workers=log_workers,
+        ):
+            named_scores.append((name, score))
+            print(f"\nScoring {name} ...")
 
-    for name, score in iterator(
-        env_args=env_args,
-        benchmark_args=benchmark_args,
-        agent_locator=agent_locator,
-        log_workers=log_workers,
-    ):
-        named_scores.append((name, score))
-        print(f"Scoring {name} ...")
+        print("\n", _format_one_line_scores(named_scores))
 
-    def format_one_line_scores(named_scores: List[Tuple[str, Score]]):
-        name_just = 30
-        headers = "SCENARIO".ljust(name_just) + "SCORE"
-        return (
-            headers
-            + "\n"
-            + "\n".join(
-                f"- {name}:".ljust(name_just) + f"{score}"
-                for name, score in named_scores
-            )
+    print("<-- Evaluation complete -->")
+
+
+def _format_one_line_scores(named_scores: List[Tuple[str, Score]]):
+    name_just = 30
+    headers = "SCENARIO".ljust(name_just) + "SCORE"
+    return (
+        headers
+        + "\n"
+        + "\n".join(
+            f"- {name}:".ljust(name_just) + f"{score}" for name, score in named_scores
         )
-
-    def format_scores_total(named_scores: List[Tuple[str, Score]], scenario_count):
-        score_sum = Score(*[sum(f) for f in zip(*[score for _, score in named_scores])])
-        return "\n".join(
-            f"- {k}: {v/scenario_count}" for k, v in score_sum._asdict().items()
-        )
-
-    print("Evaluation complete ...")
-    print()
-    print(format_one_line_scores(named_scores))
-    print()
-    print("Driving SMARTS result:")
-    print(format_scores_total(named_scores, len(env_args)))
+    )
 
 
 def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
