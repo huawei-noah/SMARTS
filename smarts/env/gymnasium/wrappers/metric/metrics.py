@@ -27,7 +27,7 @@ import gymnasium as gym
 from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentInterface
 from smarts.core.coordinates import Point, RefLinePoint
 from smarts.core.observations import Observation
-from smarts.core.plan import PositionalGoal
+from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.traffic_provider import TrafficProvider
@@ -73,7 +73,7 @@ class MetricsBase(gym.Wrapper):
         self._formula = Formula()
         self._params = self._formula.params()
 
-        _check_env(env=env, params=self._params)
+        _check_env(agent_interfaces=self.env.agent_interfaces, params=self._params)
 
         self._scen: Scenario
         self._scen_name: str
@@ -182,7 +182,7 @@ class MetricsBase(gym.Wrapper):
         self._vehicle_index = self.env.smarts.vehicle_index
         self._cost_funcs = {}
 
-        # _check_scen(self._scen)
+        _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
@@ -358,10 +358,12 @@ class Metrics(gym.Wrapper):
         return getattr(self.env, name)
 
 
-def _check_env(env: gym.Env, params: Params):
+def _check_env(agent_interfaces: Dict[str, AgentInterface], params: Params):
     """Checks environment suitability to compute performance metrics.
     Args:
-        env (gym.Env): A gym environment
+        agent_interfaces (Dict[str,AgentInterface]): Agent interfaces.
+        params (Params): Metric parameters.
+
     Raises:
         AttributeError: If any required agent interface is disabled or
             is ill defined.
@@ -378,7 +380,7 @@ def _check_env(env: gym.Env, params: Params):
         }
         return intrfc
 
-    for agent_name, agent_interface in env.agent_interfaces.items():
+    for agent_name, agent_interface in agent_interfaces.items():
         intrfc = check_intrfc(agent_interface)
         if not all(intrfc.values()):
             raise AttributeError(
@@ -405,21 +407,31 @@ def _check_env(env: gym.Env, params: Params):
             )
 
 
-def _check_scen(scen: Scenario):
+def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface]):
     """Checks scenario suitability to compute performance metrics.
 
     Args:
         scen (Scenario): A ``smarts.core.scenario.Scenario`` class.
+        agent_interfaces (Dict[str,AgentInterface]): Agent interfaces.
 
     Raises:
         AttributeError: If any agent's mission is not of type PositionGoal.
     """
     goal_types = {
         agent_name: type(agent_mission.goal)
-        for agent_name, agent_mission in scen.missions.items()
+        for agent_name, agent_mission in scenario.missions.items()
     }
-    if not all([goal_type == PositionalGoal for goal_type in goal_types.values()]):
-        raise AttributeError(
-            "Expected all agents to have PositionalGoal, but agents have goal type "
-            "{0}".format(goal_types)
-        )
+
+    for agent_name, agent_interface in agent_interfaces.items():
+        actors_alive = agent_interface.done_criteria.actors_alive
+        if not (
+            (goal_types[agent_name] == PositionalGoal and actors_alive == None)
+            or (
+                goal_types[agent_name] == EndlessGoal
+                and isinstance(actors_alive, ActorsAliveDoneCriteria)
+            )
+        ):
+            raise AttributeError(
+                "{0} has an unsupported goal type {1} and actors alive done criteria {2} "
+                "combination.".format(agent_name, goal_types[agent_name],actors_alive)
+            )
