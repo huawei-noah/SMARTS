@@ -111,7 +111,7 @@ class SpeedLimit:
 
 
 @dataclass
-class Time:
+class Steps:
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -137,5 +137,5 @@ class Params:
     lane_center_offset: LaneCenterOffset = LaneCenterOffset()
     off_road: OffRoad = OffRoad()
     speed_limit: SpeedLimit = SpeedLimit()
-    time: Time = Time()
+    steps: Steps = Steps()
     wrong_way: WrongWay = WrongWay()

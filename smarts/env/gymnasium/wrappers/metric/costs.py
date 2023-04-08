@@ -45,6 +45,7 @@ class Costs:
     lane_center_offset: float = 0
     off_road: int = 0
     speed_limit: float = 0
+    steps: float = 0
     wrong_way: float = 0
 
 
@@ -193,7 +194,9 @@ def _dist_to_obstacles(
     return func
 
 
-def _gap_between_vehicles(interest:str) -> Callable[[RoadMap, Done, Observation], Costs]:
+def _gap_between_vehicles(
+    interest: str,
+) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
     interest = interest
@@ -317,6 +320,36 @@ def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
+def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Costs]:
+    step = 0
+    max_episode_steps = max_episode_steps
+
+    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+        nonlocal step, max_episode_steps
+
+        step = step + 1
+
+        if not done:
+            return Costs(steps=-1)
+
+        if obs.events.reached_goal or obs.events.actors_alive_done:
+            return Costs(steps=step / max_episode_steps)
+        elif (
+            len(obs.events.collisions) > 0
+            or obs.events.off_road
+            or obs.events.reached_max_episode_steps
+        ):
+            return Costs(steps=1)
+        else:
+            raise CostError(
+                "Expected reached_goal, collisions, off_road, "
+                "max_episode_steps, or actors_alive_done, to be true "
+                f"on agent done, but got events: {obs.events}."
+            )
+
+    return func
+
+
 def _wrong_way() -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
@@ -348,6 +381,7 @@ class CostFuncsBase:
     lane_center_offset: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _lane_center_offset
     off_road: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _off_road
     speed_limit: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _speed_limit
+    steps: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _steps
     wrong_way: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _wrong_way
     # fmt: on
 

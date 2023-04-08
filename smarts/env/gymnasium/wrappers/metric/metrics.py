@@ -42,7 +42,12 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.types import Record
-from smarts.env.gymnasium.wrappers.metric.utils import add_dataclass, op_dataclass, multiply, divide
+from smarts.env.gymnasium.wrappers.metric.utils import (
+    add_dataclass,
+    divide,
+    op_dataclass,
+)
+
 
 class MetricsError(Exception):
     """Raised when Metrics env wrapper fails."""
@@ -149,12 +154,7 @@ class MetricsBase(gym.Wrapper):
             counts = Counts(
                 episodes=1,
                 steps=self._steps[agent_name],
-                steps_adjusted=min(
-                    self._steps[agent_name],
-                    self.env.agent_interfaces[agent_name].max_episode_steps,
-                ),
                 goals=base_obs.events.reached_goal,
-                max_steps=self.env.agent_interfaces[agent_name].max_episode_steps,
             )
             self._records_sum[self._scen_name][agent_name].counts = add_dataclass(
                 counts, self._records_sum[self._scen_name][agent_name].counts
@@ -233,7 +233,12 @@ class MetricsBase(gym.Wrapper):
                 },
                 gap_between_vehicles={
                     "interest": self._params.gap_between_vehicles.interest,
-                }
+                },
+                steps={
+                    "max_episode_steps": self.env.agent_interfaces[
+                        agent_name
+                    ].max_episode_steps,
+                },
             )
 
         # Create new entry in records_sum for new scenarios.

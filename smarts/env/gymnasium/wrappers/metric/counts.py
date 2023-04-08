@@ -34,11 +34,3 @@ class Counts:
     steps: int = 0
     """ Sum of steps taken over all episodes.
     """
-    steps_adjusted: int = 0
-    """ Sum of steps taken over all episodes. The number of steps, in an episode
-    where the agent did not achieve the goal, is replaced with the agent's  
-    max_episode_steps value.
-    """
-    max_steps: int = 0
-    """ Sum of maximum number of steps over all episodes.
-    """
