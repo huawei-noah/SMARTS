@@ -56,10 +56,6 @@ class Formula(FormulaBase):
             comfort=Comfort(
                 active=False,
             ),  # <------------------ Not implemented yet !!!!!!!!!!!
-            dist_to_destination=DistToDestination(
-                active=True,
-                wrt="Leader-007",
-            ),
             dist_to_obstacles=DistToObstacles(
                 active=True,
                 ignore=[

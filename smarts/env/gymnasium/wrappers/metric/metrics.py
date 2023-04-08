@@ -20,16 +20,17 @@
 
 import copy
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import gymnasium as gym
 
-from smarts.core.agent_interface import AgentInterface
+from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentInterface
 from smarts.core.coordinates import Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
+from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
@@ -41,6 +42,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
 )
 from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
+from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
@@ -60,7 +62,19 @@ class MetricsBase(gym.Wrapper):
 
     def __init__(self, env: gym.Env, formula_path: Optional[Path]):
         super().__init__(env)
-        # _check_env(env)
+
+        # Import scoring formula.
+        if formula_path:
+            import_module_from_file("custom_formula", formula_path)
+            from custom_formula import Formula
+        else:
+            from formula import Formula
+
+        self._formula = Formula()
+        self._params = self._formula.params()
+
+        _check_env(env=env, params=self._params)
+
         self._scen: Scenario
         self._scen_name: str
         self._road_map: RoadMap
@@ -70,16 +84,6 @@ class MetricsBase(gym.Wrapper):
         self._vehicle_index: VehicleIndex
         self._cost_funcs: Dict[str, CostFuncs]
         self._records_sum: Dict[str, Dict[str, Record]] = {}
-
-        # Import scoring formula
-        if formula_path:
-            import_module_from_file("custom_formula", formula_path)
-            from custom_formula import Formula
-        else:
-            from formula import Formula
-
-        self._formula = Formula()
-        self._params = self._formula.params()
 
     def step(self, action: Dict[str, Any]):
         """Steps the environment by one step."""
@@ -138,11 +142,7 @@ class MetricsBase(gym.Wrapper):
                 or len(base_obs.events.collisions)
                 or base_obs.events.off_road
                 or base_obs.events.reached_max_episode_steps
-                or (
-                    base_obs.events.actors_alive_done
-                    and self._params.dist_to_destination.active
-                    and self._params.dist_to_destination.wrt != "self"
-                )
+                or base_obs.events.actors_alive_done
             ):
                 raise MetricsError(
                     "Expected reached_goal, collisions, off_road, "
@@ -184,44 +184,28 @@ class MetricsBase(gym.Wrapper):
 
         # _check_scen(self._scen)
 
-        # Compute end point and total scenario distance with respect to specified vehicle.
-        if self._params.dist_to_destination.active:
-            if self._params.dist_to_destination.wrt != "self":
-                vehicle_name = self._params.dist_to_destination.wrt
-                traffic_sims = self.env.smarts.traffic_sims
-                traffic_sim = [
-                    traffic_sim
-                    for traffic_sim in traffic_sims
-                    if traffic_sim.manages_actor(vehicle_name)
-                ]
-                assert (
-                    len(traffic_sim) == 1
-                ), "Multiple traffic sims contain the vehicle of interest."
-                traffic_sim = traffic_sim[0]
-                dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
-                end_pos = (
-                    self._road_map.road_by_id(dest_road)
-                    .lane_at_index(0)
-                    .from_lane_coord(RefLinePoint(s=1e10))
-                )
-                route = traffic_sim.route_for_vehicle(vehicle_name)
-                dist_tot = route.road_length
-        else:
+        # Refresh the cost functions for every episode.
+        for agent_name in self._cur_agents:
             end_pos = Point(0, 0, 0)
             dist_tot = 0
+            if self._params.dist_to_destination.active:
+                actors_alive = self.env.agent_interfaces[
+                    agent_name
+                ].done_criteria.actors_alive
+                if isinstance(actors_alive, ActorsAliveDoneCriteria):
+                    end_pos, dist_tot = _get_sumo_smarts_dist(
+                        vehicle_name=actors_alive.actors_of_interest[0],
+                        traffic_sims=self.env.smarts.traffic_sims,
+                        road_map=self._road_map,
+                    )
+                elif actors_alive == None:
+                    end_pos = self._scen.missions[agent_name].goal.position
+                    dist_tot = get_dist(
+                        road_map=self._road_map,
+                        point_a=Point(*self._scen.missions[agent_name].start.position),
+                        point_b=end_pos,
+                    )
 
-        # Refresh cost functions for every episode.
-        for agent_name in self._cur_agents:
-            if (
-                self._params.dist_to_destination.active
-                and self._params.dist_to_destination.wrt == "self"
-            ):
-                end_pos = self._scen.missions[agent_name].goal.position
-                dist_tot = get_dist(
-                    road_map=self._road_map,
-                    point_a=Point(*self._scen.missions[agent_name].start.position),
-                    point_b=end_pos,
-                )
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
@@ -302,6 +286,40 @@ class MetricsBase(gym.Wrapper):
         return self._formula.score(records_sum=records_sum_copy)
 
 
+def _get_sumo_smarts_dist(
+    vehicle_name: str, traffic_sims: List[TrafficProvider], road_map: RoadMap
+) -> Tuple[Point, float]:
+    """Computes the end point and route distance of a SUMO or a SMARTS vehicle
+    specified by `vehicle_name`.
+
+    Args:
+        vehicle_name (str): Name of vehicle.
+        traffic_sims (List[TrafficProvider]): Traffic providers.
+        road_map (RoadMap): Underlying road map.
+
+    Returns:
+        Tuple[Point, float]: End point and route distance.
+    """
+    traffic_sim = [
+        traffic_sim
+        for traffic_sim in traffic_sims
+        if traffic_sim.manages_actor(vehicle_name)
+    ]
+    assert (
+        len(traffic_sim) == 1
+    ), "None or multiple, traffic sims contain the vehicle of interest."
+    traffic_sim = traffic_sim[0]
+    dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
+    end_pos = (
+        road_map.road_by_id(dest_road)
+        .lane_at_index(0)
+        .from_lane_coord(RefLinePoint(s=1e10))
+    )
+    route = traffic_sim.route_for_vehicle(vehicle_name)
+    dist_tot = route.road_length
+    return end_pos, dist_tot
+
+
 class Metrics(gym.Wrapper):
     """Metrics class wraps an underlying MetricsBase class. The underlying
     MetricsBase class computes agents' performance metrics in a SMARTS
@@ -340,12 +358,13 @@ class Metrics(gym.Wrapper):
         return getattr(self.env, name)
 
 
-def _check_env(env: gym.Env):
+def _check_env(env: gym.Env, params: Params):
     """Checks environment suitability to compute performance metrics.
     Args:
         env (gym.Env): A gym environment
     Raises:
-        AttributeError: If any required agent interface is disabled.
+        AttributeError: If any required agent interface is disabled or
+            is ill defined.
     """
 
     def check_intrfc(agent_intrfc: AgentInterface):
@@ -368,6 +387,21 @@ def _check_env(env: gym.Env):
                     "compute its metrics. Current interface is "
                     "{1}."
                 ).format(agent_name, intrfc)
+            )
+
+        actors_alive = agent_interface.done_criteria.actors_alive
+        if (
+            params.dist_to_destination.active
+            and isinstance(actors_alive, ActorsAliveDoneCriteria)
+            and len(actors_alive.actors_of_interest) != 1
+        ):
+            raise AttributeError(
+                (
+                    "ActorsAliveDoneCriteria with none or multiple actors of "
+                    "interest is currently not supported when "
+                    "dist_to_destination cost function is enabled. Current "
+                    "interface is {0}:{1}."
+                ).format(agent_name, actors_alive)
             )
 
 

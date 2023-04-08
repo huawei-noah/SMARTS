@@ -155,7 +155,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         #     ]
         # ),
         actors_alive=ActorsAliveDoneCriteria(
-            actors_of_interest="Leader-007",
+            actors_of_interest=("Leader-007",),
             strict=True,
         ),
     )

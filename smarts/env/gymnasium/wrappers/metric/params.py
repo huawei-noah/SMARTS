@@ -46,18 +46,6 @@ class DistToDestination:
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
     """
-    wrt: str = "self"
-    """ `wrt` specifies the name of the vehicle with respect to which the total
-    distance is computed for an ego agent in a scenario. The total distance is 
-    generally used as the denominator in distance completion metric. Options 
-    include: 
-    
-    + "self" : Only available in scenarios where all egos have PositionalGoal 
-    mission. Total distance represents the shortest road distance from the 
-    ego's start position to its goal position.
-    + SUMO/SMARTS vehicle id: Total distance represents the total road length 
-    of the specified vehicle's route.
-    """
 
 
 @dataclass

@@ -22,7 +22,7 @@ normal = TrafficActor(
 )
 leader = TrafficActor(
     name="Leader-007",
-    depart_speed=0,
+    depart_speed=10,
 )
 # flow_name = (start_lane, end_lane,)
 route_opt = [
