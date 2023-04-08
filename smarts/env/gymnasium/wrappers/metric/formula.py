@@ -21,15 +21,18 @@
 # THE SOFTWARE.
 
 import functools
-from dataclasses import fields
-from typing import Dict, NewType, TypeVar
+from typing import Dict, NewType
 
 import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
-from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Record
+from smarts.env.gymnasium.wrappers.metric.utils import (
+    add_dataclass,
+    divide,
+    op_dataclass,
+)
 
 Score = NewType("Score", Dict[str, float])
 
@@ -39,9 +42,20 @@ class FormulaBase:
         pass
 
     def params(self) -> Params:
+        """Return parameters to configure and initialize cost functions.
+
+        Returns:
+            Params: Cost function parameters.
+        """
         raise NotImplementedError
 
-    def score(self, records: Dict[str, Dict[str, Record]], params: Params) -> Score:
+    def score(self, records_sum: Dict[str, Dict[str, Record]]) -> Score:
+        """Computes sub-component scores and one total combined score named
+        "Overall" on the wrapped environment.
+
+        Returns:
+            Score: Contains "Overall" score and other sub-component scores.
+        """
         raise NotImplementedError
 
 
@@ -50,144 +64,92 @@ class Formula(FormulaBase):
         pass
 
     def params(self) -> Params:
-        return Params()
-
-    def score(self, records: Dict[str, Dict[str, Record]], params: Params) -> Score:
-        """
-        Computes four sub-component scores, namely, "Completion", "Time",
-        "Humanness", "Rules", and one total combined score named "Overall"
-        on the wrapped environment.
-
-        Describes the final score given by processing observations through
-        the metrics.
-
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            |             | Range  | Remarks                                                                                             |
-            +=============+========+=====================================================================================================+
-            | Overall     | [0, 1] | Total score which combines "Completion", "Time", "Humanness", and "Rules". The higher, the better.  |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Completion  | [0, 1] | Proportion of scenarios tasks completed. The higher, the better.                                    |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Time        | [0, 1] | Time taken to complete scenario. The lower, the better.                                             |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Humanness   | [0, 1] | Humanness indicator. The higher, the better.                                                        |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
-            | Rules       | [0, 1] | Traffic rules compliance. The higher, the better.                                                   |
-            +-------------+--------+-----------------------------------------------------------------------------------------------------+
+        """Return parameters to configure and initialize cost functions.
 
         Returns:
-            Dict[str, float]: Contains "Overall", "Completion", "Time",
+            Params: Cost function parameters.
+        """
+        return Params()
+
+    def score(self, records_sum: Dict[str, Dict[str, Record]]) -> Score:
+        """
+        Computes four sub-component scores, namely, "Distance to Destination",
+        "Time", "Humanness", "Rules", and one total combined score named
+        "Overall" on the wrapped environment.
+
+        +-------------------+--------+-----------------------------------------------------------+
+        |                   | Range  | Remarks                                                   |
+        +===================+========+===========================================================+
+        | Overall           | [0, 1] | Total score. The higher, the better.                      |
+        +-------------------+--------+-----------------------------------------------------------+
+        | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
+        +-------------------+--------+-----------------------------------------------------------+
+        | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
+        +-------------------+--------+-----------------------------------------------------------+
+        | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
+        +-------------------+--------+-----------------------------------------------------------+
+        | Rules             | [0, 1] | Traffic rules compliance. The higher, the better.         |
+        +-------------------+--------+-----------------------------------------------------------+
+
+        Returns:
+            Score: Contains "Overall", "DistToDestination", "Time",
             "Humanness", and "Rules" scores.
         """
 
-        counts_list, costs_list, completion_list = zip(
-            *[
-                (data.record.counts, data.record.costs, data.record.completion)
-                for agents in records.values()
-                for data in agents.values()
-            ]
-        )
-        agents_tot: int = len(counts_list)  # Total number of agents over all scenarios
-        counts_tot: Counts = functools.reduce(
-            lambda a, b: _add_dataclass(a, b), counts_list
-        )
-        costs_tot: Costs = functools.reduce(
-            lambda a, b: _add_dataclass(a, b), costs_list
-        )
-        completion_tot = functools.reduce(
-            lambda a, b: _add_dataclass(a, b), completion_list
-        )
+        costs_total = Costs()
+        episodes = 0
+        for scen, val in records_sum.items():
+            # Number of agents in scenario.
+            agents_in_scenario = len(val.keys())
+            costs_list, counts_list = zip(
+                *[(record.costs, record.counts) for agent, record in val.items()]
+            )
+            # Sum costs over all agents in scenario.
+            costs_sum_agent: Costs = functools.reduce(
+                lambda a, b: add_dataclass(a, b), costs_list
+            )
+            # Average costs over number of agents in scenario.
+            costs_mean_agent = op_dataclass(costs_sum_agent, agents_in_scenario, divide)
+            # Sum costs over all scenarios.
+            costs_total = add_dataclass(costs_total, costs_mean_agent)
+            # Increment total number of episodes.
+            episodes += counts_list[0].episodes
 
-        completion = _completion(completion=completion_tot)
-        humanness = _humanness(costs=costs_tot, agents_tot=agents_tot)
-        rules = _rules(costs=costs_tot, agents_tot=agents_tot)
-        time = _time(counts=counts_tot)
-        overall = completion * (1 - time) * humanness * rules
+        # Average costs over total number of episodes.
+        costs_final = op_dataclass(costs_total, episodes, divide)
+
+        # Compute sub-components of score.
+        dist_to_destination = costs_final.dist_to_destination
+        humanness = _humanness(costs=costs_final)
+        rules = _rules(costs=costs_final)
+        time = costs_final.steps
+        overall = (
+            0.50 * (1 - dist_to_destination)
+            + 0.25 * (1 - time)
+            + 0.20 * humanness
+            + 0.05 * rules
+        )
 
         return Score(
             {
-                "dist_to_completion": completion,
+                "overall": overall,
+                "dist_to_destination": dist_to_destination,
+                "time": time,
                 "humanness": humanness,
                 "rules": rules,
-                "time": time,
-                "overall": overall,
             }
         )
 
 
-T = TypeVar("T", Costs, Counts)
-
-
-def _add_dataclass(first: T, second: T) -> T:
-    assert type(first) is type(second)
-    new = {}
-    for field in fields(first):
-        sum = getattr(first, field.name) + getattr(second, field.name)
-        new[field.name] = sum
-    output = first.__class__(**new)
-
-    return output
-
-
-def _completion(completion) -> float:
-    """
-    Proportion of scenarios tasks completed.
-
-    Args:
-        completion (Completion): Scenario tasks completed.
-
-    Returns:
-        float: Normalized completion value = [0, 1]. Completion value should be
-            maximized. The higher the value, the better it is.
-    """
-    return (completion.dist_tot - completion.dist_remainder) / completion.dist_tot
-
-
-def _humanness(costs: Costs, agents_tot: int) -> float:
-    """
-    Humanness indicator.
-
-    Args:
-        costs (Costs): Performance cost values.
-        agents_tot (int): Number of agents simulated.
-
-    Returns:
-        float: Normalized humanness value = [0, 1]. Humanness value should be
-            maximized. The higher the value, the better it is.
-    """
-    humanness_to_minimize = np.array(
+def _humanness(costs: Costs) -> float:
+    humanness = np.array(
         [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
     )
-    humanness_to_minimize = np.mean(humanness_to_minimize, dtype=float) / agents_tot
-    return 1 - humanness_to_minimize
+    humanness = np.mean(humanness, dtype=float)
+    return 1 - humanness
 
 
-def _rules(costs: Costs, agents_tot: int) -> float:
-    """
-    Traffic rules compliance.
-
-    Args:
-        costs (Costs): Performance cost values.
-        agents_tot (int): Number of agents simulated.
-
-    Returns:
-        float: Normalized rules value = [0, 1]. Rules value should be maximized.
-            The higher the value, the better it is.
-    """
-    rules_to_minimize = np.array([costs.speed_limit, costs.wrong_way])
-    rules_to_minimize = np.mean(rules_to_minimize, dtype=float) / agents_tot
-    return 1 - rules_to_minimize
-
-
-def _time(counts: Counts) -> float:
-    """
-    Time taken to complete scenario.
-
-    Args:
-        counts (Counts): Performance count values.
-
-    Returns:
-        float: Normalized time value = (0, 1]. Time value should be minimized.
-            The lower the value, the better it is.
-    """
-    return counts.steps_adjusted / counts.max_steps
+def _rules(costs: Costs) -> float:
+    rules = np.array([costs.speed_limit, costs.wrong_way])
+    rules = np.mean(rules, dtype=float)
+    return 1 - rules

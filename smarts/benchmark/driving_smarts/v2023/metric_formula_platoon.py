@@ -95,7 +95,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Dict[str, float]: Contains "Overall", "DistToDestination", "Time",
+            Score: Contains "Overall", "DistToDestination", "Time",
             "Humanness", and "Rules" scores.
         """
 
