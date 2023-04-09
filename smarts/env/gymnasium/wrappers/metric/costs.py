@@ -339,6 +339,7 @@ def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Cos
             or obs.events.off_road
             or obs.events.reached_max_episode_steps
         ):
+            print(f"COSTS: step:{step}, max:{max_episode_steps}")
             return Costs(steps=1)
         else:
             raise CostError(

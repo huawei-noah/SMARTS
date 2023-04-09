@@ -302,8 +302,7 @@ def test_records_and_scores(make_env):
             )
             for agent_name, agent_obs in obs.items()
         }
-        obs, _, t, r, _ = env.step(actions)
-        print(i,"dddddddddddd")
-    print(t, r)
+        obs, _, t, _, _ = env.step(actions)
+        print(f"{i}, Keys: {obs.keys()}, Done: {t}\n")
     env.records()
     # env.score()

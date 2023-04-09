@@ -259,14 +259,13 @@ class MetricsBase(gym.Wrapper):
             dictionary for each agent in each scenario.
         """
 
-        print(self._records_sum,"qqqqqqqqqqqqqqqqqqq")
+        print("Records sum --->>",self._records_sum)
 
         records = {}
         for scen, agents in self._records_sum.items():
             records[scen] = {}
             for agent, data in agents.items():
                 data_copy = copy.deepcopy(data)
-                print(data_copy.counts.episodes,"jjjjjjjjjjj")
                 records[scen][agent] = Record(
                     costs=op_dataclass(
                         data_copy.costs, data_copy.counts.episodes, divide
