@@ -60,7 +60,7 @@ class MetricsError(Exception):
 class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
-    def __init__(self, env: gym.Env, formula_path: Optional[Path]):
+    def __init__(self, env: gym.Env, formula_path: Optional[Path] = None):
         super().__init__(env)
 
         # Import scoring formula.
@@ -68,7 +68,7 @@ class MetricsBase(gym.Wrapper):
             import_module_from_file("custom_formula", formula_path)
             from custom_formula import Formula
         else:
-            from formula import Formula
+            from smarts.env.gymnasium.wrappers.metric.formula import Formula
 
         self._formula = Formula()
         self._params = self._formula.params()
@@ -339,7 +339,7 @@ class Metrics(gym.Wrapper):
         gym.Env: A wrapped gym.Env which computes agents' performance metrics.
     """
 
-    def __init__(self, env: gym.Env, formula_path: Path):
+    def __init__(self, env: gym.Env, formula_path: Optional[Path] = None):
         env = MetricsBase(env, formula_path)
         super().__init__(env)
 
@@ -433,5 +433,5 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         ):
             raise AttributeError(
                 "{0} has an unsupported goal type {1} and actors alive done criteria {2} "
-                "combination.".format(agent_name, goal_types[agent_name],actors_alive)
+                "combination.".format(agent_name, goal_types[agent_name], actors_alive)
             )

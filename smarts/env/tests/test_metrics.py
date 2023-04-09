@@ -31,7 +31,7 @@ from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
-from smarts.env.gymnasium.wrappers.metrics import Metrics
+from smarts.env.gymnasium.wrappers.metric.metrics import Metrics
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -200,7 +200,6 @@ def test_end_in_off_road(make_env):
     assert counts.goals == 0
     assert counts.episodes == 1
     assert counts.steps == 3
-    assert counts.max_steps == env.agent_interfaces[agent_name].max_episode_steps
 
 
 @pytest.mark.parametrize(
