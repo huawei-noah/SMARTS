@@ -259,8 +259,6 @@ class MetricsBase(gym.Wrapper):
             dictionary for each agent in each scenario.
         """
 
-        print("Records sum --->>",self._records_sum)
-
         records = {}
         for scen, agents in self._records_sum.items():
             records[scen] = {}

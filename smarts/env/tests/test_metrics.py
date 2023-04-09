@@ -294,15 +294,14 @@ def test_records_and_scores(make_env):
     #   env.score() is only callable after >=1 episode. Hence step through 1 episode.
     env = Metrics(env=make_env)
     obs, _ = env.reset()
-    agent_name = next(iter(obs.keys()))
-    for i in range(env.agent_interfaces[agent_name].max_episode_steps):
+    terminated={"__all__":False}
+    while not terminated["__all__"]:
         actions = {
             agent_name: np.append(
                 agent_obs["ego_vehicle_state"]["position"][:2], [0, 0.1]
             )
             for agent_name, agent_obs in obs.items()
         }
-        obs, _, t, _, _ = env.step(actions)
-        print(f"{i}, Keys: {obs.keys()}, Done: {t}\n")
+        obs, _, terminated, _, _ = env.step(actions)
     env.records()
-    # env.score()
+    env.score()
