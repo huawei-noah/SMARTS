@@ -43,6 +43,9 @@ from smarts.env.gymnasium.wrappers.metric.utils import (
 
 
 class Formula(FormulaBase):
+    """Sets the (i) cost function parameters, and (ii) score computation formula,
+    for an environment.
+    """
     def __init__(self):
         pass
 
