@@ -30,6 +30,15 @@ T = TypeVar("T", Costs, Counts)
 
 
 def add_dataclass(first: T, second: T) -> T:
+    """Sums the fields of two dataclass objects.
+
+    Args:
+        first (T): First dataclass object.
+        second (T): Second dataclass object.
+
+    Returns:
+        T: New summed dataclass object.
+    """
     assert type(first) is type(second)
     new = {}
     for field in fields(first):
@@ -44,6 +53,16 @@ def op_dataclass(
     second: Union[int, float],
     op: Callable[[Union[int, float], Union[int, float]], float],
 ) -> T:
+    """Performs operation `op` on the fields of a dataclass object.
+
+    Args:
+        first (T): Dataclass object.
+        second (Union[int, float]): Value input for the operator.
+        op (Callable[[Union[int, float], Union[int, float]], float]): Operation to be performed.
+
+    Returns:
+        T: New dataclass object with operation performed on all of its fields.
+    """
     new = {}
     for field in fields(first):
         new[field.name] = op(getattr(first, field.name), second)
@@ -53,8 +72,26 @@ def op_dataclass(
 
 
 def divide(value: Union[int, float], divider: Union[int, float]) -> float:
+    """Division operation.
+
+    Args:
+        value (Union[int, float]): Numerator
+        divider (Union[int, float]): Denominator
+
+    Returns:
+        float: Numerator / Denominator
+    """
     return float(value / divider)
 
 
-def multiply(value: Union[int, float], divider: Union[int, float]) -> float:
-    return float(value * divider)
+def multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
+    """Multiplication operation.
+
+    Args:
+        value (Union[int, float]): Value
+        multiplier (Union[int, float]): Multiplier
+
+    Returns:
+        float: Value x Multiplier
+    """
+    return float(value * multiplier)
