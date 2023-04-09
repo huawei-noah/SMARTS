@@ -139,7 +139,7 @@ def test_init(make_env):
     env = Metrics(env=make_env)
 
     # Verify blocked access to underlying private variables.
-    for elem in ["_scen", "_road_map", "_records"]:
+    for elem in ["_scen", "_road_map", "_records", "smarts"]:
         with pytest.raises(AttributeError):
             getattr(env, elem)
 
