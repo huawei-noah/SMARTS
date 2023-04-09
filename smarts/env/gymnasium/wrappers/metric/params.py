@@ -26,6 +26,8 @@ from typing import List
 
 @dataclass
 class Collisions:
+    """Parameters for collisions cost function.
+    """
     active: bool = False
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -34,6 +36,8 @@ class Collisions:
 
 @dataclass
 class Comfort:
+    """Parameters for comfort cost function.
+    """
     active: bool = False
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -42,6 +46,9 @@ class Comfort:
 
 @dataclass
 class DistToDestination:
+    """Parameters for distance to destination cost function.
+    """
+
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -50,6 +57,9 @@ class DistToDestination:
 
 @dataclass
 class DistToObstacles:
+    """Parameters for distance to obstacles cost function.
+    """
+
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -59,6 +69,8 @@ class DistToObstacles:
 
 @dataclass
 class GapBetweenVehicles:
+    """Parameters for gap between vehicles cost function.
+    """
     active: bool = False
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -68,6 +80,8 @@ class GapBetweenVehicles:
 
 @dataclass
 class JerkLinear:
+    """Parameters for jerk linear cost function.
+    """
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -76,6 +90,8 @@ class JerkLinear:
 
 @dataclass
 class LaneCenterOffset:
+    """Parameters for lane center offset cost function.
+    """
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -84,6 +100,8 @@ class LaneCenterOffset:
 
 @dataclass
 class OffRoad:
+    """Parameters for off road cost function.
+    """
     active: bool = False
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -92,6 +110,8 @@ class OffRoad:
 
 @dataclass
 class SpeedLimit:
+    """Parameters for speed limit cost function.
+    """
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -100,6 +120,8 @@ class SpeedLimit:
 
 @dataclass
 class Steps:
+    """Parameters for steps cost function.
+    """
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -108,6 +130,8 @@ class Steps:
 
 @dataclass
 class WrongWay:
+    """Parameters for wrong way cost function.
+    """
     active: bool = True
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
@@ -116,6 +140,8 @@ class WrongWay:
 
 @dataclass
 class Params:
+    """Parameters for cost functions.
+    """
     collisions: Collisions = Collisions()
     comfort: Comfort = Comfort()
     dist_to_destination: DistToDestination = DistToDestination()
