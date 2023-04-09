@@ -295,13 +295,15 @@ def test_records_and_scores(make_env):
     env = Metrics(env=make_env)
     obs, _ = env.reset()
     agent_name = next(iter(obs.keys()))
-    for _ in range(env.agent_interfaces[agent_name].max_episode_steps):
+    for i in range(env.agent_interfaces[agent_name].max_episode_steps):
         actions = {
             agent_name: np.append(
                 agent_obs["ego_vehicle_state"]["position"][:2], [0, 0.1]
             )
             for agent_name, agent_obs in obs.items()
         }
-        obs, _, _, _, _ = env.step(actions)
+        obs, _, t, r, _ = env.step(actions)
+        print(i,"dddddddddddd")
+    print(t, r)
     env.records()
-    env.score()
+    # env.score()
