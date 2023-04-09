@@ -202,15 +202,15 @@ def _gap_between_vehicles(
     interest = interest
 
     def func(
-        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+        road_map: RoadMap, done: Done, obs: Observation
     ) -> Costs:
         nonlocal mean, step, interest
 
-        pos_1 = vehicle_index.vehicle_position()
-        pos_2 = vehicle_index.vehicle_position()
-        pos_3 = vehicle_index.vehicle_position()
+        # pos_1 = vehicle_index.vehicle_position()
+        # pos_2 = vehicle_index.vehicle_position()
+        # pos_3 = vehicle_index.vehicle_position()
 
-        j_gap = pos_1 + pos_2 + pos_3
+        j_gap = 0 #pos_1 + pos_2 + pos_3
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
         return Costs(gap_between_vehicles=0)
 
@@ -374,14 +374,14 @@ class CostFuncsBase:
     # fmt: off
     collisions: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_destination
-    dist_to_obstacles: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_obstacles
-    gap_between_vehicles: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _gap_between_vehicles
+    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_obstacles
+    gap_between_vehicles: Callable[[str], Callable[[RoadMap, Done, Observation], Costs]] = _gap_between_vehicles
     jerk_linear: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _lane_center_offset
     off_road: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _off_road
     speed_limit: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _speed_limit
-    steps: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _steps
+    steps: Callable[[int], Callable[[RoadMap, Done, Observation], Costs]] = _steps
     wrong_way: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _wrong_way
     # fmt: on
 
