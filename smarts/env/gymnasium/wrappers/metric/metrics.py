@@ -126,7 +126,7 @@ class MetricsBase(gym.Wrapper):
             costs = Costs()
             for _, cost_func in self._cost_funcs[agent_name].items():
                 new_costs = cost_func(
-                    road_map=self._road_map, done=Done(dones[agent_name]), obs=base_obs
+                    self._road_map, Done(dones[agent_name]), base_obs
                 )
                 if dones[agent_name]:
                     costs = add_dataclass(new_costs, costs)
