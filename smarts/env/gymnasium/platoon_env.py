@@ -55,7 +55,7 @@ def platoon_env(
     """Each ego is supposed to track and follow its specified leader (i.e., lead
     vehicle) in a single file or in a platoon fashion. Name of the lead vehicle
     to be followed is given to the ego through its 
-    `agent_interface.done_criteria.actors_alive.actors_of_interest` attribute.
+    :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
     The episode ends for an ego when its assigned leader reaches the leader's 
     destination. Egos do not have prior knowledge of the leader's destination.
 
