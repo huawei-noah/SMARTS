@@ -16,12 +16,18 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
+- Made the metrics module configurable by supplying parameters through a `Params` class.
+- `Params` allows to specify vehicles to be ignored in `dist_to_obstacles` cost function. This would be applicable in platooning tasks.
+- Unified computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
+- In the metrics module, the records which is the raw metrics data and the scoring which is the formula to compute the final results are now separated to provided greater flexibility for applying metrics to different environments.
+- Changed `benchmark_runner_v0.py` to only average records across scenarios within an environment. Records are not averaged across enviroments, because the scoring formula may differ in different environments.
 ### Deprecated
 ### Fixed
 - Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.
 - `Trip.actor` field is now effective. Previously `actor` had no effect.
 - Fixed an issue where building sumo scenarios would sometimes stall.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
+- Fixed CI tests for metrics.
 ### Removed
 ### Security
 
