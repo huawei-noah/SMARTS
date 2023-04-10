@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where building sumo scenarios would sometimes stall.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 ### Removed
+- Removed the deprecated `waymo_browser` utility.
 ### Security
 
 ## [1.0.11] # 2023-04-02
