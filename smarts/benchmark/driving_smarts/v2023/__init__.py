@@ -1,4 +1,6 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,39 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from pathlib import Path
 
-try:
-    from gymnasium.envs.registration import register
-
-    register(
-        id="hiway-v1",
-        entry_point="smarts.env.gymnasium.hiway_env_v1:HiWayEnvV1",
-        disable_env_checker=True,
-    )
-
-    register(
-        id="driving-smarts-v2022",
-        entry_point="smarts.env.gymnasium.driving_smarts_2022_env:driving_smarts_2022_env",
-        disable_env_checker=True,
-    )
-
-    register(
-        id="platoon-v0",
-        entry_point="smarts.env.gymnasium.platoon_env:platoon_env",
-        disable_env_checker=True,
-    )
-
-    register(
-        id="driving-smarts-v2023",
-        entry_point="smarts.env.gymnasium.driving_smarts_2023_env:driving_smarts_2023_env",
-        disable_env_checker=True,
-    )
-
-
-except ModuleNotFoundError:
-    import warnings
-
-    warnings.warn(
-        "Gymnasium cannot be imported likely due to numpy version compatibility `numpy>=1.21.0`. "
-        "Gymnasium environments will be unavailable. Gymnasium imports may cause a crash."
-    )
+DEFAULT_CONFIG = str((Path(__file__).parent / "config.yaml").absolute())
