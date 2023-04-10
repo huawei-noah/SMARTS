@@ -12,8 +12,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added an actor capture manager interface, `ActorCaptureManager`, which describes a manager that handles the change of control of actors. Operations in an actor manager step should not cause conflict in the simulation.
 - Added a new entry tactic, `IdEntryTactic`, which provides the scenario the ability to select a specific actor for an agent to take over.
++ Added new driving-smarts-v2023 benchmark consisting of new (i) driving-smarts-v2023 env and (ii) platoon-v0 env.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
+- Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
 ### Deprecated
 ### Fixed
 - Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.
