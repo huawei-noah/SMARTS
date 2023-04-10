@@ -4,7 +4,7 @@ Driving SMARTS 2022
 ===================
 
 The Driving SMARTS 2022 is a benchmark derived from the
-`NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`_ competition.
+`NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/>`_ competition.
 
 Objective
 ---------
