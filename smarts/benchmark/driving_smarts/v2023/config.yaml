@@ -32,4 +32,4 @@ benchmark:
         - scenarios/sumo/platoon/straight_sumo_t_agents_1
       kwargs:
         seed: 42
-      # metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py
+      metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py
