@@ -294,7 +294,7 @@ def test_records_and_scores(make_env):
     #   env.score() is only callable after >=1 episode. Hence step through 1 episode.
     env = Metrics(env=make_env)
     obs, _ = env.reset()
-    terminated={"__all__":False}
+    terminated = {"__all__": False}
     while not terminated["__all__"]:
         actions = {
             agent_name: np.append(

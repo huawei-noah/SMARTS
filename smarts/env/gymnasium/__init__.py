@@ -28,8 +28,8 @@ try:
     )
 
     register(
-        id="driving-smarts-competition-v0",
-        entry_point="smarts.env.gymnasium.driving_smarts_competition_env:driving_smarts_competition_v0_env",
+        id="driving-smarts-v2022",
+        entry_point="smarts.env.gymnasium.driving_smarts_2022_env:driving_smarts_2022_env",
         disable_env_checker=True,
     )
 

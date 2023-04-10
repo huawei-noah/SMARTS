@@ -29,10 +29,10 @@ from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
-    DistToDestination,
     DistToObstacles,
     GapBetweenVehicles,
     Params,
+    Steps,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
@@ -46,6 +46,7 @@ class Formula(FormulaBase):
     """Sets the (i) cost function parameters, and (ii) score computation formula,
     for an environment.
     """
+
     def __init__(self):
         pass
 
@@ -70,6 +71,9 @@ class Formula(FormulaBase):
                 active=False,
                 interest="Leader-007",
             ),  # <------------------ Not implemented yet !!!!!!!!!!!
+            steps=Steps(
+                active=False,
+            )
         )
         return params
 
@@ -86,7 +90,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
         +-------------------+--------+-----------------------------------------------------------+
-        | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
+        | GapBetweenVehicles| [0, 1] | Time taken to complete scenario. The lower, the better.   |
         +-------------------+--------+-----------------------------------------------------------+
         | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
         +-------------------+--------+-----------------------------------------------------------+

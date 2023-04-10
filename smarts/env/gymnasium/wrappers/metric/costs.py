@@ -201,16 +201,14 @@ def _gap_between_vehicles(
     step = 0
     interest = interest
 
-    def func(
-        road_map: RoadMap, done: Done, obs: Observation
-    ) -> Costs:
+    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step, interest
 
         # pos_1 = vehicle_index.vehicle_position()
         # pos_2 = vehicle_index.vehicle_position()
         # pos_3 = vehicle_index.vehicle_position()
 
-        j_gap = 0 #pos_1 + pos_2 + pos_3
+        j_gap = 0  # pos_1 + pos_2 + pos_3
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
         return Costs(gap_between_vehicles=0)
 

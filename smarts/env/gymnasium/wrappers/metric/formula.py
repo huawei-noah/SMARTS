@@ -38,9 +38,10 @@ Score = NewType("Score", Dict[str, float])
 
 
 class FormulaBase:
-    """Interface, for cost function parameters and score computation formula, 
+    """Interface, for cost function parameters and score computation formula,
     to be implemented by other formula classes.
     """
+
     def __init__(self):
         pass
 
@@ -66,6 +67,7 @@ class Formula(FormulaBase):
     """Sets the (i) cost function parameters, and (ii) score computation formula,
     for an environment.
     """
+
     def __init__(self):
         pass
 

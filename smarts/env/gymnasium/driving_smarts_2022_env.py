@@ -22,7 +22,6 @@ import copy
 import logging
 import math
 import os
-import pathlib
 from functools import partial
 from typing import Any, Dict, Optional, Tuple
 
@@ -52,7 +51,7 @@ SUPPORTED_ACTION_TYPES = (
 MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 
 
-def driving_smarts_competition_v0_env(
+def driving_smarts_2022_env(
     scenario: str,
     agent_interface: AgentInterface,
     headless: bool = True,
