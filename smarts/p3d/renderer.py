@@ -26,6 +26,7 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from re import Pattern
 from threading import Lock
@@ -418,7 +419,7 @@ class Renderer(RendererBase):
         vehicle_path.removeNode()
         del self._vehicle_nodes[vid]
 
-    def camera_for_id(self, camera_id) -> "Renderer.OffscreenCamera":
+    def camera_for_id(self, camera_id) -> "Renderer.P3dOffscreenCamera":
         """Get a camera by its id."""
         camera = self._camera_nodes.get(camera_id)
         assert (
@@ -426,7 +427,8 @@ class Renderer(RendererBase):
         ), f"Camera {camera_id} does not exist, have you created this camera?"
         return camera
 
-    class OffscreenCamera(RendererBase.OffscreenCamera):
+    @dataclass
+    class P3dOffscreenCamera(RendererBase.OffscreenCamera):
         """A camera used for rendering images to a graphics buffer."""
 
         camera_np: NodePath
@@ -485,7 +487,7 @@ class Renderer(RendererBase):
         width: int,
         height: int,
         resolution: float,
-    ) -> Renderer.OffscreenCamera:
+    ) -> Renderer.P3dOffscreenCamera:
         """Generates a new offscreen camera."""
         # setup buffer
         win_props = WindowProperties.size(width, height)
@@ -533,7 +535,7 @@ class Renderer(RendererBase):
         # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
-        camera = Renderer.OffscreenCamera(camera_np, buffer, tex, self)
+        camera = self.P3dOffscreenCamera(self, camera_np, buffer, tex)
         self._camera_nodes[name] = camera
 
         return name

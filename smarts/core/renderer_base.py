@@ -23,8 +23,8 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from enum import IntEnum
-from typing import NamedTuple
 
 from .coordinates import Pose
 
@@ -113,7 +113,8 @@ class RendererBase:
         """Get a camera by its id."""
         raise NotImplementedError
 
-    class OffscreenCamera(NamedTuple):
+    @dataclass
+    class OffscreenCamera:
         """A camera used for rendering images to a graphics buffer."""
 
         renderer: RendererBase
