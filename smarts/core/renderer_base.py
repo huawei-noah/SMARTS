@@ -40,7 +40,7 @@ class DEBUG_MODE(IntEnum):
 
 
 class RendererBase:
-    """The base class for renderering
+    """The base class for rendering
 
     Returns:
         RendererBase:
