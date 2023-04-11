@@ -3,10 +3,11 @@
 benchmark:
   name: "Driving SMARTS 2023"
   message: | # A useful message given at the start of the benchmark.
-    This is the `Driving SMARTS` 2023 benchmark.
+    This is the Driving SMARTS 2023 benchmark.
+
     For context see: 
+        - https://smarts-project.github.io/competition/2023_driving_smarts/
         - https://codalab.lisn.upsaclay.fr/competitions/
-        - https://smarts-project.github.io/archive/
   eval_episodes: 20
   debug:
     serial: True
