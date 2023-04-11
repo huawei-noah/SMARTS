@@ -193,14 +193,14 @@ Train
     $ pip install -e ./../../../.[camera_obs,argoverse]
     $ pip install -e ./inference/
 
-+ Train without visualization
++ Train locally without visualization
 
   .. code-block:: bash
 
     # In terminal-A
     $ python3.8 train/run.py
 
-+ Train with visualization
++ Train locally with visualization
 
   .. code-block:: bash
 
@@ -212,6 +212,18 @@ Train
     # In a different terminal-B
     $ scl envision start
     # Open http://localhost:8081/
+
+Docker
+^^^^^^
++ Train inside docker
+
+  .. code-block:: bash
+
+    $ cd <path>/SMARTS
+    $ docker build --file=./examples/rl/platoon/train/Dockerfile --network=host --tag=platoon .
+    $ docker run --rm -it --network=host --gpus=all platoon
+    (container) $ cd /SMARTS/examples/rl/platoon
+    (container) $ python3.8 train/run.py
 
 Evaluate
 ^^^^^^^^
@@ -226,7 +238,6 @@ Evaluate
     $ pip install -e .[camera_obs,argoverse]
     $ scl zoo install examples/rl/platoon/inference
     $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
-
 
 Zoo agents
 ----------
