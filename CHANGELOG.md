@@ -12,9 +12,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added an actor capture manager interface, `ActorCaptureManager`, which describes a manager that handles the change of control of actors. Operations in an actor manager step should not cause conflict in the simulation.
 - Added a new entry tactic, `IdEntryTactic`, which provides the scenario the ability to select a specific actor for an agent to take over.
-+ Added new driving-smarts-v2023 benchmark consisting of new (i) driving-smarts-v2023 env and (ii) platoon-v0 env.
+- Registered a new `chase-via-points-agent-v0` agent in agent zoo, which can effectively chase via points across different road sections by using the waypoints.
+- Added new driving-smarts-v2023 benchmark consisting of new (i) driving-smarts-v2023 env and (ii) platoon-v0 env.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
+- Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
 - Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
 - Made the metrics module configurable by supplying parameters through a `Params` class.
 - `Params` allows to specify vehicles to be ignored in `dist_to_obstacles` cost function. This would be applicable in platooning tasks.
@@ -29,6 +31,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 - Fixed CI tests for metrics.
 ### Removed
+- Removed the deprecated `waymo_browser` utility.
 ### Security
 
 ## [1.0.11] # 2023-04-02
