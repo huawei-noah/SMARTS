@@ -27,8 +27,7 @@ Any method such as reinforcement learning, offline reinforcement learning, behav
 predictive models, etc, may be used to develop the policy.
 
 Several scenarios are provided for training. Their names and tasks are as follows. 
-The desired task execution is illustrated by a trained baseline agent, which uses PPO algorithm from 
-`Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library.
+The desired task execution is illustrated in a gif by a trained baseline agent. 
 
 + straight_2lane_agents_1
     A single ego must follow a specified leader, with no background traffic.
@@ -176,8 +175,9 @@ Example
 -------
 
 An example training and inference code is provided for this benchmark. 
-See the :examples:`rl/platoon` example. Instructions for training and evaluating
-the example is as follows.
+See the :examples:`rl/platoon` example. The example uses PPO algorithm from 
+`Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library. 
+Instructions for training and evaluating the example is as follows.
 
 Train
 ^^^^^
@@ -213,6 +213,8 @@ Train
     $ scl envision start
     # Open http://localhost:8081/
 
++ Trained models are saved inside the ``<path>/SMARTS/examples/rl/platoon/train/logs/`` folder.
+
 Docker
 ^^^^^^
 + Train inside docker
@@ -227,6 +229,7 @@ Docker
 
 Evaluate
 ^^^^^^^^
++ Choose a desired saved model from the previous training step, rename it as ``saved_model.zip``, and move it to ``<path>/SMARTS/examples/rl/platoon/inference/contrib_policy/saved_model.zip``. 
 + Evaluate locally
 
   .. code-block:: bash
