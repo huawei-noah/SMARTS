@@ -8,3 +8,4 @@ RL Model
 
    intersection.md
    racing.md
+   platoon.rst

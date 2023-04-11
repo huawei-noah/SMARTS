@@ -42,8 +42,7 @@ class Reward(gym.Wrapper):
                 elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
-                    agent_obs["events"]["collisions"]
-                    | agent_obs["events"]["off_road"]
+                    agent_obs["events"]["collisions"] | agent_obs["events"]["off_road"]
                 ):
                     pass
                 elif agent_obs["events"]["agents_alive_done"]:
@@ -71,7 +70,9 @@ class Reward(gym.Wrapper):
             neighbor_vehicles = _get_neighbor_vehicles(
                 obs=agent_obs, neighbor_name=leader_name
             )
-            max_agent_steps_completed = max(max_agent_steps_completed, agent_obs["steps_completed"])
+            max_agent_steps_completed = max(
+                max_agent_steps_completed, agent_obs["steps_completed"]
+            )
             if neighbor_vehicles:
                 leader = neighbor_vehicles[0]
                 break

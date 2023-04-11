@@ -47,56 +47,194 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-Action space for each ego agent is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
+Action space for each ego is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
 
 Code structure
 --------------
 
 Users are free to use any training method and any folder structure for training the policy.
 
-Only the inference code is required for evaluation, and therefore must follow the following 
-folder structure, naming system, and contents.
+Only the inference code is required for evaluation, and therefore it must follow the folder 
+structure and certain specified file contents, as explained below. The below files and folders
+must be present with identical names. Any additional files may be optionally added by 
+the user.
 
 .. code-block:: text
 
-    inference                    # Main folder.
-    ├── contrib_policy           # Contains code to train a model offline.
-    │   ├── __init__.py          # Primary training script for training a new model.
-    │   ├── policy.py            # Other necessary training files.
+    inference                   
+    ├── contrib_policy          
+    │   ├── __init__.py         
+    │   ├── policy.py           
     |   .
     |   .
     |   .
-    ├── submission                       
-    |    ├── policy.py            # A policy with an act method, wrapping the saved model.
-    |    ├── requirements.txt     # Dependencies needed to run the model.
-    |    ├── explanation.md       # Brief explanation of the key techniques used in developing the submitted model.
-    |    ├── ...                  # Other necessary files for inference.
-    |    .
-    |    .
-    ├── __init__.py               # Dockerfile to build and run the training code.
-    ├── MANIFEST.in               # Dockerfile to build and run the training code.
-    ├── setup.cfg                 # Brief explanation of the key techniques used in developing the submitted model.
-    └── setup.py                  # Other necessary files for inference.
+    ├── __init__.py             
+    ├── MANIFEST.in              
+    ├── setup.cfg                
+    └── setup.py                
 
-policy.py
-    Policy(Agent)
+1. inference/contrib_policy/__init__.py
+    + Keep this file unchanged.
+    + It is an empty file.
 
-__init__.py
-    Agent interface:
-    Using the input argument agent_interface, users may configure all the fields of 
-    :class:`~smarts.core.agent_interface.AgentInterface` except for the (i) accelerometer, 
-    (ii) done_criteria, (iii) max_episode_steps, (iv) neighborhood_vehicle_states, and 
-    (v) waypoint_paths. 
+2. inference/contrib_policy/policy.py
+    + Must contain a ``class Policy(Agent)`` class which inherits from :class:`~smarts.core.agent.Agent`.
 
+3. inference/__init__.py
+    + Must contain the following template code. 
+    + The template code registers the user's policy in SMARTS agent zoo.
+    
+      .. code-block:: python
+
+        from contrib_policy.policy import Policy
+
+        from smarts.core.agent_interface import AgentInterface
+        from smarts.core.controllers import ActionSpaceType
+        from smarts.zoo.agent_spec import AgentSpec
+        from smarts.zoo.registry import register
+
+
+        def entry_point(**kwargs):
+            interface = AgentInterface(
+                action=ActionSpaceType.<...>,
+                drivable_area_grid_map=<...>,
+                lane_positions=<...>,
+                lidar_point_cloud=<...>,
+                occupancy_grid_map=<...>,
+                road_waypoints=<...>,
+                signals=<...>,
+                top_down_rgb=<...>,
+            )
+
+            agent_params = {
+                "<...>": <...>,
+                "<...>": <...>,
+            }
+
+            return AgentSpec(
+                interface=interface,
+                agent_builder=Policy,
+                agent_params=agent_params,
+            )
+
+        register(locator="contrib-agent-v0", entry_point=entry_point)
+
+    + User may fill in the ``<...>`` spaces in the template.
+    + User may specify the ego's interface by configuring any field of :class:`~smarts.core.agent_interface.AgentInterface`, except
+        
+      + :attr:`~smarts.core.agent_interface.AgentInterface.accelerometer`, 
+      + :attr:`~smarts.core.agent_interface.AgentInterface.done_criteria`, 
+      + :attr:`~smarts.core.agent_interface.AgentInterface.max_episode_steps`, 
+      + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and 
+      + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`. 
+
+4. inference/MANIFEST.in 
+    + Contains any file paths to be included in the package.
+
+5. inference/setup.cfg
+    + Must contain the following template code. 
+    + The template code helps build the user policy into a Python package.
+    
+      .. code-block:: cfg
+
+        [metadata]
+        name = <...>
+        version = 0.1.0
+        url = https://github.com/huawei-noah/SMARTS
+        description = SMARTS zoo agent.
+        long_description = <...>. See [SMARTS](https://github.com/huawei-noah/SMARTS).
+        long_description_content_type=text/markdown
+        classifiers=
+            Programming Language :: Python
+            Programming Language :: Python :: 3 :: Only
+            Programming Language :: Python :: 3.8
+
+        [options]
+        packages = find:
+        include_package_data = True
+        zip_safe = True
+        python_requires = == 3.8.*
+        install_requires = 
+            <...>==<...>
+            <...>==<...>
+
+    + User may fill in the ``<...>`` spaces in the template.
+    + User should provide a name for their policy in the ``long_description`` section.
+
+6. inference/setup.py
+    + Keep this file and its default contents unchanged.
+    + Its default contents are shown below.
+
+      .. code-block:: python
+    
+        from setuptools import setup
+
+        if __name__ == "__main__":
+            setup()
+ 
 Example
 -------
 
-See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. A compatible zoo agent can be run as follows.
+An example training and inference code is provided for this benchmark. 
+See the :examples:`rl/platoon` example. Instructions for training and evaluating
+the example is as follows.
+
+Train
+^^^^^
++ Setup
+
+  .. code-block:: bash
+
+    # In terminal-A
+    $ cd <path>/SMARTS/examples/rl/platoon
+    $ python3.8 -m venv ./.venv
+    $ source ./.venv/bin/activate
+    $ pip install --upgrade pip wheel
+    $ pip install -e ./../../../.[camera_obs,argoverse]
+    $ pip install -e ./inference/
+
++ Train without visualization
+
+  .. code-block:: bash
+
+    # In terminal-A
+    $ python3.8 train/run.py
+
++ Train with visualization
+
+  .. code-block:: bash
+
+    # In terminal-A
+    $ python3.8 train/run.py --head
+
+  .. code-block:: bash
+
+    # In a different terminal-B
+    $ scl envision start
+    # Open http://localhost:8081/
+
+Evaluate
+^^^^^^^^
++ Evaluate locally
+
+  .. code-block:: bash
+
+    $ cd <path>/SMARTS
+    $ python3.8 -m venv ./.venv
+    $ source ./.venv/bin/activate
+    $ pip install --upgrade pip wheel
+    $ pip install -e .[camera_obs,argoverse]
+    $ scl zoo install examples/rl/platoon/inference
+    $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
+
+
+Zoo agents
+----------
+
+A compatible zoo agent can be evaluated in this benchmark as follows.
 
 .. code-block:: bash
 
     $ cd <path>/SMARTS
     $ scl zoo install <agent path>
-    # e.g., scl zoo install zoo/policies/interaction_aware_motion_prediction
-    $ scl benchmark run driving_smarts_2023.3==0.0 <agent_locator> --auto_install
-    # e.g., scl benchmark run driving_smarts_2023.3==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
+    $ scl benchmark run driving_smarts_2023_3==0.0 <agent_locator> --auto_install
