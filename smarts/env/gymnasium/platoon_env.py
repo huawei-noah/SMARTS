@@ -54,15 +54,15 @@ def platoon_env(
 ):
     """Each ego is supposed to track and follow its specified leader (i.e., lead
     vehicle) in a single file or in a platoon fashion. Name of the lead vehicle
-    to be followed is given to the ego through its 
+    to be followed is given to the ego through its
     `agent_interface.done_criteria.actors_alive.actors_of_interest` attribute.
-    The episode ends for an ego when its assigned leader reaches the leader's 
+    The episode ends for an ego when its assigned leader reaches the leader's
     destination. Egos do not have prior knowledge of the leader's destination.
 
     Observation space for each agent:
-        Formatted :class:`~smarts.core.observations.Observation` using 
+        Formatted :class:`~smarts.core.observations.Observation` using
         :attr:`~smarts.env.utils.observation_conversion.ObservationOptions.multi_agent`
-        option is returned as observation. See 
+        option is returned as observation. See
         :class:`~smarts.env.utils.observation_conversion.ObservationSpacesFormatter` for
         a sample formatted observation data structure.
 
@@ -77,7 +77,7 @@ def platoon_env(
 
         1. Lead vehicle reaches its pre-programmed destination.
         2. Steps per episode exceed 1000.
-        3. Agent collides or drives off road. 
+        3. Agent collides or drives off road.
 
     Args:
         scenario (str): Scenario name or path to scenario folder.
