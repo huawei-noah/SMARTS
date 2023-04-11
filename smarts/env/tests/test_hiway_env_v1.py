@@ -104,6 +104,6 @@ def test_hiway_env_v1_reset_with_scenario(env: HiWayEnvV1):
     scenario: Scenario = next(Scenario.scenario_variations(scenarios, [AGENT_ID]))
 
     env.reset(options={"scenario": scenario, "start_time": 1000})
-    assert "figure_eight" in env.scenario.root_filepath
+    assert "figure_eight" in env.smarts.scenario.root_filepath
     assert env.smarts.elapsed_sim_time >= 1000
     env.step({AGENT_ID: "keep_lane"})

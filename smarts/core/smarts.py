@@ -55,7 +55,6 @@ from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
-from .sumo_traffic_simulation import SumoTrafficSimulation
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
