@@ -213,7 +213,7 @@ Train
     $ scl envision start
     # Open http://localhost:8081/
 
-+ Trained models are saved inside the ``<path>/SMARTS/examples/rl/platoon/train/logs/`` folder.
++ Trained models are saved by default inside the ``<path>/SMARTS/examples/rl/platoon/train/logs/`` folder.
 
 Docker
 ^^^^^^
