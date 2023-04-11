@@ -56,6 +56,8 @@ register(
                 on_shoulder=False,
                 wrong_way=False,
                 not_moving=False,
+                agents_alive=None,
+                actors_alive=None,
             ),
             accelerometer=False,
             drivable_area_grid_map=False,

@@ -37,10 +37,10 @@ class ChaseViaPointsAgent(Agent):
         # print("+ NVP= ", obs.via_data.near_via_points)
         # print("+ Hit= ", obs.via_data.hit_via_points)
 
-        LANE_CHANGE_DIST = 80
+        lane_change_dist = 80
 
         # Truncate all paths to be of the same length
-        min_len = min(LANE_CHANGE_DIST, min(map(len, obs.waypoint_paths)))
+        min_len = min(lane_change_dist, min(map(len, obs.waypoint_paths)))
         trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
         waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
         waypoints = np.array(waypoints, dtype=np.float64)

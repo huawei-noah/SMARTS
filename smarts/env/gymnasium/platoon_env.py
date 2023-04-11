@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 
 import logging
-import os
 from functools import partial
 from typing import Optional
 
@@ -55,30 +54,39 @@ def platoon_env(
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
-    """An environment with a mission to be completed by a single or multiple ego agents.
+    """Each ego is supposed to track and follow its specified leader (i.e., lead
+    vehicle) in a single file or in a platoon fashion. Name of the lead vehicle
+    to be followed is given to the ego through its
+    `agent_interface.done_criteria.actors_alive.actors_of_interest` attribute.
+    The episode ends for an ego when its assigned leader reaches the leader's
+    destination. Egos do not have prior knowledge of the leader's destination.
 
     Observation space for each agent:
-        An unformatted :class:`~smarts.core.observations.Observation` is returned as observation.
+        Formatted :class:`~smarts.core.observations.Observation` using
+        :attr:`~smarts.env.utils.observation_conversion.ObservationOptions.multi_agent`
+        option is returned as observation. See
+        :class:`~smarts.env.utils.observation_conversion.ObservationSpacesFormatter` for
+        a sample formatted observation data structure.
 
     Action space for each agent:
-        Action space for each agent is configured through its `AgentInterface`.
-        The action space could be either of the following.
+        Action space for each agent is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
 
     Reward:
-        Reward is distance travelled (in meters) in each step, including the termination step.
+        Default reward is distance travelled (in meters) in each step, including the termination step.
 
     Episode termination:
         Episode is terminated if any of the following occurs.
 
-        1. Steps per episode exceed 800.
-        2. Agent collides, drives off road, drives off route, or drives on wrong way.
+        1. Lead vehicle reaches its pre-programmed destination.
+        2. Steps per episode exceed 1000.
+        3. Agent collides or drives off road.
 
     Args:
         scenario (str): Scenario name or path to scenario folder.
         agent_interface (AgentInterface): Agent interface specification.
+        seed (int, optional): Random number generator seed. Defaults to 42.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
-        seed (int, optional): Random number generator seed. Defaults to 42.
         visdom (bool, optional): If True, enables visualization of observed
             RGB images in Visdom. Defaults to False.
         sumo_headless (bool, optional): If True, disables visualization in

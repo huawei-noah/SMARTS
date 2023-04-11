@@ -35,7 +35,7 @@ benchmark version, then the benchmark's latest version is run by default.
 
        For history see: 
            - https://codalab.lisn.upsaclay.fr/competitions/6618
-           - https://smarts-project.github.io/archive/2022_nips_driving_smarts/
+           - https://smarts-project.github.io/archive/2022_nips_driving_smarts/competition/
 
    Evaluating 1_to_2lane_left_turn_c...
    Evaluating 3lane_merge_multi_agent...

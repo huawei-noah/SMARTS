@@ -51,12 +51,14 @@ def driving_smarts_2023_env(
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
-    """An environment with a mission to be completed by a single or multiple ego agents.
+    """An environment with a mission to be completed by a single or multiple
+    ego agents. Episode ends when ego agents reach their respective destinations
+    specified by their mission goals.
 
     Observation space for each agent:
-        Formatted :class:`~smarts.core.observations.Observation` using 
+        Formatted :class:`~smarts.core.observations.Observation` using
         :attr:`~smarts.env.utils.observation_conversion.ObservationOptions.multi_agent`
-        option is returned as observation. See 
+        option is returned as observation. See
         :class:`~smarts.env.utils.observation_conversion.ObservationSpacesFormatter` for
         a sample formatted observation data structure.
 
@@ -64,10 +66,10 @@ def driving_smarts_2023_env(
         Action space for each agent is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
 
     Agent interface:
-        Using the input argument agent_interface, users may configure all the fields of 
-        :class:`~smarts.core.agent_interface.AgentInterface` except for the (i) accelerometer, 
-        (ii) done_criteria, (iii) max_episode_steps, (iv) neighborhood_vehicle_states, and 
-        (v) waypoint_paths. 
+        Using the input argument agent_interface, users may configure all the fields of
+        :class:`~smarts.core.agent_interface.AgentInterface` except for the (i) accelerometer,
+        (ii) done_criteria, (iii) max_episode_steps, (iv) neighborhood_vehicle_states, and
+        (v) waypoint_paths.
 
     Reward:
         Default reward is distance travelled (in meters) in each step, including the termination step.
@@ -75,8 +77,9 @@ def driving_smarts_2023_env(
     Episode termination:
         Episode is terminated if any of the following occurs.
 
-        1. Steps per episode exceed 1000.
-        2. Agent collides or drives off road.
+        1. Egos reach their respective destinations specified by their mission goals.
+        2. Steps per episode exceed 1000.
+        3. Agent collides or drives off road.
 
     Args:
         scenario (str): Scenario name or path to scenario folder.
