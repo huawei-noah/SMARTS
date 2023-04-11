@@ -109,7 +109,8 @@ class RaySensorResolver(SensorResolver):
             # Start remote tasks
             agent_ids_for_grouping = list(agent_ids)
             agent_groups = [
-                frozenset(agent_ids_for_grouping[i::len_workers]) for i in range(len_workers)
+                frozenset(agent_ids_for_grouping[i::len_workers])
+                for i in range(len_workers)
             ]
             for i, agent_group in enumerate(agent_groups):
                 if not agent_group:
@@ -164,6 +165,7 @@ class RaySensorResolver(SensorResolver):
 @ray.remote
 class RayProcessWorker:
     """A `ray` based process worker for parallel operation on sensors."""
+
     def __init__(self) -> None:
         self._simulation_local_constants: Optional[SimulationLocalConstants] = None
 
