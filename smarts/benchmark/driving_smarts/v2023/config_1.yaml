@@ -1,0 +1,22 @@
+---
+benchmark:
+  name: "Driving SMARTS 2023.1"
+  message: |
+    This is the Driving SMARTS 2023.1 benchmark.
+
+    For context see: 
+        - https://smarts-project.github.io/competition/2023_driving_smarts/
+        - https://codalab.lisn.upsaclay.fr/competitions/
+  eval_episodes: 50
+  debug:
+    serial: True
+  shared_env_kwargs:
+    seed: 42
+    headless: True
+  envs:
+    standard:
+      loc: "smarts.env:driving-smarts-v2023"
+      scenarios:
+        - scenarios/sumo/straight/3lane_cruise_agents_1
+      kwargs:
+        seed: 42
