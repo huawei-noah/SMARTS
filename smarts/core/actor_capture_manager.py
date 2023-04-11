@@ -89,7 +89,7 @@ class ActorCaptureManager:
             social_agent_spec,
             social_agent_model,
         )
-        vehicles = sim.vehicle_index.vehicles_by_actor_id(agent_id)
+        vehicles = sim.vehicle_index.vehicles_by_owner_id(agent_id)
 
         return vehicles[0] if len(vehicles) else None
 
