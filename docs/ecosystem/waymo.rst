@@ -51,7 +51,6 @@ To preview a scenario:
 
 Additionally, there are some other standalone tools in the `waymo module <https://github.com/huawei-noah/SMARTS/tree/master/smarts/waymo>`_
 
-- ``waymo_browser.py``: a text-based browser utility for exploring, visualizing, and tagging scenarios from the dataset
 - ``gen_sumo_map.py``: a command-line program that converts the map from a Waymo scenario to a SUMO map
 
 Example Scenario
