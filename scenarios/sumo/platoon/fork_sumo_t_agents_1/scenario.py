@@ -13,6 +13,7 @@ from smarts.sstudio.types import (
     ScenarioMetadata,
     Traffic,
     TrafficActor,
+    TrapEntryTactic,
     Trip,
 )
 
@@ -24,6 +25,7 @@ leader = TrafficActor(
     name="Leader-007",
     depart_speed=0,
 )
+
 # flow_name = (start_lane, end_lane,)
 route_opt = [
     (0, 0),
@@ -32,8 +34,6 @@ route_opt = [
     (1, 0),
 ]
 
-# Traffic combinations = 4C2 + 4C3 + 4C4 = 6 + 4 + 1 = 11
-# Repeated traffic combinations = 11 * 10 = 110
 min_flows = 2
 max_flows = 4
 route_comb = [
@@ -75,7 +75,6 @@ for name, routes in enumerate(route_comb):
                 ),
                 depart=19,
                 actor=leader,
-                vehicle_type="truck",
             ),
         ],
     )
@@ -83,7 +82,9 @@ for name, routes in enumerate(route_comb):
 
 ego_missions = [
     EndlessMission(
-        begin=("E0", 1, 5), start_time=20
+        begin=("E0", 1, 5),
+        start_time=20,
+        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
     )  # Delayed start, to ensure road has prior traffic.
 ]
 
