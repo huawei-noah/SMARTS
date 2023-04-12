@@ -11,12 +11,11 @@ from smarts.sstudio.types import (
     Via,
 )
 
-first_via = (0, 1)
-second_via = (0, 1)
-third_via = (0, 1)
-fourth_via = (0, 1)
+first_via = (0,1)
+second_via = (0,1)
+third_via = (0,1)
 
-route_comb = product(first_via, second_via, third_via, fourth_via)
+route_comb = product(first_via, second_via, third_via)
 
 leader_mission = []
 for route in route_comb:
@@ -27,25 +26,25 @@ for route in route_comb:
                 Via(
                     "E0",
                     lane_offset=30,
-                    lane_index=route[0],
+                    lane_index=1,
                     required_speed=10,
                 ),
                 Via(
                     "E0",
                     lane_offset=100,
-                    lane_index=route[1],
+                    lane_index=route[0],
                     required_speed=20,
                 ),
                 Via(
                     "E0",
                     lane_offset=170,
-                    lane_index=route[2],
+                    lane_index=route[1],
                     required_speed=13,
                 ),
                 Via(
                     "E0",
                     lane_offset=240,
-                    lane_index=route[3],
+                    lane_index=route[2],
                     required_speed=13,
                 ),
             ),
