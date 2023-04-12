@@ -24,8 +24,10 @@ benchmark version, then the benchmark's latest version is run by default.
 
 .. code:: bash
 
-   $ scl benchmark run driving_smarts smarts.zoo:random-relative-target-pose-agent-v0 --auto-install 
-   Starting `Driving SMARTS V1` benchmark.
+   $ scl benchmark run driving_smarts_2022 smarts.zoo:random-relative-target-pose-agent-v0 --auto-install 
+   
+   <-- Starting `Driving SMARTS 2022` benchmark -->
+   
    This is a cleaned up version of the Driving SMARTS benchmark.
 
        Using `TargetPose` agent action has an applied 28m/s cap for agent motion.
@@ -33,19 +35,21 @@ benchmark version, then the benchmark's latest version is run by default.
 
        For history see: 
            - https://codalab.lisn.upsaclay.fr/competitions/6618
-           - https://smarts-project.github.io/archive/2022_nips_driving_smarts/
+           - https://smarts-project.github.io/archive/2022_nips_driving_smarts/competition/
+
    Evaluating 1_to_2lane_left_turn_c...
    Evaluating 3lane_merge_multi_agent...
    ...
    Scoring 1_to_2lane_left_turn_c...
-   Evaluation complete...
 
-   `Driving SMARTS V0` result:
-   - completion: 1
-   - humanness: 0.7
-   - rules: 0.9
-   - time: 0.2
-   - overall: 0.504
+   SCORE
+   {'overall': 0.424,
+    'dist_to_destination': 0.925,
+    'humanness': 0.769,
+    'rules': 1.0,
+    'time': 0.265}
+   
+   <-- Evaluation complete -->
 
 See available benchmarks
 ------------------------
@@ -56,7 +60,7 @@ The ``scl benchmark list`` command can be used to see the list of available benc
 
    $ scl benchmark list 
    BENCHMARK_NAME               BENCHMARK_ID             VERSIONS
-   - Driving SMARTS:            driving_smarts           0.0 0.1
+   - Driving SMARTS 2022:       driving_smarts_2022      0.0 0.1
 
 Custom benchmark listing
 ------------------------
@@ -92,17 +96,17 @@ The benchmark listing file is organised as below.
    # smarts/benchmark/benchmark_listing.yaml
    ---
    benchmarks: # The root element (required)
-     driving_smarts: # The id of the benchmark for reference
-       name: "Driving SMARTS" # The human readable name of the benchmark
+     driving_smarts_2022: # The id of the benchmark for reference
+       name: "Driving SMARTS 2022" # The human readable name of the benchmark
        versions: # A list of benchmark versions
          -
-           # the version of the benchmark, higher is newer
+           # The version of the benchmark, higher is newer
            version: 0.0
-           # the entrypoint for the benchmark, it must have `agent_config`, and `debug_log` as params
+           # The entrypoint for the benchmark, it must have `agent_config`, and `debug_log` as params
            entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
-           requirements: ["ray<=2.2.0,>2.0"] # requirements to install if `--auto-install`.
-           params: # additional values to pass into the entrypoint as named keyword arguments.
-             benchmark_config: ${{smarts.benchmark.driving_smarts.v0}}/config.yaml
+           requirements: ["ray<=2.2.0,>2.0"] # Requirements to install if `--auto-install`.
+           params: # Additional values to pass into the entrypoint as named keyword arguments.
+             benchmark_config: ${{smarts.benchmark.driving_smarts.v2022}}/config.yaml
 
 .. note:: 
     

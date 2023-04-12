@@ -1,13 +1,43 @@
 # smarts/benchmark/benchmark_listing.yaml
 ---
 benchmarks:
-  driving_smarts:
-    name: "Driving SMARTS"
+
+  driving_smarts_2022:
+    name: "Driving SMARTS 2022"
     versions:
       -
         version: 0.0
         entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
         requirements: ["ray<=2.2.0,>2.0"]
         params: 
-          benchmark_config: ${{smarts.benchmark.driving_smarts.v0}}/config.yaml
-      
+          benchmark_config: ${{smarts.benchmark.driving_smarts.v2022}}/config.yaml
+
+  driving_smarts_2023_1:
+    name: "Driving SMARTS 2023.1"
+    versions:
+      -
+        version: 0.0
+        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
+        requirements: ["ray<=2.2.0,>2.0"]
+        params: 
+          benchmark_config: ${{smarts.benchmark.driving_smarts.v2023}}/config_1.yaml
+
+  driving_smarts_2023_2:
+    name: "Driving SMARTS 2023.2"
+    versions:
+      -
+        version: 0.0
+        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
+        requirements: ["ray<=2.2.0,>2.0"]
+        params: 
+          benchmark_config: ${{smarts.benchmark.driving_smarts.v2023}}/config_2.yaml
+
+  driving_smarts_2023_3:
+    name: "Driving SMARTS 2023.3"
+    versions:
+      -
+        version: 0.0
+        entrypoint: "smarts.benchmark.entrypoints.benchmark_runner_v0.benchmark_from_configs"
+        requirements: ["ray<=2.2.0,>2.0"]
+        params: 
+          benchmark_config: ${{smarts.benchmark.driving_smarts.v2023}}/config_3.yaml
