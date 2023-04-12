@@ -7,6 +7,7 @@ from smarts.sstudio.types import (
     MapSpec,
     Scenario,
     SocialAgentActor,
+    TrapEntryTactic,
     Via,
 )
 
@@ -43,7 +44,7 @@ for route in route_comb:
                 ),
                 Via(
                     "E4",
-                    lane_offset=5,
+                    lane_offset=10,
                     lane_index=0,
                     required_speed=15,
                 ),
@@ -55,10 +56,16 @@ leader_actor = [
     SocialAgentActor(
         name="Leader-007",
         agent_locator="zoo.policies:chase-via-points-agent-v0",
+        initial_speed=0,
     )
 ]
 
-ego_missions = [EndlessMission(begin=("E0", 0, 5))]
+ego_missions = [
+    EndlessMission(
+        begin=("E0", 0, 5),
+        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
+    )
+]
 
 scenario = Scenario(
     ego_missions=ego_missions,
