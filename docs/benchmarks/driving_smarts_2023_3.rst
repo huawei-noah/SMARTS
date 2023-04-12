@@ -11,23 +11,23 @@ Objective is to develop a single-ego policy capable of controlling a single ego 
 
 .. important::
 
-    In a scenario with multiple egos, a single-ego policy is copied and pasted into every ego. Each ego is stepped 
+    In a scenario with multiple egos, a single-ego policy is replicated into every agent. Each agent is stepped
     independently by calling their respective :attr:`~smarts.core.agent.Agent.act` function. In short, multiple
     egos are executed in a distributed manner. The single-ego policy should be capable of accounting for and 
     interacting with other egos, if any are present.
 
 Each ego is supposed to track and follow its specified leader (i.e., lead vehicle) in a single file or in a 
-platoon fashion. Name of the lead vehicle to be followed is given to the ego through its 
-:attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
+platoon fashion. The name identifier of the lead vehicle to be followed is given to the ego through the configuration
+of the :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
 
 .. figure:: ../_static/driving_smarts_2023/vehicle_following.png
 
-    (Left) At the start of episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the 
-    lead vehicle in a single-file fashion or in a platooning manner. Here, egos are in red, lead vehicle is in green,
-    and background traffic is in blue.
+    Here, egos are in red, lead vehicle is in green, and background traffic is in blue. (Left) At the start of
+    episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the lead vehicle in a 
+    single-file fashion.
 
-The episode ends for an ego when its assigned leader reaches the leader's destination. Egos do not have prior 
-knowledge of the leader's destination.
+An ego is terminated when its assigned leader reaches the leader's destination. Egos do not have prior knowledge of 
+the assigned leader's destination.
 
 Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
 predictive models, etc, may be used to develop the policy.
@@ -60,7 +60,7 @@ Code structure
 Users are free to use any training method and any folder structure for training the policy.
 
 Only the inference code is required for evaluation, and therefore it must follow the folder 
-structure and certain specified file contents, as explained below. The below files and folders
+structure and contain specified file contents, as explained below. The below files and folders
 must be present with identical names. Any additional files may be optionally added by 
 the user.
 

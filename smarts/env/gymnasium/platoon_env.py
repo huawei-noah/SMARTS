@@ -53,7 +53,7 @@ def platoon_env(
     envision_record_data_replay_path: Optional[str] = None,
 ):
     """Each ego is supposed to track and follow its specified leader (i.e., lead
-    vehicle) in a single file or in a platoon fashion. Name of the lead vehicle
+    vehicle) in a single file or in a platoon fashion. The name of the lead vehicle
     to track is given to the ego through its
     :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
     The episode ends for an ego when its assigned leader reaches the leader's
