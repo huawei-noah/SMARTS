@@ -1833,7 +1833,7 @@ class WaymoMap(RoadMapWithCaches):
         if road_ids:
             return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
         closest_lps = self._lanepoints.closest_lanepoints(
-            [pose], within_radius=within_radius
+            pose, within_radius=within_radius
         )
         closest_lane = closest_lps[0].lane
         waypoint_paths = []

@@ -858,14 +858,14 @@ class LanePoints:
 
     def closest_lanepoints(
         self,
-        poses: Sequence[Pose],
+        pose: Pose,
         within_radius: float = 10,
         maximum_count: int = 10,
     ) -> List[LanePoint]:
-        """Get the lanepoints closest to the given poses.
+        """Get the lanepoints closest to the given pose.
         Args:
-            poses:
-                The poses to look around for lanepoints.
+            pose:
+                The pose to look around for lanepoints.
             within_radius:
                 The radius which lanepoints can be found from the given poses.
             maximum_count:
@@ -874,7 +874,7 @@ class LanePoints:
         lanepoints = self._linked_lanepoints
         kd_tree = self._lanepoints_kd_tree
         linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
-            poses,
+            [pose],
             lanepoints,
             kd_tree,
             within_radius=within_radius,
