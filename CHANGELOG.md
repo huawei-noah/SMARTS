@@ -13,7 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
-- Fixed issues related to waypoints in junctions on Argoverse maps.
+- Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
 - Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.
 - `Trip.actor` field is now effective. Previously `actor` had no effect.
 - Fixed an issue where building sumo scenarios would sometimes stall.

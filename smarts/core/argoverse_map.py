@@ -98,7 +98,6 @@ class ArgoverseMap(RoadMapWithCaches):
         self._lane_rtree = None
         self._load_map_data()
         self._waypoints_cache = ArgoverseMap._WaypointsCache()
-        self._last_junction_lane = None
 
     @classmethod
     def from_spec(cls, map_spec: MapSpec):
@@ -972,34 +971,34 @@ class ArgoverseMap(RoadMapWithCaches):
 
         waypoint_paths = []
         if closest_lane.in_junction:
-            junction_lane = closest_lane
-            closest_lanes = [lp.lane for lp in closest_lps]
-            if self._last_junction_lane and self._last_junction_lane in closest_lanes:
-                junction_lane = self._last_junction_lane
-            paths = self._resolve_in_junction(junction_lane)
+            junction_lanes: Set[RoadMap.Lane] = set([closest_lane])
+            for lp in closest_lps:
+                rel_heading = lp.pose.heading.relative_to(pose.heading)
+                if (
+                    lp.lane.in_junction
+                    and abs(rel_heading) < np.pi / 2
+                    and lp.lane.contains_point(pose.point)
+                ):
+                    junction_lanes.add(lp.lane)
+
+            paths = set()
+            for junction_lane in junction_lanes:
+                paths_for_lane = self._resolve_in_junction(junction_lane)
+                for path in paths_for_lane:
+                    paths.add(tuple(path))
+
             for road_ids in paths:
                 new_paths = self._waypoint_paths_along_route(
                     pose.point, lookahead, road_ids
                 )
                 for path in new_paths:
-
-                    def _angle_between(pose, wp):
-                        heading_vec = pose.heading.direction_vector()
-                        wp_vec = wp.pos - pose.position[:2]
-                        angle = np.arccos(
-                            np.dot(heading_vec, wp_vec)
-                            / (np.linalg.norm(heading_vec) * np.linalg.norm(wp_vec))
-                        )
-                        return angle
-
-                    # Filter out any waypoints that are behind the vehicle
-                    wps = [wp for wp in path if _angle_between(pose, wp) < np.pi / 1.5]
-                    if len(wps) > 0:
-                        waypoint_paths.append(wps)
-            self._last_junction_lane = junction_lane
+                    if (
+                        len(path) > 0
+                        and np.linalg.norm(path[0].pos - pose.position[:2]) < 5
+                    ):
+                        waypoint_paths.append(path)
             return waypoint_paths
 
-        self._last_junction_lane = None
         for lane in closest_lane.road.lanes:
             waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
