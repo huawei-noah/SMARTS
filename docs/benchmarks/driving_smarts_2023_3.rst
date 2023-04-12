@@ -22,9 +22,9 @@ of the :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_int
 
 .. figure:: ../_static/driving_smarts_2023/vehicle_following.png
 
-    Here, egos are in red, lead vehicle is in green, and background traffic is in blue. (Left) At the start of
-    episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the lead vehicle in a 
-    single-file fashion.
+    Here, egos are in red colour, lead vehicle is in blue colour, and background traffic is in silver colour. 
+    (Left) At the start of episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the
+    lead vehicle in a single-file fashion.
 
 An ego is terminated when its assigned leader reaches the leader's destination. Egos do not have prior knowledge of 
 the assigned leader's destination.
