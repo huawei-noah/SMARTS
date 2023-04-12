@@ -211,14 +211,16 @@ Train
 
   .. code-block:: bash
 
-    # In terminal-A
-    $ python3.8 train/run.py --head
+    # In a different terminal-B
+    $ cd <path>/SMARTS/examples/rl/platoon
+    $ source ./.venv/bin/activate
+    $ scl envision start
+    # Open http://localhost:8081/
 
   .. code-block:: bash
 
-    # In a different terminal-B
-    $ scl envision start
-    # Open http://localhost:8081/
+    # In terminal-A
+    $ python3.8 train/run.py --head
 
 + Trained models are saved by default inside the ``<path>/SMARTS/examples/rl/platoon/train/logs/`` folder.
 
