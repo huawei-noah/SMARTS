@@ -20,6 +20,12 @@ Each ego is supposed to track and follow its specified leader (i.e., lead vehicl
 platoon fashion. Name of the lead vehicle to be followed is given to the ego through its 
 :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
 
+.. figure:: ../_static/driving_smarts_2023/vehicle_following.png
+
+    (Left) At the start of episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the 
+    lead vehicle in a single-file fashion or in a platooning manner. Here, egos are in red, lead vehicle is in green,
+    and background traffic is in blue.
+
 The episode ends for an ego when its assigned leader reaches the leader's destination. Egos do not have prior 
 knowledge of the leader's destination.
 
