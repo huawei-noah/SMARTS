@@ -158,7 +158,8 @@ the user.
             <...>==<...>
 
     + User may fill in the ``<...>`` spaces in the template.
-    + User should provide a name for their policy in the ``long_description`` section.
+    + User should provide a name for their policy and describe it in the ``name`` and ``long_description`` sections, respectively.
+    + Do **not** add SMARTS package as a dependency in the ``install_requires`` section.
 
 6. inference/setup.py
     + Keep this file and its default contents unchanged.
