@@ -8,7 +8,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # Load inference module to register agent
 import inference
 from contrib_policy import network
-from contrib_policy.utils import ObjDict
 
 import argparse
 import warnings
@@ -24,6 +23,7 @@ from smarts.zoo import registry
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train.env import make_env
+from train.utils import ObjDict
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
