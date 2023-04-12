@@ -1,7 +1,6 @@
 smarts:
   # Environment
-  head: False # If True, enables Envision display.
-  sumo_gui: True # If True, enables sumo-gui display.
+  sumo_gui: False # If True, enables sumo-gui display.
   seed: 42
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0
