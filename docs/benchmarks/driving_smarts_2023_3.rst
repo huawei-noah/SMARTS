@@ -13,8 +13,8 @@ Objective is to develop a single-ego policy capable of controlling a single ego 
 
     In a scenario with multiple egos, a single-ego policy is copied and pasted into every ego. Each ego is stepped 
     independently by calling their respective :attr:`~smarts.core.agent.Agent.act` function. In short, multiple
-    egos are executed in a distributed manner. The single-ego policy should be capable of accounting for and 
-    interacting with other egos, if any are present.
+    policies are executed in a distributed manner. The single-ego policy should be capable of accounting for and 
+    interacting with other ego vehicles, if any are present.
 
 Each ego is supposed to track and follow its specified leader (i.e., lead vehicle) in a single file or in a 
 platoon fashion. Name of the lead vehicle to be followed is given to the ego through its 
