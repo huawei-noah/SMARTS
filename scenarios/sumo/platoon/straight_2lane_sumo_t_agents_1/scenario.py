@@ -1,5 +1,5 @@
 import random
-from itertools import combinations
+from itertools import combinations, product
 from pathlib import Path
 
 from smarts.core.colors import Colors
@@ -21,30 +21,38 @@ normal = TrafficActor(
     name="car",
     speed=Distribution(sigma=0.5, mean=1.0),
 )
+
 leader = TrafficActor(
     name="Leader-007",
     depart_speed=0,
 )
-# flow_name = (start_lane, end_lane,)
-route_opt = [
+
+# Social path = (start_lane, end_lane)
+social_paths = [
     (0, 0),
-    (1, 1),
     (0, 1),
     (1, 0),
+    (1, 1),
 ]
-
-# Traffic combinations = 4C2 + 4C3 + 4C4 = 6 + 4 + 1 = 11
-# Repeated traffic combinations = 11 * 10 = 110
 min_flows = 2
 max_flows = 4
-route_comb = [
+social_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
-    for com in combinations(route_opt, elems)
+    for com in combinations(social_paths, elems)
 ] * 10
 
+# Leader path = (start_lane, end_lane)
+leader_paths = [
+    (0,0),
+    (0,1)
+]
+
+# Overall routes
+route_comb = product(social_comb, leader_paths)
+
 traffic = {}
-for name, routes in enumerate(route_comb):
+for name, (social_path, leader_path) in enumerate(route_comb):
     traffic[str(name)] = Traffic(
         engine="SUMO",
         flows=[
@@ -54,7 +62,7 @@ for name, routes in enumerate(route_comb):
                     end=("E0", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60 * random.uniform(5, 10),
+                rate=60 * random.uniform(4, 6),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
@@ -65,17 +73,18 @@ for name, routes in enumerate(route_comb):
                 actors={normal: 1},
                 randomly_spaced=True,
             )
-            for r in routes
+            for r in social_path
         ],
         trips=[
             Trip(
                 vehicle_name="Leader-007",
                 route=Route(
-                    begin=("E0", 1, 15),
-                    end=("E0", 0, "max"),
+                    begin=("E0", 1, 20),
+                    end=("E0", leader_path[1], "max"),
                 ),
                 depart=19,
                 actor=leader,
+                vehicle_type="truck",
             ),
         ],
     )
@@ -83,7 +92,7 @@ for name, routes in enumerate(route_comb):
 
 ego_missions = [
     EndlessMission(
-        begin=("E0", 1, 5),
+        begin=("E0", 1, 10),
         start_time=20,
         entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
     )  # Delayed start, to ensure road has prior traffic.
