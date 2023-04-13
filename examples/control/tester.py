@@ -8,7 +8,7 @@ from examples.tools.argument_parser import default_argument_parser
 from smarts.core.agent_interface import AgentInterface
 from smarts.sstudio.scenario_construction import build_scenarios
 
-def main(scenario, headless, num_episodes, max_episode_steps=None):
+def main(scenario, headless, num_episodes):
     from smarts.core.controllers import ActionSpaceType
     interface = AgentInterface(
         action=ActionSpaceType.Continuous,
@@ -31,16 +31,27 @@ def main(scenario, headless, num_episodes, max_episode_steps=None):
 
     for episode in range(num_episodes):
         obs, _ = env.reset()
-        dones = {"__all__": False}
-        while not dones["__all__"]:
+        terminated = {"__all__": False}
+        while not terminated["__all__"]:
             actions = {
                 agent_id: (0,1,0) # Break at all times
                 for agent_id, agent_obs in obs.items()
             }
             obs, rewards, terminated, truncated, infos = env.step(actions)
-            seen = obs["Agent_0"]["ego_vehicle_state"]["position"]
-            e = obs["Agent_0"]["events"]
-            print(seen, e)
+
+            ego_pos = obs["Agent_0"]["ego_vehicle_state"]["position"]
+            ego_event = obs["Agent_0"]["events"]
+            leader_pos = env.smarts.vehicle_index.vehicle_position("Leader-007")       
+            print(f"Ego pos: {ego_pos}")
+            print(f"Ego event: {ego_event}")
+            print(f"Leader pos: {leader_pos}")
+            print("\n")
+
+        print("\n")
+        print(f"Episode steps: {obs['Agent_0']['steps_completed']}")
+        assert obs["Agent_0"]["steps_completed"]>100
+        print("\n\n")
+        print("----------------------------------------------")
 
     env.close()
 
@@ -50,13 +61,18 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.scenarios:
-        args.scenarios = "/home/kyber/workspace/SMARTS/scenarios/sumo/platoon/straight_2lane_sumo_t_agents_1"
+        args.scenarios = str(
+            Path(__file__).absolute().parents[2]
+            / "scenarios"
+            / "sumo"
+            / "platoon"
+            / "straight_2lane_sumo_t_agents_1"
+        )
 
     build_scenarios(scenarios=[args.scenarios])
 
     main(
         scenario=args.scenarios,
         headless=args.headless,
-        num_episodes=10,
-        max_episode_steps=args.max_episode_steps,
+        num_episodes=100,
     )
