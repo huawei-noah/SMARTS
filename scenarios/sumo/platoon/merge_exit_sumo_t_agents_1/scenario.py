@@ -8,6 +8,7 @@ from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
     Flow,
+    MapSpec,
     Route,
     Scenario,
     ScenarioMetadata,
@@ -104,6 +105,10 @@ gen_scenario(
         traffic=traffic,
         ego_missions=ego_missions,
         scenario_metadata=ScenarioMetadata("Leader-007", Colors.Blue),
+        map_spec=MapSpec(
+            source=Path(__file__).parent.absolute(),
+            lanepoint_spacing=1.0,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )
