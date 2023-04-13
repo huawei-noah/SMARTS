@@ -8,7 +8,6 @@ from smarts.sstudio.types import (
     Flow,
     LaneChangingModel,
     Mission,
-    RandomRoute,
     Route,
     Scenario,
     SocialAgentActor,

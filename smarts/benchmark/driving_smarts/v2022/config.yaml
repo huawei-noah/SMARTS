@@ -1,0 +1,46 @@
+# smarts/benchmark/driving_smarts_v2022/config.yaml
+---
+benchmark:
+  name: "Driving SMARTS 2022"
+  message: | # A useful message given at the start of the benchmark.
+    This is the Driving SMARTS 2022 benchmark.
+
+      Using `TargetPose` agent action has an applied 28m/s cap for agent motion.
+      Using `RelativeTargetPose` agent action, the constraint is inbuilt into the action space.
+
+      For history see: 
+        - https://smarts-project.github.io/archive/2022_nips_driving_smarts/
+        - https://codalab.lisn.upsaclay.fr/competitions/6618
+  eval_episodes: 50
+  debug:
+    serial: False
+  shared_env_kwargs:
+    seed: 42
+    headless: true
+  envs:
+    standard:
+      loc: "smarts.env:driving-smarts-v2022"
+      scenarios:
+        - scenarios/sumo/intersections/1_to_2lane_left_turn_c_agents_1
+        - scenarios/sumo/intersections/1_to_2lane_left_turn_t_agents_1
+        - scenarios/sumo/merge/3lane_agents_1
+        - scenarios/sumo/merge/3lane_agents_2
+        - scenarios/sumo/straight/3lane_cruise_agents_1
+        - scenarios/sumo/straight/3lane_cruise_agents_3
+        - scenarios/sumo/straight/3lane_cut_in_agents_1
+        - scenarios/sumo/straight/3lane_overtake_agents_1
+      kwargs:
+        seed: 42
+    # bubble:
+    #   loc: "smarts.env:driving-smarts-bubble-v2022"
+    #   scenarios:
+    #     - 6
+    #     - 4
+    #     - 42
+    #   kwargs:
+    # naturalistic:
+    #   loc: "smarts.env:driving-smarts-naturalistic-v2022"
+    #   kwargs:
+    #     scenario_dirs:
+    #       - scenarios/naturalistic/waymo
+    #       - scenarios/naturalistic/ngsim

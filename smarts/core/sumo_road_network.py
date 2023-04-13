@@ -168,7 +168,7 @@ class SumoRoadNetwork(RoadMap):
                 # coordinates are relative to the origin).
                 G._shifted_by_smarts = True
 
-        junction_check_proc.join()
+        junction_check_proc.join(5)
         return cls(G, net_file, map_spec)
 
     def _load_traffic_lights(self):

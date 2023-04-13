@@ -88,6 +88,6 @@ def make_agent(locator: str, **kwargs):
             Additional arguments to be passed to the constructed class.
     """
 
-    agent_spec = make(locator, kwargs=kwargs)
+    agent_spec = make(locator, **kwargs)
 
     return agent_spec.build_agent()

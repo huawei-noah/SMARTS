@@ -21,8 +21,6 @@
 import copy
 import logging
 import math
-import os
-import pathlib
 from functools import partial
 from typing import Any, Dict, Optional, Tuple
 
@@ -40,6 +38,7 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.utils.observation_conversion import ObservationOptions
+from smarts.env.utils.scenario import get_scenario_specs
 from smarts.sstudio.scenario_construction import build_scenario
 
 logger = logging.getLogger(__file__)
@@ -52,7 +51,7 @@ SUPPORTED_ACTION_TYPES = (
 MAXIMUM_SPEED_MPS = 28  # 28m/s = 100.8 km/h. This is a safe maximum speed.
 
 
-def driving_smarts_competition_v0_env(
+def driving_smarts_2022_env(
     scenario: str,
     agent_interface: AgentInterface,
     headless: bool = True,
@@ -122,7 +121,7 @@ def driving_smarts_competition_v0_env(
         An environment described by the input argument `scenario`.
     """
 
-    env_specs = _get_env_specs(scenario)
+    env_specs = get_scenario_specs(scenario)
     build_scenario(scenario=env_specs["scenario"])
 
     resolved_agent_interface = resolve_agent_interface(agent_interface)
@@ -159,116 +158,6 @@ def driving_smarts_competition_v0_env(
     if resolved_agent_interface.action == ActionSpaceType.TargetPose:
         env = _LimitTargetPose(env)
     return env
-
-
-def _get_env_specs(scenario: str):
-    """Returns the appropriate environment parameters for each scenario.
-
-    Args:
-        scenario (str): Scenario
-
-    Returns:
-        Dict[str, Any]: A parameter dictionary.
-    """
-
-    if scenario == "1_to_2lane_left_turn_c":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "intersection"
-                / "1_to_2lane_left_turn_c"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "1_to_2lane_left_turn_t":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "intersection"
-                / "1_to_2lane_left_turn_t"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "3lane_merge_multi_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "merge"
-                / "3lane_multi_agent"
-            ),
-            "num_agent": 2,
-        }
-    elif scenario == "3lane_merge_single_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "merge"
-                / "3lane_single_agent"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "3lane_cruise_multi_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "straight"
-                / "3lane_cruise_multi_agent"
-            ),
-            "num_agent": 3,
-        }
-    elif scenario == "3lane_cruise_single_agent":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "straight"
-                / "3lane_cruise_single_agent"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "3lane_cut_in":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "straight"
-                / "3lane_cut_in"
-            ),
-            "num_agent": 1,
-        }
-    elif scenario == "3lane_overtake":
-        return {
-            "scenario": str(
-                pathlib.Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "straight"
-                / "3lane_overtake"
-            ),
-            "num_agent": 1,
-        }
-    elif os.path.isdir(scenario):
-        import re
-
-        regexp_agent = re.compile(r"agents_\d+")
-        regexp_num = re.compile(r"\d+")
-        matches_agent = regexp_agent.search(scenario)
-        if not matches_agent:
-            raise Exception(
-                f"Scenario path should match regexp of 'agents_\\d+', but got {scenario}"
-            )
-        num_agent = regexp_num.search(matches_agent.group(0))
-
-        return {
-            "scenario": str(scenario),
-            "num_agent": int(num_agent.group(0)),
-        }
-    else:
-        raise Exception(f"Unknown scenario {scenario}.")
 
 
 def resolve_agent_action_space(agent_interface: AgentInterface):
