@@ -29,7 +29,7 @@ class SocialAgent:
     """A serializable representation of a social agent."""
 
     id: str
-    name: str
+    actor_name: str
     is_boid: bool
     is_boid_keep_alive: bool
     agent_locator: str

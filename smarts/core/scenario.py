@@ -413,7 +413,7 @@ class Scenario:
                     (
                         SocialAgent(
                             id=SocialAgentId.new(actor.name, group=namespace),
-                            name=actor.name,
+                            actor_name=actor.name,
                             is_boid=False,
                             is_boid_keep_alive=False,
                             agent_locator=actor.agent_locator,
