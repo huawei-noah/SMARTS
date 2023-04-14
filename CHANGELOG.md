@@ -16,6 +16,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added new driving-smarts-v2023 benchmark consisting of new (i) driving-smarts-v2023 env and (ii) platoon-v0 env.
 - Added baseline example, consisting of training, inference, and zoo agent registration, for the platooning task in Driving SMARTS 2023.3 benchmark.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.3 benchmark, i.e., platooning task.
+- Added a new scenario consisting of merge-exit map, sumo lead vehicle, and traffic, for the vehicle-following task.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
