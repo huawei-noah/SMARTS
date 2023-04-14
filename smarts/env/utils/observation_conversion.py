@@ -67,10 +67,13 @@ _UNSIGNED_INT64_SPACE = gym.spaces.Box(low=0, high=1e10, shape=(), dtype=np.int6
 _DISCRETE2_SPACE = gym.spaces.Discrete(n=2)
 _LANE_ID_SPACE = gym.spaces.Text(_WAYPOINT_NAME_LIMIT, charset=_WAYPOINT_CHAR_SET)
 
+_WARN_CHARACTER_TRUNCATION = True
 
 def _format_id(lane_id: str, max_length, type_):
+    global _WARN_CHARACTER_TRUNCATION
     lane_name = lane_id
-    if len(lane_name) > max_length:
+    if _WARN_CHARACTER_TRUNCATION and len(lane_name) > max_length:
+        _WARN_CHARACTER_TRUNCATION = False
         warnings.warn(
             f"`{type_}` named `{lane_name}` is more than "
             f"`{max_length}` characters long. It will be truncated "
