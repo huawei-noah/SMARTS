@@ -54,27 +54,27 @@ def driving_smarts_2023_env(
     """An environment with a mission to be completed by a single or multiple
     ego agents. Episode ends when ego agents reach their respective destinations
     specified by their mission goals.
-    
+
     Observation space for each agent:
         Formatted :class:`~smarts.core.observations.Observation` using
         :attr:`~smarts.env.utils.observation_conversion.ObservationOptions.multi_agent`
         option is returned as observation. See
         :class:`~smarts.env.utils.observation_conversion.ObservationSpacesFormatter` for
         a sample formatted observation data structure.
-    
+
     Action space for each agent:
         Action space for each agent is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
-    
+
     Agent interface:
         Using the input argument agent_interface, users may configure any field of
         :class:`~smarts.core.agent_interface.AgentInterface`, except
-        
-        + :attr:`~smarts.core.agent_interface.AgentInterface.accelerometer`, 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.done_criteria`, 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.max_episode_steps`, 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`. 
-    
+
+        + :attr:`~smarts.core.agent_interface.AgentInterface.accelerometer`,
+        + :attr:`~smarts.core.agent_interface.AgentInterface.done_criteria`,
+        + :attr:`~smarts.core.agent_interface.AgentInterface.max_episode_steps`,
+        + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and
+        + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`.
+
     Reward:
         Default reward is distance travelled (in meters) in each step, including the termination step.
 

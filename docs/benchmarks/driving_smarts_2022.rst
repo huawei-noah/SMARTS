@@ -62,10 +62,11 @@ This benchmark allows ego agents to use any one of the following action spaces.
 + :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
 + :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
 
-Trained agents
---------------
+Zoo agents
+----------
 
-See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. A compatible zoo agent can be run as follows.
+See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. 
+A compatible zoo agent can be evaluated in this benchmark as follows.
 
 .. code-block:: bash
 
