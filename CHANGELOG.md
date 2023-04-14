@@ -27,6 +27,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `Trip.actor` field is now effective. Previously `actor` had no effect.
 - Fixed an issue where building sumo scenarios would sometimes stall.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
+- Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 ### Security
