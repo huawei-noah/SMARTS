@@ -572,12 +572,6 @@ distance_travelled_space_format = StandardSpaceFormat(
     _SIGNED_FLOAT32_SPACE,
 )
 
-events_actors_alive_done_space_format = StandardSpaceFormat(
-    lambda obs: np.int64(obs.events.actors_alive_done),
-    lambda _: True,
-    "actors_alive_done",
-    _DISCRETE2_SPACE,
-)
 
 events_actors_alive_done_space_format = StandardSpaceFormat(
     lambda obs: np.int64(obs.events.actors_alive_done),

@@ -42,15 +42,9 @@ class Reward(gym.Wrapper):
                 elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
-                    agent_obs["events"]["collisions"]
-                    | agent_obs["events"]["off_road"]
-                    # | agent_obs["events"]["off_route"]
-                    # | agent_obs["events"]["on_shoulder"]
-                    # | agent_obs["events"]["wrong_way"]
+                    agent_obs["events"]["collisions"] | agent_obs["events"]["off_road"]
                 ):
                     pass
-                elif agent_obs["events"]["agents_alive_done"]:
-                    print(f"{agent_id}: Agents alive done triggered.")
                 elif agent_obs["events"]["actors_alive_done"]:
                     print(f"{agent_id}: Actors alive done triggered.")
                 else:
@@ -74,7 +68,9 @@ class Reward(gym.Wrapper):
             neighbor_vehicles = _get_neighbor_vehicles(
                 obs=agent_obs, neighbor_name=leader_name
             )
-            max_agent_steps_completed = max(max_agent_steps_completed, agent_obs["steps_completed"])
+            max_agent_steps_completed = max(
+                max_agent_steps_completed, agent_obs["steps_completed"]
+            )
             if neighbor_vehicles:
                 leader = neighbor_vehicles[0]
                 break
@@ -95,59 +91,12 @@ class Reward(gym.Wrapper):
                 print(f"{agent_id}: Went off road.")
                 break
 
-            # Penalty for driving off route
-            # if agent_obs["events"]["off_route"]:
-            #     reward[agent_id] -= np.float64(10)
-            #     print(f"{agent_id}: Went off route.")
-            #     break
-
-            # Penalty for driving on road shoulder
-            # if agent_obs["events"]["on_shoulder"]:
-            #     reward[agent_id] -= np.float64(1)
-            #     print(f"{agent_id}: Went on shoulder.")
-            #     break
-
-            # Penalty for driving on wrong way
-            # if agent_obs["events"]["wrong_way"]:
-            #     reward[agent_id] -= np.float64(10)
-            #     print(f"{agent_id}: Went wrong way.")
-            #     break
-
             # Reward for reaching goal
             # if agent_obs["events"]["reached_goal"]:
             #     reward[agent_id] += np.float64(30)
 
             # Reward for distance travelled by driving
             reward[agent_id] += np.float64(env_reward[agent_id])
-
-            # # Check if leader is in front within visual angle
-            # if leader:
-
-            #     # Ego's heading with respect to the map's coordinate system.
-            #     # Note: All angles returned by smarts is with respect to the map's coordinate system.
-            #     #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
-            #     ego_heading = (agent_obs["ego_vehicle_state"]["heading"] + np.pi) % self._two_pi - np.pi
-            #     ego_pos = agent_obs["ego_vehicle_state"]["position"]
-
-            #     # Leader's angle with respect to the ego's position.
-            #     # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
-            #     #       Hence, map_angle = np.angle() - π/2
-            #     leader_pos = leader["position"]
-            #     rel_pos = leader_pos - ego_pos
-            #     leader_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - self._half_pi
-            #     leader_angle = (leader_angle + np.pi) % self._two_pi - np.pi
-
-            #     # The angle by which ego agent should turn to face leader.
-            #     angle_diff = leader_angle - ego_heading
-            #     angle_diff = (angle_diff + np.pi) % self._two_pi - np.pi
-
-            #     # Verify the leader is infront of the ego agent.
-            #     leader_in_front = -self._half_pi < angle_diff < self._half_pi
-
-            #     # print(f"ego_heading: {ego_heading*180/np.pi}")
-            #     # print(f"leader_angle: {leader_angle*180/np.pi}")
-            #     # print(f"leader_heading: {leader['heading']*180/np.pi}")
-            #     # print(f"angle_diff: {angle_diff*180/np.pi}")
 
             # Check if leader is in front and within the rgb observation
             if leader:
@@ -186,20 +135,10 @@ class Reward(gym.Wrapper):
                 # Reward for being in the same lane as the leader
                 if (leader_ind is not None) and (leader_wp_ind[0] in ego_wp_inds):
                     reward[agent_id] += np.float64(1)
-                #     print(f"{agent_id}: In the same lane.")
-                # else:
-                #     print(f"{agent_id}: NOT the same lane.")
-
-                # Reward for being within x meters of leader
-                # if np.linalg.norm(ego_pos - leader_pos) < 15:
-                # reward[agent_id] += np.float64(1)
-                # print(f"{agent_id}: Within radius.")
 
             else:
                 reward[agent_id] -= np.float64(0.2)
-                # print(f"{agent_id}: Leader not found.")
 
-        # print("^^^^^^^^^^^^^^")
         return reward
 
 

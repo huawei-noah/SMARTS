@@ -11,9 +11,9 @@ from smarts.sstudio.types import (
     Via,
 )
 
-first_via = (0,1)
-second_via = (0,1)
-third_via = (0,1)
+first_via = (0, 1)
+second_via = (0, 1)
+third_via = (0, 1)
 
 route_comb = product(first_via, second_via, third_via)
 

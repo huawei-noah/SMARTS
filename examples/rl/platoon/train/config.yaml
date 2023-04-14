@@ -8,6 +8,7 @@ smarts:
     # - scenarios/sumo/platoon/straight_agents_1
     # - scenarios/sumo/platoon/fork_agents_1
     # - scenarios/sumo/platoon/merge_exit_agents_1
+    - scenarios/sumo/platoon/merge_exit_sumo_t_agents_1
     - scenarios/sumo/platoon/straight_2lane_sumo_t_agents_1
     ### - scenarios/argoverse/platoon/map_1_agents_1
     ### - scenarios/argoverse/platoon/map_2_agents_1

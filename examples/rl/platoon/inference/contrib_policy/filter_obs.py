@@ -47,36 +47,12 @@ class FilterObs:
     def filter(self, obs: Dict[str, Any]) -> Dict[str, Any]:
         """Adapts the environment's observation."""
         # fmt: off
-        # Distance between ego and goal.
-        # goal_distance = np.array(
-        #     [
-        #         [
-        #             np.linalg.norm(
-        #                 obs["mission"]["goal_position"] - obs["ego"]["position"]
-        #             )
-        #         ]
-        #     ],
-        #     dtype=np.float32,
-        # )
 
         # Ego's heading with respect to the map's coordinate system.
         # Note: All angles returned by smarts is with respect to the map's coordinate system.
         #       On the map, angle is zero at positive y axis, and increases anti-clockwise.
         ego_heading = (obs["ego_vehicle_state"]["heading"] + np.pi) % (2 * np.pi) - np.pi
         ego_pos = obs["ego_vehicle_state"]["position"]
-
-        # Goal's angle with respect to the ego's position.
-        # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
-        #       Hence, map_angle = np.angle() - π/2
-        # goal_pos = obs["mission"]["goal_position"]
-        # rel_pos = goal_pos - ego_pos
-        # goal_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
-        # goal_angle = (goal_angle + np.pi) % (2 * np.pi) - np.pi
-
-        # Goal heading is the angle correction required by ego agent to face the goal.
-        # goal_heading = goal_angle - ego_heading
-        # goal_heading = (goal_heading + np.pi) % (2 * np.pi) - np.pi
-        # goal_heading = np.array([[goal_heading]], dtype=np.float32)
 
         # Get rgb image, remove road, and replace other egos (if any) as background vehicles
         rgb = obs["top_down_rgb"]

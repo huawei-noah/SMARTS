@@ -74,10 +74,10 @@ def run(
     """
     from smarts.benchmark import BENCHMARK_LISTING_FILE, run_benchmark
 
-    benchmark_name, _, benchmark_version = benchmark_id.partition("==")
+    benchmark_id, _, benchmark_version = benchmark_id.partition("==")
 
     run_benchmark(
-        benchmark_name=benchmark_name,
+        benchmark_name=benchmark_id,
         benchmark_version=float(benchmark_version) if benchmark_version else None,
         agent_locator=agent_locator,
         benchmark_listing=Path(benchmark_listing)

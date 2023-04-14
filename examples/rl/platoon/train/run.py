@@ -3,27 +3,30 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import sys
 from pathlib import Path
+
 # Required to load inference module
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-# Load inference module to register agent
-import inference
-from contrib_policy import network
 
 import argparse
 import warnings
-import yaml
 from datetime import datetime
 from itertools import cycle
 from typing import Any, Dict
 
 import gym
+
+# Load inference module to register agent
+import inference
 import stable_baselines3 as sb3lib
 import torch as th
-from smarts.zoo import registry
+import yaml
+from contrib_policy import network
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train.env import make_env
 from train.utils import ObjDict
+
+from smarts.zoo import registry
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -86,9 +89,6 @@ def main(args: argparse.Namespace):
             seed=config.seed,
         )
 
-    # print("observation space: ",envs_train["3lane_merge_single_agent"].observation_space)
-    # print("action_space: ",envs_train["3lane_merge_single_agent"].action_space)
-
     # Run training or evaluation.
     run(envs_train=envs_train, envs_eval=envs_eval, config=config)
 
@@ -119,7 +119,7 @@ def run(
 
         # Print model summary
         # from torchinfo import summary
-        # td = {"rgb":th.zeros(1,9,112,112)}
+        # td = {"rgb":th.zeros(1,9,128,128)}
         # summary(model.policy, input_data=[td], depth=5)
         # input("Press any key to continue ...")
 
@@ -163,7 +163,7 @@ def run(
 
         # Print model summary
         # from torchinfo import summary
-        # td = {"rgb":th.zeros(1,9,112,112)}
+        # td = {"rgb":th.zeros(1,9,128,128)}
         # summary(model.policy, input_data=[td], depth=5)
         # input("Press any key to continue ...")
 

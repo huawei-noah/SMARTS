@@ -39,7 +39,6 @@ class Policy(Agent):
 
         self._format_action = FormatAction(action_space_type=action_space_type)
         self.action_space = self._format_action.action_space
-        print("Policy initialised.")
 
     def act(self, obs):
         """Mandatory act function to be implemented by user."""

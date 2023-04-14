@@ -43,10 +43,7 @@ social_comb = [
 ] * 10
 
 # Leader path = (start_lane, end_lane)
-leader_paths = [
-    (0,0),
-    (0,1)
-]
+leader_paths = [(0, 0), (0, 1)]
 
 # Overall routes
 route_comb = product(social_comb, leader_paths)

@@ -246,6 +246,7 @@ class ActionSpacesFormatter:
             agent_interface = self._agent_interfaces[agent_id]
             format_ = formatting_groups[agent_interface.action]
             space: gym.Space = self.space[agent_id]
+            assert space is format_.space
             assert space.contains(
                 action
             ), f"Action {action} does not match space {space}!"
@@ -267,7 +268,7 @@ class ActionSpacesFormatter:
         Returns:
             bool: If the action type is supported by the formatter.
         """
-        return action_type in get_formats().keys()
+        return action_type in get_formats()
 
     @cached_property
     def space(self) -> gym.spaces.Dict:

@@ -8,8 +8,10 @@ from examples.tools.argument_parser import default_argument_parser
 from smarts.core.agent_interface import AgentInterface
 from smarts.sstudio.scenario_construction import build_scenarios
 
+
 def main(scenario, headless, num_episodes):
     from smarts.core.controllers import ActionSpaceType
+
     interface = AgentInterface(
         action=ActionSpaceType.Continuous,
         drivable_area_grid_map=False,
@@ -34,14 +36,14 @@ def main(scenario, headless, num_episodes):
         terminated = {"__all__": False}
         while not terminated["__all__"]:
             actions = {
-                agent_id: (0,1,0) # Break at all times
+                agent_id: (0, 1, 0)  # Break at all times
                 for agent_id, agent_obs in obs.items()
             }
             obs, rewards, terminated, truncated, infos = env.step(actions)
 
             ego_pos = obs["Agent_0"]["ego_vehicle_state"]["position"]
             ego_event = obs["Agent_0"]["events"]
-            leader_pos = env.smarts.vehicle_index.vehicle_position("Leader-007")       
+            leader_pos = env.smarts.vehicle_index.vehicle_position("Leader-007")
             print(f"Ego pos: {ego_pos}")
             print(f"Ego event: {ego_event}")
             print(f"Leader pos: {leader_pos}")
@@ -49,7 +51,7 @@ def main(scenario, headless, num_episodes):
 
         print("\n")
         print(f"Episode steps: {obs['Agent_0']['steps_completed']}")
-        assert obs["Agent_0"]["steps_completed"]>100
+        assert obs["Agent_0"]["steps_completed"] > 100
         print("\n\n")
         print("----------------------------------------------")
 
