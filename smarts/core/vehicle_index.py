@@ -605,7 +605,6 @@ class VehicleIndex:
             not hijacking,
             sim.scenario.surface_patches,
         )
-        print(new_vehicle.id)
 
         # Apply the physical values from the old vehicle chassis to the new one
         new_vehicle.chassis.inherit_physical_values(vehicle.chassis)

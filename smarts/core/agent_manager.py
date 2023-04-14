@@ -577,7 +577,7 @@ class AgentManager:
             boid=boid,
             vehicle_id=agent_model.actor_name,
         )
-        print(vehicle.id)
+
         role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
         for provider in sim.providers:
             if agent_interface.action not in provider.actions:
