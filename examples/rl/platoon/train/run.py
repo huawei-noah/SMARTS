@@ -3,27 +3,29 @@ import os
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import sys
 from pathlib import Path
+
 # Required to load inference module
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-# Load inference module to register agent
-import inference
-from contrib_policy import network
-
 import argparse
 import warnings
-import yaml
 from datetime import datetime
 from itertools import cycle
 from typing import Any, Dict
 
 import gym
+
+# Load inference module to register agent
+import inference
 import stable_baselines3 as sb3lib
 import torch as th
-from smarts.zoo import registry
+import yaml
+from contrib_policy import network
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train.env import make_env
 from train.utils import ObjDict
+
+from smarts.zoo import registry
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
