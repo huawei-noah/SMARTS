@@ -15,9 +15,9 @@ benchmark:
     headless: True
   envs:
     platoon:
-      loc: "smarts.env:platoon"
+      loc: "smarts.env:platoon-v0"
       scenarios:
-        - scenarios/sumo/platoon/straight_sumo_t_agents_1
+        - scenarios/sumo/platoon/merge_exit_sumo_t_agents_1
       kwargs:
         seed: 42
       # metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py

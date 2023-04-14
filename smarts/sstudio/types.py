@@ -1114,7 +1114,7 @@ class Scenario:
     """Specifies the road map."""
     traffic: Optional[Dict[str, Traffic]] = None
     """Background traffic vehicle specification."""
-    ego_missions: Optional[Sequence[Mission]] = None
+    ego_missions: Optional[Sequence[Union[Mission, EndlessMission]]] = None
     """Ego agent missions."""
     social_agent_missions: Optional[
         Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
