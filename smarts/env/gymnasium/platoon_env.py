@@ -72,12 +72,12 @@ def platoon_env(
     Agent interface:
         Using the input argument agent_interface, users may configure any field of
         :class:`~smarts.core.agent_interface.AgentInterface`, except
-        
-        + :attr:`~smarts.core.agent_interface.AgentInterface.accelerometer`, 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.done_criteria`, 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.max_episode_steps`, 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and 
-        + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`. 
+
+        + :attr:`~smarts.core.agent_interface.AgentInterface.accelerometer`,
+        + :attr:`~smarts.core.agent_interface.AgentInterface.done_criteria`,
+        + :attr:`~smarts.core.agent_interface.AgentInterface.max_episode_steps`,
+        + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and
+        + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`.
 
     Reward:
         Default reward is distance travelled (in meters) in each step, including the termination step.
