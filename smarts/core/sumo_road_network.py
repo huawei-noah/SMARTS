@@ -990,7 +990,7 @@ class SumoRoadNetwork(RoadMap):
             closest_lane: RoadMap.Lane = closest_lps[0].lane
             for lane in closest_lane.road.lanes:
                 waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
-        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+        return sorted(waypoint_paths, key=lambda p: p[0].lane_id)
 
     def _resolve_in_junction(
         self, pose: Pose, closest_lps: List[LanePoint]
