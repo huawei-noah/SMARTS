@@ -1,9 +1,3 @@
-
-
-I get that I need to choose an agent's policy and interface 
-in an agent.py sort of file, 
-
-
 Hi @atanas-kom,
 
 On the question of "what about training and saving the agent, do I need to register it for everything to work?"
