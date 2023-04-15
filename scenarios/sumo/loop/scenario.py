@@ -1,11 +1,9 @@
 import random
 from pathlib import Path
 
-from smarts.core import seed
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
-seed(42)
+from smarts.sstudio.types import (EndlessMission, TrapEntryTactic)
 
 traffic = t.Traffic(
     flows=[
@@ -39,9 +37,33 @@ laner_actor = t.SocialAgentActor(
     agent_locator="zoo.policies:keep-lane-agent-v0",
 )
 
+ego_missions = [
+    EndlessMission(
+        begin=("445633931", 0, 5),
+        start_time=0,
+        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=10),
+    ),
+    EndlessMission(
+        begin=("445633931", 1, 15),
+        start_time=0,
+        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=10),
+    ),
+    EndlessMission(
+        begin=("445633931", 2, 25),
+        start_time=0,
+        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=10),
+    ),
+    EndlessMission(
+        begin=("445633931", 2, 35),
+        start_time=0,
+        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=10),
+    ),
+]
+
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
+        ego_missions=ego_missions,
         social_agent_missions={
             "all": (
                 [laner_actor],
