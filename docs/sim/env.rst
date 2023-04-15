@@ -123,6 +123,50 @@ RLlibHiwayEnv
 Features
 --------
 
+Vehicle Diversity
+^^^^^^^^^^^^^^^^^
+
+SMARTS environments allow three types of vehicles to exist concurrently, which are:
+
++ **ego agents** - controlled by RL policy currently in training.
++ **social agents** - controlled by (pre-trained) policies from the Agent Zoo (see :mod:`~zoo.policies`). Like ego agents, social agents also use :class:`~smarts.zoo.agent_spec.AgentSpec` to register with the environment. They interact by watching the observation and returning action messages. Compared to ego agents, social agents are driven by trained models, hence they can provide behavioral characteristics we want.
++ **traffic vehicles** - controlled by an underlying traffic engine, like ``SUMO`` or ``SMARTS``.
+
+Refer to :ref:`scenario_studio` for designing scenarios, traffic vehicles, social agents, ego agents, and maps.
+
+Multiagent Scenario
+^^^^^^^^^^^^^^^^^^^
+
+In multiagent scenarios, the agents may start and end at different time points
+in the simulation. Consider the following multiagent scenario with 3 agents, 
+namely ``Agent_0``, ``Agent_1``, and ``Agent_2``.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Time (s)
+     - 0 - 10
+     - 11 - 20
+     - 21 - 30
+     - 31 - 40
+   * - Active agents
+     - Agent_1, Agent_2
+     - Agent_1
+     - None
+     - Agent_0
+   * - Observation.keys()
+     - Agent_1, Agent_2
+     - Agent_1
+     - None
+     - Agent_0
+
+Here, ``Agent_1`` and ``Agent_2`` start at time 0s, whereas ``Agent_0`` starts
+at time 31s. ``Agent_2``, ``Agent_1``, and ``Agent_0`` become done at time 10s,
+20s, and 40s, respectively. There could also be periods of time when there are
+no active agents such as between time 21s and time 30s. For time 21s to 30s, 
+SMARTS simply returns an empty dictionary as observation and the environment
+has not finished yet because ``Agent_0`` is yet to become done.
+
 Scenario Iterator
 ^^^^^^^^^^^^^^^^^
 
@@ -169,17 +213,6 @@ In contrast to the above case, we can also use multiple maps for *different work
 
     The above two cases of scenario iteration are different. In the first case, samples are collected from different scenarios *across time*, but in the second case different workers collect samples from different scenarios *simultaneously* thanks to distributed computing of multiple workers.
     This means that in the first case, the agents get experiences from the same scenario, whereas in the second case, the agents get a mixture of experiences from different scenarios.
-
-Vehicle Diversity
-^^^^^^^^^^^^^^^^^
-
-SMARTS environments allow three types of vehicles to exist concurrently, which are:
-
-+ **ego agents** - controlled by RL policy currently in training.
-+ **social agents** - controlled by (pre-trained) policies from the Agent Zoo (see :mod:`~zoo.policies`). Like ego agents, social agents also use :class:`~smarts.zoo.agent_spec.AgentSpec` to register with the environment. They interact by watching the observation and returning action messages. Compared to ego agents, social agents are driven by trained models, hence they can provide behavioral characteristics we want.
-+ **traffic vehicles** - controlled by an underlying traffic engine, like ``SUMO`` or ``SMARTS``.
-
-Refer to :ref:`scenario_studio` for designing scenarios, traffic vehicles, social agents, ego agents, and maps.
 
 Determinism
 ^^^^^^^^^^^
