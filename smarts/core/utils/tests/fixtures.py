@@ -101,7 +101,7 @@ def large_observation():
         under_this_agent_control=True,
         neighborhood_vehicle_states=[
             VehicleObservation(
-                id="car-flow-route-west_0_0-east_0_max-7845114534199723832--7266489842092764092--0-0.0",
+                id="car-west_0_0-east_0_max-784511-726648-0-0.0",
                 position=(-1.33354215, -3.2, 0.0),
                 bounding_box=Dimensions(length=3.68, width=1.47, height=1.4),
                 heading=Heading(-1.5707963267948966),
@@ -112,7 +112,7 @@ def large_observation():
                 lane_position=RefLinePoint(-1.33354215, 0.0, 0.0),
             ),
             VehicleObservation(
-                id="car-flow-route-west_1_0-east_1_max--852708111940723884--7266489842092764092--1-0.0",
+                id="car-west_1_0-east_1_max--85270-726648-1-0.0",
                 position=(-1.47159011, 0.0, 0.0),
                 bounding_box=Dimensions(length=3.68, width=1.47, height=1.4),
                 heading=Heading(-1.5707963267948966),

@@ -936,6 +936,21 @@ class ArgoverseMap(RoadMapWithCaches):
         assert self._map_spec.lanepoint_spacing > 0
         return LanePoints.from_argoverse(self, spacing=self._map_spec.lanepoint_spacing)
 
+    def _resolve_in_junction(self, junction_lane: RoadMap.Lane) -> List[List[str]]:
+        # There are no paths we can trace back through the junction, so return
+        if len(junction_lane.road.incoming_roads) == 0:
+            return []
+
+        # Trace back to the road that leads into the junction
+        inc_road: RoadMap.Road = junction_lane.road.incoming_roads[0]
+        paths = []
+        for out_road in inc_road.outgoing_roads:
+            road_ids = [out_road.road_id] + [
+                road.road_id for road in out_road.outgoing_roads
+            ]
+            paths.append(road_ids)
+        return paths
+
     def waypoint_paths(
         self,
         pose: Pose,
@@ -948,11 +963,42 @@ class ArgoverseMap(RoadMapWithCaches):
             road_ids = [road.road_id for road in route.roads]
         if road_ids:
             return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
+
         closest_lps = self._lanepoints.closest_lanepoints(
             pose, within_radius=within_radius
         )
-        closest_lane = closest_lps[0].lane
+        closest_lane: RoadMap.Lane = closest_lps[0].lane
+
         waypoint_paths = []
+        if closest_lane.in_junction:
+            junction_lanes: Set[RoadMap.Lane] = set([closest_lane])
+            for lp in closest_lps:
+                rel_heading = lp.pose.heading.relative_to(pose.heading)
+                if (
+                    lp.lane.in_junction
+                    and abs(rel_heading) < np.pi / 2
+                    and lp.lane.contains_point(pose.point)
+                ):
+                    junction_lanes.add(lp.lane)
+
+            paths = set()
+            for junction_lane in junction_lanes:
+                paths_for_lane = self._resolve_in_junction(junction_lane)
+                for path in paths_for_lane:
+                    paths.add(tuple(path))
+
+            for road_ids in paths:
+                new_paths = self._waypoint_paths_along_route(
+                    pose.point, lookahead, road_ids
+                )
+                for path in new_paths:
+                    if (
+                        len(path) > 0
+                        and np.linalg.norm(path[0].pos - pose.position[:2]) < 5
+                    ):
+                        waypoint_paths.append(path)
+            return waypoint_paths
+
         for lane in closest_lane.road.lanes:
             waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
         return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
