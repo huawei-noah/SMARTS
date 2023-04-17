@@ -54,6 +54,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
 - Added an env wrapper for constraining the relative target pose action range.
 - Added a specialised metric formula module for Driving SMARTS 2023.1 and 2023.2 benchmark.
+- Added representation interface `Condition` and `ConditionState` for conditions to scenario studio.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
@@ -83,6 +84,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Driving SMARTS 2023.3 benchmark and the metrics module now uses `actor_of_interest_re_filter` from scenario metadata to identify the lead vehicle.
 - Included `RelativeTargetPose` action space to the set of allowed action spaces in `platoon-v0` env.
 - `Collision.collidee_id` now gives the vehicle id rather than the name of the owner of the vehicle (usually the agent id.) `Collision.collidee_owner_id` now provides the id of the controlling `agent` (or other controlling entity in the future.) This is because 1) `collidee_id` should refer to the body and 2) in most cases the owner name would be `None`.
+- `sstudio` generated scenario vehicle traffic IDs are now shortened.
+- Entry tactics now use conditions to determine when they should capture an actor.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.

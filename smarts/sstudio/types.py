@@ -18,11 +18,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import collections.abc as collections_abc
+import enum
 import logging
 import math
 import random
 from dataclasses import dataclass, field, replace
-from enum import IntEnum
+from enum import IntEnum, IntFlag
 from sys import maxsize
 from typing import (
     Any,
@@ -595,11 +596,164 @@ class Traffic:
     """
 
 
+class ConditionState(IntFlag):
+    """Represents the state of a condition."""
+
+    FALSE = 0
+    """This condition is false."""
+    UNTRIGGERED = 1
+    """This condition is false and never evaluated true before."""
+    EXPIRED = 2
+    """This condition is false and will never evaluate true."""
+    TRUE = 4
+    """This condition is true."""
+
+    def __bool__(self) -> bool:
+        return self.TRUE in self
+
+
+@dataclass(frozen=True)
+class Condition:
+    """This describes a case that must be true."""
+
+    def evaluate(self, *args, **kwargs) -> ConditionState:
+        """Used to evaluate if a condition is met.
+
+        Returns:
+            ConditionState: The evaluation result of the condition.
+        """
+        raise NotImplementedError()
+
+    def negate(self) -> "Condition":
+        """Negates this condition."""
+        return NegatedCondition(self)
+
+    def conjoin(self, other: "Condition"):
+        """AND's this condition with the other condition."""
+        return CompoundCondition(
+            self, other, operator=ConditionLogicalOperator.CONJUNCTION
+        )
+
+    def disjoin(self, other: "Condition"):
+        """OR's this condition with the other condition."""
+        return CompoundCondition(
+            self, other, operator=ConditionLogicalOperator.DISJUNCTION
+        )
+
+    def implicate(self, other: "Condition"):
+        """Current condition must be false or both conditions true to be true."""
+        return CompoundCondition(
+            self, other, operator=ConditionLogicalOperator.IMPLICATION
+        )
+
+
+@dataclass(frozen=True)
+class LiteralCondition(Condition):
+    """This condition evaluates as a literal without considering evaluation parameters."""
+
+    literal: ConditionState
+    """The literal value of this condition."""
+
+    def evaluate(self, *args, **kwargs) -> ConditionState:
+        return self.literal
+
+    def negate(self) -> "LiteralCondition":
+        return LiteralCondition(~self.literal)
+
+
+@dataclass(frozen=True)
+class TimeWindowCondition(Condition):
+    """This condition should be true in the given simulation time window."""
+
+    start: float
+    """The starting simulation time before which this condition becomes false."""
+    end: float
+    """The ending simulation time as of which this condition becomes expired."""
+
+    def evaluate(self, *args, simulation_time, **kwargs):
+        if self.start <= simulation_time < self.end:
+            return ConditionState.TRUE
+        elif self.end >= simulation_time:
+            return ConditionState.EXPIRED
+        return ConditionState.UNTRIGGERED
+
+
+@dataclass(frozen=True)
+class DependeeActorCondition(Condition):
+    """This condition should be true if the given actor exists."""
+
+    actor_id: str
+    """The id of an actor in the simulation that needs to exist for this condition to be true."""
+
+    def evaluate(self, *args, actor_ids, **kwargs):
+        if self.actor_id in actor_ids:
+            return ConditionState.TRUE
+        return ConditionState.FALSE
+
+
+class ConditionLogicalOperator(IntEnum):
+    """Represents logical operators between conditions."""
+
+    CONJUNCTION = enum.auto()
+    """Evaluate true if both operands are true, otherwise false."""
+
+    DISJUNCTION = enum.auto()
+    """Evaluate true if either operand is true, otherwise false."""
+
+    IMPLICATION = enum.auto()
+    """Evaluate true if either the first operand is false, or both operands are true, otherwise false."""
+
+    ## This would be desirable but makes the implementation more difficult in comparison to a negated condition.
+    # NEGATION=enum.auto()
+    # """True if its operand is false, otherwise false."""
+
+
+@dataclass(frozen=True)
+class NegatedCondition(Condition):
+    """This condition negates the inner condition."""
+
+    inner_condition: Condition
+    """The inner condition to negate."""
+
+    def evaluate(self, *args, **kwargs) -> ConditionState:
+        return ~self.inner_condition.evaluate(*args, **kwargs)
+
+
+@dataclass(frozen=True)
+class CompoundCondition:
+    """This condition should be true if the given actor exists."""
+
+    first_condition: Condition
+    """The first condition."""
+
+    second_condition: Condition
+    """The second condition."""
+
+    operator: ConditionLogicalOperator
+    """The operator used to combine these conditions."""
+
+    def evaluate(self, *args, actor_ids, **kwargs):
+        eval_0 = self.first_condition.evaluate(*args, **kwargs)
+        if self.operator == ConditionLogicalOperator.IMPLICATION and not eval_0:
+            return ConditionState.TRUE
+
+        eval_1 = self.second_condition.evaluate(*args, **kwargs)
+        if self.operator == ConditionLogicalOperator.IMPLICATION and eval_0 and eval_1:
+            return ConditionState.TRUE
+
+        if self.operator == ConditionLogicalOperator.CONJUNCTION:
+            return eval_0 & eval_1
+        elif self.operator == ConditionLogicalOperator.DISJUNCTION:
+            return eval_0 | eval_1
+
+        return ConditionState.FALSE
+
+
 @dataclass(frozen=True)
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
-    pass
+    conditions: Tuple[Condition, ...]
 
 
 @dataclass(frozen=True)
