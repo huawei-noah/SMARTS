@@ -24,7 +24,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Sstudio generated scenario vehicle traffic ids are now shortened.
 - Made the metrics module configurable by supplying parameters through a `Params` class.
 - `Params` allows to specify vehicles to be ignored in `dist_to_obstacles` cost function. This would be applicable in platooning tasks.
-- Unified computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
+- Unified the computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
 - In the metrics module, the records which is the raw metrics data and the scoring which is the formula to compute the final results are now separated to provided greater flexibility for applying metrics to different environments.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
 ### Deprecated
