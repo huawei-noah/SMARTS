@@ -612,89 +612,7 @@ class ConditionState(IntFlag):
         return self.TRUE in self
 
 
-@dataclass(frozen=True)
-class Condition:
-    """This describes a case that must be true."""
-
-    def evaluate(self, *args, **kwargs) -> ConditionState:
-        """Used to evaluate if a condition is met.
-
-        Returns:
-            ConditionState: The evaluation result of the condition.
-        """
-        raise NotImplementedError()
-
-
-@dataclass(frozen=True)
-class LogicalCondition(Condition):
-    def negate(self) -> "Condition":
-        """Negates this condition."""
-        return NegatedCondition(self)
-
-    def conjoin(self, other: "Condition"):
-        """AND's this condition with the other condition."""
-        return CompoundCondition(
-            self, other, operator=ConditionLogicalOperator.CONJUNCTION
-        )
-
-    def disjoin(self, other: "Condition"):
-        """OR's this condition with the other condition."""
-        return CompoundCondition(
-            self, other, operator=ConditionLogicalOperator.DISJUNCTION
-        )
-
-    def implicate(self, other: "Condition"):
-        """Current condition must be false or both conditions true to be true."""
-        return CompoundCondition(
-            self, other, operator=ConditionLogicalOperator.IMPLICATION
-        )
-
-
-@dataclass(frozen=True)
-class LiteralCondition(LogicalCondition):
-    """This condition evaluates as a literal without considering evaluation parameters."""
-
-    literal: ConditionState
-    """The literal value of this condition."""
-
-    def evaluate(self, *args, **kwargs) -> ConditionState:
-        return self.literal
-
-    def negate(self) -> "LiteralCondition":
-        return LiteralCondition(~self.literal)
-
-
-@dataclass(frozen=True)
-class TimeWindowCondition(LogicalCondition):
-    """This condition should be true in the given simulation time window."""
-
-    start: float
-    """The starting simulation time before which this condition becomes false."""
-    end: float
-    """The ending simulation time as of which this condition becomes expired."""
-
-    def evaluate(self, *args, simulation_time, **kwargs):
-        if self.start <= simulation_time < self.end:
-            return ConditionState.TRUE
-        elif self.end >= simulation_time:
-            return ConditionState.EXPIRED
-        return ConditionState.UNTRIGGERED
-
-
-@dataclass(frozen=True)
-class DependeeActorCondition(LogicalCondition):
-    """This condition should be true if the given actor exists."""
-
-    actor_id: str
-    """The id of an actor in the simulation that needs to exist for this condition to be true."""
-
-    def evaluate(self, *args, actor_ids, **kwargs):
-        if self.actor_id in actor_ids:
-            return ConditionState.TRUE
-        return ConditionState.FALSE
-
-
-class ConditionLogicalOperator(IntEnum):
+class ConditionOperator(IntEnum):
     """Represents logical operators between conditions."""
 
     CONJUNCTION = enum.auto()
@@ -712,7 +630,80 @@ class ConditionLogicalOperator(IntEnum):
 
 
 @dataclass(frozen=True)
-class NegatedCondition(LogicalCondition):
+class Condition:
+    """This encompasses an expression to evaluate to a logical result."""
+
+    def evaluate(self, *args, **kwargs) -> ConditionState:
+        """Used to evaluate if a condition is met.
+
+        Returns:
+            ConditionState: The evaluation result of the condition.
+        """
+        raise NotImplementedError()
+
+    def negate(self) -> "NegatedCondition":
+        """Negates this condition."""
+        return NegatedCondition(self)
+
+    def conjoin(self, other: "Condition") -> "CompoundCondition":
+        """AND's this condition with the other condition."""
+        return CompoundCondition(self, other, operator=ConditionOperator.CONJUNCTION)
+
+    def disjoin(self, other: "Condition") -> "CompoundCondition":
+        """OR's this condition with the other condition."""
+        return CompoundCondition(self, other, operator=ConditionOperator.DISJUNCTION)
+
+    def implicate(self, other: "Condition") -> "CompoundCondition":
+        """Current condition must be false or both conditions true to be true."""
+        return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
+
+
+@dataclass(frozen=True)
+class LiteralCondition(Condition):
+    """This condition evaluates as a literal without considering evaluation parameters."""
+
+    literal: ConditionState
+    """The literal value of this condition."""
+
+    def evaluate(self, *args, **kwargs) -> ConditionState:
+        return self.literal
+
+    def negate(self) -> "LiteralCondition":
+        return LiteralCondition(~self.literal)
+
+
+@dataclass(frozen=True)
+class TimeWindowCondition(Condition):
+    """This condition should be true in the given simulation time window."""
+
+    start: float
+    """The starting simulation time before which this condition becomes false."""
+    end: float
+    """The ending simulation time as of which this condition becomes expired."""
+
+    def evaluate(self, *args, simulation_time, **kwargs):
+        if self.start <= simulation_time < self.end:
+            return ConditionState.TRUE
+        elif self.end >= simulation_time:
+            return ConditionState.EXPIRED
+        return ConditionState.UNTRIGGERED
+
+
+@dataclass(frozen=True)
+class DependeeActorCondition(Condition):
+    """This condition should be true if the given actor exists."""
+
+    actor_id: str
+    """The id of an actor in the simulation that needs to exist for this condition to be true."""
+
+    def evaluate(self, *args, actor_ids, **kwargs):
+        if self.actor_id in actor_ids:
+            return ConditionState.TRUE
+        return ConditionState.FALSE
+
+
+@dataclass(frozen=True)
+class NegatedCondition(Condition):
     """This condition negates the inner condition."""
 
     inner_condition: Condition
@@ -723,7 +714,7 @@ class NegatedCondition(LogicalCondition):
 
 
 @dataclass(frozen=True)
-class CompoundCondition(LogicalCondition):
+class CompoundCondition(Condition):
     """This condition should be true if the given actor exists."""
 
     first_condition: Condition
@@ -732,21 +723,21 @@ class CompoundCondition(LogicalCondition):
     second_condition: Condition
     """The second condition."""
 
-    operator: ConditionLogicalOperator
+    operator: ConditionOperator
     """The operator used to combine these conditions."""
 
     def evaluate(self, *args, **kwargs):
         eval_0 = self.first_condition.evaluate(*args, **kwargs)
-        if self.operator == ConditionLogicalOperator.IMPLICATION and not eval_0:
+        if self.operator == ConditionOperator.IMPLICATION and not eval_0:
             return ConditionState.TRUE
 
         eval_1 = self.second_condition.evaluate(*args, **kwargs)
-        if self.operator == ConditionLogicalOperator.IMPLICATION and eval_0 and eval_1:
+        if self.operator == ConditionOperator.IMPLICATION and eval_0 and eval_1:
             return ConditionState.TRUE
 
-        if self.operator == ConditionLogicalOperator.CONJUNCTION:
+        if self.operator == ConditionOperator.CONJUNCTION:
             return eval_0 & eval_1
-        elif self.operator == ConditionLogicalOperator.DISJUNCTION:
+        elif self.operator == ConditionOperator.DISJUNCTION:
             return eval_0 | eval_1
 
         return ConditionState.FALSE
@@ -756,7 +747,7 @@ class CompoundCondition(LogicalCondition):
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
-    condition: LogicalCondition
+    condition: Condition
     """The condition to determine if this entry tactic should be used."""
 
 
