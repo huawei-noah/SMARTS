@@ -624,6 +624,9 @@ class Condition:
         """
         raise NotImplementedError()
 
+
+@dataclass(frozen=True)
+class LogicalCondition(Condition):
     def negate(self) -> "Condition":
         """Negates this condition."""
         return NegatedCondition(self)
@@ -648,7 +651,7 @@ class Condition:
 
 
 @dataclass(frozen=True)
-class LiteralCondition(Condition):
+class LiteralCondition(LogicalCondition):
     """This condition evaluates as a literal without considering evaluation parameters."""
 
     literal: ConditionState
@@ -662,7 +665,7 @@ class LiteralCondition(Condition):
 
 
 @dataclass(frozen=True)
-class TimeWindowCondition(Condition):
+class TimeWindowCondition(LogicalCondition):
     """This condition should be true in the given simulation time window."""
 
     start: float
@@ -679,7 +682,7 @@ class TimeWindowCondition(Condition):
 
 
 @dataclass(frozen=True)
-class DependeeActorCondition(Condition):
+class DependeeActorCondition(LogicalCondition):
     """This condition should be true if the given actor exists."""
 
     actor_id: str
@@ -709,7 +712,7 @@ class ConditionLogicalOperator(IntEnum):
 
 
 @dataclass(frozen=True)
-class NegatedCondition(Condition):
+class NegatedCondition(LogicalCondition):
     """This condition negates the inner condition."""
 
     inner_condition: Condition
@@ -720,7 +723,7 @@ class NegatedCondition(Condition):
 
 
 @dataclass(frozen=True)
-class CompoundCondition:
+class CompoundCondition(LogicalCondition):
     """This condition should be true if the given actor exists."""
 
     first_condition: Condition
@@ -732,7 +735,7 @@ class CompoundCondition:
     operator: ConditionLogicalOperator
     """The operator used to combine these conditions."""
 
-    def evaluate(self, *args, actor_ids, **kwargs):
+    def evaluate(self, *args, **kwargs):
         eval_0 = self.first_condition.evaluate(*args, **kwargs)
         if self.operator == ConditionLogicalOperator.IMPLICATION and not eval_0:
             return ConditionState.TRUE
@@ -753,7 +756,8 @@ class CompoundCondition:
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
-    conditions: Tuple[Condition, ...]
+    condition: LogicalCondition
+    """The condition to determine if this entry tactic should be used."""
 
 
 @dataclass(frozen=True)
