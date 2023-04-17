@@ -979,7 +979,7 @@ class SumoRoadNetwork(RoadMap):
                         waypoint_paths.append(wps)
         else:
             closest_lps = self._lanepoints.closest_lanepoints(
-                [pose], within_radius=within_radius
+                pose, within_radius=within_radius
             )
             closest_lane = closest_lps[0].lane
             # TAI: the above lines could be replaced by:
@@ -994,7 +994,7 @@ class SumoRoadNetwork(RoadMap):
         # We take the 10 closest lanepoints then filter down to that which has
         # the closest heading. This way we get the lanepoint on our lane instead of
         # a potentially closer lane that is on a different junction connection.
-        closest_lps = self._lanepoints.closest_lanepoints([pose], within_radius=None)
+        closest_lps = self._lanepoints.closest_lanepoints(pose, within_radius=None)
         closest_lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
         lane: RoadMap.Lane = closest_lps[0].lane
         if not lane.in_junction:
