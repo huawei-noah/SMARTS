@@ -340,7 +340,7 @@ class Plan:
         """
         assert not self._route or not len(
             self._route.road_ids
-        ), "already called create_route()"
+        ), "Already called create_route()."
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
         if not self._mission.requires_route:

@@ -1,0 +1,23 @@
+---
+benchmark:
+  name: "Driving SMARTS 2023.3"
+  message: |
+    This is the Driving SMARTS 2023.3 benchmark.
+
+    For context see: 
+        - https://smarts-project.github.io/competition/2023_driving_smarts/
+        - https://codalab.lisn.upsaclay.fr/competitions/
+  eval_episodes: 50
+  debug:
+    serial: True
+  shared_env_kwargs:
+    seed: 42
+    headless: True
+  envs:
+    platoon:
+      loc: "smarts.env:platoon-v0"
+      scenarios:
+        - scenarios/sumo/platoon/merge_exit_sumo_t_agents_1
+      kwargs:
+        seed: 42
+      # metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py

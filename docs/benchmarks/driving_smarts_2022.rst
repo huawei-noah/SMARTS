@@ -3,14 +3,14 @@
 Driving SMARTS 2022
 ===================
 
-The Driving SMARTS 2022 is a benchmark derived from the
+The Driving SMARTS 2022 is a benchmark used in the
 `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/competition/>`_ competition.
 
 Objective
 ---------
 
-Objective is to develop a single policy capable of controlling single-agent or multi-agent to complete different driving scenarios in the ``driving-smarts-competition-v0`` environment.
-Refer to :func:`~smarts.env.gymnasium.driving_smarts_competition_env.driving_smarts_competition_v0_env` for environment details.
+Objective is to develop a single policy capable of controlling single-agent or multi-agent to complete different driving scenarios in the ``driving-smarts-v2022`` environment.
+Refer to :func:`~smarts.env.gymnasium.driving_smarts_2022_env.driving_smarts_2022_env` for environment details.
 
 In each driving scenario, the ego-agents must drive towards their respective mission goal locations. Each agent's mission goal is given in the observation returned by the environment at each time step. 
 The mission goal could be accessed as ``observation.ego_vehicle_state.mission.goal.position`` which gives an ``(x, y, z)`` map coordinate of the goal location.
@@ -62,15 +62,16 @@ This benchmark allows ego agents to use any one of the following action spaces.
 + :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
 + :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
 
-Trained agents
---------------
+Zoo agents
+----------
 
-See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. A compatible zoo agent can be run as follows.
+See the list of :ref:`available zoo agents <available_zoo_agents>` which are compatible with this benchmark. 
+A compatible zoo agent can be evaluated in this benchmark as follows.
 
 .. code-block:: bash
 
     $ cd <path>/SMARTS
     $ scl zoo install <agent path>
     # e.g., scl zoo install zoo/policies/interaction_aware_motion_prediction
-    $ scl benchmark run driving_smarts==0.0 <agent_locator> --auto_install
-    # e.g., scl benchmark run driving_smarts==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install
+    $ scl benchmark run driving_smarts_2022==0.0 <agent_locator> --auto_install
+    # e.g., scl benchmark run driving_smarts_2022==0.0 zoo.policies:interaction-aware-motion-prediction-agent-v0 --auto-install

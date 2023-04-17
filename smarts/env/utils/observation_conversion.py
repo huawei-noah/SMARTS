@@ -29,14 +29,13 @@ import numpy as np
 from cached_property import cached_property
 
 from smarts.core.agent_interface import AgentInterface
-from smarts.core.events import Events
 from smarts.core.observations import Observation, SignalObservation, VehicleObservation
 from smarts.core.plan import Mission
 from smarts.core.road_map import Waypoint
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 10
-_WAYPOINT_SHP = (4, 20)
+_WAYPOINT_SHP = (12, 80)
 _SIGNALS_SHP = (3,)
 _POSITION_SHP = (3,)
 _WAYPOINT_NAME_LIMIT = 50
@@ -944,7 +943,7 @@ class ObservationSpacesFormatter:
                     AgentInterface, else absent. shape=(3,). dtype=np.float32.
                 "linear_velocity":
                     Vehicle velocity in x, y, and z axes. shape=(3,). dtype=np.float32.
-                "pos":
+                "position":
                     Coordinate of the center of the vehicle bounding box's bottom plane.
                     shape=(3,). dtype=np.float64.
                 "speed":
@@ -958,6 +957,8 @@ class ObservationSpacesFormatter:
 
             A dictionary of event markers.
             "events": dict({
+                "actors_alive_done":
+                    1 if `DoneCriteria.actors_alive` is triggered, else 0.
                 "agents_alive_done":
                     1 if `DoneCriteria.agents_alive` is triggered, else 0.
                 "collisions":
@@ -996,7 +997,7 @@ class ObservationSpacesFormatter:
 
             Mission details for the ego agent.
             "mission": dict({
-                "goal_pos":
+                "goal_position":
                     Achieve goal by reaching the end position. Defaults to np.array([0,0,0])
                     for no mission. shape=(3,). dtype=np.float64.
             })

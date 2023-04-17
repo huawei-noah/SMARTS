@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 
 
-from typing import Optional, Sequence
+from typing import Optional
 
 from shapely.geometry import Polygon
 

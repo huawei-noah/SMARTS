@@ -120,11 +120,16 @@ build.db
 
 # run logs
 **/examples/**/logs
+**/examples/**/videos
 _run_logs
 results
 supervisord.log
 supervisord.pid
 xdummy.log
+
+# Argoverse dataset
+log_map_archive_[a-z0-9-]*.json
+scenario_[a-z0-9-]*.parquet
 
 # replay data
 *.jsonl

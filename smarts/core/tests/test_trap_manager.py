@@ -165,11 +165,11 @@ def smarts_two_agents():
 def test_capture_vehicle(smarts: SMARTS, scenarios, traffic_sim):
     smarts.reset(next(scenarios))
     if traffic_sim == "SMARTS":
-        vehicle_prefix = "actor-car"
+        vehicle_prefix = "car"
         vehicle_id = list(smarts.vehicle_index.agent_vehicle_ids())[0]
         assert vehicle_id.startswith(vehicle_prefix)
     else:
-        vehicle_prefix = "car-flow-route-west_1_0-east_1_max"
+        vehicle_prefix = "car-west_1_0-east_1_max"
         vehicle_id = list(smarts.vehicle_index.agent_vehicle_ids())[0]
         assert vehicle_id.startswith(vehicle_prefix)
     assert smarts.elapsed_sim_time < 1
