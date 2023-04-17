@@ -61,11 +61,7 @@ class Formula(FormulaBase):
                 active=False,
             ), # TODO: Activate after implementing comfort cost function.
             dist_to_obstacles=DistToObstacles(
-                active=True,
-                ignore=[
-                    "ego", # TODO: Ignore other ego vehicles.
-                    "Leader-007",
-                ],  
+                active=False,
             ),
             gap_between_vehicles=GapBetweenVehicles(
                 active=False,
@@ -148,7 +144,7 @@ class Formula(FormulaBase):
 
 def _humanness(costs: Costs) -> float:
     humanness = np.array(
-        [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
+        [costs.jerk_linear, costs.lane_center_offset]
     )
     humanness = np.mean(humanness, dtype=float)
     return 1 - humanness

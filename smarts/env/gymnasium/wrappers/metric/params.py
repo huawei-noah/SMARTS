@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 
-@dataclass
+@dataclass(frozen=True)
 class Collisions:
     """Parameters for collisions cost function."""
 
@@ -34,7 +34,7 @@ class Collisions:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class Comfort:
     """Parameters for comfort cost function."""
 
@@ -44,7 +44,7 @@ class Comfort:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class DistToDestination:
     """Parameters for distance to destination cost function."""
 
@@ -54,7 +54,7 @@ class DistToDestination:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class DistToObstacles:
     """Parameters for distance to obstacles cost function."""
 
@@ -62,10 +62,13 @@ class DistToObstacles:
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
     """
-    ignore: List[str] = field(default_factory=lambda: [])
+    ignore: List[str] = field(default_factory=list)
+    """Vehicle id of neighbours to be excluded from being considered as an
+    obstacle.
+    """
 
 
-@dataclass
+@dataclass(frozen=True)
 class GapBetweenVehicles:
     """Parameters for gap between vehicles cost function."""
 
@@ -76,7 +79,7 @@ class GapBetweenVehicles:
     interest: str = "Leader-007"
 
 
-@dataclass
+@dataclass(frozen=True)
 class JerkLinear:
     """Parameters for jerk linear cost function."""
 
@@ -86,7 +89,7 @@ class JerkLinear:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class LaneCenterOffset:
     """Parameters for lane center offset cost function."""
 
@@ -96,7 +99,7 @@ class LaneCenterOffset:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class OffRoad:
     """Parameters for off road cost function."""
 
@@ -106,7 +109,7 @@ class OffRoad:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class SpeedLimit:
     """Parameters for speed limit cost function."""
 
@@ -116,7 +119,7 @@ class SpeedLimit:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class Steps:
     """Parameters for steps cost function."""
 
@@ -126,7 +129,7 @@ class Steps:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class WrongWay:
     """Parameters for wrong way cost function."""
 
@@ -136,7 +139,7 @@ class WrongWay:
     """
 
 
-@dataclass
+@dataclass(frozen=True)
 class Params:
     """Parameters for cost functions."""
 
