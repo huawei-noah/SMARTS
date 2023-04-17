@@ -37,6 +37,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.vehicle import VEHICLE_CONFIGS
+from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -63,7 +64,7 @@ def step_with_vehicle_commands(
     collisions = []
     for _ in range(steps):
         bv.control(throttle, brake, steering)
-        bullet_simulation.step()
+        bullet_simulation.step(time_step, None, vehicle_index=VehicleIndex.identity())
         collisions.extend(bv.contact_points)
     return collisions
 
@@ -80,7 +81,7 @@ def step_with_pose_delta(
         cur_pose = bv.pose
         new_pose = Pose.from_center(cur_pose.position + pose_delta, cur_pose.heading)
         bv.control(new_pose, speed)
-        bullet_simulation.step()
+        bullet_simulation.step(time_step, None, VehicleIndex.identity())
         collisions.extend(bv.contact_points)
     return collisions
 
@@ -99,7 +100,7 @@ def test_collision(bullet_simulation: BulletSimulation):
         bullet_client=bullet_simulation.client,
     )
 
-    collisions = step_with_vehicle_commands(chassis, steps=2)
+    collisions = step_with_vehicle_commands(chassis, bullet_simulation, steps=2)
     assert len(collisions) > 0
     collided_bullet_ids = set([c.bullet_id for c in collisions])
     GROUND_ID = 0
@@ -199,7 +200,7 @@ def _joust(
     for _ in range(steps):
         wkc.control(throttle)
         bkc.control(throttle)
-        bullet_simulation.step()
+        bullet_simulation.step(time_step, None, VehicleIndex.identity())
         collisions[0].extend(wkc.contact_points)
         collisions[1].extend(bkc.contact_points)
     return collisions

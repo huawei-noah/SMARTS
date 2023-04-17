@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any
+from typing import Any, Optional
 
 from smarts.core.coordinates import BoundingBox
 from smarts.core.simulation_frame import SimulationFrame
@@ -56,7 +56,10 @@ class PhysicsSimulation:
         raise NotImplementedError
 
     def step(
-        self, dt: float, simulation_frame: SimulationFrame, vehicle_index: VehicleIndex
+        self,
+        dt: float,
+        simulation_frame: Optional[SimulationFrame],
+        vehicle_index: VehicleIndex,
     ):
         """Step the current physics simulation.
 

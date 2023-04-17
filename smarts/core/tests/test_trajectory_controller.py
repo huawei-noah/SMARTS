@@ -162,7 +162,5 @@ def step_with_vehicle_commands(
 def test_trajectory_tracking(
     bullet_simulation: BulletSimulation, vehicle, radius, omega
 ):
-    final_error = step_with_vehicle_commands(
-        bullet_simulation.client, vehicle, radius, omega
-    )
+    final_error = step_with_vehicle_commands(bullet_simulation, vehicle, radius, omega)
     assert final_error <= 10

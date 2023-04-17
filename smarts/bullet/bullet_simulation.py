@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import os
-from typing import Any
+from typing import Any, Optional
 
 from smarts.bullet import pybullet
 from smarts.bullet.pybullet import bullet_client as bc
@@ -129,7 +129,10 @@ class BulletSimulation(PhysicsSimulation):
         )
 
     def step(
-        self, dt: float, simulation_frame: SimulationFrame, vehicle_index: VehicleIndex
+        self,
+        dt: float,
+        simulation_frame: Optional[SimulationFrame],
+        vehicle_index: VehicleIndex,
     ):
         self._bullet_client.stepSimulation()
         pybullet_substeps = max(1, round(dt / self._pybullet_period)) - 1
