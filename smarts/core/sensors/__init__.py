@@ -643,15 +643,17 @@ class Sensors:
     def _vehicle_is_off_route_and_wrong_way(
         cls,
         sim_frame: SimulationFrame,
-        sim_local_constants,
+        sim_local_constants: SimulationLocalConstants,
         vehicle_state: VehicleState,
         plan,
     ):
         """Determines if the agent is on route and on the correct side of the road.
 
         Args:
-            sim: An instance of the simulator.
-            agent_id: The id of the agent to check.
+            sim_frame: An instance of the simulator.
+            sim_local_constants: The current frozen state of the simulation for last reset.
+            vehicle_state: The current state of the vehicle to check.
+            plan: The current plan for the vehicle.
 
         Returns:
             A tuple (is_off_route, is_wrong_way)

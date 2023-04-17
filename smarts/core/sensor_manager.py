@@ -96,12 +96,10 @@ class SensorManager:
                 The values that should stay the same for a simulation over a reset.
             agent_ids ({str, ...}):
                 The agent ids to process.
-            renderer (Optional[Renderer]):
+            renderer_ref (Optional[Renderer]):
                 The renderer (if any) that should be used.
-            bullet_client (bc.BulletClient):
+            physics_ref (bc.BulletClient):
                 The physics client.
-            process_count_override (Optional[int]):
-                Overrides the number of processes that should be used.
         """
         observations, dones, updated_sensors = self._sensor_resolver.observe(
             sim_frame,

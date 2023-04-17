@@ -1680,7 +1680,4 @@ class SMARTS(ProviderManager):
             vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
-            # renderer_type=self._renderer.__class__
-            # if self._renderer is not None
-            # else None,
         )

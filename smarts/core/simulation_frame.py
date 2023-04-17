@@ -44,7 +44,6 @@ class SimulationFrame:
     elapsed_sim_time: float
     fixed_timestep: float
     resetting: bool
-    # road_map: RoadMap
     map_spec: Any
     last_dt: float
     last_provider_state: Any

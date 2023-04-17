@@ -187,7 +187,6 @@ class AgentManager:
             a_id
             for a_id, v_id in agent_vehicle_pairs.items()
             if self._vehicle_has_agent(a_id, v_id)
-            # and self._sensor_manager.sensor_state_exists(v_id)
         }
         observations, dones = sim.sensor_manager.observe(
             sim_frame,

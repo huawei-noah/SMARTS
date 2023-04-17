@@ -149,7 +149,7 @@ class _ShowBaseInstance(ShowBase):
     def __del__(self):
         try:
             self.destroy()
-        except TypeError:
+        except (AttributeError, TypeError):
             pass
 
     def setup_sim_root(self, simid: str):
