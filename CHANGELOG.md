@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
 - Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
+- Sstudio generated scenario vehicle traffic ids are now shortened.
 - Made the metrics module configurable by supplying parameters through a `Params` class.
 - `Params` allows to specify vehicles to be ignored in `dist_to_obstacles` cost function. This would be applicable in platooning tasks.
 - Unified computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
@@ -28,6 +29,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios within an environment. Records are not averaged across enviroments, because the scoring formula may differ in different environments.
 ### Deprecated
 ### Fixed
+- Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
 - Fixed an issue where Argoverse scenarios with a `Mission` would not run properly.
 - `Trip.actor` field is now effective. Previously `actor` had no effect.
 - Fixed an issue where building sumo scenarios would sometimes stall.
