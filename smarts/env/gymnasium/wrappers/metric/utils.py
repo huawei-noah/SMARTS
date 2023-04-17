@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from collections import deque
 from dataclasses import fields
 from typing import Callable, TypeVar, Union
 
@@ -95,3 +96,31 @@ def multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
         float: Value x Multiplier
     """
     return float(value * multiplier)
+
+
+class SlidingWindow:
+    def __init__(self, size:int):
+        self._values = deque(maxlen=size)
+        self._max_candidates = deque(maxlen=size)
+        self._size = size
+        self._time = -1
+
+    def move(self, x):
+        self._time += 1
+
+        # Remove head element if deque is full.
+        # Append new element to deque tail.
+        if len(self._values) == self._size:
+            if self._values[0][1] == self._max_candidates[0][1]:
+                self._max_candidates.popleft()
+        self._values.append((self._time,x))
+
+		# Remove all elements from deque's head which are less than x.
+        # Append new element to deque tail.
+        while self._max_candidates and self._max_candidates[0][1] < x:
+            self._max_candidates.popleft()
+        self._max_candidates.append((self._time,x))
+    
+    def max(self):
+	    # Max element is at the deque's head 
+        return self._max_candidates[0][1]

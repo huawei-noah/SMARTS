@@ -58,8 +58,8 @@ class Formula(FormulaBase):
         """
         params = Params(
             comfort=Comfort(
-                active=False,
-            ), # TODO: Activate after implementing comfort cost function.
+                active=True,
+            ),
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
@@ -144,7 +144,7 @@ class Formula(FormulaBase):
 
 def _humanness(costs: Costs) -> float:
     humanness = np.array(
-        [costs.jerk_linear, costs.lane_center_offset]
+        [costs.comfort, costs.lane_center_offset]
     )
     humanness = np.mean(humanness, dtype=float)
     return 1 - humanness
