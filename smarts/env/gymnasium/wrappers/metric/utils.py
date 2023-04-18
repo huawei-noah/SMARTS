@@ -129,7 +129,7 @@ class SlidingWindow:
         # Append x to values deque.
         self._values.append((self._time,x))
 
-		# Remove elements from max_candidates deque's tail which are less than x.
+        # Remove elements from max_candidates deque's tail which are less than x.
         while self._max_candidates and self._max_candidates[-1][1] < x:
             self._max_candidates.pop()
         # Append x to max_candidates deque.

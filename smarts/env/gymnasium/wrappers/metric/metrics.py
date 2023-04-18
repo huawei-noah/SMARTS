@@ -123,7 +123,7 @@ class MetricsBase(gym.Wrapper):
             # Compute all cost functions.
             costs = Costs()
             for _, cost_func in self._cost_funcs[agent_name].items():
-                new_costs = cost_func(self._road_map, Done(dones[agent_name]), base_obs)
+                new_costs = cost_func(self._road_map, self._vehicle_index, Done(dones[agent_name]), base_obs)
                 if dones[agent_name]:
                     costs = add_dataclass(new_costs, costs)
 
@@ -212,7 +212,8 @@ class MetricsBase(gym.Wrapper):
                     "ignore": self._params.dist_to_obstacles.ignore,
                 },
                 gap_between_vehicles={
-                    "interest": self._params.gap_between_vehicles.interest,
+                    "num_agents": len(self._cur_agents),
+                    "actor_of_interest": self._params.gap_between_vehicles.actor_of_interest,
                 },
                 steps={
                     "max_episode_steps": self.env.agent_interfaces[

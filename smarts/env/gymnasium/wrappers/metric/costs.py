@@ -40,7 +40,7 @@ Done = NewType("Done", bool)
 def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
     sum = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal sum
 
         sum = sum + len(obs.events.collisions)
@@ -58,7 +58,7 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
     step = 0
     dyn_window = SlidingWindow(size=T_p)
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window
 
         step = step + 1
@@ -71,6 +71,9 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
     
+        # if step > 310:
+        #     print("Pos:", obs.ego_vehicle_state.position, "| Velocity:", obs.ego_vehicle_state.linear_velocity, "| Acc:", obs.ego_vehicle_state.linear_acceleration, "| Jerk:",obs.ego_vehicle_state.linear_jerk)
+
         if not done:
             return Costs(comfort=-1)
         else:
@@ -93,7 +96,7 @@ def _dist_to_destination(
     end_pos = end_pos
     dist_tot = dist_tot
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step, end_pos, dist_tot
 
         if not done:
@@ -124,7 +127,7 @@ def _dist_to_obstacles(
     safe_time = 3  # Safe driving distance expressed in time. Units:seconds.
     ignore = ignore
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist, safe_time, ignore
 
         # Ego's position and heading with respect to the map's coordinate system.
@@ -201,22 +204,95 @@ def _dist_to_obstacles(
 
 
 def _gap_between_vehicles(
-    interest: str,
+    num_agents: int, actor_of_interest: str,
 ) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
-    interest = interest
+    actor_of_interest = actor_of_interest
+    safe_separation = 3 # Units: seconds. Minimum separation time between two vehicles.
+    vehicle_length = 5 # Units: m. Car length=3.68 m, width=1.47 m, height=1.0 m. Hence, we simply set a vehicle length as 5m.
+    min_waypoints_length = 80
+    # assert num_agents <= 3, f"Current waypoints path length = {waypoints_length} " \
+    #     "is insufficient for gap computation. It should be increased to support greater " \
+    #     "than 3 agents in a platoon."
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
-        nonlocal mean, step, interest
+    num_agents = num_agents + 1 # Number of agents is incremented by one to provide some leeway to convoy length.
 
-        # TODO: Cost function is to be designed.
+    # Very important !!!!
+    # increase waypoint length for users
+    # increase neighbourhood vehicles for users
+
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
+        nonlocal mean, step, num_agents, interest
+
+        # Truncate all paths to be of the same length
+        min_len = min(map(len, obs.waypoint_paths))
+        assert min_len >= min_waypoints_length, f""
+        trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
+        waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
+        waypoints = np.array(waypoints, dtype=np.float64)
+
+        lane_half_width = obs.waypoint_paths[0][0].lane_width / 2
+        d = vehicle_index.vehicle_ids()
+        print("vehicle ids---",d)
+
+        # Maximum length of vehicle convoy is computed dynamically based on ego's speed.
+        speed = obs.ego_vehicle_state.speed
+        convoy_length = num_agents * safe_separation * speed + num_agents * vehicle_length 
+             # Vehicle convoy length, excluding lead vehicle's length.
+
+
+
+        # Ego vehicle dimension: length=3.68 m, width=1.47 m, height=1.0 m
+        d = obs.ego_vehicle_state.bounding_box
+        print(d)
 
         j_gap = 0
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
-        return Costs(gap_between_vehicles=0)
+        return Costs(gap_between_vehicles=mean)
 
     return func
+
+
+
+def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1):
+    """
+    Returns
+        (i) the `matrix` index of the nearest waypoint to the ego, which has a nearby `point`.
+        (ii) the `points` index which is nearby the nearest waypoint to the ego.
+
+    Nearby is defined as a point within `radius` of a waypoint.
+
+    Args:
+        matrix (np.ndarray): Waypoints matrix.
+        points (np.ndarray): Points matrix.
+        radius (float, optional): Nearby radius. Defaults to 2.
+
+    Returns:
+        Tuple[(int, int), Optional[int]] : `matrix` index of shape (a,b) and scalar `point` index.
+    """
+    cur_point_index = ((np.intp(1e10), np.intp(1e10)), None)
+
+    if points.shape == (0,):
+        return cur_point_index
+
+    assert len(matrix.shape) == 3
+    assert matrix.shape[2] == 3
+    assert len(points.shape) == 2
+    assert points.shape[1] == 3
+
+    points_expanded = np.expand_dims(points, (1, 2))
+    diff = matrix - points_expanded
+    dist = np.linalg.norm(diff, axis=-1)
+    for ii in range(points.shape[0]):
+        index = np.argmin(dist[ii])
+        index_unravel = np.unravel_index(index, dist[ii].shape)
+        min_dist = dist[ii][index_unravel]
+        if min_dist <= radius and index_unravel[1] < cur_point_index[0][1]:
+            cur_point_index = (index_unravel, ii)
+
+    return cur_point_index
+
 
 
 def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
@@ -232,7 +308,7 @@ def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
     Neural Information Processing Systems, NeurIPS 2019, Vancouver, Canada.
     """
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step, jerk_linear_max
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
@@ -247,7 +323,7 @@ def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step
 
         if obs.events.off_road:
@@ -280,7 +356,7 @@ def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
 def _off_road() -> Callable[[RoadMap, Done, Observation], Costs]:
     sum = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal sum
 
         sum = sum + obs.events.off_road
@@ -294,7 +370,7 @@ def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step
 
         if obs.events.off_road:
@@ -326,7 +402,7 @@ def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Cos
     step = 0
     max_episode_steps = max_episode_steps
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal step, max_episode_steps
 
         step = step + 1
@@ -356,7 +432,7 @@ def _wrong_way() -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step
         j_wrong_way = 0
         if obs.events.wrong_way:

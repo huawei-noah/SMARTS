@@ -64,9 +64,9 @@ class Formula(FormulaBase):
                 active=False,
             ),
             gap_between_vehicles=GapBetweenVehicles(
-                active=False,
-                interest="Leader-007",
-            ), # TODO: Activate after implementing gap_between_vehicles cost function.
+                active=True,
+                actor_of_interest="Leader-007",
+            ),
             steps=Steps(
                 active=False,
             ),
