@@ -223,7 +223,7 @@ def _gap_between_vehicles(
     # increase neighbourhood vehicles for users
 
     def func(road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation) -> Costs:
-        nonlocal mean, step, num_agents, interest
+        nonlocal mean, step, num_agents, actor_of_interest
 
         # Truncate all paths to be of the same length
         min_len = min(map(len, obs.waypoint_paths))
@@ -233,9 +233,8 @@ def _gap_between_vehicles(
         waypoints = np.array(waypoints, dtype=np.float64)
 
         lane_half_width = obs.waypoint_paths[0][0].lane_width / 2
-        d = vehicle_index.vehicle_ids()
-        print("vehicle ids---",d)
-
+        pos = np.array(vehicle_index.vehicle_position(actor_of_interest))
+ 
         # Maximum length of vehicle convoy is computed dynamically based on ego's speed.
         speed = obs.ego_vehicle_state.speed
         convoy_length = num_agents * safe_separation * speed + num_agents * vehicle_length 
