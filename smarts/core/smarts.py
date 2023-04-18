@@ -1623,3 +1623,4 @@ class SMARTS(ProviderManager):
         if not self._visdom:
             return
         self._visdom.send(obs)
+
