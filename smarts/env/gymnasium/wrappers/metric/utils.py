@@ -20,10 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import numpy as np
+
 from collections import deque
 from dataclasses import fields
-from typing import Callable, TypeVar, Union
-
+from typing import Callable, TypeVar, Optional, Tuple, Union
 from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts
 
 T = TypeVar("T", Costs, Counts)
@@ -95,6 +96,45 @@ def multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
         float: Value x Multiplier
     """
     return float(value * multiplier)
+
+
+def nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1)->Tuple[Tuple[int,int],Optional[int]]:
+    """
+    Returns
+        (i) the `matrix` index of the nearest waypoint to the ego, which has a nearby `point`.
+        (ii) the `points` index which is nearby the nearest waypoint to the ego.
+
+    Nearby is defined as a point within `radius` of a waypoint.
+
+    Args:
+        matrix (np.ndarray): Waypoints matrix.
+        points (np.ndarray): Points matrix.
+        radius (float, optional): Nearby radius. Defaults to 2.
+
+    Returns:
+        Tuple[Tuple[int, int], Optional[int]] : `matrix` index of shape (a,b) and scalar `point` index.
+    """
+    cur_point_index = ((np.intp(1e10), np.intp(1e10)), None)
+
+    if points.shape == (0,):
+        return cur_point_index
+
+    assert len(matrix.shape) == 3
+    assert matrix.shape[2] == 3
+    assert len(points.shape) == 2
+    assert points.shape[1] == 3
+
+    points_expanded = np.expand_dims(points, (1, 2))
+    diff = matrix - points_expanded
+    dist = np.linalg.norm(diff, axis=-1)
+    for ii in range(points.shape[0]):
+        index = np.argmin(dist[ii])
+        index_unravel = np.unravel_index(index, dist[ii].shape)
+        min_dist = dist[ii][index_unravel]
+        if min_dist <= radius and index_unravel[1] < cur_point_index[0][1]:
+            cur_point_index = (index_unravel, ii)
+
+    return cur_point_index
 
 
 class SlidingWindow:

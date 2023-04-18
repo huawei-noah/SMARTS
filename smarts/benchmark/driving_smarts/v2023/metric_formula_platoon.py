@@ -65,7 +65,7 @@ class Formula(FormulaBase):
             ),
             gap_between_vehicles=GapBetweenVehicles(
                 active=True,
-                actor_of_interest="Leader-007",
+                actor="Leader-007",
             ),
             steps=Steps(
                 active=False,

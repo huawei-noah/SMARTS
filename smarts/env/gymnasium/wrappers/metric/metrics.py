@@ -213,7 +213,7 @@ class MetricsBase(gym.Wrapper):
                 },
                 gap_between_vehicles={
                     "num_agents": len(self._cur_agents),
-                    "actor_of_interest": self._params.gap_between_vehicles.actor_of_interest,
+                    "actor": self._params.gap_between_vehicles.actor,
                 },
                 steps={
                     "max_episode_steps": self.env.agent_interfaces[

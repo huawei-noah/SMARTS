@@ -76,8 +76,8 @@ class GapBetweenVehicles:
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
     """
-    actor_of_interest: str = "Leader-007"
-    """Actor of interest to which the gap is computed."""
+    actor: str = "Leader-007"
+    """Gap between ego and the specified `actor` is computed."""
 
 
 @dataclass(frozen=True)
