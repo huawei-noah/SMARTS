@@ -1467,7 +1467,7 @@ class SMARTS(ProviderManager):
         if not self._envision:
             return
 
-        filter = self._envision.envision_state_filter
+        state_filter = self._envision.envision_state_filter
 
         traffic = {}
         signals = dict()
@@ -1505,24 +1505,24 @@ class SMARTS(ProviderManager):
                 agent_obs = obs[agent_id]
                 vehicle_obs = agent_obs[v.actor_id] if is_boid_agent else agent_obs
                 if (
-                    filter.simulation_data_filter["lane_ids"].enabled
+                    state_filter.simulation_data_filter["lane_ids"].enabled
                     and vehicle_obs.waypoint_paths
                     and len(vehicle_obs.waypoint_paths[0]) > 0
                 ):
                     lane_ids[agent_id] = vehicle_obs.waypoint_paths[0][0].lane_id
-                if not filter.simulation_data_filter["traffic"].enabled:
+                if not state_filter.simulation_data_filter["traffic"].enabled:
                     continue
 
                 waypoint_paths = []
                 if (
-                    filter.actor_data_filter["waypoint_paths"].enabled
+                    state_filter.actor_data_filter["waypoint_paths"].enabled
                     and vehicle_obs.waypoint_paths
                 ):
                     waypoint_paths = vehicle_obs.waypoint_paths
 
                 road_waypoints = []
                 if (
-                    filter.actor_data_filter["road_waypoints"].enabled
+                    state_filter.actor_data_filter["road_waypoints"].enabled
                     and vehicle_obs.road_waypoints
                 ):
                     road_waypoints = [
@@ -1533,22 +1533,22 @@ class SMARTS(ProviderManager):
 
                 # (points, hits, rays), just want points
                 point_cloud = ([], [], [])
-                if filter.actor_data_filter["point_cloud"].enabled:
+                if state_filter.actor_data_filter["point_cloud"].enabled:
                     point_cloud = (vehicle_obs.lidar_point_cloud or point_cloud)[0]
 
                 # TODO: driven path should be read from vehicle_obs
                 driven_path = []
-                if filter.actor_data_filter["driven_path"].enabled:
+                if state_filter.actor_data_filter["driven_path"].enabled:
                     driven_path = self._vehicle_index.vehicle_by_id(
                         v.actor_id
                     ).driven_path_sensor(
-                        filter.actor_data_filter["driven_path"].max_count
+                        state_filter.actor_data_filter["driven_path"].max_count
                     )
 
                 mission_route_geometry = None
                 if self._agent_manager.is_ego(agent_id):
                     actor_type = envision_types.TrafficActorType.Agent
-                    if filter.actor_data_filter["mission_route_geometry"].enabled:
+                    if state_filter.actor_data_filter["mission_route_geometry"].enabled:
                         mission_route_geometry = (
                             self._vehicle_index.sensor_state_for_vehicle_id(
                                 v.actor_id
@@ -1578,7 +1578,7 @@ class SMARTS(ProviderManager):
                 )
             elif v.actor_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
-                if filter.simulation_data_filter["traffic"].enabled:
+                if state_filter.simulation_data_filter["traffic"].enabled:
                     veh_type = vt_mapping.get(
                         v.vehicle_config_type
                         if v.vehicle_config_type
@@ -1595,7 +1595,7 @@ class SMARTS(ProviderManager):
                     )
 
         bubble_geometry = []
-        if filter.simulation_data_filter["bubble_geometry"].enabled:
+        if state_filter.simulation_data_filter["bubble_geometry"].enabled:
             bubble_geometry = [
                 list(bubble.geometry.exterior.coords)
                 for bubble in self._bubble_manager.bubbles
