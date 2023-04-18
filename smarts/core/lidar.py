@@ -43,6 +43,9 @@ class Lidar:
         self._base_rays = None
         self._static_lidar_noise = self._compute_static_lidar_noise()
 
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, Lidar) and ((self._origin == __value._origin).all())
+
     @property
     def origin(self):
         """The center of the emission point of the lidar lasers."""

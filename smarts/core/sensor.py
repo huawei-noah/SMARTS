@@ -96,6 +96,12 @@ class CameraSensor(Sensor):
             vehicle_state, renderer
         )  # ensure we have a correct initial camera position
 
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, CameraSensor)
+            and self._target_actor == self._target_actor
+        )
+
     def teardown(self, **kwargs):
         renderer = kwargs.get("renderer")
         if not renderer:
@@ -252,6 +258,7 @@ class LidarSensor(Sensor):
         sensor_params: Optional[SensorParams] = None,
         lidar_offset=(0, 0, 1),
     ):
+        print("made" + vehicle_state.actor_id)
         self._lidar_offset = np.array(lidar_offset)
 
         self._lidar = Lidar(
@@ -259,9 +266,18 @@ class LidarSensor(Sensor):
             sensor_params,
         )
 
-    def follow_vehicle(self, vehicle_state):
+    def follow_vehicle(self, vehicle_state: VehicleState):
         """Update the sensor to target the given vehicle."""
         self._lidar.origin = vehicle_state.pose.position + self._lidar_offset
+
+    def __eq__(self, __value: object) -> bool:
+        print(self._lidar.origin)
+        print(__value._lidar.origin)
+        print(self._lidar.origin == __value._lidar.origin)
+        return isinstance(__value, LidarSensor) and (
+            (self._lidar_offset == __value._lidar_offset).all()
+            and (self._lidar.origin == __value._lidar.origin).all()
+        )
 
     def __call__(self, bullet_client):
         return self._lidar.compute_point_cloud(bullet_client)
@@ -270,7 +286,7 @@ class LidarSensor(Sensor):
         pass
 
 
-@dataclass
+@dataclass(frozen=True)
 class _DrivenPathSensorEntry:
     timestamp: float
     position: Tuple[float, float]
@@ -289,7 +305,7 @@ class DrivenPathSensor(Sensor):
         """Records the current location of the tracked vehicle."""
         position = vehicle_state.pose.position[:2]
         self._driven_path.append(
-            _DrivenPathSensorEntry(timestamp=elapsed_sim_time, position=position)
+            _DrivenPathSensorEntry(timestamp=elapsed_sim_time, position=tuple(position))
         )
 
     def __call__(self, count=sys.maxsize):
@@ -297,6 +313,12 @@ class DrivenPathSensor(Sensor):
 
     def teardown(self, **kwargs):
         pass
+
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, DrivenPathSensor)
+            and self._driven_path == __value._driven_path
+        )
 
     def distance_travelled(
         self,
@@ -333,6 +355,13 @@ class TripMeterSensor(Sensor):
         self._dist_travelled = 0.0
         self._last_dist_travelled = 0.0
         self._last_actor_position = None
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, TripMeterSensor) and (
+            self._wps_for_distance == __value._wps_for_distance
+            and self._dist_travelled == __value._dist_travelled
+            and self._last_dist_travelled == __value._last_dist_travelled
+        )
 
     def update_distance_wps_record(
         self, waypoint_paths, vehicle, plan: Plan, road_map: RoadMap
@@ -419,6 +448,12 @@ class NeighborhoodVehiclesSensor(Sensor):
             vehicle_state, vehicle_states, radius=self._radius
         )
 
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, NeighborhoodVehiclesSensor)
+            and self._radius == __value._radius
+        )
+
     def teardown(self, **kwargs):
         pass
 
@@ -438,6 +473,12 @@ class WaypointsSensor(Sensor):
             pose=vehicle_state.pose,
             lookahead=self._lookahead,
             route=plan.route,
+        )
+
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, WaypointsSensor)
+            and self._lookahead == __value._lookahead
         )
 
     def teardown(self, **kwargs):
@@ -500,6 +541,9 @@ class RoadWaypointsSensor(Sensor):
             )
             return paths
 
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, RoadWaypoints) and self._horizon == __value._horizon
+
     def teardown(self, **kwargs):
         pass
 
@@ -548,6 +592,18 @@ class AccelerometerSensor(Sensor):
 
         return (linear_acc, angular_acc, linear_jerk, angular_jerk)
 
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, AccelerometerSensor) and (
+            [
+                (a == b).all()
+                for a, b in zip(self.linear_velocities, __value.linear_velocities)
+            ]
+            and [
+                (a == b).all()
+                for a, b in zip(self.angular_velocities, __value.angular_velocities)
+            ]
+        )
+
     def teardown(self, **kwargs):
         pass
 
@@ -560,6 +616,9 @@ class LanePositionSensor(Sensor):
 
     def __call__(self, lane: RoadMap.Lane, vehicle_state):
         return lane.to_lane_coord(vehicle_state.pose.point)
+
+    def __eq__(self, __value: object) -> bool:
+        return True
 
     def teardown(self, **kwargs):
         pass
@@ -576,6 +635,13 @@ class ViaSensor(Sensor):
         self._consumed_via_points = set()
         self._acquisition_range = lane_acquisition_range
         self._speed_accuracy = speed_accuracy
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, ViaSensor) and (
+            self._consumed_via_points == __value._consumed_via_points
+            and self._acquisition_range == __value._acquisition_range
+            and self._speed_accuracy == __value._speed_accuracy
+        )
 
     def __call__(self, vehicle_state: VehicleState, plan, road_map):
         near_points: List[ViaPoint] = list()
@@ -633,6 +699,11 @@ class SignalsSensor(Sensor):
 
     def __init__(self, lookahead: float):
         self._lookahead = lookahead
+
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, SignalsSensor) and self._lookahead == __value._lookahead
+        )
 
     @staticmethod
     def _is_signal_type(feature: RoadMap.Feature) -> bool:

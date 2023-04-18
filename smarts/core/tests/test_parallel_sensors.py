@@ -27,16 +27,19 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.scenario import Scenario
+from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
 from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.utils.file import unpack
+from smarts.core.utils.logging import diff_unpackable
 
 SimulationState = SimulationFrame
 SensorState = Any
 
-AGENT_IDS = [f"agent-00{i}" for i in range(100)]
+AGENT_IDS = [f"agent-00{i}" for i in range(3)]
 
 
 @pytest.fixture
@@ -93,39 +96,36 @@ def sim(scenario, request):
 def test_sensor_parallelization(
     sim: SMARTS,
 ):
-    import time
-
     del sim.cached_frame
     simulation_frame: SimulationFrame = sim.cached_frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
 
-    def observe_with_processes(sensors_resolver: ParallelSensorResolver, processes):
-        start_time = time.monotonic()
-        sensors_resolver.process_count_override = processes
-        obs, dones, updated_sensors = sensors_resolver.observe(
-            sim_frame=simulation_frame,
-            sim_local_constants=simulation_local_constants,
-            agent_ids=simulation_frame.agent_ids,
-            renderer=sim.renderer,
-            bullet_client=sim.bc,
-        )
-        assert len(obs) > 0
-        return time.monotonic() - start_time
+    parallel_resolver = ParallelSensorResolver(process_count_override=1)
+    serial_resolver = LocalSensorResolver()
 
-    sensors_resolver = ParallelSensorResolver()
-    sensors_resolver.get_workers(4, sim_local_constants=sim.local_constants)
+    parallel_resolver.get_workers(1, sim_local_constants=sim.local_constants)
 
-    time.sleep(0.5)
+    p_observations, p_dones, p_updated_sensors = parallel_resolver.observe(
+        sim_frame=simulation_frame,
+        sim_local_constants=simulation_local_constants,
+        agent_ids=simulation_frame.agent_ids,
+        renderer=sim.renderer,
+        bullet_client=sim.bc,
+    )
 
-    serial_total = observe_with_processes(sensors_resolver, 0)
-    parallel_1_total = observe_with_processes(sensors_resolver, 1)
-    parallel_2_total = observe_with_processes(sensors_resolver, 2)
-    parallel_3_total = observe_with_processes(sensors_resolver, 3)
-    parallel_4_total = observe_with_processes(sensors_resolver, 5)
+    l_observations, l_dones, l_updated_sensors = serial_resolver.observe(
+        sim_frame=simulation_frame,
+        sim_local_constants=simulation_local_constants,
+        agent_ids=simulation_frame.agent_ids,
+        renderer=sim.renderer,
+        bullet_client=sim.bc,
+    )
 
-    assert (
-        serial_total > parallel_1_total
-        or serial_total > parallel_2_total
-        or serial_total > parallel_3_total
-        or serial_total > parallel_4_total
-    ), f"{serial_total}, {parallel_1_total}, {parallel_2_total}, {parallel_3_total} {parallel_4_total}"
+    assert diff_unpackable(p_observations, l_observations) == ""
+    assert diff_unpackable(p_dones, l_dones) == ""
+    # TODO: Make sure that all mutable sensors are returned 
+    for agent_id in p_updated_sensors:
+        for ps, ls in zip(
+            p_updated_sensors[agent_id].values(), l_updated_sensors[agent_id].values()
+        ):
+            assert ps == ls

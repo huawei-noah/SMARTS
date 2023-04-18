@@ -111,7 +111,9 @@ class SensorManager:
         for actor_id, sensors in updated_sensors.items():
             for sensor_name, sensor in sensors.items():
                 self._sensors[
-                    SensorManager._actor_and_sname_to_sid(sensor_name, actor_id)
+                    SensorManager._actor_and_sensor_name_to_sensor_id(
+                        sensor_name, actor_id
+                    )
                 ] = sensor
 
         return observations, dones
@@ -149,7 +151,9 @@ class SensorManager:
             )
             for sensor_name, sensor in updated_sensors.items():
                 self._sensors[
-                    SensorManager._actor_and_sname_to_sid(sensor_name, vehicle_id)
+                    SensorManager._actor_and_sensor_name_to_sensor_id(
+                        sensor_name, vehicle_id
+                    )
                 ] = sensor
 
         return observations, dones
@@ -239,13 +243,13 @@ class SensorManager:
         return sensor_id.partition("-")[0]
 
     @staticmethod
-    def _actor_and_sname_to_sid(sensor_name, actor_id):
+    def _actor_and_sensor_name_to_sensor_id(sensor_name, actor_id):
         return f"{sensor_name}-{actor_id}"
 
     def add_sensor_for_actor(self, actor_id: str, name: str, sensor: Sensor) -> str:
         """Adds a sensor association for a specific actor."""
         # TAI: Allow multiple sensors of the same type on the same actor
-        s_id = SensorManager._actor_and_sname_to_sid(name, actor_id)
+        s_id = SensorManager._actor_and_sensor_name_to_sensor_id(name, actor_id)
         actor_sensors = self._sensors_by_actor_id.setdefault(actor_id, set())
         if s_id in actor_sensors:
             logger.warning(
