@@ -66,7 +66,7 @@ class Formula(FormulaBase):
             gap_between_vehicles=GapBetweenVehicles(
                 active=False,
                 interest="Leader-007",
-            ), # TODO: Activate after implmenting gap_between_vehicles cost function.
+            ), # TODO: Activate after implementing gap_between_vehicles cost function.
             steps=Steps(
                 active=False,
             ),
