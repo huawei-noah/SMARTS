@@ -867,7 +867,7 @@ class LanePoints:
             pose:
                 The pose to look around for lanepoints.
             within_radius:
-                The radius which lanepoints can be found from the given poses.
+                The radius which lanepoints can be found from the given pose.
             maximum_count:
                 The maximum lanepoints found.
         """
