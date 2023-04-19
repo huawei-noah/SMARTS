@@ -374,6 +374,9 @@ def _vehicle_gap(
     ) -> Costs:
         nonlocal mean, step, num_agents, aoi, vehicle_length, safe_separation, waypoint_spacing, max_column_length, min_waypoints_length
 
+        if done == True:
+            return Costs(vehicle_gap=mean)
+
         column_length = min(
             (
                 num_agents * safe_separation * obs.ego_vehicle_state.speed
