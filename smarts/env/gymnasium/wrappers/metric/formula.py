@@ -25,9 +25,8 @@ from typing import Dict, NewType
 
 import numpy as np
 
-from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.types import Record
+from smarts.env.gymnasium.wrappers.metric.types import Costs, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
     divide,

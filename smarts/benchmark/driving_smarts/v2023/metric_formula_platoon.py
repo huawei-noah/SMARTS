@@ -30,9 +30,9 @@ from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
     DistToObstacles,
-    GapBetweenVehicles,
     Params,
     Steps,
+    VehicleGap,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
@@ -58,19 +58,15 @@ class Formula(FormulaBase):
         """
         params = Params(
             comfort=Comfort(
-                active=False,
-            ),  # <------------------ Not implemented yet !!!!!!!!!!!
-            dist_to_obstacles=DistToObstacles(
                 active=True,
-                ignore=[
-                    "ego",
-                    "Leader-007",
-                ],  # <---------------- Ego is not ignored yet !!!!!!!!!!!
             ),
-            gap_between_vehicles=GapBetweenVehicles(
+            dist_to_obstacles=DistToObstacles(
                 active=False,
-                interest="Leader-007",
-            ),  # <------------------ Not implemented yet !!!!!!!!!!!
+            ),
+            vehicle_gap=VehicleGap(
+                active=True,
+                actor="Leader-007",
+            ),
             steps=Steps(
                 active=False,
             ),
@@ -79,8 +75,7 @@ class Formula(FormulaBase):
 
     def score(self, records_sum: Dict[str, Dict[str, Record]]) -> Score:
         """
-        Computes four sub-component scores, namely, "Distance to Destination",
-        "Time", "Humanness", "Rules", and one total combined score named
+        Computes several sub-component scores and one total combined score named
         "Overall" on the wrapped environment.
 
         +-------------------+--------+-----------------------------------------------------------+
@@ -90,7 +85,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
         +-------------------+--------+-----------------------------------------------------------+
-        | GapBetweenVehicles| [0, 1] | Time taken to complete scenario. The lower, the better.   |
+        | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
         +-------------------+--------+-----------------------------------------------------------+
         | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
         +-------------------+--------+-----------------------------------------------------------+
@@ -98,7 +93,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Score: Contains "Overall", "DistToDestination", "Time",
+            Score: Contains "Overall", "DistToDestination", "VehicleGap",
             "Humanness", and "Rules" scores.
         """
 
@@ -128,10 +123,10 @@ class Formula(FormulaBase):
         dist_to_destination = costs_final.dist_to_destination
         humanness = _humanness(costs=costs_final)
         rules = _rules(costs=costs_final)
-        time = costs_final.steps
+        vehicle_gap = costs_final.vehicle_gap
         overall = (
             0.50 * (1 - dist_to_destination)
-            + 0.25 * (1 - time)
+            + 0.25 * (1 - vehicle_gap)
             + 0.20 * humanness
             + 0.05 * rules
         )
@@ -140,7 +135,7 @@ class Formula(FormulaBase):
             {
                 "overall": overall,
                 "dist_to_destination": dist_to_destination,
-                "time": time,
+                "vehicle_gap": vehicle_gap,
                 "humanness": humanness,
                 "rules": rules,
             }
@@ -148,9 +143,7 @@ class Formula(FormulaBase):
 
 
 def _humanness(costs: Costs) -> float:
-    humanness = np.array(
-        [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
-    )
+    humanness = np.array([costs.comfort, costs.lane_center_offset])
     humanness = np.mean(humanness, dtype=float)
     return 1 - humanness
 
