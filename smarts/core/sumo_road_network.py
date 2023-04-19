@@ -34,7 +34,7 @@ from shapely.ops import nearest_points, snap
 from smarts.sstudio.types import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from .lanepoints import LanePoints, LinkedLanePoint
+from .lanepoints import LanePoint, LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
 from .utils.geometry import buffered_shape
@@ -948,13 +948,20 @@ class SumoRoadNetwork(RoadMap):
                         pose.point, lookahead, road_ids
                     )
 
+        # No route provided, so generate paths based on the closest lanepoints
+        closest_lps = self._lanepoints.closest_lanepoints(
+            pose, within_radius=within_radius
+        )
+
         waypoint_paths = []
-        junction_paths = self._resolve_in_junction(pose)
+        junction_paths = self._resolve_in_junction(pose, closest_lps)
         if junction_paths:
             for lanes in junction_paths:
-                lane = lanes[0]
                 road_ids = [lane.road.road_id for lane in lanes]
-                new_paths = lane._waypoint_paths_at(pose.point, lookahead, road_ids)
+                start_lane = lanes[0]
+                new_paths = start_lane._waypoint_paths_at(
+                    pose.point, lookahead, road_ids
+                )
                 for path in new_paths:
 
                     def _angle_between(pose, wp):
@@ -967,34 +974,32 @@ class SumoRoadNetwork(RoadMap):
                         return angle
 
                     # Filter out any waypoints that are behind the vehicle
-                    wps = [wp for wp in path if _angle_between(pose, wp) < np.pi / 2]
-                    if len(wps) < 1:
+                    path = [wp for wp in path if _angle_between(pose, wp) < np.pi / 2]
+                    if len(path) < 1:
                         continue
 
                     # Only include paths that start in the junction, or are close to the vehicle
                     if (
-                        self.lane_by_id(wps[0].lane_id).in_junction
-                        or np.linalg.norm(wps[0].pos - pose.position[:2]) < 5.0
+                        self.lane_by_id(path[0].lane_id).in_junction
+                        or np.linalg.norm(path[0].pos - pose.position[:2]) < 5.0
                     ):
-                        waypoint_paths.append(wps)
+                        waypoint_paths.append(path)
         else:
-            closest_lps = self._lanepoints.closest_lanepoints(
-                pose, within_radius=within_radius
-            )
-            closest_lane = closest_lps[0].lane
             # TAI: the above lines could be replaced by:
             # closest_lane = self.nearest_lane(pose.position, radius=within_radius)
+            closest_lane: RoadMap.Lane = closest_lps[0].lane
             for lane in closest_lane.road.lanes:
                 waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
-        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+        return sorted(waypoint_paths, key=lambda p: p[0].lane_id)
 
-    def _resolve_in_junction(self, pose: Pose) -> List[List[Lane]]:
+    def _resolve_in_junction(
+        self, pose: Pose, closest_lps: List[LanePoint]
+    ) -> List[List[Lane]]:
         # This is so that the waypoints don't jump between connections
         # when we don't know which lane we're on in a junction.
         # We take the 10 closest lanepoints then filter down to that which has
         # the closest heading. This way we get the lanepoint on our lane instead of
         # a potentially closer lane that is on a different junction connection.
-        closest_lps = self._lanepoints.closest_lanepoints(pose, within_radius=None)
         closest_lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
         lane: RoadMap.Lane = closest_lps[0].lane
         if not lane.in_junction:

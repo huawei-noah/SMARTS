@@ -28,7 +28,7 @@ jobs:
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install --upgrade wheel
+          pip install wheel==0.38.4
           pip install -e .[camera_obs,opendrive,rllib,test,test_notebook,torch,train,gym,argoverse]
       - name: Run smoke tests
         run: |
