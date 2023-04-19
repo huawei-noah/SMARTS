@@ -73,11 +73,7 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
-
-        # TODO: compute jerk manually
-        # if step > 310:
-        #     print("Pos:", obs.ego_vehicle_state.position, "| Velocity:", obs.ego_vehicle_state.linear_velocity, "| Acc:", obs.ego_vehicle_state.linear_acceleration, "| Jerk:",obs.ego_vehicle_state.linear_jerk)
-
+    
         if not done:
             return Costs(comfort=-1)
         else:

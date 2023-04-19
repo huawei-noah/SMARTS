@@ -18,7 +18,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.3 benchmark, i.e., platooning task.
 - Added a new scenario consisting of merge-exit map, sumo lead vehicle, and traffic, for the vehicle-following task.
 - Explained in the docs that agents may spawn at different times in multiagent scenarios.
-- Introduced new comfort metric in metric cost functions.
+- Introduced new comfort cost function in metric module.
+- Introduced new gap-between-vehicles cost function in metric module.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
@@ -29,6 +30,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Unified the computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
 - In the metrics module, the records which is the raw metrics data and the scoring which is the formula to compute the final results are now separated to provided greater flexibility for applying metrics to different environments.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
+- Renamed GapBetweenVehicles cost to VehicleGap cost in metric module.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
