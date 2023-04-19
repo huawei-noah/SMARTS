@@ -36,7 +36,7 @@ from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow, nearest_wa
 Done = NewType("Done", bool)
 
 
-def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _collisions() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     sum = 0
 
     def func(
@@ -51,7 +51,7 @@ def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
     acc_linear_max = np.linalg.norm(np.array([2.0, 1.47, 0]))  # Units: m/s^2
     T_p = 30  # Penalty time steps = penalty time / delta time step = 3s / 0.1s = 30
@@ -90,7 +90,7 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
 
 def _dist_to_destination(
     end_pos: Point = Point(0, 0, 0), dist_tot: float = 0
-) -> Callable[[RoadMap, Done, Observation], Costs]:
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     end_pos = end_pos
@@ -120,7 +120,7 @@ def _dist_to_destination(
 
 def _dist_to_obstacles(
     ignore: List[str],
-) -> Callable[[RoadMap, Done, Observation], Costs]:
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
@@ -207,7 +207,7 @@ def _dist_to_obstacles(
     return func
 
 
-def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _jerk_linear() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
@@ -233,7 +233,7 @@ def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _lane_center_offset() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
 
@@ -269,7 +269,7 @@ def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _off_road() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _off_road() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     sum = 0
 
     def func(
@@ -284,7 +284,7 @@ def _off_road() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _speed_limit() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
 
@@ -318,7 +318,7 @@ def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Costs]:
+def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     step = 0
     max_episode_steps = max_episode_steps
 
@@ -353,7 +353,7 @@ def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Cos
 def _vehicle_gap(
     num_agents: int,
     actor: str,
-) -> Callable[[RoadMap, Done, Observation], Costs]:
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     num_agents = num_agents
@@ -436,7 +436,7 @@ def _vehicle_gap(
     return func
 
 
-def _wrong_way() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _wrong_way() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
 
@@ -460,22 +460,22 @@ class CostFuncsBase:
     running cost over time steps, for a given scenario."""
 
     # fmt: off
-    collisions: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _collisions
-    comfort: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_destination
-    dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_obstacles
-    jerk_linear: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _jerk_linear
-    lane_center_offset: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _lane_center_offset
-    off_road: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _off_road
-    speed_limit: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _speed_limit
-    steps: Callable[[int], Callable[[RoadMap, Done, Observation], Costs]] = _steps
-    vehicle_gap: Callable[[str], Callable[[RoadMap, Done, Observation], Costs]] = _vehicle_gap
-    wrong_way: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _wrong_way
+    collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
+    comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
+    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
+    jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
+    lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
+    off_road: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _off_road
+    speed_limit: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _speed_limit
+    steps: Callable[[int], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _steps
+    vehicle_gap: Callable[[int, str], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _vehicle_gap
+    wrong_way: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _wrong_way
     # fmt: on
 
 
 CostFuncs = NewType(
-    "CostFuncs", Dict[str, Callable[[RoadMap, Done, Observation], Costs]]
+    "CostFuncs", Dict[str, Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]]
 )
 
 
