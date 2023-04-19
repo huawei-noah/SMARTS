@@ -102,7 +102,7 @@ ego_missions = [
         begin=("E0", 2, 10),
         start_time=20,
         entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
-    )  # Delayed start, to ensure road has prior traffic.
+    ),  # Delayed start, to ensure road has prior traffic.
 ]
 
 gen_scenario(

@@ -360,29 +360,33 @@ def _vehicle_gap(
 ) -> Callable[[RoadMap, Done, Observation], Costs]:
     mean = 0
     step = 0
+    num_agents = num_agents
     aoi = actor  # Actor of interest, i.e., aoi
     safe_separation = 1  # Units: seconds. Minimum separation time between two vehicles.
-    max_speed_limit = 13.89  # Units: m/s . Equivalent to 50km/h.
+    max_speed_limit = 12.5  # Units: m/s . Equivalent to 50km/h.
     vehicle_length = 4  # Units: m. Car length=3.68 m, width=1.47 m, height=1.0 m.
-
-    # Implicit assumption: Waypoints are spaced 1m apart, such that number of
-    # waypoints equals to distance in meters.
+    waypoint_spacing = 1  # Units: m. Implicit assumption: Waypoints are spaced
+    # 1m apart, such that number of waypoints equals to distance in meters.
     min_waypoints_length = int(
         np.ceil(
-            num_agents * safe_separation * max_speed_limit + num_agents * vehicle_length
+            (
+                num_agents * safe_separation * max_speed_limit
+                + num_agents * vehicle_length
+            )
+            / waypoint_spacing
         )
     )
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, num_agents, aoi, safe_separation, max_speed_limit, vehicle_length, min_waypoints_length
+        nonlocal mean, step, num_agents, aoi, safe_separation, max_speed_limit, vehicle_length, waypoint_spacing, min_waypoints_length
 
-        # Column length is the length of the roadway the convoy of vehicles
-        # occupy, measured from the rear bumper of the lead vehicle (i.e.,
-        # actor of interest) to the rear bumper of the trail vehicle. Maximum
-        # column length is computed dynamically based on ego's speed, which is
-        # capped by max_speed_limit.
+        # Column length is the length of roadway the convoy of vehicles occupy,
+        # measured from the rear bumper of the lead vehicle (i.e., actor of
+        # interest) to the rear bumper of the trail vehicle. Maximum column
+        # length is computed dynamically based on ego's speed, which is capped
+        # by max_speed_limit.
         speed = max(obs.ego_vehicle_state.speed, max_speed_limit)
         column_length = (
             num_agents * safe_separation * speed + num_agents * vehicle_length
@@ -413,7 +417,7 @@ def _vehicle_gap(
         if aoi_ind == None:
             # Actor of interest not found.
             j_gap = 1
-        elif aoi_wp_ind[1] > column_length:
+        elif aoi_wp_ind[1] * waypoint_spacing > column_length:
             # Ego is outside of the maximum column length.
             j_gap = 1
         else:
@@ -422,9 +426,14 @@ def _vehicle_gap(
             dist = np.linalg.norm(waypoints[:, 0, :] - ego_pos, axis=-1)
             ego_wp_inds = np.where(dist == dist.min())[0]
 
-            ???????????????????
+            if aoi_wp_ind[0] in ego_wp_inds:
+                # Ego is in the same lane as the actor of interest.
+                j_gap = aoi_wp_ind[1] * waypoint_spacing / column_length
+                print("Same lane", j_gap)
+            else:
+                # Ego is not in the same lane as the actor of interest.
+                j_gap = 1
 
-        j_gap = 0
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
         return Costs(vehicle_gap=mean)
 
