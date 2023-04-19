@@ -20,11 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import numpy as np
-
 from collections import deque
 from dataclasses import fields
-from typing import Callable, TypeVar, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, TypeVar, Union
+
+import numpy as np
+
 from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts
 
 T = TypeVar("T", Costs, Counts)
@@ -98,7 +99,9 @@ def multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
     return float(value * multiplier)
 
 
-def nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1)->Tuple[Tuple[int,int],Optional[int]]:
+def nearest_waypoint(
+    matrix: np.ndarray, points: np.ndarray, radius: float = 1
+) -> Tuple[Tuple[int, int], Optional[int]]:
     """
     Returns
         (i) the `matrix` index of the nearest waypoint to the ego, which has a nearby `point`.
@@ -140,9 +143,10 @@ def nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1)-
 class SlidingWindow:
     """A sliding window which moves to the right by accepting new elements. The
     maximum value within the sliding window can be queried at anytime by calling
-    the max() method. 
+    the max() method.
     """
-    def __init__(self, size:int):
+
+    def __init__(self, size: int):
         """
         Args:
             size (int): Size of the sliding window.
@@ -152,7 +156,7 @@ class SlidingWindow:
         self._size = size
         self._time = -1
 
-    def move(self, x:Union[int,float]):
+    def move(self, x: Union[int, float]):
         """Moves the sliding window one step to the right by appending the new
         element x and discarding the oldest element on the left.
 
@@ -161,29 +165,27 @@ class SlidingWindow:
         """
         self._time += 1
 
-        # When values deque is full, remove head element of max_candidates deque 
+        # When values deque is full, remove head element of max_candidates deque
         # if it matches head element of values deque.
         if len(self._values) == self._size:
             if self._values[0][0] == self._max_candidates[0][0]:
                 self._max_candidates.popleft()
         # Append x to values deque.
-        self._values.append((self._time,x))
+        self._values.append((self._time, x))
 
         # Remove elements from max_candidates deque's tail which are less than x.
         while self._max_candidates and self._max_candidates[-1][1] < x:
             self._max_candidates.pop()
         # Append x to max_candidates deque.
-        self._max_candidates.append((self._time,x))
-    
+        self._max_candidates.append((self._time, x))
+
     def max(self):
-        """ Returns the maximum element within the sliding window.
-        """ 
+        """Returns the maximum element within the sliding window."""
         return self._max_candidates[0][1]
-    
+
     def display(self):
-        """Print the contents of the sliding window.
-        """
+        """Print the contents of the sliding window."""
         print("[", end="")
         for i in self._values:
-            print(i, end=' ')
+            print(i, end=" ")
         print("]")

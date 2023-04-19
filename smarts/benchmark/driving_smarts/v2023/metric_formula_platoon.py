@@ -30,9 +30,9 @@ from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
     DistToObstacles,
-    GapBetweenVehicles,
     Params,
     Steps,
+    VehicleGap,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
@@ -63,7 +63,7 @@ class Formula(FormulaBase):
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
-            gap_between_vehicles=GapBetweenVehicles(
+            vehicle_gap=VehicleGap(
                 active=True,
                 actor="Leader-007",
             ),
@@ -85,7 +85,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
         +-------------------+--------+-----------------------------------------------------------+
-        | GapBetweenVehicles| [0, 1] | Gap between vehicles in a platoon. The higher, the better.|
+        | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
         +-------------------+--------+-----------------------------------------------------------+
         | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
         +-------------------+--------+-----------------------------------------------------------+
@@ -93,7 +93,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Score: Contains "Overall", "DistToDestination", "GapBetweenVehicles",
+            Score: Contains "Overall", "DistToDestination", "VehicleGap",
             "Humanness", and "Rules" scores.
         """
 
@@ -123,10 +123,10 @@ class Formula(FormulaBase):
         dist_to_destination = costs_final.dist_to_destination
         humanness = _humanness(costs=costs_final)
         rules = _rules(costs=costs_final)
-        gap_between_vehicles = costs_final.gap_between_vehicles
+        vehicle_gap = costs_final.vehicle_gap
         overall = (
             0.50 * (1 - dist_to_destination)
-            + 0.25 * gap_between_vehicles
+            + 0.25 * (1 - vehicle_gap)
             + 0.20 * humanness
             + 0.05 * rules
         )
@@ -135,7 +135,7 @@ class Formula(FormulaBase):
             {
                 "overall": overall,
                 "dist_to_destination": dist_to_destination,
-                "gap_between_vehicles": gap_between_vehicles,
+                "vehicle_gap": vehicle_gap,
                 "humanness": humanness,
                 "rules": rules,
             }
@@ -143,9 +143,7 @@ class Formula(FormulaBase):
 
 
 def _humanness(costs: Costs) -> float:
-    humanness = np.array(
-        [costs.comfort, costs.lane_center_offset]
-    )
+    humanness = np.array([costs.comfort, costs.lane_center_offset])
     humanness = np.mean(humanness, dtype=float)
     return 1 - humanness
 

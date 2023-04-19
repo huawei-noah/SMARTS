@@ -31,7 +31,7 @@ class Costs:
     comfort: float = 0
     dist_to_destination: float = 0
     dist_to_obstacles: float = 0
-    gap_between_vehicles: float = 0
+    vehicle_gap: float = 0
     jerk_linear: float = 0
     lane_center_offset: float = 0
     off_road: int = 0
