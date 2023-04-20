@@ -117,7 +117,6 @@ def test_sensor_parallelization(
         agent_ids=simulation_frame.agent_ids,
         renderer=sim.renderer,
         bullet_client=sim.bc,
-        debug=True,
     )
 
     assert len(p_observations) > 0
