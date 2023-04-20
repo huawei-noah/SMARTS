@@ -23,7 +23,7 @@
 
 from dataclasses import dataclass
 
-from smarts.sstudio.types.constants import MAX
+from smarts.primatives.constants import MAX
 
 
 @dataclass(frozen=True)

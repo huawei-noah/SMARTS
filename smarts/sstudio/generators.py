@@ -28,7 +28,7 @@ import os
 import random
 import subprocess
 import tempfile
-from typing import Optional
+from typing import Dict, Optional, Union
 
 from yattag import Doc, indent
 
@@ -262,7 +262,9 @@ class TrafficGenerator:
 
             # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
             # `Route`) so that we can write them all to file.
-            resolved_routes = {}
+            resolved_routes: Dict[
+                Union[types.RandomRoute, types.Route], types.Route
+            ] = {}
             for route in {flow.route for flow in traffic.flows}:
                 resolved_routes[route] = self.resolve_route(route, fill_in_route_gaps)
 
@@ -277,12 +279,15 @@ class TrafficGenerator:
                 route = resolved_routes[flow.route]
                 for actor_idx, (actor, weight) in enumerate(flow.actors.items()):
                     vehs_per_hour = flow.rate * (weight / total_weight)
-                    rate_option = {}
+                    options = {}
                     if flow.randomly_spaced:
                         vehs_per_sec = vehs_per_hour * SECONDS_PER_HOUR_INV
-                        rate_option = dict(probability=vehs_per_sec)
+                        options["probability"] = vehs_per_sec
                     else:
-                        rate_option = dict(vehsPerHour=vehs_per_hour)
+                        options["vehsPerHour"] = vehs_per_hour
+
+                    if len(route.via):
+                        options["via"] = " ".join(route.via)
                     doc.stag(
                         "flow",
                         # have to encode the flow.repeat_route within the vehcile id b/c
@@ -303,26 +308,26 @@ class TrafficGenerator:
                         arrivalPos=route.end[2],
                         begin=flow.begin,
                         end=flow.end,
-                        **rate_option,
+                        **options,
                     )
             # write trip into xml format
             if traffic.trips:
                 self.write_trip_xml(traffic, doc, fill_in_route_gaps)
 
-        with open(route_path, "w") as f:
+        with open(route_path, "w", encoding="utf-8") as f:
             f.write(
                 indent(
                     doc.getvalue(), indentation="    ", newline="\r\n", indent_text=True
                 )
             )
 
-    def write_trip_xml(self, traffic, doc, fill_in_gaps):
+    def write_trip_xml(self, traffic: types.Traffic, doc: Doc, fill_in_gaps: bool):
         """Writes a trip spec into a route file. Typically this would be the source
         data to SUMO's DUAROUTER.
         """
         # Make sure all routes are "resolved" (e.g. `RandomRoute` are converted to
         # `Route`) so that we can write them all to file.
-        resolved_routes = {}
+        resolved_routes: Dict[Union[types.RandomRoute, types.Route], types.Route] = {}
         for route in {trip.route for trip in traffic.trips}:
             resolved_routes[route] = self.resolve_route(route, fill_in_gaps)
 
@@ -332,6 +337,9 @@ class TrafficGenerator:
             # We don't de-dup flows since defining the same flow multiple times should
             # create multiple traffic flows. Since IDs can't be reused, we also unique
             # them here.
+        options: Dict[str, Union[str, int, float]] = {}
+        if len(route.via):
+            options["via"] = " ".join(route.via)
         for trip_idx, trip in enumerate(traffic.trips):
             route = resolved_routes[trip.route]
             actor = trip.actor
@@ -346,6 +354,7 @@ class TrafficGenerator:
                 departSpeed=actor.depart_speed,
                 arrivalLane=route.end[1],
                 arrivalPos=route.end[2],
+                **options,
             )
 
     def _cache_road_network(self):
@@ -383,7 +392,7 @@ class TrafficGenerator:
         road_map, _ = map_spec.builder_fn(map_spec)
         return road_map
 
-    def _fill_in_gaps(self, route: types.Route) -> types.Route:
+    def _fill_in_traffic_route_gaps(self, route: types.Route) -> types.Route:
         # TODO:  do this at runtime so each vehicle on the flow can take a different variation of the route ?
         # TODO:  or do it like SUMO and generate a huge *.rou.xml file instead ?
         road_map = self._map_for_route(route)
@@ -409,7 +418,7 @@ class TrafficGenerator:
             smarts.sstudio.types.route.Route: A complete route listing all road segments it passes through.
         """
         if not isinstance(route, types.RandomRoute):
-            return self._fill_in_gaps(route) if fill_in_gaps else route
+            return self._fill_in_traffic_route_gaps(route) if fill_in_gaps else route
 
         if not self._random_route_generator:
             road_map = self._map_for_route(route)

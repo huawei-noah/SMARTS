@@ -22,10 +22,11 @@
 
 
 from dataclasses import dataclass, field
-from typing import Any, Optional, Tuple
+from typing import Any, Literal, Optional, Tuple, Union
 
 from smarts.core import gen_id
 from smarts.core.utils.file import pickle_hash_int
+from smarts.primatives.constants import SmartsLiteral
 from smarts.sstudio.types.map_spec import MapSpec
 
 
@@ -58,7 +59,7 @@ class Route:
     """
 
     ## road, lane index, offset
-    begin: Tuple[str, int, Any]
+    begin: Union[Tuple[str, int, Any], Literal[SmartsLiteral.AUTO]]
     """The (road, lane_index, offset) details of the start location for the route.
 
     road:
@@ -69,7 +70,7 @@ class Route:
         The offset in meters into the lane. Also acceptable\\: "max", "random"
     """
     ## road, lane index, offset
-    end: Tuple[str, int, Any]
+    end: Union[Tuple[str, int, Any], Literal[SmartsLiteral.AUTO]]
     """The (road, lane_index, offset) details of the end location for the route.
 
     road:

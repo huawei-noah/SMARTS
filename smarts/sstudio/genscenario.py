@@ -30,7 +30,7 @@ import pickle
 import sqlite3
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union
 
 import cloudpickle
 import yaml
@@ -264,8 +264,7 @@ def gen_scenario(
                 if isinstance(mission, types.GroupedLapMission):
                     gen_group_laps(
                         scenario=output_dir,
-                        begin=mission.route.begin,
-                        end=mission.route.end,
+                        route=mission.route,
                         grid_offset=mission.offset,
                         used_lanes=mission.lanes,
                         vehicle_count=mission.actor_count,
@@ -484,8 +483,7 @@ def gen_agent_missions(
 
 def gen_group_laps(
     scenario: str,
-    begin: Tuple[str, int, Any],
-    end: Tuple[str, int, Any],
+    route: Union[types.Route, Literal[types.AUTO]],
     grid_offset: int,
     used_lanes: int,
     vehicle_count: int,
@@ -514,8 +512,11 @@ def gen_group_laps(
     """
     _check_if_called_externally()
 
-    start_road_id, start_lane, start_offset = begin
-    end_road_id, end_lane, end_offset = end
+    if route is types.AUTO or route.begin is types.AUTO or route.end is types.AUTO:
+        raise ValueError("Automatic routes are not implemented.")
+
+    start_road_id, start_lane, start_offset = route.begin
+    end_road_id, end_lane, end_offset = route.end
 
     missions = []
     for i in range(vehicle_count):
@@ -639,17 +640,23 @@ def _validate_entry_tactic(mission):
             return
 
         z_edge, _, _ = mission.entry_tactic.zone.start
-        if isinstance(mission, types.EndlessMission):
+        if isinstance(mission, types.EndlessMission) and mission.start != types.AUTO:
             edge, _, _ = mission.start
-            assert (
-                edge == z_edge
-            ), f"Zone edge `{z_edge}` is not the same edge as `types.EndlessMission` start edge `{edge}`"
+            assert edge == z_edge, (
+                f"Zone edge `{z_edge}` is not the same edge as `types.EndlessMission` start edge `{edge}`."
+                "Perhaps you wish to use `types.AUTO`?"
+            )
 
-        elif isinstance(mission, (types.Mission, types.LapMission)):
+        elif (
+            isinstance(mission, (types.Mission, types.LapMission))
+            and mission.route != types.AUTO
+            and mission.route.begin != types.AUTO
+        ):
             edge, _, _ = mission.route.begin
-            assert (
-                edge == z_edge
-            ), f"Zone edge `{z_edge}` is not the same edge as `types.Mission` route begin edge `{edge}`"
+            assert edge == z_edge, (
+                f"Zone edge `{z_edge}` is not the same edge as `types.Mission` route begin edge `{edge}`."
+                "Perhaps you wish to use `types.AUTO`?"
+            )
 
 
 def gen_traffic_histories(
