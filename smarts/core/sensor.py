@@ -280,9 +280,6 @@ class LidarSensor(Sensor):
         self._lidar.origin = vehicle_state.pose.position + self._lidar_offset
 
     def __eq__(self, __value: object) -> bool:
-        print(self._lidar.origin)
-        print(__value._lidar.origin)
-        print(self._lidar.origin == __value._lidar.origin)
         return isinstance(__value, LidarSensor) and (
             (self._lidar_offset == __value._lidar_offset).all()
             and (self._lidar.origin == __value._lidar.origin).all()
