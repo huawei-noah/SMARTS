@@ -31,8 +31,8 @@ jobs:
           pip install --upgrade pip
           pip install wheel==0.38.4
           pip install -e .[camera_obs,opendrive,test,test_notebook,torch,train,gym,argoverse]
-          if [[ ${{matrix.tests}} == *"rllib"* ]]; then pip install -e .[rllib]; fi
-          if [[ ${{matrix.tests}} == *"/ray"* ]]; then pip install -e .[ray]; fi
+          if echo ${{matrix.tests}} | grep -q "rllib"; then pip install -e .[rllib]; fi
+          if echo ${{matrix.tests}} | grep -q "/ray"; then pip install -e .[ray]; fi
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
