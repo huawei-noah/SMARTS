@@ -2,7 +2,7 @@
 test: build-all-scenarios
 	# sstudio uses hash(...) as part of some of its type IDs. To make the tests
 	# repeatable we fix the seed.
-	PYTHONPATH=$(PWD) SMARTS_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
+	PYTHONPATH=$(PWD) PYTHONHASHSEED=42 pytest -v \
 		--cov=smarts \
 		--doctest-modules \
 		--forked \
@@ -14,7 +14,6 @@ test: build-all-scenarios
 		--ignore=./smarts/core/argoverse_map.py \
 		--ignore=./smarts/core/tests/test_argoverse.py \
 		--ignore=./smarts/core/tests/test_smarts_memory_growth.py \
-		--ignore=./smarts/core/tests/test_parallel_sensors.py::test_sensor_parallelization[sim1] \
 		--ignore=./smarts/core/tests/test_env_frame_rate.py \
 		--ignore=./smarts/core/tests/test_notebook.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
@@ -25,7 +24,7 @@ test: build-all-scenarios
 
 .PHONY: sanity-test
 sanity-test: build-sanity-scenarios
-	PYTHONPATH=$(PWD) SMARTS_OBSERVATION_WORKERS=0 PYTHONHASHSEED=42 pytest -v \
+	PYTHONPATH=$(PWD) PYTHONHASHSEED=42 pytest -v \
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
