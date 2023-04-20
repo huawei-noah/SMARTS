@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import logging
 import multiprocessing as mp
+from collections import defaultdict
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Dict, List, Optional, Set
@@ -69,7 +70,7 @@ class ParallelSensorResolver(SensorResolver):
             bullet_client (bc.BulletClient):
                 The physics client.
         """
-        observations, dones, updated_sensors = {}, {}, {}
+        observations, dones, updated_sensors = {}, {}, defaultdict(dict)
 
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
         used_processes = (
@@ -111,9 +112,10 @@ class ParallelSensorResolver(SensorResolver):
                 rendering = {}
                 for agent_id in agent_ids:
                     for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        rendering[
-                            agent_id
-                        ] = Sensors.process_serialization_unsafe_sensors(
+                        (
+                            rendering[agent_id],
+                            updated_unsafe_sensors,
+                        ) = Sensors.process_serialization_unsafe_sensors(
                             sim_frame,
                             sim_local_constants,
                             agent_id,
@@ -122,6 +124,7 @@ class ParallelSensorResolver(SensorResolver):
                             renderer,
                             bullet_client,
                         )
+                        updated_sensors[vehicle_id].update(updated_unsafe_sensors)
 
             # Collect futures
             with timeit("waiting for observations", logger.info):
@@ -138,7 +141,8 @@ class ParallelSensorResolver(SensorResolver):
                             # pytype: enable=attribute-error
                             observations.update(obs)
                             dones.update(ds)
-                            updated_sensors.update(u_sens)
+                            for v_id, values in u_sens.items():
+                                updated_sensors[v_id].update(values)
 
             with timeit(f"merging observations", logger.info):
                 # Merge sensor information

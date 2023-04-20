@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import concurrent.futures
 import logging
+from collections import defaultdict
 from typing import Optional, Set
 
 import ray
@@ -86,7 +87,7 @@ class RaySensorResolver(SensorResolver):
         renderer,
         bullet_client,
     ):
-        observations, dones, updated_sensors = {}, {}, {}
+        observations, dones, updated_sensors = {}, {}, defaultdict(dict)
 
         ray_actors = self.get_ray_worker_actors(self._num_observation_workers)
         len_workers = len(ray_actors)
@@ -127,9 +128,10 @@ class RaySensorResolver(SensorResolver):
                 rendering = {}
                 for agent_id in agent_ids:
                     for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        rendering[
-                            agent_id
-                        ] = Sensors.process_serialization_unsafe_sensors(
+                        (
+                            rendering[agent_id],
+                            updated_unsafe_sensors,
+                        ) = Sensors.process_serialization_unsafe_sensors(
                             sim_frame,
                             sim_local_constants,
                             agent_id,
@@ -138,6 +140,7 @@ class RaySensorResolver(SensorResolver):
                             renderer,
                             bullet_client,
                         )
+                        updated_sensors[vehicle_id].update(updated_unsafe_sensors)
 
             # Collect futures
             with timeit("waiting for observations", logger.info):
@@ -147,7 +150,8 @@ class RaySensorResolver(SensorResolver):
                     obs, ds, u_sens = fut.result()
                     observations.update(obs)
                     dones.update(ds)
-                    updated_sensors.update(u_sens)
+                    for v_id, values in u_sens.items():
+                        updated_sensors[v_id].update(values)
 
             with timeit("merging observations", logger.info):
                 # Merge sensor information

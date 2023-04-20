@@ -219,17 +219,26 @@ class Sensors:
                 else None
             )
 
-        return dict(
-            drivable_area_grid_map=get_camera_sensor_result(
-                vehicle_sensors, "drivable_area_grid_map_sensor", renderer
+        updated_sensors = {
+            sensor_name: sensor
+            for sensor_name, sensor in vehicle_sensors.items()
+            if sensor.mutable and not sensor.serializable
+        }
+
+        return (
+            dict(
+                drivable_area_grid_map=get_camera_sensor_result(
+                    vehicle_sensors, "drivable_area_grid_map_sensor", renderer
+                ),
+                occupancy_grid_map=get_camera_sensor_result(
+                    vehicle_sensors, "ogm_sensor", renderer
+                ),
+                top_down_rgb=get_camera_sensor_result(
+                    vehicle_sensors, "rgb_sensor", renderer
+                ),
+                lidar_point_cloud=lidar,
             ),
-            occupancy_grid_map=get_camera_sensor_result(
-                vehicle_sensors, "ogm_sensor", renderer
-            ),
-            top_down_rgb=get_camera_sensor_result(
-                vehicle_sensors, "rgb_sensor", renderer
-            ),
-            lidar_point_cloud=lidar,
+            updated_sensors,
         )
 
     @staticmethod
@@ -415,7 +424,7 @@ class Sensors:
         updated_sensors = {
             sensor_name: sensor
             for sensor_name, sensor in vehicle_sensors.items()
-            if sensor.mutable
+            if sensor.mutable and sensor.serializable
         }
 
         return (
@@ -451,11 +460,16 @@ class Sensors:
     ) -> Tuple[Observation, bool, Dict[str, "Sensor"]]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
-        base_obs, dones, updated_sensors = cls.process_serialization_safe_sensors(*args)
-        complete_obs = base_obs._replace(
-            **cls.process_serialization_unsafe_sensors(*args, renderer, bullet_client),
+        safe_obs, dones, updated_safe_sensors = cls.process_serialization_safe_sensors(
+            *args
         )
-        return (complete_obs, dones, updated_sensors)
+        unsafe_obs, updated_unsafe_sensors = cls.process_serialization_unsafe_sensors(
+            *args, renderer, bullet_client
+        )
+        complete_obs = safe_obs._replace(
+            **unsafe_obs,
+        )
+        return (complete_obs, dones, {**updated_safe_sensors, **updated_unsafe_sensors})
 
     @classmethod
     def _agents_alive_done_check(

@@ -41,6 +41,7 @@ class LocalSensorResolver(SensorResolver):
         agent_ids: Set[str],
         renderer,
         bullet_client,
+        debug=False,
     ):
         with timeit("serial run", logger.info):
             (
@@ -58,7 +59,10 @@ class LocalSensorResolver(SensorResolver):
             rendering = {}
             for agent_id in agent_ids:
                 for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                    rendering[agent_id] = Sensors.process_serialization_unsafe_sensors(
+                    (
+                        rendering[agent_id],
+                        updated_unsafe_sensors,
+                    ) = Sensors.process_serialization_unsafe_sensors(
                         sim_frame,
                         sim_local_constants,
                         agent_id,
@@ -67,6 +71,7 @@ class LocalSensorResolver(SensorResolver):
                         renderer,
                         bullet_client,
                     )
+                    updated_sensors[vehicle_id].update(updated_unsafe_sensors)
 
         with timeit(f"merging observations", logger.info):
             # Merge sensor information

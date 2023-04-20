@@ -68,6 +68,11 @@ class Sensor:
         """If this sensor mutates on call."""
         return True
 
+    @property
+    def serializable(self) -> bool:
+        """If this sensor can be serialized."""
+        return True
+
 
 class CameraSensor(Sensor):
     """The base for a sensor that renders images."""
@@ -121,6 +126,10 @@ class CameraSensor(Sensor):
             return
         camera = renderer.camera_for_id(self._camera_name)
         camera.update(vehicle_state.pose, vehicle_state.dimensions.height + 10)
+
+    @property
+    def serializable(self) -> bool:
+        return False
 
 
 class DrivableAreaGridMapSensor(CameraSensor):
@@ -284,6 +293,10 @@ class LidarSensor(Sensor):
 
     def teardown(self, **kwargs):
         pass
+
+    @property
+    def serializable(self) -> bool:
+        return False
 
 
 @dataclass(frozen=True)

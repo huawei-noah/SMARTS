@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,22 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Any
-
 import pytest
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.controllers import ActionSpaceType
+from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.plan import Mission
 from smarts.core.scenario import Scenario
 from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
-from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.file import unpack
 from smarts.core.utils.logging import diff_unpackable
+from smarts.ray.sensors.ray_sensor_resolver import RaySensorResolver
 
 AGENT_IDS = [f"agent-00{i}" for i in range(3)]
 
@@ -97,10 +94,10 @@ def test_sensor_parallelization(
     simulation_frame: SimulationFrame = sim.cached_frame
     simulation_local_constants: SimulationLocalConstants = sim.local_constants
 
-    parallel_resolver = ParallelSensorResolver(process_count_override=1)
+    parallel_resolver = RaySensorResolver(process_count_override=1)
     serial_resolver = LocalSensorResolver()
 
-    parallel_resolver.get_workers(1, sim_local_constants=sim.local_constants)
+    parallel_resolver.get_ray_worker_actors(1)
 
     p_observations, p_dones, p_updated_sensors = parallel_resolver.observe(
         sim_frame=simulation_frame,
@@ -126,6 +123,7 @@ def test_sensor_parallelization(
     assert p_updated_sensors.keys() == l_updated_sensors.keys()
     assert set(p_updated_sensors.keys()) not in simulation_frame.agent_ids
 
+    # TODO: Make sure that all mutable sensors are returned
     for agent_id, p_sensors in p_updated_sensors.items():
         assert p_sensors.keys() == l_updated_sensors[agent_id].keys()
         for k in p_sensors:

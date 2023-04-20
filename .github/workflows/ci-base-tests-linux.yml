@@ -20,6 +20,7 @@ jobs:
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/sstudio
           - ./examples/tests --ignore=./examples/tests/test_learning.py
+          - ./smarts/ray/tests
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -29,7 +30,9 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install --upgrade wheel
-          pip install -e .[camera_obs,opendrive,rllib,test,test_notebook,torch,train,gym,argoverse]
+          pip install -e .[camera_obs,opendrive,test,test_notebook,torch,train,gym,argoverse]
+          if [[ ${{matrix.tests}} == *"rllib"* ]]; then; pip install -e .[rllib]; fi;
+          if [[ ${{matrix.tests}} == *"/ray"* ]]; then; pip install -e .[ray]; fi;
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
