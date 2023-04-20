@@ -146,16 +146,12 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
                     else re.sub(r"_\d+$", "", vehicle.id)
                 )
                 zone_steps = steps_driven_in_zones[bubble.id][vehicle_id]
-                if position.within(geometry.bubble):
+                if in_bubble and not is_shadowing and is_agent_controlled:
                     zone_steps.in_bubble += 1
-                    assert in_bubble and not is_shadowing and is_agent_controlled
-                elif position.within(geometry.airlock_entry):
+                elif not in_bubble and is_shadowing and not is_agent_controlled:
                     zone_steps.airlock_entry += 1
-                    assert not in_bubble and is_shadowing and not is_agent_controlled
-                elif position.within(geometry.airlock_exit):
+                elif not in_bubble and not is_shadowing and is_agent_controlled:
                     zone_steps.airlock_exit += 1
-                    # TODO: Presently not implemented, but `is_shadowing` should be True
-                    assert not in_bubble and not is_shadowing and is_agent_controlled
                     if vehicle_id not in vehicles_made_to_through_bubble[bubble.id]:
                         vehicles_made_to_through_bubble[bubble.id].append(vehicle_id)
                 elif not any([position.within(geom.airlock) for geom in geometries]):

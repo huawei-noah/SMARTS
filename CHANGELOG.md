@@ -20,6 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added a `SensorManager` which manages placing sensors on actors in the simulations.
 - The `VehicleState` now has the `bounding_box_points` property to get the vehicle minimum bounding box as a set of points.
 - Added engine configuration options for `core:debug`, `core:observation_workers`, and `core:reset_retries`.
+- Explained in the docs that agents may spawn at different times in multiagent scenarios.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
@@ -41,6 +42,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `Trip.actor` field is now effective. Previously `actor` had no effect.
 - Fixed an issue where building sumo scenarios would sometimes stall.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
+- Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
