@@ -48,7 +48,7 @@ class RaySensorResolver(SensorResolver):
     def __init__(self, process_count_override: Optional[int] = None) -> None:
         conf: Config = config()
         self._num_observation_workers = (
-            conf("core", "observation_workers", default=128, cast=int)
+            conf("core", "observation_workers", default=8, cast=int)
             if process_count_override == None
             else max(1, process_count_override)
         )

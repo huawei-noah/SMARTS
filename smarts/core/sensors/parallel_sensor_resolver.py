@@ -75,7 +75,7 @@ class ParallelSensorResolver(SensorResolver):
         num_spare_cpus = max(0, psutil.cpu_count(logical=False) - 1)
         used_processes = (
             min(
-                config()("core", "observation_workers", default=128, cast=int),
+                config()("core", "observation_workers", default=8, cast=int),
                 num_spare_cpus,
             )
             if self._process_count_override == None

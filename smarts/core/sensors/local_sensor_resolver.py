@@ -41,7 +41,6 @@ class LocalSensorResolver(SensorResolver):
         agent_ids: Set[str],
         renderer,
         bullet_client,
-        debug=False,
     ):
         with timeit("serial run", logger.info):
             (
