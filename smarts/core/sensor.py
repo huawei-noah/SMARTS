@@ -267,7 +267,6 @@ class LidarSensor(Sensor):
         sensor_params: Optional[SensorParams] = None,
         lidar_offset=(0, 0, 1),
     ):
-        print("made" + vehicle_state.actor_id)
         self._lidar_offset = np.array(lidar_offset)
 
         self._lidar = Lidar(

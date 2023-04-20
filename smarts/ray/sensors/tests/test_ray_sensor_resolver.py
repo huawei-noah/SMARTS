@@ -99,6 +99,7 @@ def test_sensor_parallelization(
 
     parallel_resolver.get_ray_worker_actors(1)
 
+    assert len(simulation_frame.agent_ids) > 1
     p_observations, p_dones, p_updated_sensors = parallel_resolver.observe(
         sim_frame=simulation_frame,
         sim_local_constants=simulation_local_constants,
@@ -106,7 +107,6 @@ def test_sensor_parallelization(
         renderer=sim.renderer,
         bullet_client=sim.bc,
     )
-    assert len(simulation_frame.agent_ids)
 
     l_observations, l_dones, l_updated_sensors = serial_resolver.observe(
         sim_frame=simulation_frame,
@@ -116,15 +116,20 @@ def test_sensor_parallelization(
         bullet_client=sim.bc,
         debug=True,
     )
-    assert len(simulation_frame.agent_ids)
 
+    assert len(p_observations) > 0
     assert diff_unpackable(p_observations, l_observations) == ""
+
+    assert len(p_dones) > 0
     assert diff_unpackable(p_dones, l_dones) == ""
+
+    assert len(p_updated_sensors) > 0
     assert p_updated_sensors.keys() == l_updated_sensors.keys()
     assert set(p_updated_sensors.keys()) not in simulation_frame.agent_ids
 
     # TODO: Make sure that all mutable sensors are returned
     for agent_id, p_sensors in p_updated_sensors.items():
+        assert len(p_sensors) > 0
         assert p_sensors.keys() == l_updated_sensors[agent_id].keys()
         for k in p_sensors:
             assert p_sensors[k] == l_updated_sensors[agent_id][k]
