@@ -41,15 +41,9 @@ class ChaseViaPointsAgent(Agent):
         if via_point_wp_ind[0] in ego_wp_inds:
             return (obs.via_data.near_via_points[via_point_ind].required_speed, 0)
 
-        # Change to left lane since target via point is on the left lane.
-        if ego_wp_inds[0] < via_point_wp_ind[0]:
-            return (obs.via_data.near_via_points[via_point_ind].required_speed, 1)
-
-        # Change to right lane since target via point is on the right lane.
-        if ego_wp_inds[0] > via_point_wp_ind[0]:
-            return (obs.via_data.near_via_points[via_point_ind].required_speed, -1)
-
-        raise Exception("ChaseViaPointsAgent did not catch any preprogrammed actions.")
+        # Turn leftwards if (via_point_wp_ind[0] - ego_wp_inds[0]) > 0 , as target via point is on the left.
+        # Turn rightwards if (via_point_wp_ind[0] - ego_wp_inds[0]) < 0 , as target via point is on the right.
+        return (obs.via_data.near_via_points[via_point_ind].required_speed, via_point_wp_ind[0] - ego_wp_inds[0])
 
 
 def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 2):

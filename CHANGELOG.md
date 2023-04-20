@@ -23,6 +23,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
 - Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
 - Sstudio generated scenario vehicle traffic ids are now shortened.
+- ChaseViaPoints zoo agent uses unconstrained path change command, instead of being constrained to [-1, 0, +1] path change commands used previously. 
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
