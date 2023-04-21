@@ -143,7 +143,9 @@ class Formula(FormulaBase):
 
 
 def _humanness(costs: Costs) -> float:
-    humanness = np.array([costs.comfort, costs.lane_center_offset])
+    humanness = np.array(
+        [costs.comfort, costs.lane_center_offset]
+    )
     humanness = np.mean(humanness, dtype=float)
     return 1 - humanness
 
