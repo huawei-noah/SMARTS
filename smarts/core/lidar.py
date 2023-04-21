@@ -33,18 +33,18 @@ from .utils.pybullet import bullet_client as bc
 class Lidar:
     """Lidar utilities."""
 
-    def __init__(
-        self, origin, sensor_params: SensorParams, bullet_client: bc.BulletClient
-    ):
+    def __init__(self, origin, sensor_params: SensorParams):
         self._origin = origin
         self._sensor_params = sensor_params
-        self._bullet_client = bullet_client
         self._n_threads = psutil.cpu_count(logical=False)
 
         # As an optimization we compute a set of "base rays" once and shift translate
         # them to follow the user, and then trace for collisions.
         self._base_rays = None
         self._static_lidar_noise = self._compute_static_lidar_noise()
+
+    def __eq__(self, __value: object) -> bool:
+        return isinstance(__value, Lidar) and ((self._origin == __value._origin).all())
 
     @property
     def origin(self):
@@ -72,14 +72,14 @@ class Lidar:
         return np.array(static_lidar_noise, dtype=np.float64)
 
     def compute_point_cloud(
-        self,
+        self, bullet_client
     ) -> Tuple[List[np.ndarray], List[int], List[Tuple[np.ndarray, np.ndarray]]]:
         """Generate a point cloud.
         Returns:
             Point cloud of 3D points, a list of hit objects, a list of rays fired.
         """
         rays = self._compute_rays()
-        point_cloud, hits = self._trace_rays(rays)
+        point_cloud, hits = self._trace_rays(rays, bullet_client)
         # point_cloud = self._apply_noise(point_cloud)
         assert (
             len(point_cloud) == len(hits) == len(rays) == len(self._static_lidar_noise)
@@ -112,14 +112,14 @@ class Lidar:
         ]
         return rays
 
-    def _trace_rays(self, rays):
+    def _trace_rays(self, rays, bullet_client):
         results = []
         for batched_rays in batches(
             rays, int(pybullet.MAX_RAY_INTERSECTION_BATCH_SIZE - 1)
         ):
             origins, directions = zip(*batched_rays)
             results.extend(
-                self._bullet_client.rayTestBatch(origins, directions, self._n_threads)
+                bullet_client.rayTestBatch(origins, directions, self._n_threads)
             )
 
         hit_ids, _, _, positions, _ = zip(*results)

@@ -22,9 +22,8 @@ from dataclasses import dataclass, field
 from enum import IntFlag
 from typing import Iterable, List, Optional, Set, Tuple
 
-from .actor import ActorRole, ActorState
+from .actor import ActorState
 from .controllers import ActionSpaceType
-from .road_map import RoadMap
 from .scenario import Scenario
 
 
@@ -57,13 +56,14 @@ class ProviderState:
         if not our_actors.isdisjoint(other_actors):
             overlap = our_actors & other_actors
             logging.warning(
-                f"multiple providers control the same actors: {overlap}. "
-                "Later added providers will take priority. "
+                "multiple providers control the same actors: %s. "
+                "Later added providers will take priority. ",
+                overlap,
             )
             logging.info(
-                "Conflicting actor states: \n"
-                f"Previous: {[(a.actor_id, a.source) for a in self.actors if a.actor_id in overlap]}\n"
-                f"Later: {[(a.actor_id, a.source) for a in other.actors if a.actor_id in overlap]}\n"
+                "Conflicting actor states: \n" "Previous: %s\n" "Later: %s\n",
+                [(a.actor_id, a.source) for a in self.actors if a.actor_id in overlap],
+                [(a.actor_id, a.source) for a in other.actors if a.actor_id in overlap],
             )
 
         ## TODO: Properly harmonize these actor ids so that there is a priority and per actor source
