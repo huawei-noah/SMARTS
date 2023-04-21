@@ -72,7 +72,7 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
     def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
         nonlocal mean, step
 
-        # TODO: Cost function is to be designed. 
+        # TODO: Cost function is to be designed.
 
         j_comfort = 0
         mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_comfort)
