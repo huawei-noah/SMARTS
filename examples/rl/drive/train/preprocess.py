@@ -22,6 +22,7 @@ class Preprocess(gym.Wrapper):
 
         self.observation_space = self._make_dict.observation_space
 
+        self._prev_heading: float
         self._format_action = FormatAction(agent_interface.action)
         self.action_space = self._format_action.action_space
         print("Policy initialised.")
@@ -46,8 +47,9 @@ class Preprocess(gym.Wrapper):
 
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
-        formatted_action = self._format_action.format(action)
+        formatted_action = self._format_action.format(action=action, prev_heading=self._prev_heading)
         obs, reward, done, info = self.env.step(formatted_action)
+        self._prev_heading = obs["ego_vehicle_state"]["heading"]
         obs = self._process(obs)
         return obs, reward, done, info
 
@@ -56,5 +58,6 @@ class Preprocess(gym.Wrapper):
 
         self._frame_stack.reset()
         obs = self.env.reset()
+        self._prev_heading = obs["ego_vehicle_state"]["heading"]
         obs = self._process(obs)
         return obs
