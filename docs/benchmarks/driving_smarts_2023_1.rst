@@ -1,13 +1,14 @@
-.. _driving_smarts_2023_3:
+.. _driving_smarts_2023_1:
 
-Driving SMARTS 2023.3
-=====================
+Driving SMARTS 2023.1 & 2023.2
+=============================================
 
 Objective
 ---------
 
-Objective is to develop a single-ego policy capable of controlling a single ego to perform a platooning task in the 
-``platoon-v0`` environment. Refer to :func:`~smarts.env.gymnasium.platoon_env.platoon_env` for environment details. 
+Objective is to develop a single-ego policy capable of controlling a single ego to perform a task in the
+``driving-smarts-v2023`` environment. Refer to :func:`~smarts.env.gymnasium.driving_smarts_2023_env.driving_smarts_2023_env`
+for environment details. 
 
 .. important::
 
@@ -16,19 +17,30 @@ Objective is to develop a single-ego policy capable of controlling a single ego 
     policies are executed in a distributed manner. The single-ego policy should be capable of accounting for and 
     interacting with other ego vehicles, if any are present.
 
-Each ego is supposed to track and follow its specified leader (i.e., lead vehicle) in a single file or in a 
-platoon fashion. The name identifier of the lead vehicle to be followed is given to the ego through the configuration
-of the :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
+Each ego should drive towards its assigned mission goal position. The ego's mission goal is provided to
+the ego through the mission goal :attr:`~smarts.core.plan.PositionalGoal.position` attribute in the observation
+it receives at every step.
 
-.. figure:: ../_static/driving_smarts_2023/vehicle_following.png
+An ego is terminated when it reaches its mission goal position. Additionally, the ego terminates whenever
+it collides, drives off road, or exceeds maximum number of steps per episode.
 
-    Here, egos are in red colour, lead vehicle is in blue colour, and background traffic is in silver colour. 
-    (Left) At the start of episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the
-    lead vehicle in a single-file fashion.
+**Driving SMARTS 2023.1** focuses on basic motion planning scenarios, such as
 
-An ego is terminated when its assigned leader reaches the leader's destination. Egos do not have prior knowledge of 
-the assigned leader's destination. Additionally, the ego terminates whenever it collides, drives off road, or 
-exceeds maximum number of steps per episode.
++ **Cruise** where the ego maintains a stable driving path to its destination.
++ **Overtake** which involves the ego maneuvering among slower moving background traffic.
++ **Cut-off** where the ego is cut-off by background traffic vehicles and needs to react accordingly.
+
+.. figure:: ../_static/driving_smarts_2023/basic.png
+
+    Here, egos are in red colour, and background traffic is in silver colour. (Left) Cruise scenario.
+    (Middle) Overtake scenario. (Right) Cut-off scenario.
+
+**Driving SMARTS 2023.2** focuses on navigating various type of turns. Some sample turning scenarios are depicted
+below.
+
+.. figure:: ../_static/driving_smarts_2023/turns.png
+
+    Here, egos are in red colour, and background traffic is in silver colour.
 
 Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
 predictive models, etc, may be used to develop the policy.
@@ -36,10 +48,9 @@ predictive models, etc, may be used to develop the policy.
 Several scenarios are provided for training. Their names and tasks are as follows. 
 The desired task execution is illustrated in a gif by a trained baseline agent. 
 
-+ straight_2lane_agents_1
-    A single ego must follow a specified leader, with no background traffic.
-
-    .. image:: /_static/driving_smarts_2023/platoon_straight_2lane_agents_1.gif
+.. todo::
+    
+    Provide sample training scenarios and corresponding gifs showing a baseline model traversing the map.
 
 Observation space
 -----------------
@@ -186,9 +197,9 @@ Example
 -------
 
 An example training and inference code is provided for this benchmark. 
-See the :examples:`rl/platoon` example. The example uses PPO algorithm from 
-`Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library. 
-It uses :attr:`~smarts.core.controllers.ActionSpaceType.Continuous` action space.
+See the :examples:`rl/drive` example. The example uses PPO algorithm from 
+`Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library.
+It uses :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose` action space.
 Instructions for training and evaluating the example is as follows.
 
 Train
@@ -198,7 +209,7 @@ Train
   .. code-block:: bash
 
     # In terminal-A
-    $ cd <path>/SMARTS/examples/rl/platoon
+    $ cd <path>/SMARTS/examples/rl/drive
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
@@ -217,7 +228,7 @@ Train
   .. code-block:: bash
 
     # In a different terminal-B
-    $ cd <path>/SMARTS/examples/rl/platoon
+    $ cd <path>/SMARTS/examples/rl/drive
     $ source ./.venv/bin/activate
     $ scl envision start
     # Open http://localhost:8081/
@@ -227,7 +238,7 @@ Train
     # In terminal-A
     $ python3.8 train/run.py --head
 
-+ Trained models are saved by default inside the ``<path>/SMARTS/examples/rl/platoon/train/logs/`` folder.
++ Trained models are saved by default inside the ``<path>/SMARTS/examples/rl/drive/train/logs/`` folder.
 
 Docker
 ^^^^^^
@@ -236,14 +247,14 @@ Docker
   .. code-block:: bash
 
     $ cd <path>/SMARTS
-    $ docker build --file=./examples/rl/platoon/train/Dockerfile --network=host --tag=platoon .
-    $ docker run --rm -it --network=host --gpus=all platoon
-    (container) $ cd /SMARTS/examples/rl/platoon
+    $ docker build --file=./examples/rl/drive/train/Dockerfile --network=host --tag=drive .
+    $ docker run --rm -it --network=host --gpus=all drive
+    (container) $ cd /SMARTS/examples/rl/drive
     (container) $ python3.8 train/run.py
 
 Evaluate
 ^^^^^^^^
-+ Choose a desired saved model from the previous training step, rename it as ``saved_model.zip``, and move it to ``<path>/SMARTS/examples/rl/platoon/inference/contrib_policy/saved_model.zip``. 
++ Choose a desired saved model from the previous training step, rename it as ``saved_model.zip``, and move it to ``<path>/SMARTS/examples/rl/drive/inference/contrib_policy/saved_model.zip``.
 + Evaluate locally
 
   .. code-block:: bash
@@ -253,8 +264,11 @@ Evaluate
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
     $ pip install -e .[camera_obs,argoverse]
-    $ scl zoo install examples/rl/platoon/inference
-    $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
+    $ scl zoo install examples/rl/drive/inference
+    # For Driving SMARTS 2023.1
+    $ scl benchmark run driving_smarts_2023_1 examples.rl.drive.inference:contrib-agent-v0 --auto-install
+    # For Driving SMARTS 2023.2
+    $ scl benchmark run driving_smarts_2023_2 examples.rl.drive.inference:contrib-agent-v0 --auto-install
 
 Zoo agents
 ----------
@@ -265,4 +279,7 @@ A compatible zoo agent can be evaluated in this benchmark as follows.
 
     $ cd <path>/SMARTS
     $ scl zoo install <agent path>
-    $ scl benchmark run driving_smarts_2023_3==0.0 <agent_locator> --auto_install
+    # For Driving SMARTS 2023.1
+    $ scl benchmark run driving_smarts_2023_1==0.0 <agent_locator> --auto_install
+    # For Driving SMARTS 2023.2
+    $ scl benchmark run driving_smarts_2023_2==0.0 <agent_locator> --auto_install

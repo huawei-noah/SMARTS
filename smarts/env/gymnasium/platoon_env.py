@@ -73,8 +73,9 @@ def platoon_env(
         a sample formatted observation data structure.
 
     Action space for each agent:
-        Action space for each agent is either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-        or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. Users should choose one.
+        Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
+        or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
+        one of the action spaces and specify the chosen action space through the ego's agent interface.
 
     Agent interface:
         Using the input argument agent_interface, users may configure any field of
