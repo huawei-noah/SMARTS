@@ -30,9 +30,8 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow
 from smarts.env.gymnasium.wrappers.metric.types import Costs
-
+from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow
 
 Done = NewType("Done", bool)
 
@@ -52,8 +51,8 @@ def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
 
 def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
-    acc_linear_max = np.linalg.norm(np.array([2.0,1.47,0]))  # Units: m/s^2
-    T_p = 30 # Penalty time steps = penalty time / delta time step = 3s / 0.1s = 30
+    acc_linear_max = np.linalg.norm(np.array([2.0, 1.47, 0]))  # Units: m/s^2
+    T_p = 30  # Penalty time steps = penalty time / delta time step = 3s / 0.1s = 30
     T_u = 0
     step = 0
     dyn_window = SlidingWindow(size=T_p)
@@ -65,12 +64,12 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
         acc_linear = np.linalg.norm(obs.ego_vehicle_state.linear_acceleration)
-        dyn = max(jerk_linear/jerk_linear_max, acc_linear/acc_linear_max)
+        dyn = max(jerk_linear / jerk_linear_max, acc_linear / acc_linear_max)
 
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
-    
+
         if not done:
             return Costs(comfort=-1)
         else:
