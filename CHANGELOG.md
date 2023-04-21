@@ -44,6 +44,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Neighborhood vehicles which should be excluded from the `dist_to_obstacles` cost function can be specified through `Params`. This would be useful in certain tasks, like the vehicle-following task where the distance to the lead vehicle should not be included in the computation of the `dist_to_obstacles` cost function.
 - Unified the computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
 - In the metrics module, the records which is the raw metrics data and the scoring which is the formula to compute the final results are now separated to provided greater flexibility for applying metrics to different environments.
+- Benchmark listing may specify specialised metric formula for each benchmark.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
 ### Deprecated
 ### Fixed
