@@ -87,8 +87,8 @@ psutil==5.9.5
 py==1.11.0
 py-cpuinfo==9.0.0
 py-spy==0.3.14
-pyasn1==0.4.8
-pyasn1-modules==0.2.8
+pyasn1==0.5.0
+pyasn1-modules==0.3.0
 pybullet==3.0.6
 pydantic==1.10.7
 Pygments==2.15.1

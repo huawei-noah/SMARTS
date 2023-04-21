@@ -156,7 +156,7 @@ A pre-configured `interface` can be extended by supplying extra `kwargs`. For ex
 
     agent_interface = AgentInterface.from_type(
         requested_type = AgentType.Standard,
-        lidar = True, 
+        lidar_point_cloud = True, 
     )
 
 Custom interface

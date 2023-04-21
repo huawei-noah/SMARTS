@@ -200,7 +200,6 @@ def large_observation():
         ),
         drivable_area_grid_map=DrivableAreaGridMap(
             metadata=GridMapMetadata(
-                created_at=1649853761,
                 resolution=0.1953125,
                 width=256,
                 height=256,
@@ -221,7 +220,6 @@ def large_observation():
         ),
         occupancy_grid_map=OccupancyGridMap(
             metadata=GridMapMetadata(
-                created_at=1649853761,
                 resolution=0.1953125,
                 width=256,
                 height=256,
@@ -242,7 +240,6 @@ def large_observation():
         ),
         top_down_rgb=TopDownRGB(
             metadata=GridMapMetadata(
-                created_at=1649853761,
                 resolution=0.1953125,
                 width=256,
                 height=256,

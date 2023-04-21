@@ -22,9 +22,13 @@ import logging
 import os
 import sys
 import warnings
+from collections import defaultdict
 from contextlib import contextmanager
 from io import UnsupportedOperation
 from time import time
+from typing import Sequence
+
+from .file import unpack
 
 
 @contextmanager
@@ -162,3 +166,50 @@ def suppress_websocket():
         _logger.addFilter(websocket_filter)
         yield
         _logger.removeFilter(websocket_filter)
+
+
+def diff_unpackable(obj, other_obj):
+    """Do an asserted comparision of an object that is able to be unpacked. This works with nested collections:
+        dictionaries, namedtuples, tuples, lists, numpy arrays, and dataclasses.
+    Raises:
+        AssertionError: if objects do not match.
+    """
+    obj_unpacked = unpack(obj)
+    other_obj_unpacked = unpack(other_obj)
+
+    def sort(orig_value):
+        value = orig_value
+        if isinstance(value, (dict, defaultdict)):
+            return dict(sorted(value.items(), key=lambda item: item[0]))
+        try:
+            s = sorted(value, key=lambda item: item[0])
+        except IndexError:
+            s = sorted(value)
+        except (KeyError, TypeError):
+            s = value
+        return s
+
+    def process(obj, other_obj, current_comparison):
+        if isinstance(obj, (dict, defaultdict)):
+            t_o = sort(obj)
+            assert isinstance(t_o, dict)
+            t_oo = sort(other_obj)
+            assert isinstance(t_oo, dict)
+            comps.append((t_o.keys(), t_oo.keys()))
+            comps.append((t_o.values(), t_oo.values()))
+        elif isinstance(obj, Sequence) and not isinstance(obj, (str)):
+            comps.append((sort(obj), sort(other_obj)))
+        elif obj != other_obj:
+            return f"{obj}!={other_obj} in {current_comparison}"
+        return ""
+
+    comps = []
+    result = process(obj_unpacked, other_obj_unpacked, None)
+    while len(comps) > 0:
+        o_oo = comps.pop()
+        for o, oo in zip(*o_oo):
+            if result != "":
+                return result
+            result = process(o, oo, o_oo)
+
+    return ""

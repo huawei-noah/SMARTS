@@ -76,6 +76,11 @@ class RoadMap:
         """All dynamic features associated with this road map."""
         return []
 
+    @property
+    def map_spec(self):
+        """The map spec that could be used to reconstruct the map."""
+        return getattr(self, "_map_spec", None)
+
     def is_same_map(self, map_spec) -> bool:
         """Check if the MapSpec Object source points to the same RoadMap instance as the current"""
         raise NotImplementedError
