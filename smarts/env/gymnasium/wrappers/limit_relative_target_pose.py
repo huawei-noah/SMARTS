@@ -27,6 +27,7 @@ import numpy as np
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
+
 class LimitRelativeTargetPose(gym.Wrapper):
     """Limits the delta-x and delta-y in the RelativeTargetPose action space."""
 
@@ -39,7 +40,7 @@ class LimitRelativeTargetPose(gym.Wrapper):
         self._time_delta = 0.1
         self._speed_max = 22.22  # Units: m/s. Equivalent to 80 km/h.
         self._dist_max = self._speed_max * self._time_delta
- 
+
     def step(
         self, action: Dict[str, np.ndarray]
     ) -> Tuple[
@@ -70,7 +71,9 @@ class LimitRelativeTargetPose(gym.Wrapper):
         return out
 
     def _limit(
-        self, name: str, action: np.ndarray,
+        self,
+        name: str,
+        action: np.ndarray,
     ) -> np.ndarray:
         """Limit Euclidean distance travelled in RelativeTargetPose action space.
 
@@ -82,10 +85,7 @@ class LimitRelativeTargetPose(gym.Wrapper):
             np.ndarray: Agent's RelativeTargetPose action with constrained delta-x and delta-y coordinates.
         """
 
-
-        limited_action = np.array(
-            [action[0], action[1], action[2]], dtype=np.float32
-        )
+        limited_action = np.array([action[0], action[1], action[2]], dtype=np.float32)
         vector = action[:2]
         dist = np.linalg.norm(vector)
         if dist > self._dist_max:

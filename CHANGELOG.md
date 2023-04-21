@@ -18,6 +18,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.3 benchmark, i.e., platooning task.
 - Added a new scenario consisting of merge-exit map, sumo lead vehicle, and traffic, for the vehicle-following task.
 - Explained in the docs that agents may spawn at different times in multiagent scenarios.
+- Added baseline example, consisting of training, inference, and zoo agent registration, for the driving and turning tasks in Driving SMARTS 2023.1 and 2023.2 benchmarks, respectively. It uses RelativeTargetPose action space.
+- Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
+- Added an env wrapper for constraining the relative target pose action range. 
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.

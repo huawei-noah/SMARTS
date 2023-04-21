@@ -44,7 +44,9 @@ class Policy(Agent):
         """Mandatory act function to be implemented by user."""
         processed_obs = self._process(obs)
         action, _ = self.model.predict(observation=processed_obs, deterministic=True)
-        formatted_action = self._format_action.format(model_action=action,prev_heading=obs["ego_vehicle_state"]["heading"])
+        formatted_action = self._format_action.format(
+            model_action=action, prev_heading=obs["ego_vehicle_state"]["heading"]
+        )
         return formatted_action
 
     def _process(self, obs):
