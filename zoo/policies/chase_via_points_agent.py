@@ -80,7 +80,10 @@ class ChaseViaPointsAgent(Agent):
 
         # Turn leftwards if (via_point_wp_ind[0] - ego_wp_inds[0]) > 0 , as target via point is on the left.
         # Turn rightwards if (via_point_wp_ind[0] - ego_wp_inds[0]) < 0 , as target via point is on the right.
-        return (obs.via_data.near_via_points[via_point_ind].required_speed, via_point_wp_ind[0] - ego_wp_inds[0])
+        return (
+            obs.via_data.near_via_points[via_point_ind].required_speed,
+            via_point_wp_ind[0] - ego_wp_inds[0],
+        )
 
 
 def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 2):

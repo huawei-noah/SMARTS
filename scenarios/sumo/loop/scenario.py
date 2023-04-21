@@ -3,7 +3,7 @@ from pathlib import Path
 
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-from smarts.sstudio.types import (EndlessMission, TrapEntryTactic)
+from smarts.sstudio.types import EndlessMission, TrapEntryTactic
 
 traffic = t.Traffic(
     flows=[

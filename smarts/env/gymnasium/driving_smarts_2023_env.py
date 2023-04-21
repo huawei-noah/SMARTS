@@ -32,6 +32,9 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
+from smarts.env.gymnasium.wrappers.limit_relative_target_pose import (
+    LimitRelativeTargetPose,
+)
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.env.utils.scenario import get_scenario_specs
 from smarts.sstudio.scenario_construction import build_scenario
@@ -39,7 +42,10 @@ from smarts.sstudio.scenario_construction import build_scenario
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
-SUPPORTED_ACTION_TYPES = (ActionSpaceType.Continuous,)
+SUPPORTED_ACTION_TYPES = (
+    ActionSpaceType.Continuous,
+    ActionSpaceType.RelativeTargetPose,
+)
 
 
 def driving_smarts_2023_env(
@@ -63,7 +69,8 @@ def driving_smarts_2023_env(
         a sample formatted observation data structure.
 
     Action space for each agent:
-        Action space for each agent is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
+        Action space for each agent is either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
+        or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. Users should choose one.
 
     Agent interface:
         Using the input argument agent_interface, users may configure any field of
@@ -141,6 +148,8 @@ def driving_smarts_2023_env(
         visualization_client_builder=visualization_client_builder,
         observation_options=ObservationOptions.multi_agent,
     )
+    if resolved_agent_interface.action == ActionSpaceType.RelativeTargetPose:
+        env = LimitRelativeTargetPose(env)
 
     return env
 
@@ -154,9 +163,9 @@ def resolve_agent_interface(agent_interface: AgentInterface):
     done_criteria = DoneCriteria(
         collision=True,
         off_road=True,
-        off_route=False,
+        off_route=True,
         on_shoulder=False,
-        wrong_way=False,
+        wrong_way=True,
         not_moving=False,
         agents_alive=None,
     )

@@ -6,8 +6,9 @@ import gymnasium as gym
 sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
 from examples.tools.argument_parser import default_argument_parser
 from smarts.core.agent_interface import AgentInterface
-from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.core.controllers import ActionSpaceType
+from smarts.sstudio.scenario_construction import build_scenarios
+
 
 def main(scenarios, headless, num_episodes):
 
@@ -22,7 +23,7 @@ def main(scenarios, headless, num_episodes):
             signals=False,
             top_down_rgb=False,
         )
-        for agent_name in ["A1","A2","A3","A4"]
+        for agent_name in ["A1", "A2", "A3", "A4"]
     }
 
     env = gym.make(
@@ -34,7 +35,7 @@ def main(scenarios, headless, num_episodes):
     for episode in range(num_episodes):
         obs, _ = env.reset()
         print(obs.keys())
-        assert len(obs.keys())==4
+        assert len(obs.keys()) == 4
         terminated = {"__all__": False}
         while not terminated["__all__"]:
             actions = {
@@ -74,12 +75,8 @@ if __name__ == "__main__":
         #         / "straight_2lane_sumo_t_agents_1"
         #     )
         # ]
-        args.scenarios = [str(
-                Path(__file__).absolute().parents[2]
-                / "scenarios"
-                / "sumo"
-                / "loop"
-            )
+        args.scenarios = [
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
         ]
 
     build_scenarios(scenarios=args.scenarios)

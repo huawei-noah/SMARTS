@@ -73,7 +73,7 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
-    
+
         if not done:
             return Costs(comfort=-1)
         else:
@@ -233,7 +233,9 @@ def _jerk_linear() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs
     return func
 
 
-def _lane_center_offset() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+def _lane_center_offset() -> Callable[
+    [RoadMap, VehicleIndex, Done, Observation], Costs
+]:
     mean = 0
     step = 0
 
@@ -318,7 +320,9 @@ def _speed_limit() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs
     return func
 
 
-def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+def _steps(
+    max_episode_steps: int,
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     step = 0
     max_episode_steps = max_episode_steps
 
