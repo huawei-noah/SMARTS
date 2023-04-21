@@ -43,6 +43,13 @@ sanity-test: build-sanity-scenarios
 test-learning: build-all-scenarios
 	pytest -v -s -o log_cli=1 -o log_cli_level=INFO ./examples/tests/test_learning.py
 
+.PHONY: test-long-determinism
+test-long-determinism:
+	scl scenario build --clean scenarios/sumo/minicity
+	PYTHONHASHSEED=42 pytest -v \
+		--forked \
+		./smarts/env/tests/test_determinism.py::test_long_determinism
+
 .PHONY: test-memory-growth
 test-memory-growth: build-all-scenarios
 	PYTHONHASHSEED=42 pytest -v \
@@ -53,13 +60,6 @@ test-memory-growth: build-all-scenarios
 		./smarts/core/tests/test_smarts_memory_growth.py
 	rm -f .coverage.*
 	rm -f .coverage*
-
-.PHONY: test-long-determinism
-test-long-determinism:
-	scl scenario build --clean scenarios/sumo/minicity
-	PYTHONHASHSEED=42 pytest -v \
-		--forked \
-		./smarts/env/tests/test_determinism.py::test_long_determinism
 
 .PHONY: benchmark
 benchmark: build-all-scenarios
@@ -143,7 +143,7 @@ clean:
 	rm -f .coverage*
 
 .PHONY: format
-format:
+format: gen-header
 	echo "isort, version `isort --version-number`"
 	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
 	black --version

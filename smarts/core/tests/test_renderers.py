@@ -104,7 +104,7 @@ class RenderThread(threading.Thread):
             from smarts.core.renderer import DEBUG_MODE as RENDERER_DEBUG_MODE
             from smarts.core.renderer import Renderer
 
-            self._rdr = Renderer(
+            self._renderer = Renderer(
                 self._rid, RENDERER_DEBUG_MODE[renderer_debug_mode.upper()]
             )
         except ImportError as e:
@@ -117,22 +117,22 @@ class RenderThread(threading.Thread):
         self._vid = "r{}_car".format(r)
 
     def test_renderer(self):
-        self._rdr.setup(self._scenario)
+        self._renderer.setup(self._scenario)
         pose = Pose(
             position=np.array([71.65, 53.78, 0]),
             orientation=np.array([0, 0, 0, 0]),
             heading_=Heading(math.pi * 0.91),
         )
-        self._rdr.create_vehicle_node(
+        self._renderer.create_vehicle_node(
             "simple_car.glb", self._vid, SceneColors.SocialVehicle, pose
         )
-        self._rdr.begin_rendering_vehicle(self._vid, is_agent=False)
+        self._renderer.begin_rendering_vehicle(self._vid, is_agent=False)
         for s in range(self._num_steps):
-            self._rdr.render()
+            self._renderer.render()
             pose.position[0] = pose.position[0] + s
             pose.position[1] = pose.position[1] + s
-            self._rdr.update_vehicle_node(self._vid, pose)
-        self._rdr.remove_vehicle_node(self._vid)
+            self._renderer.update_vehicle_node(self._vid, pose)
+        self._renderer.remove_vehicle_node(self._vid)
 
 
 def test_multiple_renderers(scenario, request):

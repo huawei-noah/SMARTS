@@ -28,7 +28,7 @@ from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType, Controllers
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
-from .vehicle import VehicleState
+from .vehicle_state import VehicleState
 
 
 class AgentsProvider(Provider):
@@ -69,6 +69,15 @@ class AgentsProvider(Provider):
         # pytype: disable=attribute-error
         # TAI: consider adding to ProviderManager interface
         return sim.agent_manager
+        # pytype: enable=attribute-error
+
+    @property
+    def _sensor_manager(self):
+        sim = self._sim()
+        assert sim
+        # pytype: disable=attribute-error
+        # TAI: consider adding to ProviderManager interface
+        return sim.sensor_manager
         # pytype: enable=attribute-error
 
     @property
@@ -132,6 +141,7 @@ class AgentsProvider(Provider):
             )
 
         agent_manager = self._agent_manager
+        sensor_manager = self._sensor_manager
         vehicle_index = self._vehicle_index
         sim = self._sim()
         assert sim
@@ -150,7 +160,7 @@ class AgentsProvider(Provider):
                 controller_state = vehicle_index.controller_state_for_vehicle_id(
                     vehicle.id
                 )
-                sensor_state = vehicle_index.sensor_state_for_vehicle_id(vehicle.id)
+                sensor_state = sensor_manager.sensor_state_for_actor_id(vehicle.id)
                 Controllers.perform_action(
                     sim,
                     agent_id,
@@ -189,7 +199,7 @@ class AgentsProvider(Provider):
         self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         provider_actor.source = self.source_str
-        agent_id = self._vehicle_index.actor_id_from_vehicle_id(provider_actor.actor_id)
+        agent_id = self._vehicle_index.owner_id_from_vehicle_id(provider_actor.actor_id)
         self._my_agent_actors.setdefault(agent_id, []).append(provider_actor)
 
     def _agent_for_vehicle(self, vehicle_id: str) -> Optional[Tuple[str, int]]:

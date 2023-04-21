@@ -76,7 +76,8 @@ def test_graceful_interrupt(monkeypatch):
         # To simulate a user interrupting the sim (e.g. ctrl-c). We just need to
         # hook in to some function that SMARTS calls internally (like this one).
         with mock.patch(
-            "smarts.core.sensors.Sensors.observe", side_effect=KeyboardInterrupt
+            "smarts.core.sensor_manager.SensorManager.observe",
+            side_effect=KeyboardInterrupt,
         ):
             for episode in range(10):
                 obs, _, _, _ = env.step({AGENT_ID: agent.act(obs)})

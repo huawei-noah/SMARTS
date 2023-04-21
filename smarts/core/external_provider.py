@@ -25,7 +25,7 @@ from .controllers import ActionSpaceType
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .scenario import Scenario
 from .utils.file import replace
-from .vehicle import VehicleState
+from .vehicle_state import VehicleState
 
 
 class ExternalProvider(Provider):
