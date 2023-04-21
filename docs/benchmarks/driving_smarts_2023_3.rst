@@ -27,7 +27,8 @@ of the :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_int
     lead vehicle in a single-file fashion.
 
 An ego is terminated when its assigned leader reaches the leader's destination. Egos do not have prior knowledge of 
-the assigned leader's destination.
+the assigned leader's destination. Additionally, the ego terminates whenever it collides, drives off road, or 
+exceeds maximum number of steps per episode.
 
 Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
 predictive models, etc, may be used to develop the policy.
@@ -52,7 +53,9 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-Action space for each ego is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
+Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
+one of the action spaces and specify the chosen action space through the ego's agent interface.
 
 Code structure
 --------------
@@ -166,6 +169,7 @@ the user.
     + User may fill in the ``<...>`` spaces in the template.
     + User should provide a name for their policy and describe it in the ``name`` and ``long_description`` sections, respectively.
     + Do **not** add SMARTS package as a dependency in the ``install_requires`` section.
+    + Dependencies in the ``install_requires`` section **must** have an exact package version specified using ``==``.
 
 6. inference/setup.py
     + Keep this file and its default contents unchanged.
@@ -184,6 +188,7 @@ Example
 An example training and inference code is provided for this benchmark. 
 See the :examples:`rl/platoon` example. The example uses PPO algorithm from 
 `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library. 
+It uses :attr:`~smarts.core.controllers.ActionSpaceType.Continuous` action space.
 Instructions for training and evaluating the example is as follows.
 
 Train
