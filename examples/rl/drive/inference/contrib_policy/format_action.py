@@ -18,7 +18,7 @@ class FormatAction:
 
         Note: Users should not directly call this method.
         """
-        wrapped_act = self._wrapper(action:int, prev_heading:float)
+        wrapped_act = self._wrapper(action, prev_heading)
         return wrapped_act
 
 
