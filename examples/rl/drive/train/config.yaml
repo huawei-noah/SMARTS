@@ -5,21 +5,7 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:driving-smarts-v2023  
   scenarios: 
-    # - scenarios/sumo/platoon/straight_agents_1
-    # - scenarios/sumo/platoon/fork_agents_1
-    # - scenarios/sumo/platoon/merge_exit_agents_1
-    - scenarios/sumo/platoon/merge_exit_sumo_t_agents_1
-    # - scenarios/sumo/platoon/straight_2lane_sumo_t_agents_1
-    ### - scenarios/argoverse/platoon/map_1_agents_1
-    ### - scenarios/argoverse/platoon/map_2_agents_1
-    ## - scenarios/argoverse/platoon/map_3_agents_1
-    ## - scenarios/argoverse/platoon/map_4_agents_1
-    ## - scenarios/argoverse/platoon/map_5_agents_1
-    ### - scenarios/argoverse/platoon/map_6_agents_1
-    ### - scenarios/argoverse/platoon/map_7_agents_1
-    ### - scenarios/argoverse/platoon/map_8_agents_1
-    ### - scenarios/argoverse/platoon/map_9_agents_1
-    ### - scenarios/argoverse/platoon/map_10_agents_1
+    - scenarios/sumo/intersections/1_to_1lane_left_turn_c_agents_1
 
   # PPO algorithm
   alg:
@@ -32,9 +18,9 @@ smarts:
   epochs: 500 # Number of training loops.
 
   # Training per scenario
-  # train_steps: 4_096
-  # checkpoint_freq: 4_096
-  train_steps: 10_000
-  checkpoint_freq: 10_000 # Save a model every checkpoint_freq calls to env.step().
+  train_steps: 4_096
+  checkpoint_freq: 4_096
+  # train_steps: 10_000
+  # checkpoint_freq: 10_000 # Save a model every checkpoint_freq calls to env.step().
   eval_freq: 10_000 # Evaluate the trained model every eval_freq steps and save the best model.
   eval_eps: 5 # Number of evaluation epsiodes.
