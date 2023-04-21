@@ -20,7 +20,7 @@ jobs:
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/sstudio
           - ./examples/tests --ignore=./examples/tests/test_learning.py
-          - ./smarts/ray/tests
+          - ./smarts/ray
     steps:
       - name: Checkout
         uses: actions/checkout@v2
