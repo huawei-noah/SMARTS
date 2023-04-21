@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import random
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -72,7 +72,7 @@ class Goal:
         """If the goal is reachable at a specific position."""
         return False
 
-    def is_reached(self, vehicle) -> bool:
+    def is_reached(self, vehicle_state) -> bool:
         """If the goal has been completed."""
         return False
 
@@ -116,8 +116,8 @@ class PositionalGoal(Goal):
     def is_specific(self) -> bool:
         return True
 
-    def is_reached(self, vehicle) -> bool:
-        a = vehicle.position
+    def is_reached(self, vehicle_state) -> bool:
+        a = vehicle_state.pose.position
         b = self.position
         sqr_dist = (a[0] - b.x) ** 2 + (a[1] - b.y) ** 2
         return sqr_dist <= self.radius**2
@@ -139,8 +139,8 @@ class TraverseGoal(Goal):
     def is_specific(self) -> bool:
         return False
 
-    def is_reached(self, vehicle) -> bool:
-        pose = vehicle.pose
+    def is_reached(self, vehicle_state) -> bool:
+        pose = vehicle_state.pose
         return self._drove_off_map(pose.point, pose.heading)
 
     def _drove_off_map(self, veh_pos: Point, veh_heading: float) -> bool:
@@ -219,9 +219,9 @@ class Mission:
         """If the mission requires a route to be generated."""
         return self.goal.is_specific()
 
-    def is_complete(self, vehicle, distance_travelled: float) -> bool:
+    def is_complete(self, vehicle_state, distance_travelled: float) -> bool:
         """If the mission has been completed successfully."""
-        return self.goal.is_reached(vehicle)
+        return self.goal.is_reached(vehicle_state)
 
     @staticmethod
     def endless_mission(
@@ -275,12 +275,20 @@ class LapMission(Mission):
             # TAI: could just assert here, but may want to be more clever...
             self.route_length = 1
 
-    def is_complete(self, vehicle, distance_travelled: float) -> bool:
+    def is_complete(self, vehicle_state, distance_travelled: float) -> bool:
         """If the mission has been completed."""
         return (
-            self.goal.is_reached(vehicle)
+            self.goal.is_reached(vehicle_state)
             and distance_travelled > self.route_length * self.num_laps
         )
+
+
+@dataclass
+class PlanFrame:
+    """Describes a plan that is serializable."""
+
+    road_ids: List[str]
+    mission: Optional[Mission]
 
 
 class Plan:
@@ -330,7 +338,9 @@ class Plan:
                 mission. Defaults to `_default_lane_width` of the underlying
                 road_map.
         """
-        assert not self._route, "Already called create_route()."
+        assert not self._route or not len(
+            self._route.road_ids
+        ), "Already called create_route()."
         self._mission = mission or Mission.random_endless_mission(self._road_map)
 
         if not self._mission.requires_route:
@@ -377,4 +387,18 @@ class Plan:
                 "after a junction.".format(start_road_ids, end_lane.road.road_id)
             )
 
-        return
+        return self._mission
+
+    def frame(self) -> PlanFrame:
+        """Get the state of this plan."""
+        assert self._mission
+        return PlanFrame(
+            road_ids=self._route.road_ids if self._route else [], mission=self._mission
+        )
+
+    @classmethod
+    def from_frame(cls, plan_frame: PlanFrame, road_map: RoadMap) -> "Plan":
+        """Generate the plan from a frame."""
+        new_plan = cls(road_map=road_map, mission=plan_frame.mission, find_route=False)
+        new_plan.route = road_map.route_from_road_ids(plan_frame.road_ids)
+        return new_plan

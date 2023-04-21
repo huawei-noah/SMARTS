@@ -24,7 +24,7 @@ import warnings
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
-from scipy.spatial.distance import cdist
+from cached_property import cached_property
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient
@@ -32,6 +32,7 @@ from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
+from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
 from . import config, models
@@ -49,12 +50,14 @@ from .bubble_manager import BubbleManager
 from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
-from .observations import Collision, Observation
+from .observations import Observation
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
+from .sensor_manager import SensorManager
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
+from .simulation_frame import SimulationFrame
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
@@ -63,8 +66,9 @@ from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .utils.visdom_client import VisdomClient
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
+from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle
 
 logging.basicConfig(
     format="%(asctime)s.%(msecs)03d %(levelname)s: {%(module)s} %(message)s",
@@ -184,6 +188,7 @@ class SMARTS(ProviderManager):
         )
 
         # Set up indices
+        self._sensor_manager = SensorManager()
         self._vehicle_index = VehicleIndex()
         self._agent_manager = AgentManager(self, agent_interfaces, zoo_addrs)
 
@@ -212,12 +217,14 @@ class SMARTS(ProviderManager):
         Dict[str, Dict[str, float]],
     ]:
         """Progress the simulation by a fixed or specified time.
-
-        :param agent_actions: Actions that the agents want to perform on their actors.
-        :param time_delta_since_last_step: Overrides the simulation step length.
-            Progress simulation time by the given amount.
-            Note the time_delta_since_last_step param is in (nominal) seconds.
-        :return: observations, rewards, dones, infos
+        Args:
+            agent_actions:
+                Actions that the agents want to perform on their actors.
+            time_delta_since_last_step:
+                Overrides the simulation step length. Progress simulation time by the given amount.
+                Note the time_delta_since_last_step param is in (nominal) seconds.
+        Returns:
+            observations, rewards, dones, infos
         """
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
@@ -232,14 +239,16 @@ class SMARTS(ProviderManager):
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
-            self.destroy()
+            if not config()("core", "debug", default=False, cast=bool):
+                self.destroy()
             raise  # re-raise the KeyboardInterrupt
         except Exception as e:
             self._log.error(
                 "Simulation crashed with exception. Attempting to cleanly shutdown."
             )
             self._log.exception(e)
-            self.destroy()
+            if not config().get_setting("core", "debug", default=False, cast=bool):
+                self.destroy()
             raise  # re-raise
 
     def _check_if_acting_on_active_agents(self, agent_actions):
@@ -303,17 +312,29 @@ class SMARTS(ProviderManager):
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._sensor_manager.clean_up_sensors_for_actors(
+            set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
+        )
+
+        # Reset frame state
+        try:
+            del self.cached_frame
+        except AttributeError:
+            pass
+        self.cached_frame
 
         # Agents
         with timeit("Stepping through sensors", self._log.debug):
-            self._agent_manager.step_sensors()
+            self._sensor_manager.step(self.cached_frame, self.renderer_ref)
 
-        if self._renderer:
+        if self.renderer_ref:
             # runs through the render pipeline (for camera-based sensors)
-            # MUST perform this after step_sensors() above, and before observe() below,
+            # MUST perform this after _sensor_manager.step() above, and before observe() below,
             # so that all updates are ready before rendering happens per
+            with timeit("Syncing the renderer", self._log.debug):
+                self.renderer_ref.sync(self.cached_frame)
             with timeit("Running through the render pipeline", self._log.debug):
-                self._renderer.render()
+                self.renderer_ref.render()
 
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
@@ -351,7 +372,8 @@ class SMARTS(ProviderManager):
                 if self._agent_manager.is_boid_agent(agent_id):
                     vehicle_ids.update(id_ for id_ in done if done[id_])
                 elif done:
-                    ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                    ids = self._vehicle_index.vehicle_ids_by_owner_id(agent_id)
+                    # 0 if shadowing, 1 if active
                     assert len(ids) <= 1, f"{len(ids)} <= 1"
                     vehicle_ids.update(ids)
 
@@ -383,33 +405,33 @@ class SMARTS(ProviderManager):
         self, scenario: Scenario, start_time: float = 0.0
     ) -> Dict[str, Observation]:
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
-         simulation up to the first time an agent returns an observation, or ``start_time`` if there
+         simulation up to the first time an agent returns an observation, or `start_time` if there
          are no agents in the simulation.
-
-        :param scenario: The scenario to reset the simulation with.
-        :type scenario: class: Scenario
-        :param start_time:
+        Args:
+            scenario(Scenario):
+                The scenario to reset the simulation with.
+            start_time(float):
                 The initial amount of simulation time to skip. This has implications on all time
                 dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
-                If you want a vehicle to enter at exactly ``0.3`` with a step of ``0.1`` it means the
-                simulation should start at ``start_time==0.2``.
-        :type start_time: float
-        :return: Agent observations. This observation is as follows:
-            - If no agents: the initial simulation observation at ``start_time``
-            - If agents: the first step of the simulation with an agent observation
+                If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
+                simulation should start at `start_time==0.2`.
+        Returns:
+            Agent observations. This observation is as follows:
+                - If no agents: the initial simulation observation at `start_time`
+                - If agents: the first step of the simulation with an agent observation
         """
-        tries = 2
+        tries = config()("core", "reset_retries", 0, cast=int) + 1
         first_exception = None
         for _ in range(tries):
             try:
                 self._resetting = True
                 return self._reset(scenario, start_time)
-            except Exception as e:
+            except Exception as err:
                 if not first_exception:
-                    first_exception = e
+                    first_exception = err
             finally:
                 self._resetting = False
-        self._log.error(f"Failed to successfully reset after {tries} times.")
+        self._log.error("Failed to successfully reset after %i tries.", tries)
         raise first_exception
 
     def _reset(self, scenario: Scenario, start_time: float):
@@ -428,7 +450,7 @@ class SMARTS(ProviderManager):
             agent_ids = self._agent_manager.teardown_ego_agents()
             agent_ids |= self.agent_manager.teardown_social_agents()
             for agent_id in agent_ids:
-                ids = self._vehicle_index.vehicle_ids_by_actor_id(agent_id)
+                ids = self._vehicle_index.vehicle_ids_by_owner_id(agent_id)
                 vehicle_ids_to_teardown |= set(ids)
             self._teardown_vehicles(set(vehicle_ids_to_teardown))
             self._reset_providers()
@@ -436,11 +458,15 @@ class SMARTS(ProviderManager):
                 actor_capture_manager.reset(scenario, self)
             self._agent_manager.init_ego_agents()
             if self._renderer:
-                self._sync_vehicles_to_renderer()
+                self._renderer.reset()
         else:
             self.teardown()
             self._reset_providers()
             self.setup(scenario)
+
+        if not self.local_constants.road_map.is_same_map(scenario.map_spec):
+            del self.local_constants
+        self.local_constants
 
         # Tell history provide to ignore vehicles if we have assigned mission to them
         self._traffic_history_provider.set_replaced_ids(
@@ -451,6 +477,10 @@ class SMARTS(ProviderManager):
         self._reset_required = False
 
         self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        try:
+            del self.cached_frame
+        except AttributeError:
+            pass
         observations, _, _, _ = self._agent_manager.observe()
         observations_for_ego = self._agent_manager.reset_agents(observations)
 
@@ -674,13 +704,11 @@ class SMARTS(ProviderManager):
         original_agent_id = agent_id
         agent_id = None
         # FIXME: This only gets the first shadow agent and this shadow agent is not specific to a bubble!!!!!!
-        shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
-            vehicle_id
-        )
+        shadow_agent_id = self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id)
         if shadow_agent_id is not None:
             assert original_agent_id == shadow_agent_id
         if self._vehicle_index.vehicle_is_hijacked(vehicle_id):
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            agent_id = self._vehicle_index.owner_id_from_vehicle_id(vehicle_id)
             assert agent_id == original_agent_id
             self._log.debug(
                 "agent=%s relinquishing vehicle=%s (shadow_agent=%s)",
@@ -689,7 +717,7 @@ class SMARTS(ProviderManager):
                 shadow_agent_id,
             )
             state, route = self._vehicle_index.relinquish_agent_control(
-                self, vehicle_id
+                self, vehicle_id, self.road_map
             )
             new_prov = self._agent_relinquishing_actor(agent_id, state, teardown_agent)
             if (
@@ -707,17 +735,8 @@ class SMARTS(ProviderManager):
             self._vehicle_index.stop_shadowing(shadow_agent_id, vehicle_id)
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
-        if self._vehicle_index.shadow_actor_id_from_vehicle_id(vehicle_id) is None:
-            self._agent_manager.detach_sensors_from_vehicle(vehicle_id)
-
-        if teardown_agent:
-            active_agents = self._agent_manager.active_agents
-            assert (
-                shadow_agent_id not in active_agents
-            ), f"Agent ids {shadow_agent_id}, {active_agents}"
-            assert (
-                agent_id not in active_agents
-            ), f"Agent id `{agent_id}` not in {active_agents}`"
+        if self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id) is None:
+            self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
 
     def _agent_relinquishing_actor(
         self,
@@ -836,7 +855,9 @@ class SMARTS(ProviderManager):
         if self._agent_manager is not None:
             self._agent_manager.teardown()
         if self._vehicle_index is not None:
-            self._vehicle_index.teardown()
+            self._vehicle_index.teardown(self.renderer_ref)
+        if self._sensor_manager is not None:
+            self._sensor_manager.teardown(self.renderer_ref)
 
         if self._bullet_client is not None:
             self._bullet_client.resetSimulation()
@@ -906,7 +927,9 @@ class SMARTS(ProviderManager):
             raise exception
 
     def _teardown_vehicles(self, vehicle_ids):
-        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(
+            vehicle_ids, self.renderer_ref
+        )
         self._clear_collisions(vehicle_ids)
         for v_id in vehicle_ids:
             self._remove_vehicle_from_providers(v_id)
@@ -916,7 +939,11 @@ class SMARTS(ProviderManager):
         interface.
         """
         self._check_valid()
-        self._agent_manager.attach_sensors_to_vehicles(agent_interface, vehicle_ids)
+        for v_id in vehicle_ids:
+            v = self._vehicle_index.vehicle_by_id(v_id)
+            Vehicle.attach_sensors_to_vehicle(
+                self._sensor_manager, self, v, agent_interface
+            )
 
     def observe_from(
         self, vehicle_ids: Sequence[str]
@@ -948,6 +975,11 @@ class SMARTS(ProviderManager):
                 if self._scenario:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        return self._renderer
+
+    @property
+    def renderer_ref(self) -> Optional[Any]:
+        """Get the reference of the renderer. This can be `None`."""
         return self._renderer
 
     @property
@@ -1022,23 +1054,24 @@ class SMARTS(ProviderManager):
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
         """
-        Teardown agents in the given sequence.
-
-        :param agent_ids: Sequence of agent ids
+        Teardown agents in the given sequence
+        Params:
+            agent_ids: Sequence of agent ids
         """
         agents_to_teardown = {
             id_
             for id_ in agent_ids
-            if not self.agent_manager.is_boid_keep_alive_agent(id_)
+            if not self.agent_manager.is_boid_agent(id_)
+            or self.agent_manager.is_boid_done(id_)
         }
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
         """
         Teardown agents in the given list that have no actors registered as
-        controlled-by or shadowed-by
-
-        :param agent_ids: Sequence of agent ids
+        controlled-by or shadowed-by (for each given agent.)
+        Params:
+            agent_ids: Sequence of agent ids
         """
         self._check_valid()
         original_agents = set(agent_ids)
@@ -1047,7 +1080,7 @@ class SMARTS(ProviderManager):
             for agent_id in original_agents
             # Only clean-up when there is no actor association left
             if len(
-                self._vehicle_index.vehicles_by_actor_id(
+                self._vehicle_index.vehicles_by_owner_id(
                     agent_id, include_shadowers=True
                 )
             )
@@ -1066,17 +1099,19 @@ class SMARTS(ProviderManager):
     def _teardown_vehicles_and_agents(self, vehicle_ids):
         shadow_and_controlling_agents = set()
         for vehicle_id in vehicle_ids:
-            agent_id = self._vehicle_index.actor_id_from_vehicle_id(vehicle_id)
+            agent_id = self._vehicle_index.owner_id_from_vehicle_id(vehicle_id)
             if agent_id:
                 shadow_and_controlling_agents.add(agent_id)
 
-            shadow_agent_id = self._vehicle_index.shadow_actor_id_from_vehicle_id(
+            shadow_agent_id = self._vehicle_index.shadower_id_from_vehicle_id(
                 vehicle_id
             )
             if shadow_agent_id:
                 shadow_and_controlling_agents.add(shadow_agent_id)
 
-        self._vehicle_index.teardown_vehicles_by_vehicle_ids(vehicle_ids)
+        self._vehicle_index.teardown_vehicles_by_vehicle_ids(
+            vehicle_ids, self.renderer_ref
+        )
         self.teardown_social_agents_without_actors(shadow_and_controlling_agents)
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
         # (and needs to remain registered in Traci during this step).
@@ -1106,7 +1141,7 @@ class SMARTS(ProviderManager):
                     social_vehicle = self._vehicle_index.build_social_vehicle(
                         sim=self,
                         vehicle_state=vehicle,
-                        actor_id=vehicle_id,
+                        owner_id="",
                         vehicle_id=vehicle_id,
                     )
 
@@ -1125,7 +1160,7 @@ class SMARTS(ProviderManager):
             vehicle.step(self._elapsed_sim_time)
 
     @property
-    def vehicle_index(self):
+    def vehicle_index(self) -> VehicleIndex:
         """The vehicle index for direct vehicle manipulation."""
         return self._vehicle_index
 
@@ -1133,6 +1168,11 @@ class SMARTS(ProviderManager):
     def agent_manager(self) -> AgentManager:
         """The agent manager for direct agent manipulation."""
         return self._agent_manager
+
+    @property
+    def sensor_manager(self) -> SensorManager:
+        """The sensor manager for direct manipulation."""
+        return self._sensor_manager
 
     @property
     def providers(self) -> List[Provider]:
@@ -1169,8 +1209,6 @@ class SMARTS(ProviderManager):
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
         self._pybullet_provider_sync(provider_state)
-        if self._renderer:
-            self._sync_vehicles_to_renderer()
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -1227,7 +1265,7 @@ class SMARTS(ProviderManager):
         vehicle_actions = dict()
         for agent_id, action in actions.items():
             # TAI:  reconsider include_shadowers = True
-            vehicles = self._vehicle_index.vehicles_by_actor_id(
+            vehicles = self._vehicle_index.vehicles_by_owner_id(
                 agent_id, include_shadowers=True
             )
             if not vehicles:
@@ -1339,53 +1377,20 @@ class SMARTS(ProviderManager):
         return self._last_dt
 
     def neighborhood_vehicles_around_vehicle(
-        self, vehicle: Vehicle, radius: Optional[float] = None
+        self, vehicle_id: str, radius: Optional[float] = None
     ) -> List[VehicleState]:
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
-        other_states = [v for v in self._vehicle_states if v.actor_id != vehicle.id]
-        if radius is None:
-            return other_states
+        from smarts.core.sensors import Sensors
 
-        other_positions = [state.pose.position for state in other_states]
-        if not other_positions:
-            return []
-
-        # calculate euclidean distances
-        distances = cdist(
-            other_positions, [vehicle.position], metric="euclidean"
-        ).reshape(-1)
-
-        indices = np.argwhere(distances <= radius).flatten()
-        return [other_states[i] for i in indices]
-
-    def vehicle_did_collide(self, vehicle_id) -> bool:
-        """Test if the given vehicle had any collisions in the last physics update."""
-        self._check_valid()
-        vehicle_collisions = self._vehicle_collisions.get(vehicle_id, [])
-        for c in vehicle_collisions:
-            if c.collidee_id != self._ground_bullet_id:
-                return True
-        return False
-
-    def vehicle_collisions(self, vehicle_id) -> List[Collision]:
-        """Get a list of all collisions the given vehicle was involved in during the last
-        physics update.
-        """
-        self._check_valid()
-        vehicle_collisions = self._vehicle_collisions.get(vehicle_id, [])
-        return [
-            c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
-        ]
+        vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
+        return neighborhood_vehicles_around_vehicle(
+            vehicle.state, self._vehicle_states, radius
+        )
 
     def _clear_collisions(self, vehicle_ids):
         for vehicle_id in vehicle_ids:
             self._vehicle_collisions.pop(vehicle_id, None)
-
-    def _sync_vehicles_to_renderer(self):
-        assert self._renderer
-        for vehicle in self._vehicle_index.vehicles:
-            vehicle.sync_to_renderer()
 
     def _get_pybullet_collisions(self, vehicle_id: str) -> Set[str]:
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
@@ -1406,7 +1411,7 @@ class SMARTS(ProviderManager):
             vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                actor_id = self._vehicle_index.actor_id_from_vehicle_id(collidee.id)
+                actor_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
                 # TODO: Should we specify the collidee as the vehicle ID instead of
                 #       the agent/social ID?
                 collision = Collision(collidee_id=actor_id)
@@ -1500,7 +1505,7 @@ class SMARTS(ProviderManager):
                 continue
             if v.actor_id in agent_vehicle_ids:
                 # this is an agent controlled vehicle
-                agent_id = self._vehicle_index.actor_id_from_vehicle_id(v.actor_id)
+                agent_id = self._vehicle_index.owner_id_from_vehicle_id(v.actor_id)
                 is_boid_agent = self._agent_manager.is_boid_agent(agent_id)
                 agent_obs = obs[agent_id]
                 vehicle_obs = agent_obs[v.actor_id] if is_boid_agent else agent_obs
@@ -1550,9 +1555,9 @@ class SMARTS(ProviderManager):
                     actor_type = envision_types.TrafficActorType.Agent
                     if filter.actor_data_filter["mission_route_geometry"].enabled:
                         mission_route_geometry = (
-                            self._vehicle_index.sensor_state_for_vehicle_id(
-                                v.actor_id
-                            ).plan.route.geometry
+                            self._sensor_manager.sensor_state_for_actor_id(v.actor_id)
+                            .get_plan(self.road_map)
+                            .route.geometry
                         )
                 else:
                     actor_type = envision_types.TrafficActorType.SocialAgent
@@ -1623,3 +1628,56 @@ class SMARTS(ProviderManager):
         if not self._visdom:
             return
         self._visdom.send(obs)
+
+    @cached_property
+    def local_constants(self):
+        """Generate the frozen state that should not change until next reset."""
+        self._check_valid()
+        road_map, road_map_hash = self.scenario.map_spec.builder_fn(
+            self.scenario.map_spec
+        )
+        return SimulationLocalConstants(
+            road_map=road_map,
+            road_map_hash=road_map_hash,
+        )
+
+    @cached_property
+    def cached_frame(self):
+        """Generate a frozen frame state of the simulation."""
+        self._check_valid()
+        agent_actor_ids = self.vehicle_index.agent_vehicle_ids()
+        actor_states = self._last_provider_state
+        vehicles = dict(self.vehicle_index.vehicleitems())
+        vehicle_ids = set(vid for vid in vehicles)
+        return SimulationFrame(
+            actor_states=getattr(actor_states, "actors", {}),
+            agent_interfaces=self.agent_manager.agent_interfaces.copy(),
+            agent_vehicle_controls={
+                a_id: self.vehicle_index.owner_id_from_vehicle_id(a_id)
+                for a_id in agent_actor_ids
+            },
+            ego_ids=self.agent_manager.ego_agent_ids,
+            pending_agent_ids=self.agent_manager.pending_agent_ids,
+            elapsed_sim_time=self.elapsed_sim_time,
+            fixed_timestep=self.fixed_timestep_sec,
+            resetting=self.resetting,
+            # road_map = self.road_map,
+            map_spec=self.scenario.map_spec,
+            last_dt=self.last_dt,
+            last_provider_state=self._last_provider_state,
+            step_count=self.step_count,
+            vehicle_collisions=self._vehicle_collisions,
+            vehicle_states={
+                vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
+            },
+            vehicles_for_agents={
+                agent_id: self.vehicle_index.vehicle_ids_by_owner_id(
+                    agent_id, include_shadowers=True
+                )
+                for agent_id in self.agent_manager.active_agents
+            },
+            vehicle_ids=vehicle_ids,
+            vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
+            sensor_states=dict(self.sensor_manager.sensor_states_items()),
+            _ground_bullet_id=self._ground_bullet_id,
+        )
