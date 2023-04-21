@@ -35,15 +35,13 @@ from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
     CostFuncs,
-    Costs,
     Done,
     get_dist,
     make_cost_funcs,
 )
-from smarts.env.gymnasium.wrappers.metric.counts import Counts
 from smarts.env.gymnasium.wrappers.metric.formula import Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.types import Record
+from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
     divide,

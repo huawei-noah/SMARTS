@@ -26,6 +26,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added engine `observation_workers` configuration which can be used to configure the number of parallel sensor workers: 0 runs the sensors on the local thread, >=1 runs using the multiprocessing backing.
 - Added engine `sensor_parallelization` configuration of sensor parallelization backing, options ("mp"|"ray"): "mp" python multiprocessing, "ray" ray worker backing.
 - Added engine `reset_retries` configuration engine retries before the simulator will raise an error on reset.
+- Introduced new comfort metric in metric cost functions.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.

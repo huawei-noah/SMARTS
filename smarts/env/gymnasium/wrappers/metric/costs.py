@@ -30,23 +30,8 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.params import Params
-
-
-@dataclass(frozen=True)
-class Costs:
-    """Performance cost values."""
-
-    collisions: int = 0
-    comfort: float = 0
-    dist_to_destination: float = 0
-    dist_to_obstacles: float = 0
-    gap_between_vehicles: float = 0
-    jerk_linear: float = 0
-    lane_center_offset: float = 0
-    off_road: int = 0
-    speed_limit: float = 0
-    steps: float = 0
-    wrong_way: float = 0
+from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow
+from smarts.env.gymnasium.wrappers.metric.types import Costs
 
 
 Done = NewType("Done", bool)
@@ -66,17 +51,36 @@ def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
 
 
 def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
-    mean = 0
+    jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
+    acc_linear_max = np.linalg.norm(np.array([2.0,1.47,0]))  # Units: m/s^2
+    T_p = 30 # Penalty time steps = penalty time / delta time step = 3s / 0.1s = 30
+    T_u = 0
     step = 0
+    dyn_window = SlidingWindow(size=T_p)
 
     def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
-        nonlocal mean, step
+        nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window
 
-        # TODO: Cost function is to be designed.
+        step = step + 1
 
-        j_comfort = 0
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_comfort)
-        return Costs(comfort=0)
+        jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
+        acc_linear = np.linalg.norm(obs.ego_vehicle_state.linear_acceleration)
+        dyn = max(jerk_linear/jerk_linear_max, acc_linear/acc_linear_max)
+
+        dyn_window.move(dyn)
+        u_t = 1 if dyn_window.max() > 1 else 0
+        T_u += u_t
+    
+        if not done:
+            return Costs(comfort=-1)
+        else:
+            T_trv = step
+            for _ in range(T_p):
+                dyn_window.move(0)
+                u_t = 1 if dyn_window.max() > 1 else 0
+                T_u += u_t
+            j_comfort = T_u / (T_trv + T_p)
+            return Costs(comfort=j_comfort)
 
     return func
 

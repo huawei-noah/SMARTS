@@ -23,7 +23,7 @@ class Policy(Agent):
         from contrib_policy.frame_stack import FrameStack
         from contrib_policy.make_dict import MakeDict
 
-        model_path = Path(__file__).resolve().parents[0] / "saved_model.zip"
+        model_path = Path(__file__).resolve().parents[0] / "saved_model"
         self.model = sb3lib.PPO.load(model_path)
 
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
