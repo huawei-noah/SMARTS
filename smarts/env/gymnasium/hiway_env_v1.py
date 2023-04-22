@@ -490,15 +490,6 @@ class HiWayEnvV1(gym.Env):
         }
 
     @property
-    def scenario(self) -> Scenario:
-        """Returns underlying scenario.
-
-        Returns:
-            scenario.Scenario: Current simulated scenario.
-        """
-        return self._smarts.scenario
-
-    @property
     def smarts(self):
         """Gives access to the underlying simulator. Use this carefully.
 

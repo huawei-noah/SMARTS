@@ -23,9 +23,12 @@ import os
 import pickle
 import shutil
 import struct
+from collections import defaultdict
 from contextlib import contextmanager
 from ctypes import c_int64
-from typing import Any, Generator
+from typing import Any, Generator, Sequence
+
+import numpy as np
 
 import smarts
 
@@ -69,20 +72,21 @@ def isdataclass(x):
     return dataclasses.is_dataclass(x)
 
 
+# TAI MTA: This is probably the wrong place for this utility: `logging.py`?
 def unpack(obj):
-    """A helper that can be used to print `nestedtuples`. For example,
+    """A helper that can be used to print nested data objects (`tuple`, `dataclass`, `namedtuple`, ...). For example,
     ```python
     pprint(unpack(obs), indent=1, width=80, compact=True)
     ```
     """
     if isinstance(obj, dict):
         return {key: unpack(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
+    elif isinstance(obj, (list, np.ndarray)):
         return [unpack(value) for value in obj]
     elif isnamedtupleinstance(obj):
-        return unpack(obj._asdict())
+        return {key: unpack(value) for key, value in obj._asdict().items()}
     elif isdataclass(obj):
-        return unpack(dataclasses.asdict(obj))
+        return {key: unpack(value) for key, value in dataclasses.asdict(obj).items()}
     elif isinstance(obj, tuple):
         return tuple(unpack(value) for value in obj)
     else:

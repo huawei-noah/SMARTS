@@ -45,8 +45,6 @@ class Reward(gym.Wrapper):
                     agent_obs["events"]["collisions"] | agent_obs["events"]["off_road"]
                 ):
                     pass
-                elif agent_obs["events"]["agents_alive_done"]:
-                    print(f"{agent_id}: Agents alive done triggered.")
                 elif agent_obs["events"]["actors_alive_done"]:
                     print(f"{agent_id}: Actors alive done triggered.")
                 else:

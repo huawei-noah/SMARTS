@@ -38,3 +38,8 @@ def temp_scenario(name: str, map: str):
         generate_glb_from_sumo_file(str(scenario / "map.net.xml"), str(scenario))
 
         yield scenario
+
+
+def maps_dir():
+    """Add a maps directory."""
+    return Path(__file__).parent.parent / "maps"

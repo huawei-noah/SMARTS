@@ -163,13 +163,13 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         wrong_way=False,
         not_moving=False,
         actors_alive=ActorsAliveDoneCriteria(
-            actors_of_interest=(".*Leader-007",),
+            actors_of_interest=("Leader-007",),
             strict=True,
         ),
     )
     max_episode_steps = 1000
     waypoints_lookahead = 80
-    neighborhood_radius = 50
+    neighborhood_radius = 80
     return AgentInterface(
         accelerometer=True,
         action=agent_interface.action,

@@ -17,15 +17,42 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added baseline example, consisting of training, inference, and zoo agent registration, for the platooning task in Driving SMARTS 2023.3 benchmark.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.3 benchmark, i.e., platooning task.
 - Added a new scenario consisting of merge-exit map, sumo lead vehicle, and traffic, for the vehicle-following task.
+- Added a `SensorManager` which manages placing sensors on actors in the simulations.
+- The `VehicleState` now has the `bounding_box_points` property to get the vehicle minimum bounding box as a set of points.
+- Added engine configuration options for `core:debug`, `core:observation_workers`, and `core:reset_retries`.
 - Explained in the docs that agents may spawn at different times in multiagent scenarios.
+- Added `RaySensorResolver` as an alternative parallel resolver.
+- Added `[ray]` option for `smarts` package. This currently conflicts with `[rllib]`.
+- Added engine `observation_workers` configuration which can be used to configure the number of parallel sensor workers: 0 runs the sensors on the local thread, >=1 runs using the multiprocessing backing.
+- Added engine `sensor_parallelization` configuration of sensor parallelization backing, options ("mp"|"ray"): "mp" python multiprocessing, "ray" ray worker backing.
+- Added engine `reset_retries` configuration engine retries before the simulator will raise an error on reset.
+- Introduced new comfort cost function in metric module.
+- Introduced new gap-between-vehicles cost function in metric module.
 - Added baseline example, consisting of training, inference, and zoo agent registration, for the driving and turning tasks in Driving SMARTS 2023.1 and 2023.2 benchmarks, respectively. It uses RelativeTargetPose action space.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
-- Added an env wrapper for constraining the relative target pose action range. 
+- Added an env wrapper for constraining the relative target pose action range.
 ### Changed
+- The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
+- Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
+- The `AgentType.Full` now includes `road_waypoints`, `accelerometer`, and `lane_positions`.
+- `ActionSpaceType` has been moved from `controller` to its own file.
+- `VehicleState` has been moved to its own file.
+- Sensors are no longer added and configured in the `agent_manager`. They are instead managed in the `sensor_manager`.
+- Renamed all terminology relating to actor to owner in `VehicleIndex`.
+- Renamed all terminology relating to shadow actor to shadower in `VehicleIndex`.
+- `Collision` has been moved from `smarts.core.observations` to `smarts.core.vehicle_state`.
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
 - Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
 - Sstudio generated scenario vehicle traffic ids are now shortened.
+- ChaseViaPoints zoo agent uses unconstrained path change command, instead of being constrained to [-1, 0, +1] path change commands used previously. 
+- Made the metrics module configurable by supplying parameters through a `Params` class.
+- Neighborhood vehicles which should be excluded from the `dist_to_obstacles` cost function can be specified through `Params`. This would be useful in certain tasks, like the vehicle-following task where the distance to the lead vehicle should not be included in the computation of the `dist_to_obstacles` cost function.
+- Unified the computation of `dist_to_destination` (previously known as `completion`) and `steps` (i.e., time taken) as functions inside the cost functions module, instead of computing them separately in a different module.
+- In the metrics module, the records which is the raw metrics data and the scoring which is the formula to compute the final results are now separated to provided greater flexibility for applying metrics to different environments.
+- Benchmark listing may specify specialised metric formula for each benchmark.
+- Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
+- Renamed GapBetweenVehicles cost to VehicleGap cost in metric module.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
@@ -34,8 +61,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where building sumo scenarios would sometimes stall.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 - Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
+- Fixed CI tests for metrics.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
+- Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
 ### Security
 
 ## [1.0.11] # 2023-04-02

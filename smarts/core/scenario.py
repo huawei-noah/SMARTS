@@ -105,7 +105,7 @@ class Scenario:
         scenario_root: str,
         traffic_specs: Sequence[str] = [],
         missions: Optional[Dict[str, Mission]] = None,
-        social_agents: Optional[Dict[str, SocialAgent]] = None,
+        social_agents: Optional[Dict[str, Tuple[Any, SocialAgent]]] = None,
         log_dir: Optional[str] = None,
         surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
         traffic_history: Optional[str] = None,
@@ -988,6 +988,11 @@ class Scenario:
     def road_map(self) -> RoadMap:
         """The road map of the scenario."""
         return self._road_map
+
+    @property
+    def map_spec(self) -> Optional[MapSpec]:
+        """The map spec for the road map used in this scenario."""
+        return self.road_map.map_spec
 
     @property
     def supports_sumo_traffic(self) -> bool:
