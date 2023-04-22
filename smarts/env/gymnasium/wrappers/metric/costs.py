@@ -31,15 +31,17 @@ from smarts.core.utils.math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Costs
-from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow
+from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow, nearest_waypoint
 
 Done = NewType("Done", bool)
 
 
-def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _collisions() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     sum = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal sum
 
         sum = sum + len(obs.events.collisions)
@@ -49,7 +51,7 @@ def _collisions() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
     acc_linear_max = np.linalg.norm(np.array([2.0, 1.47, 0]))  # Units: m/s^2
     T_p = 30  # Penalty time steps = penalty time / delta time step = 3s / 0.1s = 30
@@ -57,7 +59,9 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
     step = 0
     dyn_window = SlidingWindow(size=T_p)
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window
 
         step = step + 1
@@ -86,13 +90,15 @@ def _comfort() -> Callable[[RoadMap, Done, Observation], Costs]:
 
 def _dist_to_destination(
     end_pos: Point = Point(0, 0, 0), dist_tot: float = 0
-) -> Callable[[RoadMap, Done, Observation], Costs]:
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal mean, step, end_pos, dist_tot
 
         if not done:
@@ -114,7 +120,7 @@ def _dist_to_destination(
 
 def _dist_to_obstacles(
     ignore: List[str],
-) -> Callable[[RoadMap, Done, Observation], Costs]:
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     rel_angle_th = np.pi * 40 / 180
@@ -123,7 +129,9 @@ def _dist_to_obstacles(
     safe_time = 3  # Safe driving distance expressed in time. Units:seconds.
     ignore = ignore
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal mean, step, rel_angle_th, rel_heading_th, w_dist, safe_time, ignore
 
         # Ego's position and heading with respect to the map's coordinate system.
@@ -199,26 +207,7 @@ def _dist_to_obstacles(
     return func
 
 
-def _gap_between_vehicles(
-    interest: str,
-) -> Callable[[RoadMap, Done, Observation], Costs]:
-    mean = 0
-    step = 0
-    interest = interest
-
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
-        nonlocal mean, step, interest
-
-        # TODO: Cost function is to be designed.
-
-        j_gap = 0
-        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
-        return Costs(gap_between_vehicles=0)
-
-    return func
-
-
-def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _jerk_linear() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
@@ -231,7 +220,9 @@ def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
     Neural Information Processing Systems, NeurIPS 2019, Vancouver, Canada.
     """
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal mean, step, jerk_linear_max
 
         jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
@@ -242,11 +233,13 @@ def _jerk_linear() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _lane_center_offset() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal mean, step
 
         if obs.events.off_road:
@@ -276,10 +269,12 @@ def _lane_center_offset() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _off_road() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _off_road() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     sum = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal sum
 
         sum = sum + obs.events.off_road
@@ -289,11 +284,13 @@ def _off_road() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _speed_limit() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal mean, step
 
         if obs.events.off_road:
@@ -321,11 +318,13 @@ def _speed_limit() -> Callable[[RoadMap, Done, Observation], Costs]:
     return func
 
 
-def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Costs]:
+def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     step = 0
     max_episode_steps = max_episode_steps
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal step, max_episode_steps
 
         step = step + 1
@@ -351,11 +350,99 @@ def _steps(max_episode_steps: int) -> Callable[[RoadMap, Done, Observation], Cos
     return func
 
 
-def _wrong_way() -> Callable[[RoadMap, Done, Observation], Costs]:
+def _vehicle_gap(
+    num_agents: int,
+    actor: str,
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+    mean = 0
+    step = 0
+    num_agents = num_agents
+    aoi = actor  # Actor of interest, i.e., aoi
+    vehicle_length = 4  # Units: m. Car length=3.68 m.
+    safe_separation = 1  # Units: seconds. Minimum separation time between two vehicles.
+    waypoint_spacing = 1  # Units: m. Assumption: Waypoints are spaced 1m apart.
+    max_column_length = (num_agents + 1) * vehicle_length * 3.5  # Units: m.
+    # Column length is the length of roadway a convoy of vehicles occupy,
+    # measured from the lead vehicle (i.e., actor of interest) to the trail
+    # vehicle. Here, num_agents is incremented by 1 to provide leeway for 1
+    # traffic vehicle within the convoy. Multiplied by 3.5 to account for
+    # vehicle separation distance while driving.
+    min_waypoints_length = int(np.ceil(max_column_length / waypoint_spacing))
+
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
+        nonlocal mean, step, num_agents, aoi, vehicle_length, safe_separation, waypoint_spacing, max_column_length, min_waypoints_length
+
+        if done == True:
+            return Costs(vehicle_gap=mean)
+
+        column_length = min(
+            (
+                num_agents * safe_separation * obs.ego_vehicle_state.speed
+                + num_agents
+                * vehicle_length
+                * 2  # Multiplied by 2 to provide leeway when speed = 0.
+            ),
+            max_column_length,
+        )
+
+        # Truncate all paths to be of the same length.
+        min_len = min(map(len, obs.waypoint_paths))
+        assert min_len >= min_waypoints_length, (
+            f"Expected waypoints length >= {min_waypoints_length}, but got "
+            f"waypoints length = {min_len}."
+        )
+        trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
+        waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
+        waypoints = np.array(waypoints, dtype=np.float64)
+        waypoints = np.pad(
+            waypoints, ((0, 0), (0, 0), (0, 1)), mode="constant", constant_values=0
+        )
+
+        # Find the nearest waypoint index to the actor of interest, if any.
+        lane_width = obs.waypoint_paths[0][0].lane_width
+        aoi_pos = vehicle_index.vehicle_position(aoi)
+        aoi_wp_ind, aoi_ind = nearest_waypoint(
+            matrix=waypoints,
+            points=np.array([aoi_pos]),
+            radius=lane_width,
+        )
+
+        if aoi_ind == None:
+            # Actor of interest not found.
+            j_gap = 1
+        elif aoi_wp_ind[1] * waypoint_spacing > column_length:
+            # Ego is outside of the maximum column length.
+            j_gap = 1
+        else:
+            # Find the nearest waypoint index to the ego.
+            ego_pos = obs.ego_vehicle_state.position
+            dist = np.linalg.norm(waypoints[:, 0, :] - ego_pos, axis=-1)
+            ego_wp_inds = np.where(dist == dist.min())[0]
+
+            if aoi_wp_ind[0] in ego_wp_inds:
+                # Ego is in the same lane as the actor of interest.
+                j_gap = (aoi_wp_ind[1] * waypoint_spacing - vehicle_length) / (
+                    column_length - vehicle_length
+                )
+            else:
+                # Ego is not in the same lane as the actor of interest.
+                j_gap = 1
+
+        mean, step = running_mean(prev_mean=mean, prev_step=step, new_val=j_gap)
+        return Costs(vehicle_gap=mean)
+
+    return func
+
+
+def _wrong_way() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
 
-    def func(road_map: RoadMap, done: Done, obs: Observation) -> Costs:
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
         nonlocal mean, step
         j_wrong_way = 0
         if obs.events.wrong_way:
@@ -373,22 +460,22 @@ class CostFuncsBase:
     running cost over time steps, for a given scenario."""
 
     # fmt: off
-    collisions: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _collisions
-    comfort: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_destination
-    dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, Done, Observation], Costs]] = _dist_to_obstacles
-    gap_between_vehicles: Callable[[str], Callable[[RoadMap, Done, Observation], Costs]] = _gap_between_vehicles
-    jerk_linear: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _jerk_linear
-    lane_center_offset: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _lane_center_offset
-    off_road: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _off_road
-    speed_limit: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _speed_limit
-    steps: Callable[[int], Callable[[RoadMap, Done, Observation], Costs]] = _steps
-    wrong_way: Callable[[], Callable[[RoadMap, Done, Observation], Costs]] = _wrong_way
+    collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
+    comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
+    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
+    jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
+    lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
+    off_road: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _off_road
+    speed_limit: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _speed_limit
+    steps: Callable[[int], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _steps
+    vehicle_gap: Callable[[int, str], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _vehicle_gap
+    wrong_way: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _wrong_way
     # fmt: on
 
 
 CostFuncs = NewType(
-    "CostFuncs", Dict[str, Callable[[RoadMap, Done, Observation], Costs]]
+    "CostFuncs", Dict[str, Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]]
 )
 
 

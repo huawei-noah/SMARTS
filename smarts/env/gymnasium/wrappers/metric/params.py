@@ -69,17 +69,6 @@ class DistToObstacles:
 
 
 @dataclass(frozen=True)
-class GapBetweenVehicles:
-    """Parameters for gap between vehicles cost function."""
-
-    active: bool = False
-    """If True, enables computation of coresponding cost function. Else, 
-    disabled.
-    """
-    interest: str = "Leader-007"
-
-
-@dataclass(frozen=True)
 class JerkLinear:
     """Parameters for jerk linear cost function."""
 
@@ -130,6 +119,18 @@ class Steps:
 
 
 @dataclass(frozen=True)
+class VehicleGap:
+    """Parameters for gap between vehicles cost function."""
+
+    active: bool = False
+    """If True, enables computation of coresponding cost function. Else, 
+    disabled.
+    """
+    actor: str = "Leader-007"
+    """Gap between ego and the specified `actor` is computed."""
+
+
+@dataclass(frozen=True)
 class WrongWay:
     """Parameters for wrong way cost function."""
 
@@ -147,10 +148,10 @@ class Params:
     comfort: Comfort = Comfort()
     dist_to_destination: DistToDestination = DistToDestination()
     dist_to_obstacles: DistToObstacles = DistToObstacles()
-    gap_between_vehicles: GapBetweenVehicles = GapBetweenVehicles()
     jerk_linear: JerkLinear = JerkLinear()
     lane_center_offset: LaneCenterOffset = LaneCenterOffset()
     off_road: OffRoad = OffRoad()
     speed_limit: SpeedLimit = SpeedLimit()
     steps: Steps = Steps()
+    vehicle_gap: VehicleGap = VehicleGap()
     wrong_way: WrongWay = WrongWay()
