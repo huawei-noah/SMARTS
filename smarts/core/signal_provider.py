@@ -21,7 +21,7 @@ from typing import Dict, Iterable, Optional, Set, Tuple
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
-from .provider import Provider, ProviderRecoveryFlags, ProviderState
+from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .scenario import Scenario
 from .signals import SignalLightState, SignalState
@@ -50,6 +50,9 @@ class SignalProvider(Provider):
         # (Then the action space could just be the desired SignalLightState.)
         return set()
 
+    def set_manager(self, manager: ProviderManager):
+        pass
+
     @property
     def _provider_state(self) -> ProviderState:
         return ProviderState(actors=list(self._my_signals.values()))
@@ -62,7 +65,8 @@ class SignalProvider(Provider):
         if scenario.traffic_history is None and not scenario.supports_sumo_traffic:
             for feature in self._road_map.dynamic_features:
                 if feature.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL:
-                    controlled_lanes = [feature.type_specific_info]
+                    feature_lane = feature.type_specific_info
+                    controlled_lanes = [feature_lane.lane_id]
                     self._my_signals[feature.feature_id] = SignalState(
                         actor_id=feature.feature_id,
                         actor_type="signal",

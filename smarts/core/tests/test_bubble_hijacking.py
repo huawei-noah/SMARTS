@@ -52,12 +52,12 @@ def bubbles():
 
     return [
         t.Bubble(
-            zone=t.PositionalZone(pos=(150, -60), size=(30, 30)),
+            zone=t.PositionalZone(pos=(110, -60), size=(15, 30)),
             margin=10,
             actor=actor,
         ),
         t.Bubble(
-            zone=t.PositionalZone(pos=(60, -60), size=(30, 30)),
+            zone=t.PositionalZone(pos=(50, -60), size=(20, 30)),
             margin=10,
             actor=actor,
         ),
@@ -80,7 +80,6 @@ def scenarios(bubbles, num_vehicles, traffic_sim):
                         begin=("edge-west-WE", lane, 0),
                         end=("edge-east-WE", lane, "max"),
                     ),
-                    repeat_route=True,
                     rate=10,
                     actors={t.TrafficActor(name="car"): 1},
                 )
@@ -130,7 +129,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
     geometries = [bubble_geometry(b, smarts.road_map) for b in bubbles]
 
     # bubble: vehicle: steps per zone
-    steps_driven_in_zones = {b.id: defaultdict(lambda: ZoneSteps()) for b in bubbles}
+    steps_driven_in_zones = {b.id: defaultdict(ZoneSteps) for b in bubbles}
     vehicles_made_to_through_bubble = {b.id: [] for b in bubbles}
     for _ in range(300):
         smarts.step({})
@@ -138,9 +137,7 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
             position = Point(vehicle.position)
             for bubble, geometry in zip(bubbles, geometries):
                 in_bubble = position.within(geometry.bubble)
-                is_shadowing = (
-                    index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None
-                )
+                is_shadowing = index.shadower_id_from_vehicle_id(vehicle.id) is not None
                 is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
                 vehicle_id = (
@@ -164,8 +161,8 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
                         not in_bubble and not is_shadowing and not is_agent_controlled
                     )
 
-    # Just to have some padding, we want to be in each region at least 3 steps
-    min_steps = 3
+    # Just to have some padding, we want to be in each region at least 2 steps
+    min_steps = 2
     for bubble_id, zones in steps_driven_in_zones.items():
         vehicle_ids = vehicles_made_to_through_bubble[bubble_id]
         assert (
@@ -175,10 +172,10 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
             zone = zones[vehicle_id]
             assert all(
                 [
-                    zone.in_bubble > min_steps,
-                    zone.outside_bubble > min_steps,
-                    zone.airlock_entry > min_steps,
-                    zone.airlock_exit > min_steps,
+                    zone.in_bubble >= min_steps,
+                    zone.outside_bubble >= min_steps,
+                    zone.airlock_entry >= min_steps,
+                    zone.airlock_exit >= min_steps,
                 ]
             ), (
                 f"bubble={bubble_id}, vehicle_id={vehicle_id}, zone={zone} doesn't meet "

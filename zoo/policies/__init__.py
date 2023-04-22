@@ -2,7 +2,6 @@ import importlib
 from pathlib import Path
 
 from smarts.core.agent_interface import (
-    RGB,
     AgentInterface,
     AgentType,
     DoneCriteria,

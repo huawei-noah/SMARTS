@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from enum import IntFlag
 from typing import List, Optional
 
-from .actor import ActorRole, ActorState
+from .actor import ActorState
 from .coordinates import Point
 from .road_map import RoadMap
 
@@ -45,7 +45,7 @@ class SignalState(ActorState):
 
     state: Optional[SignalLightState] = None
     stopping_pos: Optional[Point] = None
-    controlled_lanes: Optional[List[RoadMap.Lane]] = None
+    controlled_lanes: Optional[List[str]] = None
     last_changed: Optional[float] = None  # will be None if not known
 
     def __post_init__(self):

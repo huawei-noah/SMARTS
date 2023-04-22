@@ -624,9 +624,9 @@ class SumoTrafficSimulation(TrafficProvider):
     def _color_for_role(role: ActorRole) -> np.ndarray:
         if role == ActorRole.EgoAgent:
             return np.array(SceneColors.Agent.value[:3]) * 255
-        if role == ActorRole.SocialAgent:
+        elif role == ActorRole.SocialAgent:
             return np.array(SceneColors.SocialAgent.value[:3]) * 255
-        if role == ActorRole.Social:
+        elif role == ActorRole.Social:
             return np.array(SceneColors.SocialVehicle.value[:3]) * 255
         return np.array(SceneColors.SocialVehicle.value[:3]) * 255
 
@@ -706,7 +706,7 @@ class SumoTrafficSimulation(TrafficProvider):
         return SignalLightState.UNKNOWN
 
     def _create_signal_state(
-        self, sig_id: str, controlled_links: Sequence[Tuple[str, str, int]]
+        self, sig_id: str, controlled_links: Sequence[Tuple[str, str, str]]
     ) -> SignalState:
         incoming_lane_id = None
         controlled_lanes = []
@@ -714,7 +714,7 @@ class SumoTrafficSimulation(TrafficProvider):
             in_lane_id, out_lane_id, via_id = link
             via_lane = self._scenario.road_map.lane_by_id(via_id)
             assert via_lane
-            controlled_lanes.append(via_lane)
+            controlled_lanes.append(via_id)
             assert not incoming_lane_id or incoming_lane_id == in_lane_id
             incoming_lane_id = in_lane_id
         incoming_lane = self._scenario.road_map.lane_by_id(incoming_lane_id)
