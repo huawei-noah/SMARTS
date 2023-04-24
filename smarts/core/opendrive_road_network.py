@@ -431,18 +431,22 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                         road_bounding_box = [
                             (
                                 min(
-                                    road_bounding_box[0][0], lane.bounding_box.min_pt.x
+                                    road_bounding_box[0][0],
+                                    lane.bounding_box.min_pt.x,  # pytype: disable=attribute-error
                                 ),
                                 min(
-                                    road_bounding_box[0][1], lane.bounding_box.min_pt.y
+                                    road_bounding_box[0][1],
+                                    lane.bounding_box.min_pt.y,  # pytype: disable=attribute-error
                                 ),
                             ),
                             (
                                 max(
-                                    road_bounding_box[1][0], lane.bounding_box.max_pt.x
+                                    road_bounding_box[1][0],
+                                    lane.bounding_box.max_pt.x,  # pytype: disable=attribute-error
                                 ),
                                 max(
-                                    road_bounding_box[1][1], lane.bounding_box.max_pt.y
+                                    road_bounding_box[1][1],
+                                    lane.bounding_box.max_pt.y,  # pytype: disable=attribute-error
                                 ),
                             ),
                         ]
@@ -951,7 +955,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return self._lane_polygon
 
         @cached_property
-        def bounding_box(self) -> Optional[BoundingBox]:
+        def bounding_box(self) -> BoundingBox:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
             # XXX: This shoudn't be public.
             x_coordinates, y_coordinates = zip(*self.lane_polygon)

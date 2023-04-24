@@ -53,7 +53,8 @@ class RouteWithCache(RoadMap.Route):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def __hash__(self) -> int:
-        return self._cache_key
+        key: int = self._cache_key  # pytype: disable=annotation-type-mismatch
+        return key
 
     def __eq__(self, other) -> bool:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -99,7 +100,9 @@ class RouteWithCache(RoadMap.Route):
             return
 
         cache_key = self._cache_key
-        _route_sub_lengths[cache_key] = dict()
+        _route_sub_lengths[
+            cache_key
+        ] = dict()  # pytype: disable=container-type-mismatch
 
         def _backprop_length(
             bplane: RoadMap.Lane,
