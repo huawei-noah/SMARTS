@@ -306,7 +306,7 @@ class TrafficActor(Actor):
     @property
     def id(self) -> str:
         """The identifier tag of the traffic actor."""
-        return "actor-{}-{}".format(self.name, hash(self))
+        return "{}-{}".format(self.name, str(hash(self))[:6])
 
 
 @dataclass(frozen=True)
@@ -420,10 +420,10 @@ class Route:
     @property
     def id(self) -> str:
         """The unique id of this route."""
-        return "route-{}-{}-{}-".format(
+        return "{}-{}-{}".format(
             "_".join(map(str, self.begin)),
             "_".join(map(str, self.end)),
-            pickle_hash_int(self),
+            str(hash(self))[:6],
         )
 
     @property
@@ -485,9 +485,9 @@ class Flow:
     @property
     def id(self) -> str:
         """The unique id of this flow."""
-        return "flow-{}-{}-".format(
+        return "{}-{}".format(
             self.route.id,
-            str(pickle_hash_int(sorted(self.actors.items(), key=lambda a: a[0].name))),
+            str(hash(self))[:6],
         )
 
     def __hash__(self):
@@ -1114,7 +1114,7 @@ class Scenario:
     """Specifies the road map."""
     traffic: Optional[Dict[str, Traffic]] = None
     """Background traffic vehicle specification."""
-    ego_missions: Optional[Sequence[Mission]] = None
+    ego_missions: Optional[Sequence[Union[Mission, EndlessMission]]] = None
     """Ego agent missions."""
     social_agent_missions: Optional[
         Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]

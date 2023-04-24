@@ -147,7 +147,10 @@ class _ShowBaseInstance(ShowBase):
         self.__class__.__it__ = None
 
     def __del__(self):
-        self.destroy()
+        try:
+            self.destroy()
+        except (AttributeError, TypeError):
+            pass
 
     def setup_sim_root(self, simid: str):
         """Creates the simulation root node in the scene graph."""
@@ -194,6 +197,7 @@ class Renderer:
         self._road_map_np = None
         self._dashed_lines_np = None
         self._vehicle_nodes = {}
+        self._camera_nodes = {}
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
@@ -266,8 +270,10 @@ class Renderer:
         # Load map
         if self._road_map_np:
             self._log.debug(
-                "road_map={} already exists. Removing and adding a new "
-                "one from glb_path={}".format(self._road_map_np, map_path)
+                "road_map=%s already exists. Removing and adding a new "
+                "one from glb_path=%s",
+                self._road_map_np,
+                map_path,
             )
         map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
         np = self._root_np.attachNewNode("road_map")
@@ -323,9 +329,25 @@ class Renderer:
         assert self._is_setup
         self._showbase_instance.render_node(self._root_np)
 
+    def reset(self):
+        """Reset the render back to initialized state."""
+        self._vehicles_np.removeNode()
+        self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        self._vehicle_nodes = {}
+
     def step(self):
         """provided for non-SMARTS uses; normally not used by SMARTS."""
         self._showbase_instance.taskMgr.step()
+
+    def sync(self, sim_frame):
+        """Update the current state of the vehicles within the renderer."""
+        for vehicle_id, vehicle_state in sim_frame.vehicle_states.items():
+            self.update_vehicle_node(vehicle_id, vehicle_state.pose)
+
+        missing_vehicle_ids = set(self._vehicle_nodes) - set(sim_frame.vehicle_ids)
+
+        for vid in missing_vehicle_ids:
+            self.remove_vehicle_node(vid)
 
     def teardown(self):
         """Clean up internal resources."""
@@ -361,6 +383,8 @@ class Renderer:
         self, glb_model: str, vid: str, color: Union[Colors, SceneColors], pose: Pose
     ):
         """Create a vehicle node."""
+        if vid in self._vehicle_nodes:
+            return False
         with pkg_resources.path(models, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
@@ -376,6 +400,7 @@ class Renderer:
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
         self._vehicle_nodes[vid] = node_path
+        return True
 
     def begin_rendering_vehicle(self, vid: str, is_agent: bool):
         """Add the vehicle node to the scene graph"""
@@ -383,8 +408,7 @@ class Renderer:
         if not vehicle_path:
             self._log.warning("Renderer ignoring invalid vehicle id: %s", vid)
             return
-        # TAI: consider reparenting hijacked vehicles too?
-        vehicle_path.reparentTo(self._vehicles_np if is_agent else self._root_np)
+        vehicle_path.reparentTo(self._vehicles_np)
 
     def update_vehicle_node(self, vid: str, pose: Pose):
         """Move the specified vehicle node."""
@@ -399,9 +423,18 @@ class Renderer:
         """Remove a vehicle node"""
         vehicle_path = self._vehicle_nodes.get(vid, None)
         if not vehicle_path:
-            self._log.warning(f"Renderer ignoring invalid vehicle id: {vid}")
+            self._log.warning("Renderer ignoring invalid vehicle id: %s", vid)
             return
         vehicle_path.removeNode()
+        del self._vehicle_nodes[vid]
+
+    def camera_for_id(self, camera_id) -> "Renderer.OffscreenCamera":
+        """Get a camera by its id."""
+        camera = self._camera_nodes.get(camera_id)
+        assert (
+            camera is not None
+        ), f"Camera {camera_id} does not exist, have you created this camera?"
+        return camera
 
     class OffscreenCamera(NamedTuple):
         """A camera used for rendering images to a graphics buffer."""
@@ -511,4 +544,7 @@ class Renderer:
         # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
-        return Renderer.OffscreenCamera(camera_np, buffer, tex, self)
+        camera = Renderer.OffscreenCamera(camera_np, buffer, tex, self)
+        self._camera_nodes[name] = camera
+
+        return name

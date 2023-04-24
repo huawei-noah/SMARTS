@@ -36,6 +36,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.providers import MockProvider, MockTrafficProvider
+from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio import gen_scenario
 
 HEADING_CONSTANT = Heading(-math.pi / 2)
@@ -273,7 +274,7 @@ def test_bubble_manager_state_change(
     ],
 ):
     state_at_position, _, _ = transition_cases
-    index = smarts.vehicle_index
+    index: VehicleIndex = smarts.vehicle_index
 
     vehicle_id = "vehicle"
 
@@ -287,7 +288,7 @@ def test_bubble_manager_state_change(
         # Providers must be disjoint
         if index.vehicle_is_hijacked(vehicle_id):
             mock_provider.clear_next_provider_state()
-            agent_id = index.actor_id_from_vehicle_id(vehicle_id)
+            agent_id = index.owner_id_from_vehicle_id(vehicle_id)
             interface = smarts.agent_manager.agent_interface_for_agent_id(agent_id)
             while (
                 index.vehicle_is_hijacked(vehicle_id)

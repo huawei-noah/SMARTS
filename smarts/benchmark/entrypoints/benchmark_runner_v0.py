@@ -21,16 +21,21 @@
 # THE SOFTWARE.
 import logging
 import os
+import pprint
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict
 
 import gymnasium as gym
 import psutil
 import ray
 
 from smarts.benchmark.driving_smarts import load_config
+from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.utils.logging import suppress_output
-from smarts.env.gymnasium.wrappers.metrics import Metrics, Score
+from smarts.env.gymnasium.wrappers.metric.formula import Score
+from smarts.env.gymnasium.wrappers.metric.metrics import Metrics
+from smarts.env.gymnasium.wrappers.metric.types import Record
+from smarts.env.gymnasium.wrappers.metric.utils import multiply, op_dataclass
 from smarts.zoo import registry as agent_registry
 
 LOG_WORKERS = False
@@ -52,20 +57,20 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
         agent_interface=agent_registry.make(locator=agent_locator).interface,
         **env_config["kwargs"],
     )
-    env = Metrics(env)
+    env = Metrics(env, formula_path=env_config["metric_formula"])
     agents = {
         agent_id: agent_registry.make_agent(locator=agent_locator)
         for agent_id in env.agent_ids
     }
 
-    observation, info = env.reset()
+    obs, info = env.reset()
     current_resets = 0
     try:
         while current_resets < episodes:
             try:
                 action = {
-                    agent_id: agents[agent_id].act(obs)
-                    for agent_id, obs in observation.items()
+                    agent_id: agents[agent_id].act(agent_obs)
+                    for agent_id, agent_obs in obs.items()
                 }
                 # assert env.action_space.contains(action)
             except Exception:
@@ -76,14 +81,14 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
                     raise
                 terminated, truncated = False, True
             else:
-                observation, reward, terminated, truncated, info = env.step(action)
+                obs, reward, terminated, truncated, info = env.step(action)
             if terminated["__all__"] or truncated["__all__"]:
                 current_resets += 1
-                observation, info = env.reset()
+                obs, info = env.reset()
     finally:
-        score = env.score()
+        records = env.records()
         env.close()
-    return name, score
+    return name, records
 
 
 def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers):
@@ -97,9 +102,9 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers
         for name, env_config in env_args.items():
             if len(unfinished_refs) >= max_queued_tasks:
                 ready_refs, unfinished_refs = ray.wait(unfinished_refs, num_returns=1)
-                for name, score in ray.get(ready_refs):
-                    yield name, score
-            print(f"Evaluating {name}...")
+                for name, records in ray.get(ready_refs):
+                    yield name, records
+            print(f"\nEvaluating {name}...")
             unfinished_refs.append(
                 _eval_worker.remote(
                     name=name,
@@ -109,23 +114,23 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers
                     error_tolerant=ERROR_TOLERANT,
                 )
             )
-        for name, score in ray.get(unfinished_refs):
-            yield name, score
+        for name, records in ray.get(unfinished_refs):
+            yield name, records
     finally:
         ray.shutdown()
 
 
 def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
     for name, env_config in env_args.items():
-        print(f"Evaluating {name}...")
-        name, score = _eval_worker_local(
+        print(f"\nEvaluating {name}...")
+        name, records = _eval_worker_local(
             name=name,
             env_config=env_config,
             episodes=benchmark_args["eval_episodes"],
             agent_locator=agent_locator,
             error_tolerant=ERROR_TOLERANT,
         )
-        yield name, score
+        yield name, records
 
 
 def benchmark(benchmark_args, agent_locator, log_workers=False):
@@ -135,59 +140,69 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
         agent_loctor(str): Locator string for the registered agent.
         debug_log(bool): Whether the benchmark should log to stdout.
     """
-    print(f"Starting `{benchmark_args['name']}` benchmark.")
-    debug = benchmark_args.get("debug", {})
+    print(f"\n\n<-- Starting `{benchmark_args['name']}` benchmark -->\n")
     message = benchmark_args.get("message")
     if message is not None:
         print(message)
-    env_args = {}
+
+    debug = benchmark_args.get("debug", {})
+    iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
+
+    root_dir = Path(__file__).resolve().parents[3]
     for env_name, env_config in benchmark_args["envs"].items():
+        metric_formula = (
+            root_dir / x
+            if (x := env_config.get("metric_formula", None)) != None
+            else None
+        )
+
+        env_args = {}
         for scenario in env_config["scenarios"]:
-            scenario_path = str(Path(__file__).resolve().parents[3] / scenario)
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
             env_args[f"{env_name}-{scenario}"] = dict(
                 env=env_config["loc"],
-                scenario=scenario_path,
+                scenario=str(root_dir / scenario),
                 kwargs=kwargs,
+                metric_formula=metric_formula,
             )
-    named_scores = []
 
-    iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
+        records_cumulative: Dict[str, Dict[str, Record]] = {}
+        for name, records in iterator(
+            env_args=env_args,
+            benchmark_args=benchmark_args,
+            agent_locator=agent_locator,
+            log_workers=log_workers,
+        ):
+            records_cumulative.update(records)
+            print(f"\nScoring {name} ...")
 
-    for name, score in iterator(
-        env_args=env_args,
-        benchmark_args=benchmark_args,
-        agent_locator=agent_locator,
-        log_workers=log_workers,
-    ):
-        named_scores.append((name, score))
-        print(f"Scoring {name}...")
+        score = _get_score(records=records_cumulative, metric_formula=metric_formula)
+        print("\nSCORE")
+        pprint.pprint(score)
 
-    def format_one_line_scores(named_scores: List[Tuple[str, Score]]):
-        name_just = 30
-        headers = "SCENARIO".ljust(name_just) + "SCORE"
-        return (
-            headers
-            + "\n"
-            + "\n".join(
-                f"- {name}:".ljust(name_just) + f"{score}"
-                for name, score in named_scores
+    print("\n<-- Evaluation complete -->\n")
+
+
+def _get_score(records: Dict[str, Dict[str, Record]], metric_formula: Path) -> Score:
+    # Convert averaged records into sum of records.
+    records_sum = {}
+    for scen, agents in records.items():
+        records_sum[scen] = {}
+        for agent, data in agents.items():
+            records_sum[scen][agent] = Record(
+                costs=op_dataclass(data.costs, data.counts.episodes, multiply),
+                counts=data.counts,
             )
-        )
 
-    def format_scores_total(named_scores: List[Tuple[str, Score]], scenario_count):
-        score_sum = Score(*[sum(f) for f in zip(*[score for _, score in named_scores])])
-        return "\n".join(
-            f"- {k}: {v/scenario_count}" for k, v in score_sum._asdict().items()
-        )
+    # Import scoring formula
+    import_module_from_file("custom_formula", metric_formula)
+    from custom_formula import Formula
 
-    print("Evaluation complete...")
-    print()
-    print(format_one_line_scores(named_scores))
-    print()
-    print("`Driving SMARTS` averaged result:")
-    print(format_scores_total(named_scores, len(env_args)))
+    formula = Formula()
+
+    score = formula.score(records_sum=records_sum)
+    return score
 
 
 def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):

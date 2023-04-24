@@ -34,7 +34,7 @@ from smarts.core.plan import Mission
 from smarts.core.road_map import Waypoint
 
 _LIDAR_SHP = 300
-_NEIGHBOR_SHP = 10
+_NEIGHBOR_SHP = 50
 _WAYPOINT_SHP = (12, 80)
 _SIGNALS_SHP = (3,)
 _POSITION_SHP = (3,)
@@ -184,7 +184,6 @@ def _format_signals(signals: List[SignalObservation]):
 def _format_neighborhood_vehicle_states(
     neighborhood_vehicle_states: List[VehicleObservation],
 ):
-    ## TODO MTA: Add in the vehicle ids
     des_shp = _NEIGHBOR_SHP
     rcv_shp = len(neighborhood_vehicle_states)
     pad_shp = 0 if des_shp - rcv_shp < 0 else des_shp - rcv_shp
