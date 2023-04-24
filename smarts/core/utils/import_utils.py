@@ -24,8 +24,8 @@ import sys
 from pathlib import Path
 
 
-def import_module_from_file(module_name, path: Path):
-    """Attempt to load a module dynamically from a file."""
+def import_module_from_file(module_name: str, path: Path):
+    """Attempt to load a module dynamically from a path as `module_name`."""
     path = str(path)  # Get one directory up
     if path not in sys.path:
         sys.path.append(path)

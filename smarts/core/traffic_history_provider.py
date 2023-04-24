@@ -195,7 +195,7 @@ class TrafficHistoryProvider(TrafficProvider):
                         # XXX: note that tls.lane_id may or may not correspond to a lane_id in the RoadMap
                         # Here we assume that it will at least be part of the naming scheme somehow.
                         if str(tls.lane_id) in feat_lane.lane_id:
-                            controlled_lanes.append(feat_lane)
+                            controlled_lanes.append(feat_lane.lane_id)
                 signals.append(
                     SignalState(
                         actor_id=actor_id,
@@ -209,7 +209,7 @@ class TrafficHistoryProvider(TrafficProvider):
                     )
                 )
         except:
-            pass
+            raise
 
         return ProviderState(actors=vehicles + signals)
 

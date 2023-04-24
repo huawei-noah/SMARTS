@@ -67,7 +67,6 @@ def scenarios(bubble, traffic_sim):
                         begin=("west", lane_idx, 0),
                         end=("east", lane_idx, "max"),
                     ),
-                    repeat_route=True,
                     rate=50,
                     actors={
                         t.TrafficActor("car"): 1,
@@ -134,7 +133,7 @@ def test_boids(smarts, scenarios, bubble):
         for vehicle in index.vehicles:
             position = Point(vehicle.position)
             in_bubble = position.within(geometry.bubble)
-            is_shadowing = index.shadow_actor_id_from_vehicle_id(vehicle.id) is not None
+            is_shadowing = index.shadower_id_from_vehicle_id(vehicle.id) is not None
             is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
 
             vehicle_id = (
@@ -145,13 +144,11 @@ def test_boids(smarts, scenarios, bubble):
             zone_steps = steps_driven_in_zones[vehicle_id]
             if position.within(geometry.bubble):
                 zone_steps.in_bubble += 1
-                hijacked_actor_ids.append(index.actor_id_from_vehicle_id(vehicle.id))
+                hijacked_actor_ids.append(index.owner_id_from_vehicle_id(vehicle.id))
                 assert in_bubble and not is_shadowing and is_agent_controlled
             elif position.within(geometry.airlock_entry):
                 zone_steps.airlock_entry += 1
-                shadowed_actor_ids.append(
-                    index.shadow_actor_id_from_vehicle_id(vehicle.id)
-                )
+                shadowed_actor_ids.append(index.shadower_id_from_vehicle_id(vehicle.id))
                 assert not in_bubble and is_shadowing and not is_agent_controlled
             elif position.within(geometry.airlock_exit):
                 zone_steps.airlock_exit += 1

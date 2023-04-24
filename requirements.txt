@@ -43,7 +43,7 @@ h5py==3.8.0
 hyperlink==21.0.0
 idna==3.4
 ijson==3.2.0.post0
-importlib-metadata==6.5.0
+importlib-metadata==6.6.0
 importlib-resources==5.12.0
 incremental==22.10.0
 iniconfig==2.0.0
@@ -87,8 +87,8 @@ psutil==5.9.5
 py==1.11.0
 py-cpuinfo==9.0.0
 py-spy==0.3.14
-pyasn1==0.4.8
-pyasn1-modules==0.2.8
+pyasn1==0.5.0
+pyasn1-modules==0.3.0
 pybullet==3.0.6
 pydantic==1.10.7
 Pygments==2.15.1
@@ -123,11 +123,11 @@ tensorboardX==2.6
 tensorflow==2.12.0
 tensorflow-estimator==2.12.0
 tensorflow-io-gcs-filesystem==0.32.0
-termcolor==2.2.0
+termcolor==2.3.0
 tomli==2.0.1
 torch==1.4.0
 torchvision==0.5.0
-tornado==6.3
+tornado==6.3.1
 trimesh==3.9.29
 Twisted==22.10.0
 typing_extensions==4.5.0
@@ -138,7 +138,7 @@ wcwidth==0.2.6
 websocket-client==1.5.1
 Werkzeug==2.2.3
 wrapt==1.14.1
-yarl==1.8.2
+yarl==1.9.1
 yattag==1.15.1
 zipp==3.15.0
 zope.interface==6.0
