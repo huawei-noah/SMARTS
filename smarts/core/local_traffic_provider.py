@@ -27,11 +27,10 @@ import xml.etree.ElementTree as XET
 from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
 import numpy as np
-from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box

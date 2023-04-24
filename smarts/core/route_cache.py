@@ -21,10 +21,8 @@
 import logging
 import math
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from typing import Dict, List, Optional, Sequence, Set, Tuple
-
-from cached_property import cached_property
 
 from .road_map import RoadMap
 

@@ -22,13 +22,12 @@ import heapq
 import logging
 import random
 import time
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
-from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 

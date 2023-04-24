@@ -26,7 +26,7 @@ import os
 import random
 import sqlite3
 from contextlib import closing, nullcontext
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from typing import (
     Dict,
     Generator,
@@ -38,8 +38,6 @@ from typing import (
     TypeVar,
     Union,
 )
-
-from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions
 from smarts.core.utils.math import radians_to_vec

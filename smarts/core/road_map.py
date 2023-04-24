@@ -25,11 +25,10 @@ import math
 from bisect import bisect
 from dataclasses import dataclass
 from enum import IntEnum
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-from cached_property import cached_property
 from shapely.geometry import LineString
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon

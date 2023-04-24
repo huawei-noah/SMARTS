@@ -20,10 +20,9 @@
 
 import logging
 import weakref
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from typing import Iterable, Optional, Set
 
-from cached_property import cached_property
 from shapely.geometry import Polygon
 
 from .actor import ActorRole, ActorState

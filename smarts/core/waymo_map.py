@@ -26,13 +26,12 @@ import time
 from collections import defaultdict, deque
 from copy import deepcopy
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import rtree
-from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 

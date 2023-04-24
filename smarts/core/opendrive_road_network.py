@@ -26,13 +26,12 @@ import random
 import time
 from bisect import bisect
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
-from cached_property import cached_property
 
 from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 

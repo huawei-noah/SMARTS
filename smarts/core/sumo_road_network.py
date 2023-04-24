@@ -20,13 +20,12 @@
 import logging
 import os
 import random
-from functools import lru_cache
+from functools import lru_cache, cached_property
 from pathlib import Path
 from subprocess import check_output
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
-from cached_property import cached_property
 from shapely.geometry import Point as shPoint
 from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap

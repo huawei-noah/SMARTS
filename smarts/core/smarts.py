@@ -21,10 +21,10 @@ import importlib.resources as pkg_resources
 import logging
 import os
 import warnings
+from functools import cached_property
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
-from cached_property import cached_property
 
 from envision import types as envision_types
 from envision.client import Client as EnvisionClient

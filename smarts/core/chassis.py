@@ -21,11 +21,11 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
+from functools import cached_property
 from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import yaml
-from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
