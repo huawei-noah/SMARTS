@@ -688,7 +688,7 @@ class _TrafficActor:
 
     def update_route(self, route: RouteWithCache):
         """Update the route (sequence of road_ids) this actor will attempt to take.
-        A unique route_key is provided for referencing the route cache in he owner provider.
+        A unique route_key is provided for referencing the route cache in the owner provider.
         """
         self._route = route
         self._route.add_to_cache()
