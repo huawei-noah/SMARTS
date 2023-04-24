@@ -196,7 +196,7 @@ def _format_neighborhood_vehicle_states(
             "lane_index": np.zeros((des_shp,), dtype=np.int8),
             "position": np.zeros((des_shp, 3), dtype=np.float64),
             "speed": np.zeros((des_shp,), dtype=np.float32),
-            "interest": np.zeros((des_shp,), dtype=np.bool8),
+            "interest": np.zeros((des_shp,), dtype=np.int8),
         }
 
     neighborhood_vehicle_states = [
@@ -220,7 +220,7 @@ def _format_neighborhood_vehicle_states(
     lane_index = np.array(lane_index, dtype=np.int8)
     pos = np.array(pos, dtype=np.float64)
     speed = np.array(speed, dtype=np.float32)
-    interest = np.array(interest, dtype=np.bool8)
+    interest = np.array(interest, dtype=np.int8)
 
     # fmt: off
     box = np.pad(box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
@@ -714,9 +714,7 @@ neighborhood_vehicle_states_space_format = StandardSpaceFormat(
             "speed": gym.spaces.Box(
                 low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32
             ),
-            "interest": gym.spaces.Box(
-                low=0, high=1, shape=(_NEIGHBOR_SHP,), dtype=np.bool8
-            ),
+            "interest": gym.spaces.MultiBinary(_NEIGHBOR_SHP),
         }
     ),
 )
