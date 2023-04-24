@@ -59,7 +59,7 @@ def large_observation():
             reached_goal=False,
             reached_max_episode_steps=False,
             agents_alive_done=False,
-            actors_alive_done=False,
+            interest_done=False,
         ),
         ego_vehicle_state=EgoVehicleObservation(
             id="AGENT-007-07a0ca6e",

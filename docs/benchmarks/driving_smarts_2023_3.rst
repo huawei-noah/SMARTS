@@ -18,7 +18,7 @@ Objective is to develop a single-ego policy capable of controlling a single ego 
 
 Each ego is supposed to track and follow its specified leader (i.e., lead vehicle) in a single file or in a 
 platoon fashion. The name identifier of the lead vehicle to be followed is given to the ego through the configuration
-of the :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
+of the :attr:`~smarts.core.agent_interface.InterestDoneCriteria.actors_of_interest` attribute.
 
 .. figure:: ../_static/driving_smarts_2023/vehicle_following.png
 

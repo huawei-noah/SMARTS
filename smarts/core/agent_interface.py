@@ -194,21 +194,14 @@ class AgentsAliveDoneCriteria:
 
 
 @dataclass(frozen=True)
-class ActorsAliveDoneCriteria:
-    """Require actors to persist."""
+class InterestDoneCriteria:
+    """Require scenario marked interest actors to exist."""
 
     actors_filter: Tuple[str, ...] = ()
-    """Actors that should exist to continue this agent."""
+    """Interface defined interest actors that should exist to continue this agent."""
 
-    strict: bool = True
-    """If strict the agent will be done instantly if a target actor is not available
-    immediately.
-    """
-
-
-@dataclass(frozen=True)
-class ScenarioInterestDoneCriteria:
-    """Require scenario marked interest actors to exist."""
+    include_scenario_marked: bool = True
+    """If scenario marked interest actors should be considered as interest vehicles."""
 
     strict: bool = False
     """If strict the agent will be done instantly if an actor of interest is not available
@@ -248,10 +241,13 @@ class DoneCriteria:
     """
     agents_alive: Optional[AgentsAliveDoneCriteria] = None
     """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
-    actors_alive: Optional[ActorsAliveDoneCriteria] = None
-    """If set, triggers the ego agent to be done based on actors existing in the simulation."""
-    interest: Optional[ScenarioInterestDoneCriteria] = None
+    interest: Optional[InterestDoneCriteria] = None
     """If set, triggers when there are no interest vehicles left existing in the simulation."""
+
+    @property
+    def actors_alive(self):
+        """Deprecated. Use interest."""
+        raise NameError("Deprecated. Use interest.")
 
 
 @dataclass

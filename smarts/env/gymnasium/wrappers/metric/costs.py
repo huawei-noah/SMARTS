@@ -336,7 +336,7 @@ def _steps(
         if not done:
             return Costs(steps=-1)
 
-        if obs.events.reached_goal or obs.events.actors_alive_done:
+        if obs.events.reached_goal or obs.events.interest_done:
             return Costs(steps=step / max_episode_steps)
         elif (
             len(obs.events.collisions) > 0
@@ -347,7 +347,7 @@ def _steps(
         else:
             raise CostError(
                 "Expected reached_goal, collisions, off_road, "
-                "max_episode_steps, or actors_alive_done, to be true "
+                "max_episode_steps, or interest_done, to be true "
                 f"on agent done, but got events: {obs.events}."
             )
 

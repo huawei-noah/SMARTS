@@ -579,10 +579,10 @@ distance_travelled_space_format = StandardSpaceFormat(
 )
 
 
-events_actors_alive_done_space_format = StandardSpaceFormat(
-    lambda obs: np.int64(obs.events.actors_alive_done),
+events_interest_done_space_format = StandardSpaceFormat(
+    lambda obs: np.int64(obs.events.interest_done),
     lambda _: True,
-    "actors_alive_done",
+    "interest_done",
     _DISCRETE2_SPACE,
 )
 
@@ -854,7 +854,7 @@ ego_vehicle_state_space_format = StandardCompoundSpaceFormat(
 
 events_space_format = StandardCompoundSpaceFormat(
     space_generators=[
-        events_actors_alive_done_space_format,
+        events_interest_done_space_format,
         events_agents_alive_done_space_format,
         events_collisions_space_format,
         events_not_moving_space_format,
@@ -965,8 +965,8 @@ class ObservationSpacesFormatter:
 
             A dictionary of event markers.
             "events": dict({
-                "actors_alive_done":
-                    1 if `DoneCriteria.actors_alive` is triggered, else 0.
+                "interest_done":
+                    1 if `DoneCriteria.interest` is triggered, else 0.
                 "agents_alive_done":
                     1 if `DoneCriteria.agents_alive` is triggered, else 0.
                 "collisions":
