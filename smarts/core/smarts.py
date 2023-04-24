@@ -20,6 +20,7 @@
 import importlib.resources as pkg_resources
 import logging
 import os
+import re
 import warnings
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
@@ -76,6 +77,7 @@ logging.basicConfig(
     level=logging.ERROR,
 )
 
+_DEFAULT_PATTERN = re.compile("")
 MAX_PYBULLET_FREQ = 240
 
 
@@ -1381,7 +1383,6 @@ class SMARTS(ProviderManager):
     ) -> List[VehicleState]:
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
-        from smarts.core.sensors import Sensors
 
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
         return neighborhood_vehicles_around_vehicle(
@@ -1680,4 +1681,7 @@ class SMARTS(ProviderManager):
             vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
+            interest_filter=self.scenario.metadata.get(
+                "actor_of_interest_re_filter", _DEFAULT_PATTERN
+            ),
         )

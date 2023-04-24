@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
@@ -55,6 +56,7 @@ class SimulationFrame:
     vehicle_sensors: Dict[str, Dict[str, Any]]
 
     sensor_states: Any
+    interest_filter: re.Pattern
     # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None
     _ground_bullet_id: Optional[str] = None
@@ -73,6 +75,28 @@ class SimulationFrame:
     def actor_states_by_id(self) -> Dict[str, ActorState]:
         """Get actor states paired by their ids."""
         return {a_s.actor_id: a_s for a_s in self.actor_states}
+
+    @cached_property
+    def _interest_actors(self) -> Dict[str, ActorState]:
+        """Get the actor states of actors that are marked as of interest."""
+        if self.interest_filter.pattern:
+            return {
+                a_s.actor_id: a_s
+                for a_s in self.actor_states
+                if self.interest_filter.match(a_s.actor_id)
+            }
+        return {}
+
+    def actor_is_interest(self, actor_id) -> bool:
+        """Determine if the actor is of interest.
+
+        Args:
+            actor_id (str): The id of the actor to test.
+
+        Returns:
+            bool: If the actor is of interest.
+        """
+        return actor_id in self._interest_actors
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""

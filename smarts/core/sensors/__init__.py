@@ -70,7 +70,9 @@ ROAD_ID_CONSTANT = "off_road"
 LANE_INDEX_CONSTANT = -1
 
 
-def _make_vehicle_observation(road_map, neighborhood_vehicle):
+def _make_vehicle_observation(
+    road_map, neighborhood_vehicle: VehicleState, sim_frame: SimulationFrame
+):
     nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
     if nv_lane:
         nv_road_id = nv_lane.road.road_id
@@ -91,6 +93,7 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
         lane_id=nv_lane_id,
         lane_index=nv_lane_index,
         lane_position=None,
+        interest=sim_frame.actor_is_interest(neighborhood_vehicle.actor_id),
     )
 
 
@@ -262,7 +265,9 @@ class Sensors:
             for nv in neighborhood_vehicle_states_sensor(
                 vehicle_state, sim_frame.vehicle_states.values()
             ):
-                veh_obs = _make_vehicle_observation(sim_local_constants.road_map, nv)
+                veh_obs = _make_vehicle_observation(
+                    sim_local_constants.road_map, nv, sim_frame
+                )
                 lane_position_sensor = vehicle_sensors.get("lane_position_sensor")
                 nv_lane_pos = None
                 if veh_obs.lane_id is not LANE_ID_CONSTANT and lane_position_sensor:
