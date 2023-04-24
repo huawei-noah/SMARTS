@@ -77,7 +77,7 @@ class SimulationFrame:
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
     @cached_property
-    def _interest_actors(self) -> Dict[str, ActorState]:
+    def interest_actors(self) -> Dict[str, ActorState]:
         """Get the actor states of actors that are marked as of interest."""
         if self.interest_filter.pattern:
             return {
@@ -96,7 +96,7 @@ class SimulationFrame:
         Returns:
             bool: If the actor is of interest.
         """
-        return actor_id in self._interest_actors
+        return actor_id in self.interest_actors
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""

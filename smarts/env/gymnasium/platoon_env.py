@@ -163,7 +163,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         wrong_way=False,
         not_moving=False,
         actors_alive=ActorsAliveDoneCriteria(
-            actors_of_interest=("Leader-007",),
+            actors_filter=("Leader-007",),
             strict=True,
         ),
     )

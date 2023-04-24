@@ -197,10 +197,20 @@ class AgentsAliveDoneCriteria:
 class ActorsAliveDoneCriteria:
     """Require actors to persist."""
 
-    actors_of_interest: Tuple[str, ...] = ()
+    actors_filter: Tuple[str, ...] = ()
     """Actors that should exist to continue this agent."""
 
     strict: bool = True
+    """If strict the agent will be done instantly if a target actor is not available
+    immediately.
+    """
+
+
+@dataclass(frozen=True)
+class ScenarioInterestDoneCriteria:
+    """Require scenario marked interest actors to exist."""
+
+    strict: bool = False
     """If strict the agent will be done instantly if an actor of interest is not available
     immediately.
     """
@@ -240,7 +250,7 @@ class DoneCriteria:
     """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
     actors_alive: Optional[ActorsAliveDoneCriteria] = None
     """If set, triggers the ego agent to be done based on actors existing in the simulation."""
-    interest: bool = False
+    interest: Optional[ScenarioInterestDoneCriteria] = None
     """If set, triggers when there are no interest vehicles left existing in the simulation."""
 
 

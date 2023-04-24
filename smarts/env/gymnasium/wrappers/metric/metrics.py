@@ -195,7 +195,7 @@ class MetricsBase(gym.Wrapper):
                 ].done_criteria.actors_alive
                 if isinstance(actors_alive, ActorsAliveDoneCriteria):
                     end_pos, dist_tot = _get_sumo_smarts_dist(
-                        vehicle_name=actors_alive.actors_of_interest[0],
+                        vehicle_name=actors_alive.actors_filter[0],
                         traffic_sims=self.env.smarts.traffic_sims,
                         road_map=self._road_map,
                     )
@@ -397,7 +397,7 @@ def _check_env(agent_interfaces: Dict[str, AgentInterface], params: Params):
         if (
             params.dist_to_destination.active
             and isinstance(actors_alive, ActorsAliveDoneCriteria)
-            and len(actors_alive.actors_of_interest) != 1
+            and len(actors_alive.actors_filter) != 1
         ):
             raise AttributeError(
                 (

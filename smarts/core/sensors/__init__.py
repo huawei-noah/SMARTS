@@ -24,7 +24,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
-from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
+from smarts.core.agent_interface import (
+    ActorsAliveDoneCriteria,
+    AgentsAliveDoneCriteria,
+    ScenarioInterestDoneCriteria,
+)
 from smarts.core.coordinates import Heading, Point
 from smarts.core.events import Events
 from smarts.core.observations import (
@@ -105,14 +109,24 @@ class SensorState:
         self._plan_frame = plan_frame
         self._step = 0
         self._seen_interest_actors = False
+        self._seen_alive_actors = False
 
     def step(self):
         """Update internal state."""
         self._step += 1
 
     @property
+    def seen_alive_actors(self) -> bool:
+        """If an agents alive actor has been spotted before."""
+        return self._seen_alive_actors
+
+    @seen_alive_actors.setter
+    def seen_alive_actors(self, value: bool):
+        self._seen_alive_actors = value
+
+    @property
     def seen_interest_actors(self) -> bool:
-        """If a relevant actor has been spotted before."""
+        """If an interest actor has been spotted before."""
         return self._seen_interest_actors
 
     @seen_interest_actors.setter
@@ -519,25 +533,42 @@ class Sensors:
     def _actors_alive_done_check(
         cls,
         vehicle_ids,
-        sensor_state,
+        sensor_state: SensorState,
         actors_alive: Optional[ActorsAliveDoneCriteria],
     ):
         if actors_alive is None:
             return False
 
-        sensor_state: SensorState = sensor_state
-
         pattern = re.compile(
-            "|".join(rf"(?:{aoi})" for aoi in actors_alive.actors_of_interest)
+            "|".join(rf"(?:{aoi})" for aoi in actors_alive.actors_filter)
         )
-        ## TODO optimization to get vehicles that were added and removed last step
-        ## TODO second optimization to check for already known vehicles
+        ## TODO optimization to only get vehicles that were removed last step
         for vehicle_id in vehicle_ids:
             # get vehicles by pattern
             if pattern.match(vehicle_id):
-                sensor_state.seen_interest_actors = True
+                sensor_state.seen_alive_actors = True
                 return False
-        if actors_alive.strict or sensor_state.seen_interest_actors:
+        if actors_alive.strict or sensor_state.seen_alive_actors:
+            # if agent requires the actor to exist immediately
+            # OR if previously seen relevant actors but no actors match anymore
+            return True
+
+        ## if never seen a relevant actor
+        return False
+
+    @classmethod
+    def _interest_done_check(
+        cls,
+        interest_actors,
+        sensor_state: SensorState,
+        scenario_interest: Optional[ScenarioInterestDoneCriteria],
+    ):
+        if scenario_interest is None:
+            return False
+
+        if len(interest_actors):
+            return True
+        if scenario_interest.strict or sensor_state.seen_interest_actors:
             # if agent requires the actor to exist immediately
             # OR if previously seen relevant actors but no actors match anymore
             return True
@@ -587,6 +618,9 @@ class Sensors:
         )
         actors_alive_done = cls._actors_alive_done_check(
             sim_frame.vehicle_ids, sensor_state, done_criteria.actors_alive
+        )
+        interest_done = cls._interest_done_check(
+            sim_frame.interest_actors, sensor_state, done_criteria.interest
         )
 
         done = not sim_frame.resetting and (
