@@ -71,7 +71,10 @@ LANE_INDEX_CONSTANT = -1
 
 
 def _make_vehicle_observation(
-    road_map, neighborhood_vehicle: VehicleState, sim_frame: SimulationFrame
+    road_map,
+    neighborhood_vehicle: VehicleState,
+    sim_frame: SimulationFrame,
+    interest_extension: Optional[re.Pattern],
 ):
     nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
     if nv_lane:
@@ -93,7 +96,9 @@ def _make_vehicle_observation(
         lane_id=nv_lane_id,
         lane_index=nv_lane_index,
         lane_position=None,
-        interest=sim_frame.actor_is_interest(neighborhood_vehicle.actor_id),
+        interest=sim_frame.actor_is_interest(
+            neighborhood_vehicle.actor_id, extension=interest_extension
+        ),
     )
 
 
@@ -272,11 +277,18 @@ class Sensors:
         )
         if neighborhood_vehicle_states_sensor:
             neighborhood_vehicle_states = []
+            interface = sim_frame.agent_interfaces.get(agent_id)
+            interest_pattern = (
+                interface.done_criteria.interest.actors_pattern
+                if interface is not None
+                and interface.done_criteria.interest is not None
+                else None
+            )
             for nv in neighborhood_vehicle_states_sensor(
                 vehicle_state, sim_frame.vehicle_states.values()
             ):
                 veh_obs = _make_vehicle_observation(
-                    sim_local_constants.road_map, nv, sim_frame
+                    sim_local_constants.road_map, nv, sim_frame, interest_pattern
                 )
                 lane_position_sensor = vehicle_sensors.get("lane_position_sensor")
                 nv_lane_pos = None
@@ -533,20 +545,10 @@ class Sensors:
         sensor_state: SensorState,
         interest_criteria: Optional[InterestDoneCriteria],
     ):
-        if interest_criteria is None:
+        if len(interest_actors) > 0:
+            sensor_state.seen_alive_actors = True
             return False
 
-        pattern = re.compile(
-            "|".join(rf"(?:{aoi})" for aoi in interest_criteria.actors_filter)
-        )
-        if interest_criteria.include_scenario_marked and len(interest_actors):
-            return True
-        ## TODO optimization to only get vehicles that were removed last step
-        for vehicle_id in vehicle_ids:
-            # get vehicles by pattern
-            if pattern.match(vehicle_id):
-                sensor_state.seen_alive_actors = True
-                return False
         if interest_criteria.strict or sensor_state.seen_interest_actors:
             # if agent requires the actor to exist immediately
             # OR if previously seen relevant actors but no actors match anymore
@@ -597,9 +599,9 @@ class Sensors:
         )
         interest_done = cls._interest_done_check(
             sim_frame.vehicle_ids,
-            sim_frame.interest_actors,
+            sim_frame.interest_actors(interface.done_criteria.interest.actors_pattern),
             sensor_state,
-            done_criteria.interest,
+            interest_criteria=interface.done_criteria.interest,
         )
 
         done = not sim_frame.resetting and (

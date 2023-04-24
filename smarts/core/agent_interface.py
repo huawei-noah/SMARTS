@@ -17,9 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import re
 import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
+from functools import cached_property
 from typing import List, Optional, Tuple, Union
 
 from smarts.core.controllers.action_space_type import ActionSpaceType
@@ -207,6 +209,11 @@ class InterestDoneCriteria:
     """If strict the agent will be done instantly if an actor of interest is not available
     immediately.
     """
+
+    @cached_property
+    def actors_pattern(self) -> re.Pattern:
+        """The expression match pattern for actors covered by this interface specifically."""
+        return re.compile("|".join(rf"(?:{aoi})" for aoi in self.actors_filter))
 
 
 @dataclass(frozen=True)

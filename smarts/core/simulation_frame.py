@@ -22,6 +22,7 @@
 import logging
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set
 
 from cached_property import cached_property
@@ -76,18 +77,31 @@ class SimulationFrame:
         """Get actor states paired by their ids."""
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
-    @cached_property
-    def interest_actors(self) -> Dict[str, ActorState]:
-        """Get the actor states of actors that are marked as of interest."""
+    @lru_cache
+    def interest_actors(self, extension: Optional[re.Pattern] = None) -> bool:
+        """Get the actor states of actors that are marked as of interest.
+
+        Args:
+            extension (re.Pattern): A matching for interest actors not defined in scenario.
+        """
+
+        _matchers: List[re.Pattern] = []
         if self.interest_filter.pattern:
+            _matchers.append(self.interest_filter)
+        if extension is not None and extension.pattern:
+            _matchers.append(extension)
+
+        if len(_matchers) == 0:
             return {
                 a_s.actor_id: a_s
                 for a_s in self.actor_states
-                if self.interest_filter.match(a_s.actor_id)
+                if any(bool(m.match(a_s.actor_id)) for m in _matchers)
             }
         return {}
 
-    def actor_is_interest(self, actor_id) -> bool:
+    def actor_is_interest(
+        self, actor_id, extension: Optional[re.Pattern] = None
+    ) -> bool:
         """Determine if the actor is of interest.
 
         Args:
@@ -96,7 +110,7 @@ class SimulationFrame:
         Returns:
             bool: If the actor is of interest.
         """
-        return actor_id in self.interest_actors
+        return actor_id in self.interest_actors(extension)
 
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
