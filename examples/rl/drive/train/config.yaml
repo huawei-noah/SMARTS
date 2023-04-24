@@ -4,7 +4,7 @@ smarts:
   seed: 42
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:driving-smarts-v2023  
-  scenarios: 
+  scenarios:
     - scenarios/sumo/intersections/1_to_1lane_left_turn_c_agents_1
 
   # PPO algorithm
