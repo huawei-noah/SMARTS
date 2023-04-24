@@ -25,7 +25,7 @@ import math
 from bisect import bisect
 from dataclasses import dataclass
 from enum import IntEnum
-from functools import lru_cache, cached_property
+from functools import cached_property, lru_cache
 from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np

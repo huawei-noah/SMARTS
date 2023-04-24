@@ -22,7 +22,7 @@ import heapq
 import logging
 import random
 import time
-from functools import lru_cache, cached_property
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 

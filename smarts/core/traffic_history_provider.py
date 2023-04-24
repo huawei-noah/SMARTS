@@ -20,7 +20,7 @@
 
 import logging
 import weakref
-from functools import lru_cache, cached_property
+from functools import cached_property, lru_cache
 from typing import Iterable, Optional, Set
 
 from shapely.geometry import Polygon
