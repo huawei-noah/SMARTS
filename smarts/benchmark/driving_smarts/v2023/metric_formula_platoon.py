@@ -87,9 +87,9 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
         +-------------------+--------+-----------------------------------------------------------+
-        | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
+        | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
         +-------------------+--------+-----------------------------------------------------------+
-        | Rules             | [0, 1] | Traffic rules compliance. The higher, the better.         |
+        | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
@@ -127,8 +127,8 @@ class Formula(FormulaBase):
         overall = (
             0.50 * (1 - dist_to_destination)
             + 0.25 * (1 - vehicle_gap)
-            + 0.20 * humanness
-            + 0.05 * rules
+            + 0.20 * (1 - humanness)
+            + 0.05 * (1 - rules)
         )
 
         return Score(
@@ -136,8 +136,8 @@ class Formula(FormulaBase):
                 "overall": overall,
                 "dist_to_destination": dist_to_destination,
                 "vehicle_gap": vehicle_gap,
-                "humanness": humanness,
-                "rules": rules,
+                "humanness_error": humanness,
+                "rule_violation": rules,
             }
         )
 
@@ -145,10 +145,10 @@ class Formula(FormulaBase):
 def _humanness(costs: Costs) -> float:
     humanness = np.array([costs.comfort, costs.lane_center_offset])
     humanness = np.mean(humanness, dtype=float)
-    return 1 - humanness
+    return humanness
 
 
 def _rules(costs: Costs) -> float:
     rules = np.array([costs.speed_limit, costs.wrong_way])
     rules = np.mean(rules, dtype=float)
-    return 1 - rules
+    return rules

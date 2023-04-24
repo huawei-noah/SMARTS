@@ -17,3 +17,5 @@
 8) Jerk value computation needs to be fixed.
 
 9) Write server code to host evaluation.
+
+10) Change all metrics to minimise. Such as Rules violation and humanness error.
