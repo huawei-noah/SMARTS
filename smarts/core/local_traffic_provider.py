@@ -352,6 +352,7 @@ class LocalTrafficProvider(TrafficProvider):
         self._my_actors = dict()
         self._other_actors = dict()
         self._reserved_areas = dict()
+        self._flows = dict()
 
     def destroy(self):
         pass
@@ -687,7 +688,8 @@ class _TrafficActor:
 
     def update_route(self, route: RouteWithCache):
         """Update the route (sequence of road_ids) this actor will attempt to take.
-        A unique route_key is provided for referencing the route cache in he owner provider."""
+        A unique route_key is provided for referencing the route cache in the owner provider.
+        """
         self._route = route
         self._route.add_to_cache()
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
