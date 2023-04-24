@@ -627,7 +627,7 @@ class SMARTS(ProviderManager):
         ), f"Vehicle has already been hijacked: {vehicle_id}"
         assert not vehicle_id in self.vehicle_index.agent_vehicle_ids(), (
             f"`{agent_id}` can't hijack vehicle that is already controlled by an agent"
-            f" `{self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)}`: {vehicle_id}"
+            f" `{self.agent_manager.agent_for_vehicle(vehicle_id)}`: {vehicle_id}"
         )
 
         # Switch control to agent
