@@ -20,7 +20,7 @@ contourpy==1.0.7
 coverage==7.2.3
 cycler==0.11.0
 dm-tree==0.1.8
-eclipse-sumo==1.16.0
+eclipse-sumo==1.17.0
 exceptiongroup==1.1.1
 execnet==1.9.0
 filelock==3.12.0
