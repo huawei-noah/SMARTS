@@ -65,7 +65,7 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     dyn_window = SlidingWindow(size=T_p)
     vehicle_pos = deque(maxlen=4)
     dt = 0.1
-    min_disp = 0.5
+    min_disp = 0.5 # Minimum displacement required to filter coordinate jitter. Units: m
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation

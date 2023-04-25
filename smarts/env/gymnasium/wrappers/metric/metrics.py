@@ -185,6 +185,10 @@ class MetricsBase(gym.Wrapper):
 
         _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
+        interest_actors = self.env.smarts.cached_frame.interest_actors()
+        print(interest_actors)
+        input("------------------------")
+
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
             end_pos = Point(0, 0, 0)
