@@ -64,78 +64,39 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     step = 0
     dyn_window = SlidingWindow(size=T_p)
     vehicle_pos = deque(maxlen=4)
-    vehicle_pos_full = deque(maxlen=4)
     dt = 0.1
+    min_disp = 0.5
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window, vehicle_pos, dt
+        nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window, vehicle_pos, dt, min_disp
 
         step = step + 1
-        # vehicle_pos.appendleft(np.floor(obs.ego_vehicle_state.position[:2]))
-        vehicle_pos_full.appendleft(obs.ego_vehicle_state.position[:2])
-        vehicle_pos.appendleft(trunc(obs.ego_vehicle_state.position[:2], decs=1))
-        pos = list(vehicle_pos)
-        print("Step", step)
-        print("Vehicle_pos_full", vehicle_pos_full)
-        print("Vehicle_pos", vehicle_pos)
-        print("Pos",pos)
-
-        if len(vehicle_pos) <= 2:
-            jerk = 0
-            acc = 0
-
-        # speed_t_1 = disp_t_1/dt
-        # acc_t_2 = (speed_t_2 - speed_t_1)/dt 
-        # jerk = (acc_t_3 - acc_t_2)/dt
-        # acc = acc_t_3
-
-        disp = []
+        vehicle_pos.appendleft(obs.ego_vehicle_state.position[:2])
+        jerk = 0
+        acc = 0
         if len(vehicle_pos) >= 3:
             disp_0 = np.linalg.norm(vehicle_pos[0]-vehicle_pos[1])
             disp_1 = np.linalg.norm(vehicle_pos[1]-vehicle_pos[2])
-            speed_0 = (disp_0 - disp_1) / dt
-            if len(vehicle_pos) == 4:
+            speed_0 = disp_0 / dt
+            speed_1 = disp_1 / dt
+            if (valid_0 := (disp_0 > min_disp and disp_1 > min_disp)):
+                acc = (speed_0 - speed_1)/dt 
+            print("Valid_0: ",valid_0)
+            if valid_0 and len(vehicle_pos) == 4:
                 disp_2 = np.linalg.norm(vehicle_pos[2]-vehicle_pos[3])
-                speed_1 = (disp_1-disp_2)/dt
+                speed_2 = disp_2/dt
+                acc_1 = (speed_1 - speed_2) / dt
+                print("Disp2", disp_2)
+                if disp_2 > min_disp:
+                    jerk = (acc - acc_1) / dt
 
-        acc = 
-
-        if len(vehicle_pos) >= 2:
-            disp_t_2 = np.linalg.norm(vehicle_pos[0]-vehicle_pos[1])
-            speed_t_2 = disp_t_2/dt
-
-
-            print("ssssss")
-            input() 
-
-
-        jerk=0
-        acc=0
-
-        # if len(vehicle_pos) >=3:
-        #     speed_t_2 = (np.linalg.norm(vehicle_pos[1]-vehicle_pos[2]))/dt
-        #     speed_t_3 = (np.linalg.norm(vehicle_pos[0]-vehicle_pos[1]))/dt
-        #     acc_t_3 = (speed_t_3 - speed_t_2)/dt 
-
-
-
-        #     print("speed_t_1",speed_t_1)
-        #     print("acc_t_2",acc_t_2)
-        #     print("acc",acc)
-        #     print("jerk",jerk)
-        #     else:
-        #         jerk = 0
-        #         acc = acc_t_3
-        #         print("acc",acc)
-        #         print("jerk",jerk)
-
-
-        #     print("speed_t_3",speed_t_3)
-        #     print("speed_t_2",speed_t_2)
-        #     print("acc_t_3",acc_t_3)
-
+        print("Step", step)
+        print("Vehicle_pos", vehicle_pos)
+        print("Acc", acc)
+        print("Jerk", jerk)
+        input("-------------------------------------------------")
 
         if jerk > 0.1 or acc > 0.1:
             raise Exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")

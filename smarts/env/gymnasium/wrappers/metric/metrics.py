@@ -397,7 +397,7 @@ def _check_env(agent_interfaces: Dict[str, AgentInterface], params: Params):
         if (
             params.dist_to_destination.active
             and isinstance(interest_criteria, InterestDoneCriteria)
-            and len(interest_criteria.actors_filter) != 1
+            and len(interest_criteria.actors_filter) >= 1
         ):
             raise AttributeError(
                 (
@@ -434,7 +434,7 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
             )
         ):
             raise AttributeError(
-                "{0} has an unsupported goal type {1} and actors alive done criteria {2} "
+                "{0} has an unsupported goal type {1} and interest done criteria {2} "
                 "combination.".format(
                     agent_name, goal_types[agent_name], interest_criteria
                 )
