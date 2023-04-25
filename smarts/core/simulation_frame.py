@@ -78,7 +78,9 @@ class SimulationFrame:
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
     @lru_cache(1)
-    def interest_actors(self, extension: Optional[re.Pattern] = None) -> bool:
+    def interest_actors(
+        self, extension: Optional[re.Pattern] = None
+    ) -> Dict[str, ActorState]:
         """Get the actor states of actors that are marked as of interest.
 
         Args:
@@ -134,7 +136,7 @@ class SimulationFrame:
         return self.step_count ^ hash(self.fixed_timestep) ^ hash(self.map_spec)
 
     def __hash__(self):
-        return self._hash        
+        return self._hash
 
     def __post_init__(self):
         if logger.isEnabledFor(logging.DEBUG):
