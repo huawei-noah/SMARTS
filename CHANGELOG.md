@@ -50,6 +50,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Benchmark listing may specify specialised metric formula for each benchmark.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
 - Renamed GapBetweenVehicles cost to VehicleGap cost in metric module.
+- Camera metadata now uses radians instead of degrees.
+- The `Panda3d` implementation of `Renderer` has been extracted from the interface and moved to `smarts.p3d`.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
