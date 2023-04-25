@@ -41,7 +41,7 @@ class SimulationFrame:
     actor_states: List[ActorState]
     agent_vehicle_controls: Dict[str, str]
     agent_interfaces: Dict[str, AgentInterface]
-    ego_ids: str
+    ego_ids: Set[str]
     pending_agent_ids: List[str]
     elapsed_sim_time: float
     fixed_timestep: float
@@ -77,7 +77,7 @@ class SimulationFrame:
         """Get actor states paired by their ids."""
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
-    @lru_cache
+    @lru_cache(1)
     def interest_actors(self, extension: Optional[re.Pattern] = None) -> bool:
         """Get the actor states of actors that are marked as of interest.
 
@@ -128,6 +128,13 @@ class SimulationFrame:
         return [
             c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
+
+    @cached_property
+    def _hash(self):
+        return self.step_count ^ hash(self.fixed_timestep) ^ hash(self.map_spec)
+
+    def __hash__(self):
+        return self._hash        
 
     def __post_init__(self):
         if logger.isEnabledFor(logging.DEBUG):

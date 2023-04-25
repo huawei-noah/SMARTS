@@ -540,7 +540,6 @@ class Sensors:
     @classmethod
     def _interest_done_check(
         cls,
-        vehicle_ids,
         interest_actors,
         sensor_state: SensorState,
         interest_criteria: Optional[InterestDoneCriteria],
@@ -572,6 +571,7 @@ class Sensors:
         interface = sim_frame.agent_interfaces[agent_id]
         done_criteria = interface.done_criteria
         event_config = interface.event_configuration
+        interest = interface.done_criteria.interest
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(
@@ -597,12 +597,13 @@ class Sensors:
         agents_alive_done = cls._agents_alive_done_check(
             sim_frame.ego_ids, sim_frame.potential_agent_ids, done_criteria.agents_alive
         )
-        interest_done = cls._interest_done_check(
-            sim_frame.vehicle_ids,
-            sim_frame.interest_actors(interface.done_criteria.interest.actors_pattern),
-            sensor_state,
-            interest_criteria=interface.done_criteria.interest,
-        )
+        interest_done = False
+        if interest:
+            cls._interest_done_check(
+                sim_frame.interest_actors(interest.actors_pattern),
+                sensor_state,
+                interest_criteria=interest,
+            )
 
         done = not sim_frame.resetting and (
             (is_off_road and done_criteria.off_road)
