@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) 2021. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
-import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--renderer-debug-mode",
+        type=str,
+        default="warning",
+        help="Set to change level of rendering logs: [spam|debug|info|warning|error]",
+    )
