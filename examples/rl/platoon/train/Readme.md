@@ -18,4 +18,4 @@
 
 9) Write server code to host evaluation.
 
-10) Change all metrics to minimise. Such as Rules violation and humanness error.
+12) Change platoon name to vehicle following.
