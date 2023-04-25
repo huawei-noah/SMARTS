@@ -544,7 +544,7 @@ class Sensors:
         sensor_state: SensorState,
         interest_criteria: Optional[InterestDoneCriteria],
     ):
-        if len(interest_actors) > 0:
+        if interest_criteria is None or len(interest_actors) > 0:
             sensor_state.seen_alive_actors = True
             return False
 
