@@ -93,7 +93,7 @@ class SimulationFrame:
         if extension is not None and extension.pattern:
             _matchers.append(extension)
 
-        if len(_matchers) == 0:
+        if len(_matchers) > 0:
             return {
                 a_s.actor_id: a_s
                 for a_s in self.actor_states
