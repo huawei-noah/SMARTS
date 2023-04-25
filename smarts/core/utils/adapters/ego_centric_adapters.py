@@ -88,7 +88,7 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
     replace_metadata = lambda cam_obs: _replace(
         cam_obs,
         metadata=_replace(
-            cam_obs.metadata, camera_position=(0, 0, 0), camera_heading_in_degrees=0
+            cam_obs.metadata, camera_position=(0, 0, 0), camera_heading=0
         ),
     )
 

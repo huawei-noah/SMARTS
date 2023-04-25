@@ -20,7 +20,7 @@ contourpy==1.0.7
 coverage==7.2.3
 cycler==0.11.0
 dm-tree==0.1.8
-eclipse-sumo==1.16.0
+eclipse-sumo==1.17.0
 exceptiongroup==1.1.1
 execnet==1.9.0
 filelock==3.12.0
@@ -77,7 +77,7 @@ packaging==23.1
 Panda3D==1.10.9
 panda3d-gltf==0.13
 panda3d-simplepbr==0.10
-pandas==2.0.0
+pandas==2.0.1
 Pillow==9.5.0
 pkgutil_resolve_name==1.3.10
 pluggy==1.0.0
@@ -89,7 +89,7 @@ py-cpuinfo==9.0.0
 py-spy==0.3.14
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
-pybullet==3.0.6
+pybullet==3.2.5
 pydantic==1.10.7
 Pygments==2.15.1
 pyparsing==3.0.9
@@ -136,9 +136,9 @@ urllib3==1.26.15
 visdom==0.2.4
 wcwidth==0.2.6
 websocket-client==1.5.1
-Werkzeug==2.2.3
+Werkzeug==2.3.0
 wrapt==1.14.1
-yarl==1.9.1
+yarl==1.9.2
 yattag==1.15.1
 zipp==3.15.0
 zope.interface==6.0

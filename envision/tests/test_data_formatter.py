@@ -373,7 +373,7 @@ def smarts():
         # envision.teardown = MagicMock()
         smarts = SMARTS(
             agents,
-            traffic_sim=SumoTrafficSimulation(),
+            traffic_sims=[SumoTrafficSimulation()],
             envision=envision,
         )
         yield smarts

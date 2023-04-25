@@ -1,4 +1,4 @@
-# Copyright (C) 2022. Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,34 +17,3 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-import os
-from pathlib import Path
-
-from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Mission, RandomRoute, Route, Scenario, SocialAgentActor
-
-
-def gen_actors(id_):
-    return [
-        SocialAgentActor(
-            name=f"non-interactive-agent-50-v0_{id_}",
-            agent_locator="zoo.policies:non-interactive-agent-v0",
-            policy_kwargs={"speed": 50},
-        )
-    ]
-
-
-def to_missions(agent_num):
-    missions = {}
-    for i in range(0, agent_num):
-        missions[f"group-{i}"] = tuple(
-            (gen_actors(i), [Mission(route=RandomRoute())]),
-        )
-    return missions
-
-
-gen_scenario(
-    Scenario(social_agent_missions=to_missions(10)),
-    output_dir=Path(__file__).parent,
-)

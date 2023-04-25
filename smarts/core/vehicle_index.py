@@ -651,11 +651,13 @@ class VehicleIndex:
         surface_patches,
         initial_speed=None,
         boid=False,
+        *,
+        vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""
         vehicle = Vehicle.build_agent_vehicle(
             sim=sim,
-            vehicle_id=agent_id,
+            vehicle_id=vehicle_id or agent_id,
             agent_interface=agent_interface,
             plan=plan,
             vehicle_filepath=filepath,
