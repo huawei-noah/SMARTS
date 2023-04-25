@@ -41,6 +41,7 @@ from smarts.core.observations import (
     Vias,
 )
 from smarts.core.plan import Plan, PlanFrame
+from smarts.core.renderer_base import RendererBase
 from smarts.core.road_map import RoadMap
 from smarts.core.sensor import (
     AccelerometerSensor,
@@ -143,7 +144,7 @@ class SensorResolver:
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
-        renderer,
+        renderer: RendererBase,
         bullet_client,
     ):
         """Generate observations
@@ -152,7 +153,7 @@ class SensorResolver:
             sim_frame (SimulationFrame): The simulation frame.
             sim_local_constants (SimulationLocalConstants): Constraints defined by the local simulator.
             agent_ids (Set[str]): The agents to run.
-            renderer (Renderer): The renderer to use.
+            renderer (RendererBase): The renderer to use.
             bullet_client (Any): The bullet client. This parameter is likely to be removed.
         """
         raise NotImplementedError()

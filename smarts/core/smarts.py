@@ -32,6 +32,7 @@ from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
+from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
@@ -124,7 +125,7 @@ class SMARTS(ProviderManager):
         self._is_setup = False
         self._is_destroyed = False
         self._scenario: Optional[Scenario] = None
-        self._renderer = None
+        self._renderer: RendererBase = None
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
         self._external_provider: ExternalProvider = None
@@ -957,13 +958,13 @@ class SMARTS(ProviderManager):
         )
 
     @property
-    def renderer(self):
+    def renderer(self) -> RendererBase:
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
             from .utils.custom_exceptions import RendererException
 
             try:
-                from .renderer import Renderer
+                from smarts.p3d.renderer import Renderer
 
                 self._renderer = Renderer(self._sim_id)
             except ImportError as e:
@@ -1381,7 +1382,6 @@ class SMARTS(ProviderManager):
     ) -> List[VehicleState]:
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
-        from smarts.core.sensors import Sensors
 
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
         return neighborhood_vehicles_around_vehicle(
