@@ -136,9 +136,9 @@ urllib3==1.26.15
 visdom==0.2.4
 wcwidth==0.2.6
 websocket-client==1.5.1
-Werkzeug==2.2.3
+Werkzeug==2.3.0
 wrapt==1.14.1
-yarl==1.9.1
+yarl==1.9.2
 yattag==1.15.1
 zipp==3.15.0
 zope.interface==6.0
