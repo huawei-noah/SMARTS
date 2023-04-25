@@ -109,7 +109,7 @@ class CameraSensor(Sensor):
         )
 
     def teardown(self, **kwargs):
-        renderer: RendererBase = kwargs.get("renderer")
+        renderer: Optional[RendererBase] = kwargs.get("renderer")
         if not renderer:
             return
         camera = renderer.camera_for_id(self._camera_name)
