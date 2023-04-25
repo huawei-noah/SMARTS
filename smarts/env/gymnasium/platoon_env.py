@@ -25,9 +25,9 @@ from typing import Optional
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
-    ActorsAliveDoneCriteria,
     AgentInterface,
     DoneCriteria,
+    InterestDoneCriteria,
     NeighborhoodVehicles,
     Waypoints,
 )
@@ -55,7 +55,7 @@ def platoon_env(
     """Each ego is supposed to track and follow its specified leader (i.e., lead
     vehicle) in a single file or in a platoon fashion. The name of the lead vehicle
     to track is given to the ego through its
-    :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
+    :attr:`~smarts.core.agent_interface.InterestDoneCriteria.actors_of_interest` attribute.
     The episode ends for an ego when its assigned leader reaches the leader's
     destination. Egos do not have prior knowledge of their assigned leader's destination.
 
@@ -162,8 +162,8 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         on_shoulder=False,
         wrong_way=False,
         not_moving=False,
-        actors_alive=ActorsAliveDoneCriteria(
-            actors_of_interest=("Leader-007",),
+        interest=InterestDoneCriteria(
+            actors_filter=("Leader-007",),
             strict=True,
         ),
     )

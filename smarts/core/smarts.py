@@ -20,6 +20,7 @@
 import importlib.resources as pkg_resources
 import logging
 import os
+import re
 import warnings
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
@@ -77,6 +78,7 @@ logging.basicConfig(
     level=logging.ERROR,
 )
 
+_DEFAULT_PATTERN = re.compile("")
 MAX_PYBULLET_FREQ = 240
 
 
@@ -626,7 +628,7 @@ class SMARTS(ProviderManager):
         ), f"Vehicle has already been hijacked: {vehicle_id}"
         assert not vehicle_id in self.vehicle_index.agent_vehicle_ids(), (
             f"`{agent_id}` can't hijack vehicle that is already controlled by an agent"
-            f" `{self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)}`: {vehicle_id}"
+            f" `{self.agent_manager.agent_for_vehicle(vehicle_id)}`: {vehicle_id}"
         )
 
         # Switch control to agent
@@ -1680,4 +1682,7 @@ class SMARTS(ProviderManager):
             vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
+            interest_filter=self.scenario.metadata.get(
+                "actor_of_interest_re_filter", _DEFAULT_PATTERN
+            ),
         )

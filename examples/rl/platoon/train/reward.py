@@ -45,8 +45,8 @@ class Reward(gym.Wrapper):
                     agent_obs["events"]["collisions"] | agent_obs["events"]["off_road"]
                 ):
                     pass
-                elif agent_obs["events"]["actors_alive_done"]:
-                    print(f"{agent_id}: Actors alive done triggered.")
+                elif agent_obs["events"]["interest_done"]:
+                    print(f"{agent_id}: Interest done triggered.")
                 else:
                     print("Events: ", agent_obs["events"])
                     raise Exception("Episode ended for unknown reason.")
