@@ -25,6 +25,9 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
+from typing import Tuple
+
+import numpy as np
 
 from .coordinates import Pose
 
@@ -37,6 +40,54 @@ class DEBUG_MODE(IntEnum):
     INFO = 3
     WARNING = 4
     ERROR = 5
+
+
+@dataclass
+class OffscreenCamera:
+    """A camera used for rendering images to a graphics buffer."""
+
+    renderer: RendererBase
+
+    def wait_for_ram_image(self, img_format: str, retries=100):
+        """Attempt to acquire a graphics buffer."""
+        # Rarely, we see dropped frames where an image is not available
+        # for our observation calculations.
+        #
+        # We've seen this happen fairly reliable when we are initializing
+        # a multi-agent + multi-instance simulation.
+        #
+        # To deal with this, we can try to force a render and block until
+        # we are fairly certain we have an image in ram to return to the user
+        raise NotImplementedError
+
+    def update(self, pose: Pose, height: float):
+        """Update the location of the camera.
+        Args:
+            pose:
+                The pose of the camera target.
+            height:
+                The height of the camera above the camera target.
+        """
+        raise NotImplementedError
+
+    @property
+    def image_dimensions(self) -> Tuple[int, int]:
+        """The dimensions of the output camera image."""
+        raise NotImplementedError
+
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        """The position of the camera."""
+        raise NotImplementedError
+
+    @property
+    def heading(self) -> float:
+        """The heading of this camera."""
+        raise NotImplementedError
+
+    def teardown(self):
+        """Clean up internal resources."""
+        raise NotImplementedError
 
 
 class RendererBase:
@@ -109,41 +160,9 @@ class RendererBase:
         """Remove a vehicle node"""
         raise NotImplementedError
 
-    def camera_for_id(self, camera_id) -> "RendererBase.OffscreenCamera":
+    def camera_for_id(self, camera_id) -> OffscreenCamera:
         """Get a camera by its id."""
         raise NotImplementedError
-
-    @dataclass
-    class OffscreenCamera:
-        """A camera used for rendering images to a graphics buffer."""
-
-        renderer: RendererBase
-
-        def wait_for_ram_image(self, img_format: str, retries=100):
-            """Attempt to acquire a graphics buffer."""
-            # Rarely, we see dropped frames where an image is not available
-            # for our observation calculations.
-            #
-            # We've seen this happen fairly reliable when we are initializing
-            # a multi-agent + multi-instance simulation.
-            #
-            # To deal with this, we can try to force a render and block until
-            # we are fairly certain we have an image in ram to return to the user
-            raise NotImplementedError
-
-        def update(self, pose: Pose, height: float):
-            """Update the location of the camera.
-            Args:
-                pose:
-                    The pose of the camera target.
-                height:
-                    The height of the camera above the camera target.
-            """
-            raise NotImplementedError
-
-        def teardown(self):
-            """Clean up internal resources."""
-            raise NotImplementedError
 
     def build_offscreen_camera(
         self,
@@ -152,6 +171,6 @@ class RendererBase:
         width: int,
         height: int,
         resolution: float,
-    ) -> RendererBase.OffscreenCamera:
+    ) -> OffscreenCamera:
         """Generates a new offscreen camera."""
         raise NotImplementedError

@@ -30,9 +30,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from re import Pattern
 from threading import Lock
-from typing import Optional, Union
+from typing import Optional, Tuple, Union
 
 import gltf
+import numpy as np
 from direct.showbase.ShowBase import ShowBase
 
 # pytype: disable=import-error
@@ -59,7 +60,7 @@ from smarts.core import glsl, models
 from smarts.core.colors import Colors, SceneColors
 from smarts.core.coordinates import Pose
 from smarts.core.masks import RenderMasks
-from smarts.core.renderer_base import DEBUG_MODE, RendererBase
+from smarts.core.renderer_base import DEBUG_MODE, OffscreenCamera, RendererBase
 from smarts.core.scenario import Scenario
 
 # pytype: enable=import-error
@@ -174,6 +175,72 @@ class _ShowBaseInstance(ShowBase):
             self.taskMgr.mgr.poll()
             for np in hidden:
                 np.show()
+
+
+@dataclass
+class P3dOffscreenCamera(OffscreenCamera):
+    """A camera used for rendering images to a graphics buffer."""
+
+    camera_np: NodePath
+    buffer: GraphicsOutput
+    tex: Texture
+
+    def wait_for_ram_image(self, img_format: str, retries=100):
+        """Attempt to acquire a graphics buffer."""
+        # Rarely, we see dropped frames where an image is not available
+        # for our observation calculations.
+        #
+        # We've seen this happen fairly reliable when we are initializing
+        # a multi-agent + multi-instance simulation.
+        #
+        # To deal with this, we can try to force a render and block until
+        # we are fairly certain we have an image in ram to return to the user
+        for i in range(retries):
+            if self.tex.mightHaveRamImage():
+                break
+            self.renderer.log.debug(
+                f"No image available (attempt {i}/{retries}), forcing a render"
+            )
+            region = self.buffer.getDisplayRegion(0)
+            region.window.engine.renderFrame()
+
+        assert self.tex.mightHaveRamImage()
+        ram_image = self.tex.getRamImageAs(img_format)
+        assert ram_image is not None
+        return ram_image
+
+    def update(self, pose: Pose, height: float):
+        """Update the location of the camera.
+        Args:
+            pose:
+                The pose of the camera target.
+            height:
+                The height of the camera above the camera target.
+        """
+        pos, heading = pose.as_panda3d()
+        self.camera_np.setPos(pos[0], pos[1], height)
+        self.camera_np.lookAt(*pos)
+        self.camera_np.setH(heading)
+
+    @property
+    def image_dimensions(self):
+        return (self.tex.getXSize(), self.tex.getYSize())
+
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        return self.camera_np.getPos()
+
+    @property
+    def heading(self) -> float:
+        return np.radians(self.camera_np.getH())
+
+    def teardown(self):
+        """Clean up internal resources."""
+        self.camera_np.removeNode()
+        region = self.buffer.getDisplayRegion(0)
+        region.window.clearRenderTextures()
+        self.buffer.removeAllDisplayRegions()
+        self.renderer.remove_buffer(self.buffer)
 
 
 class Renderer(RendererBase):
@@ -419,66 +486,13 @@ class Renderer(RendererBase):
         vehicle_path.removeNode()
         del self._vehicle_nodes[vid]
 
-    def camera_for_id(self, camera_id) -> "Renderer.P3dOffscreenCamera":
+    def camera_for_id(self, camera_id) -> P3dOffscreenCamera:
         """Get a camera by its id."""
         camera = self._camera_nodes.get(camera_id)
         assert (
             camera is not None
         ), f"Camera {camera_id} does not exist, have you created this camera?"
         return camera
-
-    @dataclass
-    class P3dOffscreenCamera(RendererBase.OffscreenCamera):
-        """A camera used for rendering images to a graphics buffer."""
-
-        camera_np: NodePath
-        buffer: GraphicsOutput
-        tex: Texture
-
-        def wait_for_ram_image(self, img_format: str, retries=100):
-            """Attempt to acquire a graphics buffer."""
-            # Rarely, we see dropped frames where an image is not available
-            # for our observation calculations.
-            #
-            # We've seen this happen fairly reliable when we are initializing
-            # a multi-agent + multi-instance simulation.
-            #
-            # To deal with this, we can try to force a render and block until
-            # we are fairly certain we have an image in ram to return to the user
-            for i in range(retries):
-                if self.tex.mightHaveRamImage():
-                    break
-                self.renderer.log.debug(
-                    f"No image available (attempt {i}/{retries}), forcing a render"
-                )
-                region = self.buffer.getDisplayRegion(0)
-                region.window.engine.renderFrame()
-
-            assert self.tex.mightHaveRamImage()
-            ram_image = self.tex.getRamImageAs(img_format)
-            assert ram_image is not None
-            return ram_image
-
-        def update(self, pose: Pose, height: float):
-            """Update the location of the camera.
-            Args:
-                pose:
-                    The pose of the camera target.
-                height:
-                    The height of the camera above the camera target.
-            """
-            pos, heading = pose.as_panda3d()
-            self.camera_np.setPos(pos[0], pos[1], height)
-            self.camera_np.lookAt(*pos)
-            self.camera_np.setH(heading)
-
-        def teardown(self):
-            """Clean up internal resources."""
-            self.camera_np.removeNode()
-            region = self.buffer.getDisplayRegion(0)
-            region.window.clearRenderTextures()
-            self.buffer.removeAllDisplayRegions()
-            self.renderer.remove_buffer(self.buffer)
 
     def build_offscreen_camera(
         self,
@@ -487,7 +501,7 @@ class Renderer(RendererBase):
         width: int,
         height: int,
         resolution: float,
-    ) -> Renderer.P3dOffscreenCamera:
+    ) -> P3dOffscreenCamera:
         """Generates a new offscreen camera."""
         # setup buffer
         win_props = WindowProperties.size(width, height)
@@ -535,7 +549,7 @@ class Renderer(RendererBase):
         # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
-        camera = self.P3dOffscreenCamera(self, camera_np, buffer, tex)
+        camera = P3dOffscreenCamera(self, camera_np, buffer, tex)
         self._camera_nodes[name] = camera
 
         return name
