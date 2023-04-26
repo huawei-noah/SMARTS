@@ -91,6 +91,7 @@ jobs:
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip "setuptools<58.3.0"
+          pip install wheel==0.38.4
           pip install .[camera_obs,doc,train]
       - name: Build Sphinx documentation
         run: |
