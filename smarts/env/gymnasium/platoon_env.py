@@ -174,7 +174,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         wrong_way=False,
         not_moving=False,
         interest=InterestDoneCriteria(
-            actors_filter=("Leader-007",),
+            include_scenario_marked=True,
             strict=True,
         ),
     )

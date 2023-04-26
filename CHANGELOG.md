@@ -31,6 +31,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added baseline example, consisting of training, inference, and zoo agent registration, for the driving and turning tasks in Driving SMARTS 2023.1 and 2023.2 benchmarks, respectively. It uses RelativeTargetPose action space.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
 - Added an env wrapper for constraining the relative target pose action range.
+- Added a specialised metric formula module for Driving SMARTS 2023.1 and 2023.2 benchmark.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
@@ -56,6 +57,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed GapBetweenVehicles cost to VehicleGap cost in metric module.
 - Camera metadata now uses radians instead of degrees.
 - The `Panda3d` implementation of `Renderer` has been extracted from the interface and moved to `smarts.p3d`.
+- Made all metrics as functions to be minimised, except the overall score which is to be maximised.
+- Driving SMARTS 2023.3 benchmark and the metrics module now uses `actor_of_interest_re_filter` from scenario metadata to identify the lead vehicle.
 - Included `RelativeTargetPose` action space to the set of allowed action spaces in `platoon-v0` env.
 ### Deprecated
 ### Fixed
@@ -66,6 +69,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 - Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
 - Fixed CI tests for metrics.
+- Minor fix in regular expression compilation of `actor_of_interest_re_filter` from scenario metadata.
+- Fixed acceleration and jerk computation in comfort metric, by ignoring vehicle position jitters smaller than a threshold.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
