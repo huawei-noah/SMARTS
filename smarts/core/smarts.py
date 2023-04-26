@@ -78,7 +78,6 @@ logging.basicConfig(
     level=logging.ERROR,
 )
 
-_DEFAULT_PATTERN = re.compile("")
 MAX_PYBULLET_FREQ = 240
 
 
@@ -1684,7 +1683,7 @@ class SMARTS(ProviderManager):
             vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
-            interest_filter=self.scenario.metadata.get(
-                "actor_of_interest_re_filter", _DEFAULT_PATTERN
+            interest_filter=re.compile(
+                self.scenario.metadata.get("actor_of_interest_re_filter", "")
             ),
         )

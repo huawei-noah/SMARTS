@@ -80,8 +80,8 @@ class Formula(FormulaBase):
 
     def score(self, records_sum: Dict[str, Dict[str, Record]]) -> Score:
         """
-        Computes four sub-component scores, namely, "Distance to Destination",
-        "Time", "Humanness", "Rules", and one total combined score named
+        Computes four sub-component scores, namely, "DistanceToDestination",
+        "Time", "HumannessError", "RuleViolation", and one total combined score named
         "Overall" on the wrapped environment.
 
         +-------------------+--------+-----------------------------------------------------------+
@@ -93,14 +93,14 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
         +-------------------+--------+-----------------------------------------------------------+
-        | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
+        | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
         +-------------------+--------+-----------------------------------------------------------+
-        | Rules             | [0, 1] | Traffic rules compliance. The higher, the better.         |
+        | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
             Score: Contains "Overall", "DistToDestination", "Time",
-            "Humanness", and "Rules" scores.
+            "HumannessError", and "RuleViolation" scores.
         """
 
         costs_total = Costs()
@@ -127,14 +127,14 @@ class Formula(FormulaBase):
 
         # Compute sub-components of score.
         dist_to_destination = costs_final.dist_to_destination
-        humanness = _humanness(costs=costs_final)
-        rules = _rules(costs=costs_final)
+        humanness_error = _humanness_error(costs=costs_final)
+        rule_violation = _rule_violation(costs=costs_final)
         time = costs_final.steps
         overall = (
-            0.50 * (1 - dist_to_destination)
+            0.25 * (1 - dist_to_destination)
             + 0.25 * (1 - time)
-            + 0.20 * humanness
-            + 0.05 * rules
+            + 0.25 * (1 - humanness_error)
+            + 0.25 * (1 - rule_violation)
         )
 
         return Score(
@@ -142,21 +142,21 @@ class Formula(FormulaBase):
                 "overall": overall,
                 "dist_to_destination": dist_to_destination,
                 "time": time,
-                "humanness": humanness,
-                "rules": rules,
+                "humanness_error": humanness_error,
+                "rule_violation": rule_violation,
             }
         )
 
 
-def _humanness(costs: Costs) -> float:
-    humanness = np.array(
+def _humanness_error(costs: Costs) -> float:
+    humanness_error = np.array(
         [costs.dist_to_obstacles, costs.jerk_linear, costs.lane_center_offset]
     )
-    humanness = np.mean(humanness, dtype=float)
-    return 1 - humanness
+    humanness_error = np.mean(humanness_error, dtype=float)
+    return humanness_error
 
 
-def _rules(costs: Costs) -> float:
-    rules = np.array([costs.speed_limit, costs.wrong_way])
-    rules = np.mean(rules, dtype=float)
-    return 1 - rules
+def _rule_violation(costs: Costs) -> float:
+    rule_violation = np.array([costs.speed_limit, costs.wrong_way])
+    rule_violation = np.mean(rule_violation, dtype=float)
+    return rule_violation
