@@ -96,7 +96,7 @@ jobs:
           pip install wheel==0.38.4
           pip install .[camera_obs,doc,train]
           cd ${GITHUB_WORKSPACE}/docs
-          make html SPHINXOPTS="-W"
+          make html SPHINXOPTS="-W -T -E"
       - name: Check build output
         run: |
           cd $GITHUB_WORKSPACE
