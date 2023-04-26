@@ -297,7 +297,6 @@ class SMARTS(ProviderManager):
         # 2. Step all providers and harmonize state
         with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
-        self._last_provider_state = provider_state
         with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
 
@@ -315,7 +314,7 @@ class SMARTS(ProviderManager):
         # want these during their observation/reward computations.
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
-        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._sync_smarts_and_provider_actor_states(provider_state)
         self._sensor_manager.clean_up_sensors_for_actors(
             set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
         )
@@ -1332,6 +1331,13 @@ class SMARTS(ProviderManager):
 
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
+
+    def _sync_smarts_and_provider_actor_states(
+        self, external_provider_state: ProviderState
+    ):
+        self._last_provider_state = external_provider_state
+        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._last_provider_state.replace_actor_type(self._vehicle_states, VehicleState)
 
     @property
     def should_reset(self):
