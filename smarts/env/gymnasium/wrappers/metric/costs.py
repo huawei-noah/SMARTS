@@ -20,14 +20,15 @@
 
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Dict, List, NewType
+from typing import Callable, Dict, List, NewType, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import Heading, Point
+from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
+from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.params import Params
@@ -588,3 +589,37 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         return dist_tot
 
     return _get_dist(point_a, point_b)
+
+
+def _get_sumo_smarts_dist(
+    vehicle_name: str, traffic_sims: List[TrafficProvider], road_map: RoadMap
+) -> Tuple[Point, float]:
+    """Computes the end point and route distance of a SUMO or a SMARTS vehicle
+    specified by `vehicle_name`.
+
+    Args:
+        vehicle_name (str): Name of vehicle.
+        traffic_sims (List[TrafficProvider]): Traffic providers.
+        road_map (RoadMap): Underlying road map.
+
+    Returns:
+        Tuple[Point, float]: End point and route distance.
+    """
+    traffic_sim = [
+        traffic_sim
+        for traffic_sim in traffic_sims
+        if traffic_sim.manages_actor(vehicle_name)
+    ]
+    assert (
+        len(traffic_sim) == 1
+    ), "None or multiple, traffic sims contain the vehicle of interest."
+    traffic_sim = traffic_sim[0]
+    dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
+    end_pos = (
+        road_map.road_by_id(dest_road)
+        .lane_at_index(0)
+        .from_lane_coord(RefLinePoint(s=1e10))
+    )
+    route = traffic_sim.route_for_vehicle(vehicle_name)
+    dist_tot = route.road_length
+    return end_pos, dist_tot

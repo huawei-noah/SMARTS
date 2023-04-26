@@ -30,7 +30,7 @@ from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.traffic_provider import TrafficProvider
+
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
@@ -185,8 +185,10 @@ class MetricsBase(gym.Wrapper):
 
         _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
-        interest_actors = self.env.smarts.cached_frame.interest_actors()
+        interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
         print(interest_actors)
+        assert len(interest_actors) <= 1, ("Expected zero or one actor of"
+            f"interest, but got {len(interest_actors)} actor of interest.")
         input("------------------------")
 
         # Refresh the cost functions for every episode.
@@ -216,6 +218,7 @@ class MetricsBase(gym.Wrapper):
                 dist_to_destination={
                     "end_pos": end_pos,
                     "dist_tot": dist_tot,
+                    "actor_interest": "self"
                 },
                 dist_to_obstacles={
                     "ignore": self._params.dist_to_obstacles.ignore,
@@ -290,40 +293,6 @@ class MetricsBase(gym.Wrapper):
         """
         records_sum_copy = copy.deepcopy(self._records_sum)
         return self._formula.score(records_sum=records_sum_copy)
-
-
-def _get_sumo_smarts_dist(
-    vehicle_name: str, traffic_sims: List[TrafficProvider], road_map: RoadMap
-) -> Tuple[Point, float]:
-    """Computes the end point and route distance of a SUMO or a SMARTS vehicle
-    specified by `vehicle_name`.
-
-    Args:
-        vehicle_name (str): Name of vehicle.
-        traffic_sims (List[TrafficProvider]): Traffic providers.
-        road_map (RoadMap): Underlying road map.
-
-    Returns:
-        Tuple[Point, float]: End point and route distance.
-    """
-    traffic_sim = [
-        traffic_sim
-        for traffic_sim in traffic_sims
-        if traffic_sim.manages_actor(vehicle_name)
-    ]
-    assert (
-        len(traffic_sim) == 1
-    ), "None or multiple, traffic sims contain the vehicle of interest."
-    traffic_sim = traffic_sim[0]
-    dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
-    end_pos = (
-        road_map.road_by_id(dest_road)
-        .lane_at_index(0)
-        .from_lane_coord(RefLinePoint(s=1e10))
-    )
-    route = traffic_sim.route_for_vehicle(vehicle_name)
-    dist_tot = route.road_length
-    return end_pos, dist_tot
 
 
 class Metrics(gym.Wrapper):
