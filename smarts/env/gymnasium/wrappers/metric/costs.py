@@ -62,9 +62,7 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     dyn_window = SlidingWindow(size=T_p)
     vehicle_pos = deque(maxlen=4)
     dt = 0.1
-    min_disp = (
-        0.5  # Minimum displacement to filter-out coordinate jitter. Units: m
-    )
+    min_disp = 0.1  # Minimum displacement to filter-out coordinate jitter. Units: m
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
@@ -82,23 +80,12 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
             speed_1 = disp_1 / dt
             if valid_0 := (disp_0 > min_disp and disp_1 > min_disp):
                 acc = (speed_0 - speed_1) / dt
-            print("Valid_0: ", valid_0)
             if valid_0 and len(vehicle_pos) == 4:
                 disp_2 = np.linalg.norm(vehicle_pos[2] - vehicle_pos[3])
                 speed_2 = disp_2 / dt
                 acc_1 = (speed_1 - speed_2) / dt
-                print("Disp2", disp_2)
                 if disp_2 > min_disp:
                     jerk = (acc - acc_1) / dt
-
-        print("Step", step)
-        print("Vehicle_pos", vehicle_pos)
-        print("Acc", acc)
-        print("Jerk", jerk)
-        input("-------------------------------------------------")
-
-        if jerk > 0.1 or acc > 0.1:
-            raise Exception("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
 
         dyn = max(jerk / jerk_linear_max, acc / acc_linear_max)
 
