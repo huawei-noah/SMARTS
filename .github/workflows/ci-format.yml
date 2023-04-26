@@ -76,3 +76,29 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           pytype -d pyi-error,import-error ${{steps.changed-files.outputs.changed_files}}
+
+  test-docs:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.6.1-minimal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Check docs build
+        run: |
+          cd $GITHUB_WORKSPACE
+          pip install --upgrade pip setuptools<58.3.0
+          pip install .[camera_obs,doc,train]
+      - name: Build Sphinx documentation
+        run: |
+          cd ${GITHUB_WORKSPACE}/docs
+          make html
+      - name: Check build output
+        run: |
+          cd $GITHUB_WORKSPACE
+          if [ -d "docs/_build/html" ]; then
+              echo "Sphinx build successful."
+          else
+              echo "Sphinx build failed."
+              exit 1
+          fi
