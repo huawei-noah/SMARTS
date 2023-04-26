@@ -59,6 +59,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The `Panda3d` implementation of `Renderer` has been extracted from the interface and moved to `smarts.p3d`.
 - Made all metrics as functions to be minimised, except the overall score which is to be maximised.
 - Driving SMARTS 2023.3 benchmark and the metrics module now uses `actor_of_interest_re_filter` from scenario metadata to identify the lead vehicle.
+- Included `RelativeTargetPose` action space to the set of allowed action spaces in `platoon-v0` env.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
