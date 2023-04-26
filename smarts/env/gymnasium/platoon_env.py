@@ -58,12 +58,12 @@ def platoon_env(
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
-    """All ego agents should track and follow the leader (i.e., lead vehicle) in a 
-    single-file fashion. The lead vehicle is marked as a vehicle of interest 
-    and may be found by filtering the 
+    """All ego agents should track and follow the leader (i.e., lead vehicle) in a
+    single-file fashion. The lead vehicle is marked as a vehicle of interest
+    and may be found by filtering the
     :attr:`~smarts.core.observations.VehicleObservation.interest` attribute of
-    the neighborhood vehicles in the observation. The episode ends when the 
-    leader reaches its destination. Ego agents do not have prior knowledge of the 
+    the neighborhood vehicles in the observation. The episode ends when the
+    leader reaches its destination. Ego agents do not have prior knowledge of the
     leader's destination.
 
     Observation space for each agent:
