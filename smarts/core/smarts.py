@@ -1682,9 +1682,6 @@ class SMARTS(ProviderManager):
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
             interest_filter=re.compile(
-                self.scenario.metadata.get(
-                    "actor_of_interest_re_filter", 
-                    ""
-                )
+                self.scenario.metadata.get("actor_of_interest_re_filter", "")
             ),
         )

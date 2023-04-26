@@ -27,11 +27,7 @@ import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
-from smarts.env.gymnasium.wrappers.metric.params import (
-    Comfort,
-    DistToObstacles,
-    Params,
-)
+from smarts.env.gymnasium.wrappers.metric.params import Comfort, DistToObstacles, Params
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,

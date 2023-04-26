@@ -30,7 +30,6 @@ from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
@@ -186,39 +185,30 @@ class MetricsBase(gym.Wrapper):
         _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
         interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
-        print(interest_actors)
-        assert len(interest_actors) <= 1, ("Expected zero or one actor of"
-            f"interest, but got {len(interest_actors)} actor of interest.")
-        input("------------------------")
+        assert len(interest_actors) <= 1, (
+            f"Expected <=1 actor of interest, but got {len(interest_actors)} "
+            "actors of interest."
+        )
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
-            end_pos = Point(0, 0, 0)
-            dist_tot = 0
+            dist_wrt_actor = ""
+            start_pos = Point(0, 0, 0)
             if self._params.dist_to_destination.active:
                 interest_criteria = self.env.agent_interfaces[
                     agent_name
                 ].done_criteria.interest
                 if isinstance(interest_criteria, InterestDoneCriteria):
-                    end_pos, dist_tot = _get_sumo_smarts_dist(
-                        vehicle_name=interest_criteria.actors_filter[0],
-                        traffic_sims=self.env.smarts.traffic_sims,
-                        road_map=self._road_map,
-                    )
-                elif interest_criteria == None:
-                    end_pos = self._scen.missions[agent_name].goal.position
-                    dist_tot = get_dist(
-                        road_map=self._road_map,
-                        point_a=Point(*self._scen.missions[agent_name].start.position),
-                        point_b=end_pos,
-                    )
+                    dist_wrt_actor = next(iter(interest_actors))
+                else:
+                    dist_wrt_actor = agent_name
+                start_pos = Point(*self._vehicle_index.vehicle_position(dist_wrt_actor))
 
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
-                    "end_pos": end_pos,
-                    "dist_tot": dist_tot,
-                    "actor_interest": "self"
+                    "dist_wrt_actor": dist_wrt_actor,
+                    "start_pos": start_pos,
                 },
                 dist_to_obstacles={
                     "ignore": self._params.dist_to_obstacles.ignore,
@@ -399,11 +389,11 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         for agent_name, agent_mission in scenario.missions.items()
     }
 
-    aoi = scenario.metadata.get("actor_of_interest_re_filter",None) 
+    aoi = scenario.metadata.get("actor_of_interest_re_filter", None)
     for agent_name, agent_interface in agent_interfaces.items():
         interest_criteria = agent_interface.done_criteria.interest
         if not (
-            (goal_types[agent_name] == PositionalGoal and interest_criteria==None)
+            (goal_types[agent_name] == PositionalGoal and interest_criteria == None)
             or (
                 goal_types[agent_name] == EndlessGoal
                 and isinstance(interest_criteria, InterestDoneCriteria)

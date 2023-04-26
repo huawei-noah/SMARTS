@@ -53,10 +53,6 @@ def _collisions() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]
     return func
 
 
-def trunc(values, decs=0):
-    return np.trunc(values*10**decs)/(10**decs)
-
-
 def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     jerk_linear_max = np.linalg.norm(np.array([0.9, 0.9, 0]))  # Units: m/s^3
     acc_linear_max = np.linalg.norm(np.array([2.0, 1.47, 0]))  # Units: m/s^2
@@ -66,7 +62,9 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     dyn_window = SlidingWindow(size=T_p)
     vehicle_pos = deque(maxlen=4)
     dt = 0.1
-    min_disp = 0.5 # Minimum displacement required to filter coordinate jitter. Units: m
+    min_disp = (
+        0.5  # Minimum displacement to filter-out coordinate jitter. Units: m
+    )
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
@@ -78,16 +76,16 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
         jerk = 0
         acc = 0
         if len(vehicle_pos) >= 3:
-            disp_0 = np.linalg.norm(vehicle_pos[0]-vehicle_pos[1])
-            disp_1 = np.linalg.norm(vehicle_pos[1]-vehicle_pos[2])
+            disp_0 = np.linalg.norm(vehicle_pos[0] - vehicle_pos[1])
+            disp_1 = np.linalg.norm(vehicle_pos[1] - vehicle_pos[2])
             speed_0 = disp_0 / dt
             speed_1 = disp_1 / dt
-            if (valid_0 := (disp_0 > min_disp and disp_1 > min_disp)):
-                acc = (speed_0 - speed_1)/dt 
-            print("Valid_0: ",valid_0)
+            if valid_0 := (disp_0 > min_disp and disp_1 > min_disp):
+                acc = (speed_0 - speed_1) / dt
+            print("Valid_0: ", valid_0)
             if valid_0 and len(vehicle_pos) == 4:
-                disp_2 = np.linalg.norm(vehicle_pos[2]-vehicle_pos[3])
-                speed_2 = disp_2/dt
+                disp_2 = np.linalg.norm(vehicle_pos[2] - vehicle_pos[3])
+                speed_2 = disp_2 / dt
                 acc_1 = (speed_1 - speed_2) / dt
                 print("Disp2", disp_2)
                 if disp_2 > min_disp:
@@ -123,30 +121,36 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point = Point(0, 0, 0), dist_tot: float = 0
+    dist_wrt_actor: float, start_pos: Point
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
-    end_pos = end_pos
-    dist_tot = dist_tot
+    dist_wrt_actor = dist_wrt_actor
+    start_pos = start_pos
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot
+        nonlocal mean, step, dist_wrt_actor, start_pos
 
         if not done:
             return Costs(dist_to_destination=-1)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
+            if obs.ego_vehicle_state.id == dist_wrt_actor:
+                end_pos = obs.ego_vehicle_state.mission.goal.position
+            else:
+                end_pos = Point(
+                    *vehicle_index.vehicle_position(vehicle_id=dist_wrt_actor)
+                )
+
             cur_pos = Point(*obs.ego_vehicle_state.position)
             dist_remainder = get_dist(
                 road_map=road_map, point_a=cur_pos, point_b=end_pos
             )
-            dist_remainder_capped = min(
-                dist_remainder, dist_tot
-            )  # Cap remainder distance
+            dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+            dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
     return func
@@ -267,7 +271,9 @@ def _jerk_linear() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs
     return func
 
 
-def _lane_center_offset() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+def _lane_center_offset() -> Callable[
+    [RoadMap, VehicleIndex, Done, Observation], Costs
+]:
     mean = 0
     step = 0
 
@@ -352,7 +358,9 @@ def _speed_limit() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs
     return func
 
 
-def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+def _steps(
+    max_episode_steps: int,
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     step = 0
     max_episode_steps = max_episode_steps
 
