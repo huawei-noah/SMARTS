@@ -284,7 +284,7 @@ class AgentManager:
             observations[agent_id], dones[agent_id] = sim.sensor_manager.observe_batch(
                 sim_frame,
                 sim.local_constants,
-                agent_id,
+                sim_frame.agent_interfaces[agent_id],
                 sensor_states,
                 {v.id: v for v in vehicles},
                 sim.renderer_ref,
