@@ -96,7 +96,7 @@ jobs:
       - name: Build Sphinx documentation
         run: |
           cd ${GITHUB_WORKSPACE}/docs
-          make html
+          make html SPHINXOPTS="-W"
       - name: Check build output
         run: |
           cd $GITHUB_WORKSPACE
