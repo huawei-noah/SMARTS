@@ -436,7 +436,7 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
     for agent_name, agent_interface in agent_interfaces.items():
         interest_criteria = agent_interface.done_criteria.interest
         if not (
-            (goal_types[agent_name] == PositionalGoal and interest_criteria == None)
+            (goal_types[agent_name] == PositionalGoal and interest_criteria is None)
             or (
                 goal_types[agent_name] == EndlessGoal
                 and isinstance(interest_criteria, InterestDoneCriteria)
