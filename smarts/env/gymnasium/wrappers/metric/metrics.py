@@ -401,7 +401,9 @@ def _check_env(agent_interfaces: Dict[str, AgentInterface], params: Params):
         if (
             params.dist_to_destination.active
             and isinstance(interest_criteria, InterestDoneCriteria)
-            and len(interest_criteria.actors_filter) >= 1
+        ) and not (
+            len(interest_criteria.actors_filter) == 0
+            and interest_criteria.include_scenario_marked == True
         ):
             raise AttributeError(
                 (
@@ -428,13 +430,15 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         for agent_name, agent_mission in scenario.missions.items()
     }
 
+    aoi = scenario.metadata.get("actor_of_interest_re_filter",None) 
     for agent_name, agent_interface in agent_interfaces.items():
         interest_criteria = agent_interface.done_criteria.interest
         if not (
-            (goal_types[agent_name] == PositionalGoal and interest_criteria is None)
+            (goal_types[agent_name] == PositionalGoal and interest_criteria==None)
             or (
                 goal_types[agent_name] == EndlessGoal
                 and isinstance(interest_criteria, InterestDoneCriteria)
+                and aoi != None
             )
         ):
             raise AttributeError(
