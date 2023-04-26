@@ -194,7 +194,7 @@ def _write_report(results: Dict[str, Any]):
     plt.savefig(dir / "Fig1.png")
     mdFile.new_paragraph(
         "<figure>"
-        f"\n<img src={dir/'Fig1.png'} alt='line chart' style='width:500px;'/>"
+        f"\n<img src='{dir/'Fig1.png'}' alt='line chart' style='width:500px;'/>"
         "\n</figure>"
     )
 

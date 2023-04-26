@@ -56,6 +56,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    benchmarks/benchmark.rst
    benchmarks/agent_zoo.rst
    benchmarks/driving_smarts_2022.rst
+   benchmarks/driving_smarts_2023_1.rst
    benchmarks/driving_smarts_2023_3.rst
 
 .. toctree::

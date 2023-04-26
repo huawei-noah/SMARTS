@@ -32,7 +32,7 @@ import ray
 from smarts.benchmark.driving_smarts import load_config
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.utils.logging import suppress_output
-from smarts.env.gymnasium.wrappers.metric.formula import Score
+from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.metrics import Metrics
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import multiply, op_dataclass
@@ -149,11 +149,14 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
 
     root_dir = Path(__file__).resolve().parents[3]
+    metric_formula_default = (
+        root_dir / "smarts" / "env" / "gymnasium" / "wrappers" / "metric" / "formula.py"
+    )
     for env_name, env_config in benchmark_args["envs"].items():
         metric_formula = (
             root_dir / x
             if (x := env_config.get("metric_formula", None)) != None
-            else None
+            else metric_formula_default
         )
 
         env_args = {}
@@ -199,7 +202,7 @@ def _get_score(records: Dict[str, Dict[str, Record]], metric_formula: Path) -> S
     import_module_from_file("custom_formula", metric_formula)
     from custom_formula import Formula
 
-    formula = Formula()
+    formula: FormulaBase = Formula()
 
     score = formula.score(records_sum=records_sum)
     return score

@@ -59,7 +59,7 @@ def large_observation():
             reached_goal=False,
             reached_max_episode_steps=False,
             agents_alive_done=False,
-            actors_alive_done=False,
+            interest_done=False,
         ),
         ego_vehicle_state=EgoVehicleObservation(
             id="AGENT-007-07a0ca6e",
@@ -204,7 +204,7 @@ def large_observation():
                 width=256,
                 height=256,
                 camera_position=(161.235, 3.2, 73.6),
-                camera_heading_in_degrees=-90.0,
+                camera_heading=-math.pi / 2,
             ),
             data=np.array(
                 [
@@ -224,7 +224,7 @@ def large_observation():
                 width=256,
                 height=256,
                 camera_position=(161.235, 3.2, 73.6),
-                camera_heading_in_degrees=-90.0,
+                camera_heading=-math.pi / 2,
             ),
             data=np.array(
                 [
@@ -244,7 +244,7 @@ def large_observation():
                 width=256,
                 height=256,
                 camera_position=(161.235, 3.2, 73.6),
-                camera_heading_in_degrees=-90.0,
+                camera_heading=-math.pi / 2,
             ),
             data=np.array(
                 [

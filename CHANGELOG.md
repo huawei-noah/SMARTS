@@ -28,6 +28,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added engine `reset_retries` configuration engine retries before the simulator will raise an error on reset.
 - Introduced new comfort cost function in metric module.
 - Introduced new gap-between-vehicles cost function in metric module.
+- Added baseline example, consisting of training, inference, and zoo agent registration, for the driving and turning tasks in Driving SMARTS 2023.1 and 2023.2 benchmarks, respectively. It uses RelativeTargetPose action space.
+- Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
+- Added an env wrapper for constraining the relative target pose action range.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
@@ -41,6 +44,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
 - Modified naming of benchmark used in NeurIPS 2022 from driving-smarts-competition-env to driving-smarts-v2022.
+- Social agent actor vehicles are now exactly named the same as the `name` of the actor. 
 - Sstudio generated scenario vehicle traffic ids are now shortened.
 - ChaseViaPoints zoo agent uses unconstrained path change command, instead of being constrained to [-1, 0, +1] path change commands used previously. 
 - Made the metrics module configurable by supplying parameters through a `Params` class.
@@ -50,6 +54,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Benchmark listing may specify specialised metric formula for each benchmark.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
 - Renamed GapBetweenVehicles cost to VehicleGap cost in metric module.
+- Camera metadata now uses radians instead of degrees.
+- The `Panda3d` implementation of `Renderer` has been extracted from the interface and moved to `smarts.p3d`.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.

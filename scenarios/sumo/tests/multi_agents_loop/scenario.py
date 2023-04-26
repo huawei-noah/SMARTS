@@ -21,40 +21,30 @@ traffic = t.Traffic(
     ]
 )
 
-laner_agent = t.SocialAgentActor(
-    name="keep-lane-agent",
-    agent_locator="zoo.policies:keep-lane-agent-v0",
-)
 
-buddha_agent = t.SocialAgentActor(
-    name="buddha-agent",
-    agent_locator="scenarios.sumo.tests.multi_agents_loop.agent_prefabs:buddha-agent-v0",
-)
+def make_laner(id_):
+    return t.SocialAgentActor(
+        name=f"keep-lane-agent_{id_}",
+        agent_locator="zoo.policies:keep-lane-agent-v0",
+    )
+
+
+def make_buddha(id_):
+    return t.SocialAgentActor(
+        name=f"buddha-actor_{id_}",
+        agent_locator="scenarios.sumo.tests.multi_agents_loop.agent_prefabs:buddha-agent-v0",
+    )
+
 
 gen_scenario(
     t.Scenario(
         traffic={"basic": traffic},
         social_agent_missions={
-            "group_1": (
-                [laner_agent, buddha_agent],
+            f"group_{i}": (
+                [make_laner(i), make_buddha(i)],
                 [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_2": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_3": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_4": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
-            "group_5": (
-                [laner_agent, buddha_agent],
-                [t.Mission(route=t.RandomRoute())],
-            ),
+            )
+            for i in range(1, 6)
         },
     ),
     output_dir=Path(__file__).parent,

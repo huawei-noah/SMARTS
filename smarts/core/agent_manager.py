@@ -71,7 +71,7 @@ class AgentManager:
 
         # TODO: This field is only for social agents, but is being used as if it were
         #       for any agent. Revisit the accessors.
-        self._social_agent_data_models = {}
+        self._social_agent_data_models: Dict[str, SocialAgent] = {}
 
         # We send observations and receive actions for all values in this dictionary
         self._remote_social_agents = {}
@@ -528,7 +528,7 @@ class AgentManager:
             actor = bubble.actor
             social_agent_data_model = SocialAgent(
                 id=SocialAgentId.new(actor.name),
-                name=actor.name,
+                actor_name=actor.name,
                 is_boid=True,
                 is_boid_keep_alive=True,
                 agent_locator=actor.agent_locator,
@@ -573,7 +573,12 @@ class AgentManager:
         return True
 
     def _add_agent(
-        self, agent_id, agent_interface, agent_model, boid=False, trainable=True
+        self,
+        agent_id,
+        agent_interface,
+        agent_model: SocialAgent,
+        boid=False,
+        trainable=True,
     ):
         # TODO: Disentangle what is entangled below into:
         # 1. AgentState initialization,
@@ -612,7 +617,9 @@ class AgentManager:
             scenario.surface_patches,
             agent_model.initial_speed,
             boid=boid,
+            vehicle_id=agent_model.actor_name,
         )
+
         role = ActorRole.EgoAgent if trainable else ActorRole.SocialAgent
         for provider in sim.providers:
             if agent_interface.action not in provider.actions:
@@ -702,7 +709,7 @@ class AgentManager:
         if agent_id not in self._social_agent_data_models:
             return ""
 
-        return self._social_agent_data_models[agent_id].name
+        return self._social_agent_data_models[agent_id].actor_name
 
     def is_boid_agent(self, agent_id: str) -> bool:
         """Check if an agent is a boid agent"""
