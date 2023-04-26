@@ -59,6 +59,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 - Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
 - Fixed CI tests for metrics.
+- Fixed `traffic_histories_to_observations` script.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
