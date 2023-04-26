@@ -27,13 +27,7 @@ import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
-from smarts.env.gymnasium.wrappers.metric.params import (
-    Comfort,
-    DistToObstacles,
-    Params,
-    Steps,
-    VehicleGap,
-)
+from smarts.env.gymnasium.wrappers.metric.params import Comfort, DistToObstacles, Params
 from smarts.env.gymnasium.wrappers.metric.types import Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
@@ -63,13 +57,6 @@ class Formula(FormulaBase):
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
-            vehicle_gap=VehicleGap(
-                active=True,
-                actor="Leader-007",
-            ),
-            steps=Steps(
-                active=False,
-            ),
         )
         return params
 
@@ -85,7 +72,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
         +-------------------+--------+-----------------------------------------------------------+
-        | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
+        | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
         +-------------------+--------+-----------------------------------------------------------+
         | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
         +-------------------+--------+-----------------------------------------------------------+
@@ -123,10 +110,10 @@ class Formula(FormulaBase):
         dist_to_destination = costs_final.dist_to_destination
         humanness_error = _humanness_error(costs=costs_final)
         rule_violation = _rule_violation(costs=costs_final)
-        vehicle_gap = costs_final.vehicle_gap
+        time = costs_final.steps
         overall = (
             0.25 * (1 - dist_to_destination)
-            + 0.25 * (1 - vehicle_gap)
+            + 0.25 * (1 - time)
             + 0.25 * (1 - humanness_error)
             + 0.25 * (1 - rule_violation)
         )
@@ -135,7 +122,7 @@ class Formula(FormulaBase):
             {
                 "overall": overall,
                 "dist_to_destination": dist_to_destination,
-                "vehicle_gap": vehicle_gap,
+                "time": time,
                 "humanness_error": humanness_error,
                 "rule_violation": rule_violation,
             }

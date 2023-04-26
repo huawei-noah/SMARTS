@@ -20,3 +20,4 @@ benchmark:
         - scenarios/sumo/straight/3lane_cruise_agents_1
       kwargs:
         seed: 42
+      metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_drive.py

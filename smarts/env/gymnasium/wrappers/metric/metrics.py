@@ -185,6 +185,12 @@ class MetricsBase(gym.Wrapper):
 
         _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
+        interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
+        assert len(interest_actors) <= 1, (
+            f"Expected <=1 actor of interest, but got {len(interest_actors)} "
+            "actors of interest."
+        )
+
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
             end_pos = Point(0, 0, 0)
@@ -397,7 +403,9 @@ def _check_env(agent_interfaces: Dict[str, AgentInterface], params: Params):
         if (
             params.dist_to_destination.active
             and isinstance(interest_criteria, InterestDoneCriteria)
-            and len(interest_criteria.actors_filter) != 1
+        ) and not (
+            len(interest_criteria.actors_filter) == 0
+            and interest_criteria.include_scenario_marked == True
         ):
             raise AttributeError(
                 (
@@ -424,17 +432,19 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         for agent_name, agent_mission in scenario.missions.items()
     }
 
+    aoi = scenario.metadata.get("actor_of_interest_re_filter", None)
     for agent_name, agent_interface in agent_interfaces.items():
         interest_criteria = agent_interface.done_criteria.interest
         if not (
-            (goal_types[agent_name] == PositionalGoal and interest_criteria is None)
+            (goal_types[agent_name] == PositionalGoal and interest_criteria == None)
             or (
                 goal_types[agent_name] == EndlessGoal
                 and isinstance(interest_criteria, InterestDoneCriteria)
+                and aoi != None
             )
         ):
             raise AttributeError(
-                "{0} has an unsupported goal type {1} and actors alive done criteria {2} "
+                "{0} has an unsupported goal type {1} and interest done criteria {2} "
                 "combination.".format(
                     agent_name, goal_types[agent_name], interest_criteria
                 )

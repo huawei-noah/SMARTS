@@ -20,3 +20,4 @@ benchmark:
         - scenarios/sumo/intersections/1_to_2lane_left_turn_c_agents_1
       kwargs:
         seed: 42
+      metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_drive.py
