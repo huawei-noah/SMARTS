@@ -86,15 +86,13 @@ jobs:
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Check docs build
+      - name: Build Sphinx documentation
         run: |
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip "setuptools<58.3.0"
           pip install wheel==0.38.4
           pip install .[camera_obs,doc,train]
-      - name: Build Sphinx documentation
-        run: |
           cd ${GITHUB_WORKSPACE}/docs
           make html SPHINXOPTS="-W"
       - name: Check build output
