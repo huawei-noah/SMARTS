@@ -32,8 +32,8 @@ it collides, drives off road, or exceeds maximum number of steps per episode.
 
 .. figure:: ../_static/driving_smarts_2023/basic.png
 
-    Here, egos are in red colour, and background traffic is in silver colour. (Top left) Cruise scenario.
-    (Top right) Overtake scenario. (Bottom middle) Cut-off scenario.
+    Here, egos are in red colour, and background traffic is in silver colour. (Left) Cruise scenario.
+    (Middle) Overtake scenario. (Right) Cut-off scenario.
 
 **Driving SMARTS 2023.2** focuses on navigating various type of turns. Some sample turning scenarios are depicted
 below.
