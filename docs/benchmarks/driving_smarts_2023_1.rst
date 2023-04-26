@@ -64,9 +64,9 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
-one of the action spaces and specify the chosen action space through the ego's agent interface.
+The action space for an ego agent can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. The user should choose
+one of the action spaces and specify the chosen action space through the ego agent's interface.
 
 Code structure
 --------------
