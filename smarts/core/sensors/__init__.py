@@ -564,8 +564,8 @@ class Sensors:
     def _is_done_with_events(
         cls,
         sim_frame: SimulationFrame,
-        sim_local_constants,
-        interface,
+        sim_local_constants: SimulationLocalConstants,
+        interface: AgentInterface,
         vehicle_state: VehicleState,
         sensor_state,
         plan,
