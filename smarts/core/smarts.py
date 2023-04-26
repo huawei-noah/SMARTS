@@ -1672,7 +1672,8 @@ class SMARTS(ProviderManager):
             step_count=self.step_count,
             vehicle_collisions=self._vehicle_collisions,
             vehicle_states={
-                vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
+                vehicle_state.actor_id: vehicle_state
+                for vehicle_state in self._vehicle_states
             },
             vehicles_for_agents={
                 agent_id: self.vehicle_index.vehicle_ids_by_owner_id(
