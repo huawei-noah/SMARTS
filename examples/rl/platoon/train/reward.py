@@ -59,13 +59,10 @@ class Reward(gym.Wrapper):
     def _reward(self, obs, env_reward):
         reward = {agent_id: np.float64(0) for agent_id in obs.keys()}
 
-        leader_name = "Leader-007"
         leader = None
         max_agent_steps_completed = 0
         for agent_id, agent_obs in obs.items():
-            neighbor_vehicles = _get_neighbor_vehicles(
-                obs=agent_obs, neighbor_name=leader_name
-            )
+            neighbor_vehicles = _get_leader(obs=agent_obs)
             max_agent_steps_completed = max(
                 max_agent_steps_completed, agent_obs["steps_completed"]
             )
@@ -140,18 +137,19 @@ class Reward(gym.Wrapper):
         return reward
 
 
-def _get_neighbor_vehicles(obs, neighbor_name):
-    keys = ["id", "heading", "lane_index", "position", "speed"]
+def _get_leader(obs):
+    keys = ["interest", "id", "heading", "lane_index", "position", "speed"]
     neighbors_tuple = [
         neighbor
         for neighbor in zip(
+            obs["neighborhood_vehicle_states"]["interest"],
             obs["neighborhood_vehicle_states"]["id"],
             obs["neighborhood_vehicle_states"]["heading"],
             obs["neighborhood_vehicle_states"]["lane_index"],
             obs["neighborhood_vehicle_states"]["position"],
             obs["neighborhood_vehicle_states"]["speed"],
         )
-        if neighbor_name in neighbor[0]
+        if neighbor[0] == 1
     ]
     neighbors_dict = [dict(zip(keys, neighbor)) for neighbor in neighbors_tuple]
     return neighbors_dict
