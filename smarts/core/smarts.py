@@ -219,6 +219,7 @@ class SMARTS(ProviderManager):
         Dict[str, Dict[str, float]],
     ]:
         """Progress the simulation by a fixed or specified time.
+
         Args:
             agent_actions:
                 Actions that the agents want to perform on their actors.
@@ -409,14 +410,15 @@ class SMARTS(ProviderManager):
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or `start_time` if there
          are no agents in the simulation.
+
         Args:
-            scenario(Scenario):
-                The scenario to reset the simulation with.
+            scenario(smarts.core.scenario.Scenario): The scenario to reset the simulation with.
             start_time(float):
                 The initial amount of simulation time to skip. This has implications on all time
                 dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
                 If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
                 simulation should start at `start_time==0.2`.
+
         Returns:
             Agent observations. This observation is as follows:
                 - If no agents: the initial simulation observation at `start_time`
@@ -1055,10 +1057,10 @@ class SMARTS(ProviderManager):
         return VERSION
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
-        """
-        Teardown agents in the given sequence
-        Params:
-            agent_ids: Sequence of agent ids
+        """Teardown agents in the given sequence.
+
+        Args:
+            agent_ids: A sequence of agent ids to terminate and release.
         """
         agents_to_teardown = {
             id_
@@ -1069,10 +1071,10 @@ class SMARTS(ProviderManager):
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
-        """
-        Teardown agents in the given list that have no actors registered as
+        """Teardown agents in the given list that have no actors registered as
         controlled-by or shadowed-by (for each given agent.)
-        Params:
+
+        Args:
             agent_ids: Sequence of agent ids
         """
         self._check_valid()

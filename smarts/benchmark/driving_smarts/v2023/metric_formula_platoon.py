@@ -30,6 +30,7 @@ from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
     DistToObstacles,
+    JerkLinear,
     Params,
     Steps,
     VehicleGap,
@@ -63,6 +64,7 @@ class Formula(FormulaBase):
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
+            jerk_linear=JerkLinear(active=False),
             vehicle_gap=VehicleGap(
                 active=True,
                 actor="Leader-007",

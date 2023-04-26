@@ -28,6 +28,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added engine `reset_retries` configuration engine retries before the simulator will raise an error on reset.
 - Introduced new comfort cost function in metric module.
 - Introduced new gap-between-vehicles cost function in metric module.
+- Added baseline example, consisting of training, inference, and zoo agent registration, for the driving and turning tasks in Driving SMARTS 2023.1 and 2023.2 benchmarks, respectively. It uses RelativeTargetPose action space.
+- Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
+- Added an env wrapper for constraining the relative target pose action range.
 - Added a specialised metric formula module for Driving SMARTS 2023.1 and 2023.2 benchmark.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.

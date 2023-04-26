@@ -1,0 +1,24 @@
+smarts:
+  # Environment
+  sumo_gui: False # If True, enables sumo-gui display.
+  seed: 42
+  agent_locator: inference:contrib-agent-v0
+  env_id: smarts.env:driving-smarts-v2023  
+  scenarios:
+    - scenarios/sumo/intersections/1_to_1lane_left_turn_c_agents_1
+
+  # PPO algorithm
+  alg:
+    n_steps: 2048
+    batch_size: 512
+    n_epochs: 4
+    target_kl: 0.1
+
+  # Training over all scenarios
+  epochs: 500 # Number of training loops.
+
+  # Training per scenario
+  train_steps: 10_000
+  checkpoint_freq: 10_000 # Save a model every checkpoint_freq calls to env.step().
+  eval_freq: 10_000 # Evaluate the trained model every eval_freq steps and save the best model.
+  eval_eps: 5 # Number of evaluation epsiodes.
