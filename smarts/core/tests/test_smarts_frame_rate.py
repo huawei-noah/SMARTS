@@ -38,14 +38,16 @@ AGENT_1 = "Agent_007"
 @pytest.fixture
 def scenarios():
     with temp_scenario(name="6lane", map="maps/6lane.net.xml") as scenario_root:
-        actors = [
-            t.SocialAgentActor(
-                name=f"non-interactive-agent-{speed}-v0",
-                agent_locator="zoo.policies:non-interactive-agent-v0",
-                policy_kwargs={"speed": speed},
-            )
-            for speed in [10, 30, 80]
-        ]
+
+        def actor_gen(id_):
+            return [
+                t.SocialAgentActor(
+                    name=f"non-interactive-agent-{speed}-v0_{id_}",
+                    agent_locator="zoo.policies:non-interactive-agent-v0",
+                    policy_kwargs={"speed": speed},
+                )
+                for speed in [10, 30, 80]
+            ]
 
         def to_mission(start_edge, end_edge):
             route = t.Route(begin=(start_edge, 1, 0), end=(end_edge, 1, "max"))
@@ -58,12 +60,24 @@ def scenarios():
         gen_scenario(
             t.Scenario(
                 social_agent_missions={
-                    "group-1": (actors, [to_mission("edge-north-NS", "edge-south-NS")]),
-                    "group-2": (actors, [to_mission("edge-west-WE", "edge-east-WE")]),
-                    "group-3": (actors, [to_mission("edge-east-EW", "edge-west-EW")]),
-                    "group-4": (actors, [to_mission("edge-south-SN", "edge-north-SN")]),
+                    "group-1": (
+                        actor_gen(1),
+                        [to_mission("edge-north-NS", "edge-south-NS")],
+                    ),
+                    "group-2": (
+                        actor_gen(2),
+                        [to_mission("edge-west-WE", "edge-east-WE")],
+                    ),
+                    "group-3": (
+                        actor_gen(3),
+                        [to_mission("edge-east-EW", "edge-west-EW")],
+                    ),
+                    "group-4": (
+                        actor_gen(4),
+                        [to_mission("edge-south-SN", "edge-north-SN")],
+                    ),
                     "group-5": (
-                        actors,
+                        actor_gen(5),
                         [fifth_mission("edge-south-SN", "edge-east-WE")],
                     ),
                 },

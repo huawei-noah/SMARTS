@@ -1120,7 +1120,8 @@ class Scenario:
         Dict[str, Tuple[Sequence[SocialAgentActor], Sequence[Mission]]]
     ] = None
     """
-    Every dictionary item ``{group: (actors, missions)}`` gets run simultaneously.
+    Actors must have unique names regardless of which group they are assigned to.
+    Every dictionary item ``{group: (actors, missions)}`` gets selected from simultaneously.
     If actors > 1 and missions = 0 or actors = 1 and missions > 0, we cycle
     through them every episode. Otherwise actors must be the same length as 
     missions.
@@ -1133,3 +1134,21 @@ class Scenario:
     """Traffic vehicles trajectory dataset to be replayed."""
     scenario_metadata: Optional[ScenarioMetadata] = None
     """"Scenario data that does not have influence on simulation."""
+
+    def __post_init__(self):
+        def _get_name(item):
+            return item.name
+
+        if self.social_agent_missions is not None:
+            groups = [k for k in self.social_agent_missions]
+            for group, (actors, _) in self.social_agent_missions.items():
+                for o_group in groups:
+                    if group == o_group:
+                        continue
+                    if intersection := set.intersection(
+                        set(map(_get_name, actors)),
+                        map(_get_name, self.social_agent_missions[o_group][0]),
+                    ):
+                        raise ValueError(
+                            f"Social agent mission groups `{group}`|`{o_group}` have overlapping actors {intersection}"
+                        )

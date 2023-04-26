@@ -20,7 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import logging
+import re
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Set
 
 from cached_property import cached_property
@@ -39,7 +41,7 @@ class SimulationFrame:
     actor_states: List[ActorState]
     agent_vehicle_controls: Dict[str, str]
     agent_interfaces: Dict[str, AgentInterface]
-    ego_ids: str
+    ego_ids: Set[str]
     pending_agent_ids: List[str]
     elapsed_sim_time: float
     fixed_timestep: float
@@ -55,6 +57,7 @@ class SimulationFrame:
     vehicle_sensors: Dict[str, Dict[str, Any]]
 
     sensor_states: Any
+    interest_filter: re.Pattern
     # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None
     _ground_bullet_id: Optional[str] = None
@@ -74,6 +77,43 @@ class SimulationFrame:
         """Get actor states paired by their ids."""
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
+    @lru_cache(1)
+    def interest_actors(
+        self, extension: Optional[re.Pattern] = None
+    ) -> Dict[str, ActorState]:
+        """Get the actor states of actors that are marked as of interest.
+
+        Args:
+            extension (re.Pattern): A matching for interest actors not defined in scenario.
+        """
+
+        _matchers: List[re.Pattern] = []
+        if self.interest_filter.pattern:
+            _matchers.append(self.interest_filter)
+        if extension is not None and extension.pattern:
+            _matchers.append(extension)
+
+        if len(_matchers) > 0:
+            return {
+                a_s.actor_id: a_s
+                for a_s in self.actor_states
+                if any(bool(m.match(a_s.actor_id)) for m in _matchers)
+            }
+        return {}
+
+    def actor_is_interest(
+        self, actor_id, extension: Optional[re.Pattern] = None
+    ) -> bool:
+        """Determine if the actor is of interest.
+
+        Args:
+            actor_id (str): The id of the actor to test.
+
+        Returns:
+            bool: If the actor is of interest.
+        """
+        return actor_id in self.interest_actors(extension)
+
     def vehicle_did_collide(self, vehicle_id) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
         vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
@@ -90,6 +130,13 @@ class SimulationFrame:
         return [
             c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
         ]
+
+    @cached_property
+    def _hash(self):
+        return self.step_count ^ hash(self.fixed_timestep) ^ hash(self.map_spec)
+
+    def __hash__(self):
+        return self._hash
 
     def __post_init__(self):
         if logger.isEnabledFor(logging.DEBUG):

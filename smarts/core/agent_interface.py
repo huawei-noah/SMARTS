@@ -17,9 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import re
 import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
+from functools import cached_property
 from typing import List, Optional, Tuple, Union
 
 from smarts.core.controllers.action_space_type import ActionSpaceType
@@ -194,16 +196,24 @@ class AgentsAliveDoneCriteria:
 
 
 @dataclass(frozen=True)
-class ActorsAliveDoneCriteria:
-    """Require actors to persist."""
+class InterestDoneCriteria:
+    """Require scenario marked interest actors to exist."""
 
-    actors_of_interest: Tuple[str, ...] = ()
-    """Actors that should exist to continue this agent."""
+    actors_filter: Tuple[str, ...] = ()
+    """Interface defined interest actors that should exist to continue this agent."""
 
-    strict: bool = True
+    include_scenario_marked: bool = True
+    """If scenario marked interest actors should be considered as interest vehicles."""
+
+    strict: bool = False
     """If strict the agent will be done instantly if an actor of interest is not available
     immediately.
     """
+
+    @cached_property
+    def actors_pattern(self) -> re.Pattern:
+        """The expression match pattern for actors covered by this interface specifically."""
+        return re.compile("|".join(rf"(?:{aoi})" for aoi in self.actors_filter))
 
 
 @dataclass(frozen=True)
@@ -238,8 +248,13 @@ class DoneCriteria:
     """
     agents_alive: Optional[AgentsAliveDoneCriteria] = None
     """If set, triggers the ego agent to be done based on the number of active agents for multi-agent purposes."""
-    actors_alive: Optional[ActorsAliveDoneCriteria] = None
-    """If set, triggers the ego agent to be done based on actors existing in the simulation."""
+    interest: Optional[InterestDoneCriteria] = None
+    """If set, triggers when there are no interest vehicles left existing in the simulation."""
+
+    @property
+    def actors_alive(self):
+        """Deprecated. Use interest."""
+        raise NameError("Deprecated. Use interest.")
 
 
 @dataclass

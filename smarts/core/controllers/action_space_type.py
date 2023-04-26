@@ -57,9 +57,9 @@ class ActionSpaceType(Enum):
     """
     LaneWithContinuousSpeed = 3
     """
-    Action=(target_speed, lane_change). 
-    + target_speed: Baseline target speed (controller may give more or less
-      regardless). Type=float.
+    Action=(target_speed, lane_change).
+
+    + target_speed: Baseline target speed (controller may give more or less regardless). Type=float.
     + lane_change: Discrete lane change value. Can be one of 
         + -1 : change to right lane
         + 0 : keep to current lane

@@ -170,7 +170,8 @@ def suppress_websocket():
 
 def diff_unpackable(obj, other_obj):
     """Do an asserted comparision of an object that is able to be unpacked. This works with nested collections:
-        dictionaries, namedtuples, tuples, lists, numpy arrays, and dataclasses.
+    dictionaries, namedtuples, tuples, lists, numpy arrays, and dataclasses.
+
     Raises:
         AssertionError: if objects do not match.
     """

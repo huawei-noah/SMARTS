@@ -233,7 +233,9 @@ def _jerk_linear() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs
     return func
 
 
-def _lane_center_offset() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+def _lane_center_offset() -> Callable[
+    [RoadMap, VehicleIndex, Done, Observation], Costs
+]:
     mean = 0
     step = 0
 
@@ -318,7 +320,9 @@ def _speed_limit() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs
     return func
 
 
-def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+def _steps(
+    max_episode_steps: int,
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     step = 0
     max_episode_steps = max_episode_steps
 
@@ -332,7 +336,7 @@ def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Obs
         if not done:
             return Costs(steps=-1)
 
-        if obs.events.reached_goal or obs.events.actors_alive_done:
+        if obs.events.reached_goal or obs.events.interest_done:
             return Costs(steps=step / max_episode_steps)
         elif (
             len(obs.events.collisions) > 0
@@ -343,7 +347,7 @@ def _steps(max_episode_steps: int) -> Callable[[RoadMap, VehicleIndex, Done, Obs
         else:
             raise CostError(
                 "Expected reached_goal, collisions, off_road, "
-                "max_episode_steps, or actors_alive_done, to be true "
+                "max_episode_steps, or interest_done, to be true "
                 f"on agent done, but got events: {obs.events}."
             )
 

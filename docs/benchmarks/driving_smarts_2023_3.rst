@@ -16,7 +16,7 @@ Objective is to develop a single-ego policy capable of controlling a single ego 
     policies are executed in a distributed manner. The single-ego policy should be capable of accounting for and 
     interacting with other ego vehicles, if any are present.
 
-All egos should track and follow the leader (i.e., lead vehicle) in a single-file fashion. The lead vehicle is 
+All ego agents should track and follow the leader (i.e., lead vehicle) in a single-file fashion. The lead vehicle is 
 marked as a vehicle of interest and may be found by filtering the
 :attr:`~smarts.core.observations.VehicleObservation.interest` attribute of the neighborhood vehicles in the 
 observation.
@@ -27,7 +27,7 @@ observation.
     (Left) At the start of episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the
     lead vehicle in a single-file fashion.
 
-The episode ends when the leader reaches its destination. Egos do not have prior knowledge of the leader's 
+The episode ends when the leader reaches its destination. Ego agents do not have prior knowledge of the leader's 
 destination. Additionally, the ego terminates whenever it collides, drives off road, or exceeds maximum number 
 of steps per episode.
 

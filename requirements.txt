@@ -20,7 +20,7 @@ contourpy==1.0.7
 coverage==7.2.3
 cycler==0.11.0
 dm-tree==0.1.8
-eclipse-sumo==1.16.0
+eclipse-sumo==1.17.0
 exceptiongroup==1.1.1
 execnet==1.9.0
 filelock==3.12.0
@@ -43,7 +43,7 @@ h5py==3.8.0
 hyperlink==21.0.0
 idna==3.4
 ijson==3.2.0.post0
-importlib-metadata==6.5.0
+importlib-metadata==6.6.0
 importlib-resources==5.12.0
 incremental==22.10.0
 iniconfig==2.0.0
@@ -77,7 +77,7 @@ packaging==23.1
 Panda3D==1.10.9
 panda3d-gltf==0.13
 panda3d-simplepbr==0.10
-pandas==2.0.0
+pandas==2.0.1
 Pillow==9.5.0
 pkgutil_resolve_name==1.3.10
 pluggy==1.0.0
@@ -89,7 +89,7 @@ py-cpuinfo==9.0.0
 py-spy==0.3.14
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
-pybullet==3.0.6
+pybullet==3.2.5
 pydantic==1.10.7
 Pygments==2.15.1
 pyparsing==3.0.9
@@ -104,7 +104,7 @@ pytz==2023.3
 PyYAML==6.0
 ray==1.4.0
 redis==4.5.4
-requests==2.28.2
+requests==2.29.0
 requests-oauthlib==1.3.1
 rich==13.3.4
 rsa==4.9
@@ -123,11 +123,11 @@ tensorboardX==2.6
 tensorflow==2.12.0
 tensorflow-estimator==2.12.0
 tensorflow-io-gcs-filesystem==0.32.0
-termcolor==2.2.0
+termcolor==2.3.0
 tomli==2.0.1
 torch==1.4.0
 torchvision==0.5.0
-tornado==6.3
+tornado==6.3.1
 trimesh==3.9.29
 Twisted==22.10.0
 typing_extensions==4.5.0
@@ -136,9 +136,9 @@ urllib3==1.26.15
 visdom==0.2.4
 wcwidth==0.2.6
 websocket-client==1.5.1
-Werkzeug==2.2.3
+Werkzeug==2.3.0
 wrapt==1.14.1
-yarl==1.9.1
+yarl==1.9.2
 yattag==1.15.1
 zipp==3.15.0
 zope.interface==6.0
