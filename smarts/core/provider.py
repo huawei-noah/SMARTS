@@ -101,7 +101,7 @@ class ProviderState:
         self.actors = [
             actor_state
             for actor_state in self.actors
-            if issubclass(actor_state.__class__, actor_state_type)
+            if not issubclass(actor_state.__class__, actor_state_type)
         ] + updated_actors
 
 
