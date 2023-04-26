@@ -94,7 +94,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip "setuptools<58.3.0"
           pip install wheel==0.38.4
-          pip install .[camera_obs,doc,train]
+          pip install .[camera_obs,doc,train,ray]
           cd ${GITHUB_WORKSPACE}/docs
           make html SPHINXOPTS="-W -T -E --keep-going"
       - name: Check build output
