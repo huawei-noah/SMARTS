@@ -1420,7 +1420,8 @@ class SMARTS(ProviderManager):
             vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                collision = Collision(collidee_id=collidee.id)
+                owner_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
+                collision = Collision(collidee_id=collidee.id, collidee_owner_id=owner_id)
                 vehicle_collisions.append(collision)
 
         traffic_providers = [
