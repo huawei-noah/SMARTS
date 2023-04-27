@@ -121,7 +121,7 @@ class VehicleState(ActorState):
 
     def __eq__(self, __o: object):
         return (
-            self.__class__ == __o.__class__
+            isinstance(__o, type(self))
             and super().__eq__(__o)
             and self.pose == __o.pose
         )
