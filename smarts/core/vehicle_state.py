@@ -120,7 +120,11 @@ class VehicleState(ActorState):
         assert self.pose is not None and self.dimensions is not None
 
     def __eq__(self, __o: object):
-        return super().__eq__(__o)
+        return (
+            isinstance(__o, type(self))
+            and super().__eq__(__o)
+            and self.pose == __o.pose
+        )
 
     @property
     def bounding_box_points(
