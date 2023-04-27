@@ -32,8 +32,8 @@ it collides, drives off road, or exceeds maximum number of steps per episode.
 
 .. figure:: ../_static/driving_smarts_2023/basic.png
 
-    Here, egos are in red colour, and background traffic is in silver colour. (Top left) Cruise scenario.
-    (Top right) Overtake scenario. (Bottom middle) Cut-off scenario.
+    Here, egos are in red colour, and background traffic is in silver colour. (Left) Cruise scenario.
+    (Middle) Overtake scenario. (Right) Cut-off scenario.
 
 **Driving SMARTS 2023.2** focuses on navigating various type of turns. Some sample turning scenarios are depicted
 below.
@@ -64,9 +64,9 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
-one of the action spaces and specify the chosen action space through the ego's agent interface.
+The action space for an ego agent can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. The user should choose
+one of the action spaces and specify the chosen action space through the ego agent's interface.
 
 Code structure
 --------------

@@ -89,6 +89,21 @@ class ProviderState:
         intersection = actor_ids & provider_actor_ids
         return bool(intersection)
 
+    def replace_actor_type(
+        self, updated_actors: List[ActorState], actor_state_type: type
+    ):
+        """Replaces all actors of the given type.
+
+        Args:
+            updated_actors (List[ActorState]): The actors to use as replacement.
+            actor_type (str): The actor type to replace.
+        """
+        self.actors = [
+            actor_state
+            for actor_state in self.actors
+            if not issubclass(actor_state.__class__, actor_state_type)
+        ] + updated_actors
+
 
 class ProviderManager:
     """Interface to be implemented by a class that manages a set of Providers

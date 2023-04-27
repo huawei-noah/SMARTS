@@ -126,7 +126,7 @@ class VehicleGap:
     """If True, enables computation of coresponding cost function. Else, 
     disabled.
     """
-    actor: str = "Leader-007"
+    actor: str = ""
     """Gap between ego and the specified `actor` is computed."""
 
 

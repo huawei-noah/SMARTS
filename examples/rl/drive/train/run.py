@@ -6,7 +6,6 @@ from pathlib import Path
 
 # Required to load inference module
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
 import argparse
 import warnings
 from datetime import datetime

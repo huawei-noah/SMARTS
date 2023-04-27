@@ -447,7 +447,7 @@ class RoadMap:
             position = self.from_lane_coord(RefLinePoint(s=offset))
             desired_vector = self.vector_at_offset(offset)
             orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
-            return Pose(position=position, orientation=orientation)
+            return Pose(position=position.as_np_array, orientation=orientation)
 
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5

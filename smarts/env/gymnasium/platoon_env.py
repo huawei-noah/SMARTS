@@ -58,12 +58,13 @@ def platoon_env(
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
-    """Each ego is supposed to track and follow its specified leader (i.e., lead
-    vehicle) in a single file or in a platoon fashion. The name of the lead vehicle
-    to track is given to the ego through its
-    :attr:`~smarts.core.agent_interface.InterestDoneCriteria.actors_of_interest` attribute.
-    The episode ends for an ego when its assigned leader reaches the leader's
-    destination. Egos do not have prior knowledge of their assigned leader's destination.
+    """All ego agents should track and follow the leader (i.e., lead vehicle) in a
+    single-file fashion. The lead vehicle is marked as a vehicle of interest
+    and may be found by filtering the
+    :attr:`~smarts.core.observations.VehicleObservation.interest` attribute of
+    the neighborhood vehicles in the observation. The episode ends when the
+    leader reaches its destination. Ego agents do not have prior knowledge of the
+    leader's destination.
 
     Observation space for each agent:
         Formatted :class:`~smarts.core.observations.Observation` using
@@ -145,7 +146,7 @@ def platoon_env(
     env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
         agent_interfaces=agent_interfaces,
-        sim_name="Platoon",
+        sim_name="VehicleFollowing",
         headless=headless,
         visdom=visdom,
         seed=seed,

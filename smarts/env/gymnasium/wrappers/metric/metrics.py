@@ -38,7 +38,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
     get_dist,
     make_cost_funcs,
 )
-from smarts.env.gymnasium.wrappers.metric.formula import Score
+from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
@@ -67,7 +67,7 @@ class MetricsBase(gym.Wrapper):
         else:
             from smarts.env.gymnasium.wrappers.metric.formula import Formula
 
-        self._formula = Formula()
+        self._formula: FormulaBase = Formula()
         self._params = self._formula.params()
 
         _check_env(agent_interfaces=self.env.agent_interfaces, params=self._params)

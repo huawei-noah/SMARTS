@@ -6,7 +6,7 @@ Driving SMARTS 2023.3
 Objective
 ---------
 
-Objective is to develop a single-ego policy capable of controlling a single ego to perform a platooning task in the 
+Objective is to develop a single-ego policy capable of controlling a single ego to perform a vehicle-following task in the 
 ``platoon-v0`` environment. Refer to :func:`~smarts.env.gymnasium.platoon_env.platoon_env` for environment details. 
 
 .. important::
@@ -16,9 +16,10 @@ Objective is to develop a single-ego policy capable of controlling a single ego 
     policies are executed in a distributed manner. The single-ego policy should be capable of accounting for and 
     interacting with other ego vehicles, if any are present.
 
-Each ego is supposed to track and follow its specified leader (i.e., lead vehicle) in a single file or in a 
-platoon fashion. The name identifier of the lead vehicle to be followed is given to the ego through the configuration
-of the :attr:`~smarts.core.agent_interface.InterestDoneCriteria.actors_of_interest` attribute.
+All ego agents should track and follow the leader (i.e., lead vehicle) in a single-file fashion. The lead vehicle is 
+marked as a vehicle of interest and may be found by filtering the
+:attr:`~smarts.core.observations.VehicleObservation.interest` attribute of the neighborhood vehicles in the 
+observation.
 
 .. figure:: ../_static/driving_smarts_2023/vehicle_following.png
 
@@ -26,9 +27,9 @@ of the :attr:`~smarts.core.agent_interface.InterestDoneCriteria.actors_of_intere
     (Left) At the start of episode, egos start tracking the lead vehicle. (Right) After a while, egos follow the
     lead vehicle in a single-file fashion.
 
-An ego is terminated when its assigned leader reaches the leader's destination. Egos do not have prior knowledge of 
-the assigned leader's destination. Additionally, the ego terminates whenever it collides, drives off road, or 
-exceeds maximum number of steps per episode.
+The episode ends when the leader reaches its destination. Ego agents do not have prior knowledge of the leader's 
+destination. Additionally, the ego terminates whenever it collides, drives off road, or exceeds maximum number 
+of steps per episode.
 
 Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
 predictive models, etc, may be used to develop the policy.

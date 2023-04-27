@@ -219,6 +219,7 @@ class SMARTS(ProviderManager):
         Dict[str, Dict[str, float]],
     ]:
         """Progress the simulation by a fixed or specified time.
+
         Args:
             agent_actions:
                 Actions that the agents want to perform on their actors.
@@ -295,7 +296,6 @@ class SMARTS(ProviderManager):
         # 2. Step all providers and harmonize state
         with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
-        self._last_provider_state = provider_state
         with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
 
@@ -313,7 +313,7 @@ class SMARTS(ProviderManager):
         # want these during their observation/reward computations.
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
-        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._sync_smarts_and_provider_actor_states(provider_state)
         self._sensor_manager.clean_up_sensors_for_actors(
             set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
         )
@@ -409,14 +409,15 @@ class SMARTS(ProviderManager):
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or `start_time` if there
          are no agents in the simulation.
+
         Args:
-            scenario(Scenario):
-                The scenario to reset the simulation with.
+            scenario(smarts.core.scenario.Scenario): The scenario to reset the simulation with.
             start_time(float):
                 The initial amount of simulation time to skip. This has implications on all time
                 dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
                 If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
                 simulation should start at `start_time==0.2`.
+
         Returns:
             Agent observations. This observation is as follows:
                 - If no agents: the initial simulation observation at `start_time`
@@ -1055,10 +1056,10 @@ class SMARTS(ProviderManager):
         return VERSION
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
-        """
-        Teardown agents in the given sequence
-        Params:
-            agent_ids: Sequence of agent ids
+        """Teardown agents in the given sequence.
+
+        Args:
+            agent_ids: A sequence of agent ids to terminate and release.
         """
         agents_to_teardown = {
             id_
@@ -1069,10 +1070,10 @@ class SMARTS(ProviderManager):
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
-        """
-        Teardown agents in the given list that have no actors registered as
+        """Teardown agents in the given list that have no actors registered as
         controlled-by or shadowed-by (for each given agent.)
-        Params:
+
+        Args:
             agent_ids: Sequence of agent ids
         """
         self._check_valid()
@@ -1329,6 +1330,13 @@ class SMARTS(ProviderManager):
 
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
+
+    def _sync_smarts_and_provider_actor_states(
+        self, external_provider_state: ProviderState
+    ):
+        self._last_provider_state = external_provider_state
+        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._last_provider_state.replace_actor_type(self._vehicle_states, VehicleState)
 
     @property
     def should_reset(self):
@@ -1669,7 +1677,8 @@ class SMARTS(ProviderManager):
             step_count=self.step_count,
             vehicle_collisions=self._vehicle_collisions,
             vehicle_states={
-                vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
+                vehicle_state.actor_id: vehicle_state
+                for vehicle_state in self._vehicle_states
             },
             vehicles_for_agents={
                 agent_id: self.vehicle_index.vehicle_ids_by_owner_id(
