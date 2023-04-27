@@ -1651,7 +1651,7 @@ class SMARTS(ProviderManager):
         )
 
     @cached_property
-    def cached_frame(self):
+    def cached_frame(self) -> SimulationFrame:
         """Generate a frozen frame state of the simulation."""
         self._check_valid()
         agent_actor_ids = self.vehicle_index.agent_vehicle_ids()
