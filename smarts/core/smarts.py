@@ -78,7 +78,6 @@ logging.basicConfig(
     level=logging.ERROR,
 )
 
-_DEFAULT_PATTERN = re.compile("")
 MAX_PYBULLET_FREQ = 240
 
 
@@ -297,7 +296,6 @@ class SMARTS(ProviderManager):
         # 2. Step all providers and harmonize state
         with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
-        self._last_provider_state = provider_state
         with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
 
@@ -315,7 +313,7 @@ class SMARTS(ProviderManager):
         # want these during their observation/reward computations.
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
-        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._sync_smarts_and_provider_actor_states(provider_state)
         self._sensor_manager.clean_up_sensors_for_actors(
             set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
         )
@@ -1345,6 +1343,13 @@ class SMARTS(ProviderManager):
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
+    def _sync_smarts_and_provider_actor_states(
+        self, external_provider_state: ProviderState
+    ):
+        self._last_provider_state = external_provider_state
+        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._last_provider_state.replace_actor_type(self._vehicle_states, VehicleState)
+
     @property
     def should_reset(self):
         """If the simulation requires a reset."""
@@ -1684,7 +1689,8 @@ class SMARTS(ProviderManager):
             step_count=self.step_count,
             vehicle_collisions=self._vehicle_collisions,
             vehicle_states={
-                vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
+                vehicle_state.actor_id: vehicle_state
+                for vehicle_state in self._vehicle_states
             },
             vehicles_for_agents={
                 agent_id: self.vehicle_index.vehicle_ids_by_owner_id(
@@ -1696,7 +1702,7 @@ class SMARTS(ProviderManager):
             vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
-            interest_filter=self.scenario.metadata.get(
-                "actor_of_interest_re_filter", _DEFAULT_PATTERN
+            interest_filter=re.compile(
+                self.scenario.metadata.get("actor_of_interest_re_filter", "")
             ),
         )
