@@ -1420,10 +1420,7 @@ class SMARTS(ProviderManager):
             vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                actor_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
-                # TODO: Should we specify the collidee as the vehicle ID instead of
-                #       the agent/social ID?
-                collision = Collision(collidee_id=actor_id or collidee.id)
+                collision = Collision(collidee_id=collidee.id)
                 vehicle_collisions.append(collision)
 
         traffic_providers = [

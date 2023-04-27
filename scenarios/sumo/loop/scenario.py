@@ -68,7 +68,9 @@ gen_scenario(
                 follow_offset=(-7, 10),
             ),
         ],
-        scenario_metadata=t.ScenarioMetadata(r"^(leader)|(other_interest)$", Colors.Blue),
+        scenario_metadata=t.ScenarioMetadata(
+            r"^(leader)|(other_interest)$", Colors.Blue
+        ),
     ),
     output_dir=Path(__file__).parent,
 )
