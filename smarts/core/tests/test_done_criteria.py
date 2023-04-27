@@ -129,8 +129,8 @@ def test_agents_alive_done_check(sim, scenario):
 
 
 def test_interest_done():
-    waiting_interest_criteria = InterestDoneCriteria("leader", strict=False)
-    strict_interest_criteria = InterestDoneCriteria("leader", strict=True)
+    waiting_interest_criteria = InterestDoneCriteria(("leader",), strict=False)
+    strict_interest_criteria = InterestDoneCriteria(("leader",), strict=True)
 
     sensor_state = mock.Mock()
     sensor_state.seen_interest_actors = True
