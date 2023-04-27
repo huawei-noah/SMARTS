@@ -67,7 +67,6 @@ class Formula(FormulaBase):
             jerk_linear=JerkLinear(active=False),
             vehicle_gap=VehicleGap(
                 active=True,
-                actor="Leader-007",
             ),
             steps=Steps(
                 active=False,
