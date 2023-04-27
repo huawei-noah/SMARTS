@@ -44,7 +44,7 @@ from smarts.core.colors import Colors
 from smarts.core.controllers import ActionSpaceType, ControllerOutOfLaneException
 from smarts.core.coordinates import Point
 from smarts.core.local_traffic_provider import LocalTrafficProvider
-from smarts.core.plan import PositionalGoal
+from smarts.core.plan import Plan, PositionalGoal
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -323,14 +323,21 @@ class ObservationRecorder:
         valid_vehicles = (current_vehicles - off_road_vehicles) & selected_vehicles
         for veh_id in valid_vehicles:
             try:
-                self._smarts.attach_sensors_to_vehicles(self.agent_interface, {veh_id})
+                if not self._smarts.sensor_manager.sensors_for_actor_id(veh_id):
+                    self._smarts.vehicle_index.start_agent_observation(
+                        self._smarts,
+                        veh_id,
+                        veh_id,
+                        self.agent_interface,
+                        Plan(self._smarts.road_map),
+                    )
             except ControllerOutOfLaneException:
                 self._logger.warning(f"{veh_id} out of lane, skipped attaching sensors")
                 off_road_vehicles.add(veh_id)
 
         # Get observations from each vehicle and record them.
         obs = dict()
-        obs, _, _, _ = self._smarts.observe_from(list(valid_vehicles))
+        obs, _ = self._smarts.observe_from(list(valid_vehicles), self.agent_interface)
         self._logger.debug(f"t={t}, active_vehicles={len(valid_vehicles)}")
         for id_ in list(obs):
             ego_state = obs[id_].ego_vehicle_state

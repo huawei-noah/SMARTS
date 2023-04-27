@@ -1,6 +1,8 @@
 import random
 from pathlib import Path
 
+from smarts.core import seed
+from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 from smarts.sstudio.types import EndlessMission, TrapEntryTactic
@@ -28,7 +30,12 @@ traffic = t.Traffic(
         for route in [("445633931", "445633932"), ("445633932", "445633931")] * 12
     ],
     trips=[
-        t.Trip("target", route=t.RandomRoute(), depart=0.5),
+        t.Trip("other_interest", route=t.RandomRoute(), depart=0.5),
+        t.Trip(
+            "leader",
+            route=t.Route(begin=("445633931", 0, 0.2), end=("445633931", 0, 20)),
+            depart=0,
+        ),
     ],
 )
 
@@ -70,7 +77,7 @@ gen_scenario(
                 [
                     t.Mission(
                         route=t.RandomRoute(),
-                        entry_tactic=t.IdEntryTactic("target", patience=10),
+                        entry_tactic=t.IdEntryTactic("other_interest", patience=10),
                     )
                 ],
             )
@@ -84,6 +91,9 @@ gen_scenario(
                 follow_offset=(-7, 10),
             ),
         ],
+        scenario_metadata=t.ScenarioMetadata(
+            r"^(leader)|(other_interest)$", Colors.Blue
+        ),
     ),
     output_dir=Path(__file__).parent,
 )
