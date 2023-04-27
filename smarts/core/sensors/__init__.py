@@ -600,7 +600,7 @@ class Sensors:
         )
         interest_done = False
         if interest:
-            cls._interest_done_check(
+            interest_done = cls._interest_done_check(
                 sim_frame.interest_actors(interest.actors_pattern),
                 sensor_state,
                 interest_criteria=interest,

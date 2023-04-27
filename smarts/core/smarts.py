@@ -1423,7 +1423,7 @@ class SMARTS(ProviderManager):
                 actor_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
                 # TODO: Should we specify the collidee as the vehicle ID instead of
                 #       the agent/social ID?
-                collision = Collision(collidee_id=actor_id)
+                collision = Collision(collidee_id=actor_id or collidee.id)
                 vehicle_collisions.append(collision)
 
         traffic_providers = [
