@@ -19,13 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from unittest import mock
+
 import pytest
 
+from smarts.core.actor import ActorState
 from smarts.core.agent_interface import (
     AgentInterface,
     AgentsAliveDoneCriteria,
     AgentsListAlive,
     DoneCriteria,
+    InterestDoneCriteria,
 )
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import Sensors
@@ -121,4 +125,31 @@ def test_agents_alive_done_check(sim, scenario):
     # 1 agents available, done requires 2 to be alive
     assert Sensors._agents_alive_done_check(
         sim_frame.ego_ids, sim_frame.potential_agent_ids, done_criteria.agents_alive
+    )
+
+
+def test_interest_done():
+    waiting_interest_criteria = InterestDoneCriteria(("leader",), strict=False)
+    strict_interest_criteria = InterestDoneCriteria(("leader",), strict=True)
+
+    sensor_state = mock.Mock()
+    sensor_state.seen_interest_actors = True
+    # 0 interest vehicles, previously seen, done requires 1 to exist
+    assert Sensors._interest_done_check({}, sensor_state, strict_interest_criteria)
+    assert Sensors._interest_done_check({}, sensor_state, waiting_interest_criteria)
+
+    sensor_state = mock.Mock()
+    sensor_state.seen_interest_actors = False
+    # 0 interest vehicles, previously seen, done requires 1 to exist
+    assert Sensors._interest_done_check({}, sensor_state, strict_interest_criteria)
+    assert not Sensors._interest_done_check({}, sensor_state, waiting_interest_criteria)
+
+    sensor_state = mock.Mock()
+    sensor_state.seen_interest_actors = False
+    # 0 interest vehicles, done requires 1 to exist
+    assert not Sensors._interest_done_check(
+        {"leader": ActorState("leader")}, sensor_state, strict_interest_criteria
+    )
+    assert not Sensors._interest_done_check(
+        {"leader": ActorState("leader")}, sensor_state, waiting_interest_criteria
     )

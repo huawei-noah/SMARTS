@@ -99,6 +99,9 @@ class Collision(NamedTuple):
 
     # XXX: This might not work for boid agents
     collidee_id: str
+    """The id of the body that was collided with."""
+    collidee_owner_id: str
+    """The id of the controlling agent or other controlling entity."""
 
 
 @dataclass

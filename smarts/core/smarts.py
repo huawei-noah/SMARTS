@@ -1432,10 +1432,8 @@ class SMARTS(ProviderManager):
             vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                actor_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
-                # TODO: Should we specify the collidee as the vehicle ID instead of
-                #       the agent/social ID?
-                collision = Collision(collidee_id=actor_id)
+                owner_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
+                collision = Collision(collidee_id=collidee.id, collidee_owner_id=owner_id)
                 vehicle_collisions.append(collision)
 
         traffic_providers = [
@@ -1663,7 +1661,7 @@ class SMARTS(ProviderManager):
         )
 
     @cached_property
-    def cached_frame(self):
+    def cached_frame(self) -> SimulationFrame:
         """Generate a frozen frame state of the simulation."""
         self._check_valid()
         agent_actor_ids = self.vehicle_index.agent_vehicle_ids()

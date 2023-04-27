@@ -549,7 +549,7 @@ class Sensors:
         interest_criteria: Optional[InterestDoneCriteria],
     ):
         if interest_criteria is None or len(interest_actors) > 0:
-            sensor_state.seen_alive_actors = True
+            sensor_state.seen_interest_actors = True
             return False
 
         if interest_criteria.strict or sensor_state.seen_interest_actors:
@@ -602,7 +602,7 @@ class Sensors:
         )
         interest_done = False
         if interest:
-            cls._interest_done_check(
+            interest_done = cls._interest_done_check(
                 sim_frame.interest_actors(interest.actors_pattern),
                 sensor_state,
                 interest_criteria=interest,
