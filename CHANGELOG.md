@@ -69,6 +69,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 - Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
 - Fixed CI tests for metrics.
+- Fixed `traffic_histories_to_observations` script.
 - Fixed an issue where the actor states and vehicle states were not synchronized after simulation vehicle updates resulting in different values from the simulation frame.
 - Minor fix in regular expression compilation of `actor_of_interest_re_filter` from scenario metadata.
 - Fixed acceleration and jerk computation in comfort metric, by ignoring vehicle position jitters smaller than a threshold.
