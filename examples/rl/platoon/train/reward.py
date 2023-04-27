@@ -8,8 +8,6 @@ class Reward(gym.Wrapper):
     def __init__(self, env):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
-        self._half_pi = np.pi / 2
-        self._two_pi = 2 * np.pi
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._total_dist = {}
 
