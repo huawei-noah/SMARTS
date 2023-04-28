@@ -17,7 +17,7 @@ cloudpickle==1.6.0
 colorama==0.4.6
 constantly==15.1.0
 contourpy==1.0.7
-coverage==7.2.3
+coverage==7.2.4
 cycler==0.11.0
 dm-tree==0.1.8
 eclipse-sumo==1.17.0
