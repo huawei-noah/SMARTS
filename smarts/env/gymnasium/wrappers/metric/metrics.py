@@ -191,21 +191,20 @@ class MetricsBase(gym.Wrapper):
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
-            ref_actor = ""
-            start_pos = Point(0, 0, 0)
-            if self._params.dist_to_destination.active:
-                interest_criteria = self.env.agent_interfaces[
-                    agent_name
-                ].done_criteria.interest
-                if isinstance(interest_criteria, InterestDoneCriteria):
-                    ref_actor = next(iter(interest_actors))
-                else:
-                    ref_actor = agent_name
+            interest_criteria = self.env.agent_interfaces[
+                agent_name
+            ].done_criteria.interest
+            if isinstance(interest_criteria, InterestDoneCriteria):
+                ref_actor = next(iter(interest_actors))
                 start_pos = Point(*self._vehicle_index.vehicle_position(ref_actor))
+            else:
+                ref_actor = agent_name
+                start_pos = Point(*self._scen.missions[agent_name].start.position)
 
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
+                    "agent_name": agent_name,
                     "ref_actor": ref_actor,
                     "start_pos": start_pos,
                 },

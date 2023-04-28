@@ -92,7 +92,7 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
         T_u += u_t
 
         if not done:
-            return Costs(comfort=-1)
+            return Costs(comfort=-1e8)
         else:
             T_trv = step
             for _ in range(T_p):
@@ -106,10 +106,11 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    ref_actor: float, start_pos: Point
+    agent_name:str, ref_actor: float, start_pos: Point
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
+    agent_name = agent_name
     start_pos = start_pos
     ref_actor = ref_actor
     ref_actor_prev_pos = start_pos
@@ -117,19 +118,19 @@ def _dist_to_destination(
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, start_pos, ref_actor, ref_actor_prev_pos
+        nonlocal mean, step, agent_name, start_pos, ref_actor, ref_actor_prev_pos
 
         if not done:
-            if obs.ego_vehicle_state.id != ref_actor:
+            if agent_name != ref_actor:
                 ref_actor_prev_pos = Point(
                     *vehicle_index.vehicle_position(vehicle_id=ref_actor)
                 )
-            return Costs(dist_to_destination=-1)
+            return Costs(dist_to_destination=-1e8)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
             end_pos:Point
-            if obs.ego_vehicle_state.id == ref_actor:
+            if agent_name == ref_actor:
                 end_pos = obs.ego_vehicle_state.mission.goal.position
             else:
                 end_pos = ref_actor_prev_pos
@@ -361,7 +362,7 @@ def _steps(
         step = step + 1
 
         if not done:
-            return Costs(steps=-1)
+            return Costs(steps=-1e8)
 
         if obs.events.reached_goal or obs.events.interest_done:
             return Costs(steps=step / max_episode_steps)
@@ -493,7 +494,7 @@ class CostFuncsBase:
     # fmt: off
     collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[float, Point], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_destination: Callable[[str, float, Point], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
     dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
     jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
