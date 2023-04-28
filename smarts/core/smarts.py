@@ -36,6 +36,7 @@ from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
+from smarts.visdom.visdom_client import VisdomClient
 
 from . import config, models
 from .actor import ActorRole, ActorState
@@ -67,7 +68,6 @@ from .utils import pybullet
 from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
-from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
 from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle

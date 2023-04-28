@@ -36,7 +36,7 @@ from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.visdom_client import VisdomClient
+from smarts.visdom.visdom_client import VisdomClient
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.zoo.agent_spec import AgentSpec
 
