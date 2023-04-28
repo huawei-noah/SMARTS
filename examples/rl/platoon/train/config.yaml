@@ -3,8 +3,8 @@ smarts:
   sumo_gui: True # If True, enables sumo-gui display.
   seed: 42
   agent_locator: inference:contrib-agent-v0
-  env_id: smarts.env:platoon-v0  
-  scenarios: 
+  env_id: smarts.env:platoon-v0
+  scenarios:
     # - scenarios/sumo/platoon/straight_agents_1
     # - scenarios/sumo/platoon/fork_agents_1
     # - scenarios/sumo/platoon/merge_exit_agents_1

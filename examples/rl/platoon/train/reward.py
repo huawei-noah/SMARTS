@@ -62,12 +62,12 @@ class Reward(gym.Wrapper):
         leader = None
         max_agent_steps_completed = 0
         for agent_id, agent_obs in obs.items():
-            neighbor_vehicles = _get_leader(obs=agent_obs)
+            interest_vehicles = _get_interest_vehicles(obs=agent_obs)
             max_agent_steps_completed = max(
                 max_agent_steps_completed, agent_obs["steps_completed"]
             )
-            if neighbor_vehicles:
-                leader = neighbor_vehicles[0]
+            if interest_vehicles:
+                leader = interest_vehicles[0]
                 break
 
         if leader == None and max_agent_steps_completed == 1:
@@ -137,9 +137,9 @@ class Reward(gym.Wrapper):
         return reward
 
 
-def _get_leader(obs):
+def _get_interest_vehicles(obs):
     keys = ["interest", "id", "heading", "lane_index", "position", "speed"]
-    neighbors_tuple = [
+    interest_vehicles = [
         neighbor
         for neighbor in zip(
             obs["neighborhood_vehicle_states"]["interest"],
@@ -151,8 +151,8 @@ def _get_leader(obs):
         )
         if neighbor[0] == 1
     ]
-    neighbors_dict = [dict(zip(keys, neighbor)) for neighbor in neighbors_tuple]
-    return neighbors_dict
+    interest_vehicles_dict = [dict(zip(keys, interest_vehicle)) for interest_vehicle in interest_vehicles]
+    return interest_vehicles_dict
 
 
 def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1):
