@@ -88,7 +88,6 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
                     jerk = (acc - acc_1) / dt
 
         dyn = max(jerk / jerk_linear_max, acc / acc_linear_max)
-
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
