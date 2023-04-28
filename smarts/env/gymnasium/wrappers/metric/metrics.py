@@ -192,22 +192,22 @@ class MetricsBase(gym.Wrapper):
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
-            dist_wrt_actor = ""
+            ref_actor = ""
             start_pos = Point(0, 0, 0)
             if self._params.dist_to_destination.active:
                 interest_criteria = self.env.agent_interfaces[
                     agent_name
                 ].done_criteria.interest
                 if isinstance(interest_criteria, InterestDoneCriteria):
-                    dist_wrt_actor = next(iter(interest_actors))
+                    ref_actor = next(iter(interest_actors))
                 else:
-                    dist_wrt_actor = agent_name
-                start_pos = Point(*self._vehicle_index.vehicle_position(dist_wrt_actor))
+                    ref_actor = agent_name
+                start_pos = Point(*self._vehicle_index.vehicle_position(ref_actor))
 
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
-                    "dist_wrt_actor": dist_wrt_actor,
+                    "ref_actor": ref_actor,
                     "start_pos": start_pos,
                 },
                 dist_to_obstacles={
@@ -215,7 +215,7 @@ class MetricsBase(gym.Wrapper):
                 },
                 vehicle_gap={
                     "num_agents": len(self._cur_agents),
-                    "actor": dist_wrt_actor,
+                    "actor": ref_actor,
                 },
                 steps={
                     "max_episode_steps": self.env.agent_interfaces[

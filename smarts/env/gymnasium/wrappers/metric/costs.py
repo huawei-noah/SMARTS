@@ -108,29 +108,32 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    dist_wrt_actor: float, start_pos: Point
+    ref_actor: float, start_pos: Point
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
-    dist_wrt_actor = dist_wrt_actor
     start_pos = start_pos
+    ref_actor = ref_actor
+    ref_actor_prev_pos: Point
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, dist_wrt_actor, start_pos
+        nonlocal mean, step, start_pos, ref_actor, ref_actor_prev_pos
 
         if not done:
+            if obs.ego_vehicle_state.id != ref_actor:
+                ref_actor_prev_pos = Point(
+                    *vehicle_index.vehicle_position(vehicle_id=ref_actor)
+                )
             return Costs(dist_to_destination=-1)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
-            if obs.ego_vehicle_state.id == dist_wrt_actor:
+            if obs.ego_vehicle_state.id == ref_actor:
                 end_pos = obs.ego_vehicle_state.mission.goal.position
             else:
-                end_pos = Point(
-                    *vehicle_index.vehicle_position(vehicle_id=dist_wrt_actor)
-                )
+                end_pos = ref_actor_prev_pos
 
             cur_pos = Point(*obs.ego_vehicle_state.position)
             dist_remainder = get_dist(
