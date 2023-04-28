@@ -58,6 +58,7 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import pickle_hash_int
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_cw_around_point
+from smarts.sstudio.types import ConditionState
 
 
 class _SUMO_PARAMS_MODE(IntEnum):
@@ -601,7 +602,7 @@ class ConditionState(IntFlag):
 
     FALSE = 0
     """This condition is false."""
-    UNTRIGGERED = 1
+    BEFORE = 1
     """This condition is false and never evaluated true before."""
     EXPIRED = 2
     """This condition is false and will never evaluate true."""
@@ -659,6 +660,21 @@ class Condition:
 
 
 @dataclass(frozen=True)
+class SubjectCondition(Condition):
+    """This condition assumes that there is a subject involved."""
+
+    def evaluate(self, *args, actor_info, **kwargs) -> ConditionState:
+        """Used to evaluate if a condition is met.
+
+        Args:
+            actor_info: Information about the currently relevant actor.
+        Returns:
+            ConditionState: The evaluation result of the condition.
+        """
+        raise NotImplementedError()
+
+
+@dataclass(frozen=True)
 class LiteralCondition(Condition):
     """This condition evaluates as a literal without considering evaluation parameters."""
 
@@ -686,7 +702,7 @@ class TimeWindowCondition(Condition):
             return ConditionState.TRUE
         elif self.end >= simulation_time:
             return ConditionState.EXPIRED
-        return ConditionState.UNTRIGGERED
+        return ConditionState.BEFORE
 
 
 @dataclass(frozen=True)
@@ -711,6 +727,60 @@ class NegatedCondition(Condition):
 
     def evaluate(self, *args, **kwargs) -> ConditionState:
         return ~self.inner_condition.evaluate(*args, **kwargs)
+
+
+@dataclass(frozen=True)
+class DelayCondition(Condition):
+    """This condition delays the inner condition by a number of seconds.
+
+    This can be used to wait for some time after the inner condition has become true to be true.
+    Note that the original condition may no longer be true by the time delay has expired.
+    """
+
+    inner_condition: Condition
+    """The inner condition to delay."""
+
+    delay_seconds: float
+    """The number of seconds to delay for."""
+
+    inner_affects_final_result: bool = False
+    """If the inner condition must still be true at the end of the delay to be true."""
+
+    def evaluate(self, *args, simulation_time, **kwargs) -> ConditionState:
+        key = "met_time"
+        if (met_time := getattr(self, key, None)) is not None:
+            if simulation_time > met_time + self.delay_seconds:
+                result = ConditionState.TRUE
+                if self.inner_affects_final_result:
+                    result &= self.inner_condition.evaluate(
+                        *args, simulation_time, **kwargs
+                    )
+                return result
+        elif self.inner_condition.evaluate(*args, simulation_time, **kwargs):
+            setattr(self, key, simulation_time)
+        return ConditionState.FALSE
+
+
+@dataclass(frozen=True)
+class OnRoadCondition(SubjectCondition):
+    """This condition is true if the subject is on road."""
+
+    def evaluate(self, *args, actor_info, **kwargs) -> ConditionState:
+        return ConditionState.TRUE if actor_info.on_road else ConditionState.FALSE
+
+
+@dataclass(frozen=True)
+class IsVehicleType(SubjectCondition):
+    """This condition is true if the subject is of the given types."""
+
+    vehicle_type: str
+
+    def evaluate(self, *args, actor_info, **kwargs) -> ConditionState:
+        return (
+            ConditionState.TRUE
+            if actor_info.vehicle_type == self.vehicle_type
+            else ConditionState.FALSE
+        )
 
 
 @dataclass(frozen=True)
