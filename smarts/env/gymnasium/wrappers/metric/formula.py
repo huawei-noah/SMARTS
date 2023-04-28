@@ -142,7 +142,7 @@ def _rule_violation(costs: Costs) -> float:
     return rule_violation
 
 
-def avg_costs(records_sum:Dict[str, Dict[str, Record]])->Costs:
+def avg_costs(records_sum: Dict[str, Dict[str, Record]]) -> Costs:
     """Averages costs over number of agents and number of episodes.
 
     Args:

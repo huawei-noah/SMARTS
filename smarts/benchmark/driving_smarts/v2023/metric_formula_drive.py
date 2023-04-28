@@ -26,7 +26,12 @@ import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score, avg_costs
-from smarts.env.gymnasium.wrappers.metric.params import Comfort, DistToObstacles, Params
+from smarts.env.gymnasium.wrappers.metric.params import (
+    Comfort,
+    DistToObstacles,
+    JerkLinear,
+    Params,
+)
 from smarts.env.gymnasium.wrappers.metric.types import Record
 
 
@@ -51,6 +56,7 @@ class Formula(FormulaBase):
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
+            jerk_linear=JerkLinear(active=False),
         )
         return params
 
