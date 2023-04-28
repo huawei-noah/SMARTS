@@ -81,7 +81,6 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        visdom=False,
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,

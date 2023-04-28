@@ -94,20 +94,18 @@ Start the visdom server before running the scenario and open the server URL in y
 .. code-block:: bash
 
     # Install visdom
-    $ pip install visdom
-    # Start the server
-    $ visdom
+    $ pip install smarts[visdom]
 
-Enable Visdom in the SMARTS environment by setting ``visdom=True``. For example:
+Enable Visdom in the SMARTS environment by setting ``SMARTS_VISDOM_ENABLED``. For example:
 
-.. code-block:: python
+.. code-block:: engine.ini
 
-    env = gym.make(
-        "smarts.env:hiway-v0", # env entry name
-        ...
-        visdom=True, # whether or not to enable visdom visualization (see Appendix).
-        ...
-    )
+    [core]
+    ...
+    [visdom]
+    enabled=True
+    hostname="http://localhost"
+    port=8097
 
 Below is a sample visualization of an agent's camera sensor observations.
 

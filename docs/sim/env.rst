@@ -28,7 +28,6 @@ Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
             scenarios=[scenario_path], # List of paths to scenario folders.
             agent_interfaces={AGENT_ID: agent_spec.interface}, # Dictionary mapping agents to agent interfaces.
             headless=False, # False to enable Envision visualization of the environment.
-            visdom=False, # Visdom visualization of observations. False to disable. Only supported in HiwayEnv.
             seed=42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
         )
 
@@ -60,7 +59,6 @@ exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent
             scenarios=[scenario_path], # List of paths to scenario folders.
             agent_interfaces={AGENT_ID: agent_spec.interface}, # Dictionary mapping agents to agent interfaces.
             headless=False, # False to enable Envision visualization of the environment.
-            visdom=False, # Visdom visualization of observations. False to disable. Only supported in HiwayEnv.
             seed=42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
             observation_options=ObservationOptions.multi_agent, # Configures between padded and un-padded agents in observations.
         )

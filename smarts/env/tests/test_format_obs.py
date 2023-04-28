@@ -113,7 +113,6 @@ def make_env(request):
         scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=_make_agent_specs(request.param),
         headless=True,
-        visdom=False,
     )
 
     yield env, request.param

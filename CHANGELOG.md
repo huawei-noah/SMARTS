@@ -10,8 +10,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 ### Changed
 ### Deprecated
+- `visdom` is set to be removed from the SMARTS object parameters.
 ### Fixed
 ### Removed
 ### Security
