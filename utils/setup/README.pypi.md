@@ -38,7 +38,17 @@ SUMO primarily targets Ubuntu versions >= 16.04. So you may not be able to downl
 
 If you try through a package manager make sure to command-line call `sumo` to make sure that you have the right version of SUMO.
 
-We would recommend using the prebuilt binaries but if you are using Ubuntu 16 (Xenial), there is a bash script in `extras/sumo/ubuntu_build` that you can use to automate the compilation of SUMO version 1.5.0.
+We would recommend using the prebuilt binaries but if you are using Ubuntu there is a bash script in the SMARTS repository `utils/extras/sumo/ubuntu_build` that you can use to compile SUMO from the eclipse SUMO repository.
+
+```bash
+# $ ubuntu_sumo_build.sh
+# Error: both ubuntu-version and sumo-tag arguments are required
+# -u, --ubuntu-version <ubuntu docker tag e.g. xenial, 16.04, 21.04, ...>
+#       See https://hub.docker.com/_/ubuntu/tags?page=1&ordering=-last_updated
+# -s, --sumo-tag <sumo commit tag or commit id>
+#       See https://github.com/eclipse/sumo/tags
+bash utils/extras/sumo/ubuntu_build/ubuntu_sumo_build.sh -u focal -s v1_16_0
+```
 
 ### MacOS
 
