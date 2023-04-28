@@ -15,7 +15,13 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: [{ loader: "style-loader" }, { loader: "css-loader" }]
-            }
+            },
+            {
+                test: /\.m?js$/,
+                resolve: {
+                    fullySpecified: false, // disable the behaviour (see https://github.com/webpack/webpack/issues/11467)
+                },
+            },
         ]
     },
     devServer: {
