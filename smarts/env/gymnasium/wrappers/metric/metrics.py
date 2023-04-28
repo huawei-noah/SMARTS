@@ -20,12 +20,12 @@
 
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set
 
 import gymnasium as gym
 
 from smarts.core.agent_interface import AgentInterface, InterestDoneCriteria
-from smarts.core.coordinates import Point, RefLinePoint
+from smarts.core.coordinates import Point
 from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
@@ -35,7 +35,6 @@ from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
     CostFuncs,
     Done,
-    get_dist,
     make_cost_funcs,
 )
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
@@ -192,21 +191,20 @@ class MetricsBase(gym.Wrapper):
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
-            ref_actor = ""
-            start_pos = Point(0, 0, 0)
-            if self._params.dist_to_destination.active:
-                interest_criteria = self.env.agent_interfaces[
-                    agent_name
-                ].done_criteria.interest
-                if isinstance(interest_criteria, InterestDoneCriteria):
-                    ref_actor = next(iter(interest_actors))
-                else:
-                    ref_actor = agent_name
+            interest_criteria = self.env.agent_interfaces[
+                agent_name
+            ].done_criteria.interest
+            if isinstance(interest_criteria, InterestDoneCriteria):
+                ref_actor = next(iter(interest_actors))
                 start_pos = Point(*self._vehicle_index.vehicle_position(ref_actor))
+            else:
+                ref_actor = agent_name
+                start_pos = Point(*self._scen.missions[agent_name].start.position)
 
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
+                    "agent_name": agent_name,
                     "ref_actor": ref_actor,
                     "start_pos": start_pos,
                 },
@@ -393,7 +391,7 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
     for agent_name, agent_interface in agent_interfaces.items():
         interest_criteria = agent_interface.done_criteria.interest
         if not (
-            (goal_types[agent_name] == PositionalGoal and interest_criteria == None)
+            (goal_types[agent_name] == PositionalGoal and interest_criteria is None)
             or (
                 goal_types[agent_name] == EndlessGoal
                 and isinstance(interest_criteria, InterestDoneCriteria)
