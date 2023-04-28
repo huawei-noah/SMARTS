@@ -30,7 +30,6 @@ from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
@@ -193,38 +192,30 @@ class MetricsBase(gym.Wrapper):
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
-            end_pos = Point(0, 0, 0)
-            dist_tot = 0
+            ref_actor = ""
+            start_pos = Point(0, 0, 0)
             if self._params.dist_to_destination.active:
                 interest_criteria = self.env.agent_interfaces[
                     agent_name
                 ].done_criteria.interest
                 if isinstance(interest_criteria, InterestDoneCriteria):
-                    end_pos, dist_tot = _get_sumo_smarts_dist(
-                        vehicle_name=interest_criteria.actors_filter[0],
-                        traffic_sims=self.env.smarts.traffic_sims,
-                        road_map=self._road_map,
-                    )
-                elif interest_criteria == None:
-                    end_pos = self._scen.missions[agent_name].goal.position
-                    dist_tot = get_dist(
-                        road_map=self._road_map,
-                        point_a=Point(*self._scen.missions[agent_name].start.position),
-                        point_b=end_pos,
-                    )
+                    ref_actor = next(iter(interest_actors))
+                else:
+                    ref_actor = agent_name
+                start_pos = Point(*self._vehicle_index.vehicle_position(ref_actor))
 
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
-                    "end_pos": end_pos,
-                    "dist_tot": dist_tot,
+                    "ref_actor": ref_actor,
+                    "start_pos": start_pos,
                 },
                 dist_to_obstacles={
                     "ignore": self._params.dist_to_obstacles.ignore,
                 },
                 vehicle_gap={
                     "num_agents": len(self._cur_agents),
-                    "actor": self._params.vehicle_gap.actor,
+                    "actor": ref_actor,
                 },
                 steps={
                     "max_episode_steps": self.env.agent_interfaces[
@@ -292,40 +283,6 @@ class MetricsBase(gym.Wrapper):
         """
         records_sum_copy = copy.deepcopy(self._records_sum)
         return self._formula.score(records_sum=records_sum_copy)
-
-
-def _get_sumo_smarts_dist(
-    vehicle_name: str, traffic_sims: List[TrafficProvider], road_map: RoadMap
-) -> Tuple[Point, float]:
-    """Computes the end point and route distance of a SUMO or a SMARTS vehicle
-    specified by `vehicle_name`.
-
-    Args:
-        vehicle_name (str): Name of vehicle.
-        traffic_sims (List[TrafficProvider]): Traffic providers.
-        road_map (RoadMap): Underlying road map.
-
-    Returns:
-        Tuple[Point, float]: End point and route distance.
-    """
-    traffic_sim = [
-        traffic_sim
-        for traffic_sim in traffic_sims
-        if traffic_sim.manages_actor(vehicle_name)
-    ]
-    assert (
-        len(traffic_sim) == 1
-    ), "None or multiple, traffic sims contain the vehicle of interest."
-    traffic_sim = traffic_sim[0]
-    dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
-    end_pos = (
-        road_map.road_by_id(dest_road)
-        .lane_at_index(0)
-        .from_lane_coord(RefLinePoint(s=1e10))
-    )
-    route = traffic_sim.route_for_vehicle(vehicle_name)
-    dist_tot = route.road_length
-    return end_pos, dist_tot
 
 
 class Metrics(gym.Wrapper):

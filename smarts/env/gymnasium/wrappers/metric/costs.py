@@ -87,7 +87,6 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
                     jerk = (acc - acc_1) / dt
 
         dyn = max(jerk / jerk_linear_max, acc / acc_linear_max)
-
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
@@ -107,30 +106,39 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point = Point(0, 0, 0), dist_tot: float = 0
+    ref_actor: float, start_pos: Point
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
-    end_pos = end_pos
-    dist_tot = dist_tot
+    start_pos = start_pos
+    ref_actor = ref_actor
+    ref_actor_prev_pos: Point
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot
+        nonlocal mean, step, start_pos, ref_actor, ref_actor_prev_pos
 
         if not done:
+            if obs.ego_vehicle_state.id != ref_actor:
+                ref_actor_prev_pos = Point(
+                    *vehicle_index.vehicle_position(vehicle_id=ref_actor)
+                )
             return Costs(dist_to_destination=-1)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
+            if obs.ego_vehicle_state.id == ref_actor:
+                end_pos = obs.ego_vehicle_state.mission.goal.position
+            else:
+                end_pos = ref_actor_prev_pos
+
             cur_pos = Point(*obs.ego_vehicle_state.position)
             dist_remainder = get_dist(
                 road_map=road_map, point_a=cur_pos, point_b=end_pos
             )
-            dist_remainder_capped = min(
-                dist_remainder, dist_tot
-            )  # Cap remainder distance
+            dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+            dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
     return func

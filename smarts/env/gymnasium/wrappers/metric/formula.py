@@ -103,27 +103,7 @@ class Formula(FormulaBase):
             "HumannessError", and "RuleViolation" scores.
         """
 
-        costs_total = Costs()
-        episodes = 0
-        for scen, val in records_sum.items():
-            # Number of agents in scenario.
-            agents_in_scenario = len(val.keys())
-            costs_list, counts_list = zip(
-                *[(record.costs, record.counts) for agent, record in val.items()]
-            )
-            # Sum costs over all agents in scenario.
-            costs_sum_agent: Costs = functools.reduce(
-                lambda a, b: add_dataclass(a, b), costs_list
-            )
-            # Average costs over number of agents in scenario.
-            costs_mean_agent = op_dataclass(costs_sum_agent, agents_in_scenario, divide)
-            # Sum costs over all scenarios.
-            costs_total = add_dataclass(costs_total, costs_mean_agent)
-            # Increment total number of episodes.
-            episodes += counts_list[0].episodes
-
-        # Average costs over total number of episodes.
-        costs_final = op_dataclass(costs_total, episodes, divide)
+        costs_final = avg_costs(records_sum=records_sum)
 
         # Compute sub-components of score.
         dist_to_destination = costs_final.dist_to_destination
@@ -160,3 +140,37 @@ def _rule_violation(costs: Costs) -> float:
     rule_violation = np.array([costs.speed_limit, costs.wrong_way])
     rule_violation = np.mean(rule_violation, dtype=float)
     return rule_violation
+
+
+def avg_costs(records_sum: Dict[str, Dict[str, Record]]) -> Costs:
+    """Averages costs over number of agents and number of episodes.
+
+    Args:
+        records_sum (Dict[str, Dict[str, Record]]): Raw costs.
+
+    Returns:
+        Costs: Averaged costs.
+    """
+    costs_total = Costs()
+    episodes = 0
+    for scen, val in records_sum.items():
+        # Number of agents in scenario.
+        agents_in_scenario = len(val.keys())
+        costs_list, counts_list = zip(
+            *[(record.costs, record.counts) for agent, record in val.items()]
+        )
+        # Sum costs over all agents in scenario.
+        costs_sum_agent: Costs = functools.reduce(
+            lambda a, b: add_dataclass(a, b), costs_list
+        )
+        # Average costs over number of agents in scenario.
+        costs_mean_agent = op_dataclass(costs_sum_agent, agents_in_scenario, divide)
+        # Sum costs over all scenarios.
+        costs_total = add_dataclass(costs_total, costs_mean_agent)
+        # Increment total number of episodes.
+        episodes += counts_list[0].episodes
+
+    # Average costs over total number of episodes.
+    costs_final = op_dataclass(costs_total, episodes, divide)
+
+    return costs_final
