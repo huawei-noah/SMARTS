@@ -74,6 +74,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where the actor states and vehicle states were not synchronized after simulation vehicle updates resulting in different values from the simulation frame.
 - Minor fix in regular expression compilation of `actor_of_interest_re_filter` from scenario metadata.
 - Fixed acceleration and jerk computation in comfort metric, by ignoring vehicle position jitters smaller than a threshold.
+- Fixed an issue in Envision where vehicle debug info would not update correctly.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
