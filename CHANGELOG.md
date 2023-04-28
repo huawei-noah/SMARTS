@@ -33,6 +33,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
 - `DistToDestination` metric now adds lane error penalty when agent terminates in different lane but same road as the goal position. 
 - `hiway-v1` can now be configured for per-agent or environment reward(s), truncation(s), and termination(s) through `step_return_type`.
+- `hiway-v1`'s `observation_options` no longer has an effect on the environment rewards, truncations, and terminations shapes.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
@@ -142,9 +143,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added vehicle of interest coloring through scenario studio. This lets the scenario color vehicles that match a certain pattern of vehicle id.
 - SMARTS now provides `remove_provider` to remove a provider from the simulation. Use carefully.
-- `hiway-v1` can now be configured for per-agent or environment reward(s), truncation(s), and termination(s) through `step_return_type`.
 ### Changed
-- `hiway-v1`'s `observation_options` no longer has an effect on the environment rewards, truncations, and terminations shapes.
 ### Deprecated
 ### Fixed
 - Fixed "rl/racing" `numpy` incompatibility.
