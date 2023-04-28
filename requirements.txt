@@ -17,7 +17,7 @@ cloudpickle==1.6.0
 colorama==0.4.6
 constantly==15.1.0
 contourpy==1.0.7
-coverage==7.2.3
+coverage==7.2.4
 cycler==0.11.0
 dm-tree==0.1.8
 eclipse-sumo==1.17.0
@@ -136,7 +136,7 @@ urllib3==1.26.15
 visdom==0.2.4
 wcwidth==0.2.6
 websocket-client==1.5.1
-Werkzeug==2.3.1
+Werkzeug==2.3.2
 wrapt==1.14.1
 yarl==1.9.2
 yattag==1.15.1
