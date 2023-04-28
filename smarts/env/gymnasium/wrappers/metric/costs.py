@@ -112,7 +112,7 @@ def _dist_to_destination(
     step = 0
     start_pos = start_pos
     ref_actor = ref_actor
-    ref_actor_prev_pos: Point
+    ref_actor_prev_pos = start_pos
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
@@ -128,6 +128,7 @@ def _dist_to_destination(
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
+            end_pos:Point
             if obs.ego_vehicle_state.id == ref_actor:
                 end_pos = obs.ego_vehicle_state.mission.goal.position
             else:
@@ -492,7 +493,7 @@ class CostFuncsBase:
     # fmt: off
     collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_destination: Callable[[float, Point], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
     dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
     jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset

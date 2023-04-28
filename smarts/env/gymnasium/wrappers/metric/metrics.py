@@ -20,12 +20,12 @@
 
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set
 
 import gymnasium as gym
 
 from smarts.core.agent_interface import AgentInterface, InterestDoneCriteria
-from smarts.core.coordinates import Point, RefLinePoint
+from smarts.core.coordinates import Point
 from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
@@ -35,7 +35,6 @@ from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
     CostFuncs,
     Done,
-    get_dist,
     make_cost_funcs,
 )
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
