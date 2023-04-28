@@ -92,7 +92,7 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
         T_u += u_t
 
         if not done:
-            return Costs(comfort=-1e8)
+            return Costs(comfort=-np.inf)
         else:
             T_trv = step
             for _ in range(T_p):
@@ -125,7 +125,7 @@ def _dist_to_destination(
                 ref_actor_prev_pos = Point(
                     *vehicle_index.vehicle_position(vehicle_id=ref_actor)
                 )
-            return Costs(dist_to_destination=-1e8)
+            return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
@@ -362,7 +362,7 @@ def _steps(
         step = step + 1
 
         if not done:
-            return Costs(steps=-1e8)
+            return Costs(steps=-np.inf)
 
         if obs.events.reached_goal or obs.events.interest_done:
             return Costs(steps=step / max_episode_steps)
