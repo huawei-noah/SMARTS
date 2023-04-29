@@ -20,8 +20,19 @@ class ChaseViaPointsAgent(Agent):
         )
         self._res = top_down_rgb.resolution
         self._flag = -1
+        # self.step = 0
 
     def act(self, obs: Observation):
+        # self.step += 1
+        # if self.step == 1:
+        #     import time
+        #     time.sleep(90)
+
+        # if obs.ego_vehicle_state.position[0] > 195:
+        #     self._flag = 0
+        #     rgb=filter(obs,res=self._res)
+        #     plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
+
         assert obs.waypoint_paths, (
             f"Waypoint paths = {obs.waypoint_paths}; "
             "cannot be empty or None. Enable waypoint paths in agent interface."
@@ -61,12 +72,6 @@ class ChaseViaPointsAgent(Agent):
         # print("ego_wp_inds", ego_wp_inds)
         # print("via_point_wp_ind", via_point_wp_ind)
         # print("IN", via_point_wp_ind[0] in ego_wp_inds, "\n")
-
-        # if obs.ego_vehicle_state.position[0] > 195:
-        #     self._flag = 0
-        #     rgb=filter(obs,res=self._res)
-        #     plotter3d(obs=rgb,rgb_gray=3,channel_order="first",pause=self._flag)
-        #     input()
 
         # No nearby via points. Hence, remain in same lane.
         if via_point_ind is None:
