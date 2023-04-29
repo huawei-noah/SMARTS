@@ -31,12 +31,12 @@ smarts:
     target_kl: 0.1
 
   # Training over all scenarios
-  epochs: 2 #500 # Number of training loops.
+  epochs: 500 # Number of training loops.
 
   # Training per scenario
-  train_steps: 4_096
-  checkpoint_freq: 4_096
-  # train_steps: 10_000
-  # checkpoint_freq: 10_000 # Save a model every checkpoint_freq calls to env.step().
+  # train_steps: 4_096
+  # checkpoint_freq: 4_096
+  train_steps: 10_000
+  checkpoint_freq: 10_000 # Save a model every checkpoint_freq calls to env.step().
   eval_freq: 10_000 # Evaluate the trained model every eval_freq steps and save the best model.
-  eval_eps: 5 # Number of evaluation epsiodes.
+  eval_eps: 10 # Number of evaluation epsiodes.

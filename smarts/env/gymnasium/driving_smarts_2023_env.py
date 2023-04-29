@@ -169,6 +169,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         wrong_way=True,
         not_moving=False,
         agents_alive=None,
+        interest=None,
     )
     max_episode_steps = 1000
     waypoints_lookahead = 80
