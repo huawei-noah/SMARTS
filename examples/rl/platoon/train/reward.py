@@ -143,7 +143,7 @@ class Reward(gym.Wrapper):
 
                 # Reward for being in the same lane as the leader
                 if (leader_ind is not None) and (leader_wp_ind[0] in ego_wp_inds):
-                    reward[agent_id] += np.float64(2)
+                    reward[agent_id] += np.float64(2.5)
 
             else:
                 reward[agent_id] -= np.float64(1)
