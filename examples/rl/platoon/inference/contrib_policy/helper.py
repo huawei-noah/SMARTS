@@ -80,9 +80,10 @@ def plotter3d(
         rows = obs.shape[0]
         columns = obs.shape[2]
 
-    fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False, figsize=(10, 10))
+    fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False, figsize=(20, 20))
     fig.suptitle("PLOTTER3D")
-    fig.set_size_inches(5, 5, forward=True)
+    fig.tight_layout()
+    fig.set_size_inches(10, 4, forward=True)
     move_figure(fig, 0, 0)
 
     for row in range(0, rows):
