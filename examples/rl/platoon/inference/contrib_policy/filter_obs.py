@@ -21,7 +21,6 @@ class FilterObs:
 
         self._no_color = np.zeros((3,))
         self._wps_color = np.array(Colors.GreenTransparent.value[0:3]) * 255
-        self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._traffic_color = np.array(SceneColors.SocialVehicle.value[0:3]) * 255
         self._road_color = np.array(SceneColors.Road.value[0:3]) * 255
         self._lane_divider_color = np.array(SceneColors.LaneDivider.value[0:3]) * 255
@@ -151,7 +150,7 @@ def wps_to_pixels(
     wps_overlay = np.array([w / 2, h / 2, 0]) + wps_pixels * np.array([1, -1, 1])
     wps_rfloat = np.rint(wps_overlay)
     wps_valid = wps_rfloat[(wps_rfloat[:,0] >= 0) & (wps_rfloat[:,0] < w) & (wps_rfloat[:,1] >= 0) & (wps_rfloat[:,1] < h)] 
-    wps_rint = wps_valid.astype(np.uint8)
+    wps_rint = wps_valid.astype(int)
     return wps_rint
     # fmt: on
 
