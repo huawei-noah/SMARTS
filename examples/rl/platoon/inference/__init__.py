@@ -26,6 +26,7 @@ def entry_point(**kwargs):
         "top_down_rgb": interface.top_down_rgb,
         "action_space_type": interface.action,
         "num_stack": 3,  # Number of frames to stack as input to policy network.
+        "crop":(60,60,0,100), # Crop image from left, right, top, and bottom.
     }
 
     return AgentSpec(

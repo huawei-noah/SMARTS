@@ -2,14 +2,15 @@ import gymnasium as gym
 import numpy as np
 
 from smarts.core.colors import SceneColors
-
+from typing import Tuple
 
 class Reward(gym.Wrapper):
-    def __init__(self, env):
+    def __init__(self, env: gym.Env, crop:Tuple[int,int,int,int]):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._total_dist = {}
+        self._crop = crop
 
     def reset(self, *, seed=None, options=None):
         self._total_dist = {}
@@ -112,17 +113,19 @@ class Reward(gym.Wrapper):
                 rgb = agent_obs["top_down_rgb"]
                 h, w, d = rgb.shape
                 rgb_masked = rgb[0 : h // 2, :, :]
+                rgb_cropped = rgb_masked[self._crop[2]:,self._crop[0]:w-self._crop[1],:]
                 leader_in_rgb = (
-                    (rgb_masked == self._leader_color.reshape((1, 1, 3)))
+                    (rgb_cropped == self._leader_color.reshape((1, 1, 3)))
                     .all(axis=-1)
                     .any()
                 )
 
                 # from contrib_policy.helper import plotter3d
                 # print("-----------------------------")
-                # plotter3d(obs=rgb_masked,rgb_gray=3,channel_order="last",pause=0)
+                # plotter3d(obs=rgb_cropped,rgb_gray=3,channel_order="last",pause=0)
                 # print("-----------------------------")
 
+            # Rewards specific to "platooning" and "following" tasks
             if leader and leader_in_rgb:
                 # Get agent's waypoints
                 waypoints = agent_obs["waypoint_paths"]["position"]
@@ -138,15 +141,12 @@ class Reward(gym.Wrapper):
                     np.array([leader["position"]]),
                 )
 
-            # Rewards specific to "platooning" and "following" tasks
-            if leader and leader_in_rgb:
-
                 # Reward for being in the same lane as the leader
                 if (leader_ind is not None) and (leader_wp_ind[0] in ego_wp_inds):
-                    reward[agent_id] += np.float64(1)
+                    reward[agent_id] += np.float64(2)
 
             else:
-                reward[agent_id] -= np.float64(0.2)
+                reward[agent_id] -= np.float64(1)
 
         return reward
 

@@ -11,7 +11,7 @@ class Policy(Agent):
     """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
 
-    def __init__(self, num_stack, top_down_rgb, action_space_type):
+    def __init__(self, num_stack, top_down_rgb, crop, action_space_type):
         """All policy initialization matters, including loading of model, is
         performed here. To be implemented by the user.
         """
@@ -26,7 +26,7 @@ class Policy(Agent):
         model_path = Path(__file__).resolve().parents[0] / "saved_model"
         self.model = sb3lib.PPO.load(model_path)
 
-        self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
+        self._filter_obs = FilterObs(top_down_rgb=top_down_rgb, crop=crop)
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=num_stack,

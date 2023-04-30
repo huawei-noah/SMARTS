@@ -81,8 +81,6 @@ def plotter3d(
         columns = obs.shape[2]
 
     fig, axs = plt.subplots(nrows=rows, ncols=columns, squeeze=False, figsize=(20, 20))
-    fig.suptitle("PLOTTER3D")
-    fig.tight_layout()
     fig.set_size_inches(10, 4, forward=True)
     move_figure(fig, 0, 0)
 

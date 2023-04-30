@@ -11,3 +11,6 @@
 9) Write server code to host evaluation.
 
 12) Change platoon name to vehicle following.
+
+Camera resolution
+Cut-image to smaller size

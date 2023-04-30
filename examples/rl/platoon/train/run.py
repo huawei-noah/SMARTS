@@ -27,6 +27,7 @@ from train.env import make_env
 from train.utils import ObjDict
 
 from smarts.zoo import registry
+from smarts.zoo.agent_spec import AgentSpec
 
 print("\nTorch cuda is available: ", th.cuda.is_available(), "\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
@@ -77,20 +78,20 @@ def main(args: argparse.Namespace):
         envs_train[f"{scenario}"] = make_env(
             env_id=config.env_id,
             scenario=scenario_path,
-            agent_interface=agent_spec.interface,
+            agent_spec=agent_spec,
             config=config,
             seed=config.seed,
         )
         envs_eval[f"{scenario}"] = make_env(
             env_id=config.env_id,
             scenario=scenario_path,
-            agent_interface=agent_spec.interface,
+            agent_spec=agent_spec,
             config=config,
             seed=config.seed,
         )
 
     # Run training or evaluation.
-    run(envs_train=envs_train, envs_eval=envs_eval, config=config)
+    run(envs_train=envs_train, envs_eval=envs_eval, config=config, agent_spec=agent_spec)
 
     print("Finished training ...")
 
@@ -105,7 +106,13 @@ def run(
     envs_train: Dict[str, gym.Env],
     envs_eval: Dict[str, gym.Env],
     config: Dict[str, Any],
+    agent_spec:AgentSpec,
 ):
+
+    crop = agent_spec.agent_params["crop"]
+    top_down_rgb = agent_spec.interface.top_down_rgb
+    h = top_down_rgb.height-crop[2]-crop[3] 
+    w = top_down_rgb.width-crop[0]-crop[1]
 
     if config.mode == "train":
         print("\nStart training.\n")
@@ -119,7 +126,7 @@ def run(
 
         # Print model summary
         # from torchinfo import summary
-        # td = {"rgb":th.zeros(1,9,128,128)}
+        # td = {"rgb":th.zeros(1,9,h,w)}
         # summary(model.policy, input_data=[td], depth=5)
         # input("Press any key to continue ...")
 
@@ -163,7 +170,7 @@ def run(
 
         # Print model summary
         # from torchinfo import summary
-        # td = {"rgb":th.zeros(1,9,128,128)}
+        # td = {"rgb":th.zeros(1,9,h,w)}
         # summary(model.policy, input_data=[td], depth=5)
         # input("Press any key to continue ...")
 
