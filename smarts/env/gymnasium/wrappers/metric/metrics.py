@@ -195,16 +195,17 @@ class MetricsBase(gym.Wrapper):
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
-            end_pos = Point(-np.inf, -np.inf, -np.inf)
-            dist_tot = -np.inf
             interest_criteria = self.env.agent_interfaces[
                 agent_name
             ].done_criteria.interest
+            end_pos = Point(-np.inf, -np.inf, -np.inf)
+            dist_tot = -np.inf
             if self._params.dist_to_destination.active:
                 if isinstance(interest_criteria, InterestDoneCriteria):
                     end_pos, dist_tot = _get_end_point_and_dist(
                         vehicle_name=next(iter(interest_actors)),
                         traffic_sims=self.env.smarts.traffic_sims,
+                        scenario = self._scen,
                         road_map=self._road_map,
                     )
                 elif interest_criteria == None:
@@ -299,7 +300,7 @@ class MetricsBase(gym.Wrapper):
 
 
 def _get_end_point_and_dist(
-    vehicle_name: str, traffic_sims:List[TrafficProvider], road_map: RoadMap
+    vehicle_name: str, traffic_sims:List[TrafficProvider], scenario:Scenario, road_map: RoadMap
 ) -> Tuple[Point, float]:
     """Computes the end point and route distance of a (i) SUMO traffic, 
     (ii) SMARTS traffic, and (iii) history traffic vehicle
@@ -308,6 +309,7 @@ def _get_end_point_and_dist(
     Args:
         vehicle_name (str): Name of vehicle.
         traffic_sims (List[TrafficProvider]): Traffic providers.
+        scenario (Scenario): Current scenario.
         road_map (RoadMap): Underlying road map.
 
     Returns:
