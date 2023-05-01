@@ -10,3 +10,5 @@
 5) Write server code to host evaluation.
 
 6) Change Platoon name to VehicleFollowing.
+
+7) Dynamic times for each scenario depending on how long the map is.

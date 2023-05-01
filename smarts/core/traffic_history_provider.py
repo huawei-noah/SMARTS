@@ -258,6 +258,13 @@ class TrafficHistoryProvider(TrafficProvider):
             )
             return None
 
+    def vehicle_history_window(self, vehicle_id:str):
+        if vehicle_id in self.history_vehicle_ids:
+            vehicle_id=vehicle_id[len(self._vehicle_id_prefix):]
+        else:
+            raise ValueError(f"Vehicle id {vehicle_id} is not present in traffic history.") 
+        return self._histories.vehicle_window_by_id(vehicle_id=vehicle_id)
+
     def can_accept_actor(self, state: ActorState) -> bool:
         # TAI consider:
         # return state.actor_id in self._replaced_actor_ids and state.pose "is close to" self._histories.vehicle_pose_at_time(state.actor_id, self._sim().elapsed_sim_time)

@@ -31,6 +31,7 @@ from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
+from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
@@ -201,9 +202,9 @@ class MetricsBase(gym.Wrapper):
             ].done_criteria.interest
             if self._params.dist_to_destination.active:
                 if isinstance(interest_criteria, InterestDoneCriteria):
-                    end_pos, dist_tot = _get_sumo_smarts_dist(
+                    end_pos, dist_tot = _get_end_point_and_dist(
                         vehicle_name=next(iter(interest_actors)),
-                        sim=self.env.smarts,
+                        traffic_sims=self.env.smarts.traffic_sims,
                         road_map=self._road_map,
                     )
                 elif interest_criteria == None:
@@ -297,10 +298,11 @@ class MetricsBase(gym.Wrapper):
         return self._formula.score(records_sum=records_sum_copy)
 
 
-def _get_sumo_smarts_dist(
-    vehicle_name: str, sim, road_map: RoadMap
+def _get_end_point_and_dist(
+    vehicle_name: str, traffic_sims:List[TrafficProvider], road_map: RoadMap
 ) -> Tuple[Point, float]:
-    """Computes the end point and route distance of a SUMO or a SMARTS vehicle
+    """Computes the end point and route distance of a (i) SUMO traffic, 
+    (ii) SMARTS traffic, and (iii) history traffic vehicle
     specified by `vehicle_name`.
 
     Args:
@@ -313,7 +315,7 @@ def _get_sumo_smarts_dist(
     """
     traffic_sim = [
         traffic_sim
-        for traffic_sim in sim.traffic_sims
+        for traffic_sim in traffic_sims
         if traffic_sim.manages_actor(vehicle_name)
     ]
     assert (
@@ -321,10 +323,8 @@ def _get_sumo_smarts_dist(
     ), "None or multiple, traffic sims contain the vehicle of interest."
     traffic_sim = traffic_sim[0]
 
-    print("INSIDE")
-
     source = traffic_sim.source_str
-    if source == "SumoTrafficSimulation":
+    if source == "SumoTrafficSimulation" or source == "LocalTrafficProvider":
         dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
         end_pos = (
             road_map.road_by_id(dest_road)
@@ -333,29 +333,17 @@ def _get_sumo_smarts_dist(
         )
         route = traffic_sim.route_for_vehicle(vehicle_name)
         dist_tot = route.road_length
+        return end_pos, dist_tot
     elif source == "TrafficHistoryProvider":
-        print(source)
-        dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
-        end_pos = (
-            road_map.road_by_id(dest_road)
-            .lane_at_index(0)
-            .from_lane_coord(RefLinePoint(s=1e10))
-        )
-        # route = traffic_sim.route_for_vehicle(vehicle_name)
-        # dist_tot = route.road_length
-
-        print(end_pos)
-        print(dist_tot)
-        print(route)
-        pass
+        history:TrafficHistory.TrafficHistoryVehicleWindow = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
+        start_pos = Point(x=history.start_position_x, y=history.start_position_y)
+        end_pos = Point(x=history.end_position_x, y=history.end_position_y)
+        dist_tot = get_dist(road_map=road_map,point_a=start_pos,point_b=end_pos)
+        print(start_pos, end_pos, dist_tot)
+        input()
+        return end_pos, dist_tot
     else:
         raise MetricsError(f"Received unsupported traffic sim {source}.")
-
-    # smarts.scenario..
-    # smarts.traffic_sims
-    # smarts.traffic_history_provider
-
-    return end_pos, dist_tot
 
 
 class Metrics(gym.Wrapper):
