@@ -106,41 +106,30 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    agent_name:str, ref_actor: float, start_pos: Point
+    end_pos: Point, dist_tot: float
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
-    agent_name = agent_name
-    start_pos = start_pos
-    ref_actor = ref_actor
-    ref_actor_prev_pos = start_pos
+    end_pos = end_pos
+    dist_tot = dist_tot
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, agent_name, start_pos, ref_actor, ref_actor_prev_pos
+        nonlocal mean, step, end_pos, dist_tot
 
         if not done:
-            if agent_name != ref_actor:
-                ref_actor_prev_pos = Point(
-                    *vehicle_index.vehicle_position(vehicle_id=ref_actor)
-                )
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
-            end_pos:Point
-            if agent_name == ref_actor:
-                end_pos = obs.ego_vehicle_state.mission.goal.position
-            else:
-                end_pos = ref_actor_prev_pos
-
             cur_pos = Point(*obs.ego_vehicle_state.position)
             dist_remainder = get_dist(
                 road_map=road_map, point_a=cur_pos, point_b=end_pos
             )
-            dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-            dist_remainder_capped = min(dist_remainder, dist_tot)
+            dist_remainder_capped = min(
+                dist_remainder, dist_tot
+            )
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
     return func
@@ -494,7 +483,7 @@ class CostFuncsBase:
     # fmt: off
     collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[str, float, Point], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
     dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
     jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
