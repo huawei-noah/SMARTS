@@ -98,8 +98,9 @@ Start the visdom server before running the scenario and open the server URL in y
 
 Enable Visdom in the SMARTS environment by setting ``SMARTS_VISDOM_ENABLED``. For example:
 
-.. code-block:: engine.ini
-
+.. code-block:: ini
+    
+    ; ./smarts_engine.ini | ~/.smarts/engine.ini | /etc/smarts/engine.ini | $PYTHON_PATH/smarts/engine.ini
     [core]
     ...
     [visdom]
