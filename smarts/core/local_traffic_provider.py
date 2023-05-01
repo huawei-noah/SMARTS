@@ -122,7 +122,9 @@ class LocalTrafficProvider(TrafficProvider):
                 assert vtype, f"undefined vehicle type {flow['type']} used in flow"
                 flow["vtype"] = vtype
                 route = routes.get(flow["route"])
-                assert route, f"undefined route {flow['route']} used in flow"
+                assert isinstance(
+                    route, str
+                ), f"undefined route {flow['route']} used in flow"
                 route = self.road_map.route_from_road_ids(route.split())
                 route.add_to_cache()
                 flow["route"] = route
@@ -467,7 +469,7 @@ class _TrafficActor:
         self._route_ind: int = 0
         self._done_with_route: bool = False
         self._off_route: bool = False
-        self._route: RouteWithCache = flow["route"]
+        self._route: RoadMap.Route = flow["route"]
         self._stranded: bool = False
         self._teleporting: bool = False
 
@@ -685,12 +687,13 @@ class _TrafficActor:
         """The route this actor will attempt to take."""
         return self._route
 
-    def update_route(self, route: RouteWithCache):
+    def update_route(self, route: RoadMap.Route):
         """Update the route (sequence of road_ids) this actor will attempt to take.
         A unique route_key is provided for referencing the route cache in the owner provider.
         """
         self._route = route
-        self._route.add_to_cache()
+        if isinstance(self._route, RouteWithCache):
+            self._route.add_to_cache()
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
             self._flow, "arrival", self._state.dimensions
         )
@@ -1277,7 +1280,7 @@ class _TrafficActor:
         def add_to_win(
             self,
             veh_id: str,
-            bumper: int,
+            bumper: bool,
             fv_pos: np.ndarray,
             my_pos: np.ndarray,
             my_heading: float,
@@ -1483,7 +1486,7 @@ class _TrafficActor:
         assert owner
         l_offset = owner._cached_lane_offset(self._state, self._target_lane_win.lane)
         njl, nj_dist = self._route.next_junction(rl, l_offset)
-        if not njl or nj_dist > max_range:
+        if njl is None or nj_dist > max_range:
             return
         updated = set()
         my_pos = self._state.pose.point.as_np_array[:2]
@@ -1516,10 +1519,10 @@ class _TrafficActor:
                         RefLinePoint(offset)
                     ).as_np_array[:2]
                     f_rb, f_rng = self._bumper_wins_front.add_to_win(
-                        fv.actor_id, bumper, fv_pos, my_front, my_heading, dt
+                        fv.actor_id, bool(bumper), fv_pos, my_front, my_heading, dt
                     )
                     b_rb, b_rng = self._bumper_wins_back.add_to_win(
-                        fv.actor_id, bumper, fv_pos, my_back, my_heading, dt
+                        fv.actor_id, bool(bumper), fv_pos, my_back, my_heading, dt
                     )
                     updated.add(fv.actor_id)
                     # we will only do something if the potential collider is "ahead" of us...

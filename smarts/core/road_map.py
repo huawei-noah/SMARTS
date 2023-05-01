@@ -88,19 +88,19 @@ class RoadMap:
         """Build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
-    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+    def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
         """Find a surface within the road map that has the given identifier."""
         raise NotImplementedError()
 
-    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
+    def lane_by_id(self, lane_id: str) -> Optional[RoadMap.Lane]:
         """Find a lane in this road map that has the given identifier."""
         raise NotImplementedError()
 
-    def road_by_id(self, road_id: str) -> RoadMap.Road:
+    def road_by_id(self, road_id: str) -> Optional[RoadMap.Road]:
         """Find a road in this road map that has the given identifier."""
         raise NotImplementedError()
 
-    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+    def feature_by_id(self, feature_id: str) -> Optional[RoadMap.Feature]:
         """Find a feature in this road map that has the given identifier."""
         raise NotImplementedError()
 
@@ -258,6 +258,11 @@ class RoadMap:
         def __eq__(self, other) -> bool:
             """Required for set usage; derived classes may override this."""
             return self.__class__ == other.__class__ and hash(self) == hash(other)
+
+        @property
+        def bounding_box(self):
+            """Gets the lane bounding box."""
+            raise NotImplementedError()
 
         @property
         def lane_id(self) -> str:
@@ -446,7 +451,7 @@ class RoadMap:
             position = self.from_lane_coord(RefLinePoint(s=offset))
             desired_vector = self.vector_at_offset(offset)
             orientation = fast_quaternion_from_angle(vec_to_radians(desired_vector[:2]))
-            return Pose(position=position, orientation=orientation)
+            return Pose(position=position.as_np_array, orientation=orientation)
 
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5
@@ -700,7 +705,7 @@ class RoadMap:
 
         def next_junction(
             self, cur_lane: RouteLane, offset: float
-        ) -> Optional[Tuple[RoadMap.Lane, float]]:
+        ) -> Tuple[Optional[RoadMap.Lane], float]:
             """Returns a lane within the next junction along the route from beginning
             of the current lane to the returned lane it connects with in the junction,
             and the distance to it from this offset, or (None, inf) if there aren't any.
@@ -925,7 +930,9 @@ class RoadMapWithCaches(RoadMap):
                 def __init__(self):
                     self.offset = 0
 
-                def seg(self, pt1: Point, pt2: Point) -> float:
+                def seg(
+                    self, pt1: Point, pt2: Point
+                ) -> RoadMapWithCaches._SegmentCache.Segment:
                     """Create a Segment for a successive pair of polyline points."""
                     # TAI: include lane width sometimes?
                     rval = RoadMapWithCaches._SegmentCache.Segment(

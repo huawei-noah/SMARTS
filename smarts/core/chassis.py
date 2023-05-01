@@ -297,7 +297,7 @@ class BoxChassis(Chassis):
         self._speed = speed
 
     @property
-    def pose(self) -> Pose:
+    def pose(self) -> Optional[Pose]:
         return self._pose
 
     @property
@@ -666,7 +666,7 @@ class AckermannChassis(Chassis):
             self._set_road_friction(current_simulation_time)
         self._clear_step_cache()
 
-    def inherit_physical_values(self, other: BoxChassis):
+    def inherit_physical_values(self, other: Chassis):
         self.set_pose(other.pose)
         self._initialize_speed(other.speed)
 
