@@ -5,9 +5,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import gymnasium as gym
+
 from smarts.zoo.agent_spec import AgentSpec
 
-def make_env(env_id, scenario, agent_spec:AgentSpec, config, seed):
+
+def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
     from preprocess import Preprocess
     from stable_baselines3.common.monitor import Monitor
     from train.reward import Reward

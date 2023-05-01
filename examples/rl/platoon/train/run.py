@@ -91,7 +91,9 @@ def main(args: argparse.Namespace):
         )
 
     # Run training or evaluation.
-    run(envs_train=envs_train, envs_eval=envs_eval, config=config, agent_spec=agent_spec)
+    run(
+        envs_train=envs_train, envs_eval=envs_eval, config=config, agent_spec=agent_spec
+    )
 
     print("Finished training ...")
 
@@ -106,13 +108,13 @@ def run(
     envs_train: Dict[str, gym.Env],
     envs_eval: Dict[str, gym.Env],
     config: Dict[str, Any],
-    agent_spec:AgentSpec,
+    agent_spec: AgentSpec,
 ):
 
     crop = agent_spec.agent_params["crop"]
     top_down_rgb = agent_spec.interface.top_down_rgb
-    h = top_down_rgb.height-crop[2]-crop[3] 
-    w = top_down_rgb.width-crop[0]-crop[1]
+    h = top_down_rgb.height - crop[2] - crop[3]
+    w = top_down_rgb.width - crop[0] - crop[1]
 
     if config.mode == "train":
         print("\nStart training.\n")

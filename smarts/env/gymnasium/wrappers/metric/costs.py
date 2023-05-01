@@ -127,9 +127,7 @@ def _dist_to_destination(
             dist_remainder = get_dist(
                 road_map=road_map, point_a=cur_pos, point_b=end_pos
             )
-            dist_remainder_capped = min(
-                dist_remainder, dist_tot
-            )
+            dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
     return func

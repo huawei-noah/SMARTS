@@ -2,6 +2,7 @@ import importlib
 from pathlib import Path
 
 from smarts.core.agent_interface import (
+    RGB,
     AgentInterface,
     AgentType,
     DoneCriteria,
@@ -10,7 +11,6 @@ from smarts.core.agent_interface import (
 from smarts.core.controllers import ActionSpaceType
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
-from smarts.core.agent_interface import RGB
 
 from .chase_via_points_agent import ChaseViaPointsAgent
 from .keep_lane_agent import KeepLaneAgent

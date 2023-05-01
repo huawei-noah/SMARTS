@@ -214,11 +214,6 @@ class MetricsBase(gym.Wrapper):
                         point_b=end_pos,
                     )
 
-            if isinstance(interest_criteria, InterestDoneCriteria):
-                ref_actor = next(iter(interest_actors))
-            else:
-                ref_actor = agent_name
-
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
                 dist_to_destination={
@@ -230,7 +225,9 @@ class MetricsBase(gym.Wrapper):
                 },
                 vehicle_gap={
                     "num_agents": len(self._cur_agents),
-                    "actor": ref_actor,
+                    "actor": next(iter(interest_actors))
+                    if isinstance(interest_criteria, InterestDoneCriteria)
+                    else agent_name,
                 },
                 steps={
                     "max_episode_steps": self.env.agent_interfaces[
@@ -319,14 +316,6 @@ def _get_sumo_smarts_dist(
         for traffic_sim in sim.traffic_sims
         if traffic_sim.manages_actor(vehicle_name)
     ]
-
-    traffic_sim = [
-        traffic_sim
-        for traffic_sim in sim.providers
-        if traffic_sim.manages_actor(vehicle_name)
-    ]
-
-
     assert (
         len(traffic_sim) == 1
     ), "None or multiple, traffic sims contain the vehicle of interest."
@@ -362,12 +351,9 @@ def _get_sumo_smarts_dist(
     else:
         raise MetricsError(f"Received unsupported traffic sim {source}.")
 
-
-# smarts.scenario..
-# smarts.traffic_sims
-# smarts.traffic_history_provider
-# smarts.providers
-
+    # smarts.scenario..
+    # smarts.traffic_sims
+    # smarts.traffic_history_provider
 
     return end_pos, dist_tot
 

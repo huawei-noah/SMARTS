@@ -11,11 +11,17 @@ from smarts.core.colors import Colors, SceneColors
 class FilterObs:
     """Filter only the selected observation parameters."""
 
-    def __init__(self, top_down_rgb: RGB, crop: Tuple[int,int,int,int] = (0,0,0,0)):
+    def __init__(
+        self, top_down_rgb: RGB, crop: Tuple[int, int, int, int] = (0, 0, 0, 0)
+    ):
         self.observation_space = gym.spaces.Box(
             low=0,
             high=255,
-            shape=(3, top_down_rgb.height-crop[2]-crop[3], top_down_rgb.width-crop[0]-crop[1]),
+            shape=(
+                3,
+                top_down_rgb.height - crop[2] - crop[3],
+                top_down_rgb.width - crop[0] - crop[1],
+            ),
             dtype=np.uint8,
         )
 
@@ -44,9 +50,12 @@ class FilterObs:
         self._rgb_mask[shape[0][0] : shape[0][1], shape[1][0] : shape[1][1], :] = 1
 
         self._crop = crop
-        assert self._crop[0] < np.floor(w/2) and self._crop[1] < np.floor(w/2) and self._crop[2] < np.floor(h/2) and self._crop[3] < np.floor(h/2), (
-            f"Expected crop to be less than half the image size, got crop={self._crop} for an image of size[h,w]=[{h},{w}]."
-        ) 
+        assert (
+            self._crop[0] < np.floor(w / 2)
+            and self._crop[1] < np.floor(w / 2)
+            and self._crop[2] < np.floor(h / 2)
+            and self._crop[3] < np.floor(h / 2)
+        ), f"Expected crop to be less than half the image size, got crop={self._crop} for an image of size[h,w]=[{h},{w}]."
 
     def filter(self, obs: Dict[str, Any]) -> Dict[str, Any]:
         """Adapts the environment's observation."""

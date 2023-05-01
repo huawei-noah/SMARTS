@@ -11,7 +11,10 @@ class Preprocess(gym.Wrapper):
     def __init__(self, env: gym.Env, agent_spec: AgentSpec):
         super().__init__(env)
 
-        self._filter_obs = FilterObs(top_down_rgb=agent_spec.interface.top_down_rgb, crop=agent_spec.agent_params["crop"])
+        self._filter_obs = FilterObs(
+            top_down_rgb=agent_spec.interface.top_down_rgb,
+            crop=agent_spec.agent_params["crop"],
+        )
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=agent_spec.agent_params["num_stack"],
@@ -22,7 +25,9 @@ class Preprocess(gym.Wrapper):
 
         self.observation_space = self._make_dict.observation_space
 
-        self._format_action = FormatAction(action_space_type=agent_spec.interface.action)
+        self._format_action = FormatAction(
+            action_space_type=agent_spec.interface.action
+        )
         self.action_space = self._format_action.action_space
 
     def _process(self, obs):

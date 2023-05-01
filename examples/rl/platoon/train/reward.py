@@ -1,11 +1,13 @@
+from typing import Tuple
+
 import gymnasium as gym
 import numpy as np
 
 from smarts.core.colors import SceneColors
-from typing import Tuple
+
 
 class Reward(gym.Wrapper):
-    def __init__(self, env: gym.Env, crop:Tuple[int,int,int,int]):
+    def __init__(self, env: gym.Env, crop: Tuple[int, int, int, int]):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
@@ -41,7 +43,7 @@ class Reward(gym.Wrapper):
                 elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
-                    agent_obs["events"]["collisions"] 
+                    agent_obs["events"]["collisions"]
                     | agent_obs["events"]["off_road"]
                     | agent_obs["events"]["wrong_way"]
                 ):
@@ -113,7 +115,9 @@ class Reward(gym.Wrapper):
                 rgb = agent_obs["top_down_rgb"]
                 h, w, d = rgb.shape
                 rgb_masked = rgb[0 : h // 2, :, :]
-                rgb_cropped = rgb_masked[self._crop[2]:,self._crop[0]:w-self._crop[1],:]
+                rgb_cropped = rgb_masked[
+                    self._crop[2] :, self._crop[0] : w - self._crop[1], :
+                ]
                 leader_in_rgb = (
                     (rgb_cropped == self._leader_color.reshape((1, 1, 3)))
                     .all(axis=-1)
@@ -165,7 +169,9 @@ def _get_interest_vehicles(obs):
         )
         if neighbor[0] == 1
     ]
-    interest_vehicles_dict = [dict(zip(keys, interest_vehicle)) for interest_vehicle in interest_vehicles]
+    interest_vehicles_dict = [
+        dict(zip(keys, interest_vehicle)) for interest_vehicle in interest_vehicles
+    ]
     return interest_vehicles_dict
 
 
