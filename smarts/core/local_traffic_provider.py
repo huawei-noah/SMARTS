@@ -1274,13 +1274,13 @@ class _TrafficActor:
         def __init__(self, width: int = 5):
             self._width = width
             self._junction_foes: Dict[
-                Tuple[str, bool], Deque[_TrafficActor._RelWindow._RelativeVehInfo]
+                Tuple[str, int], Deque[_TrafficActor._RelWindow._RelativeVehInfo]
             ] = dict()
 
         def add_to_win(
             self,
             veh_id: str,
-            bumper: bool,
+            bumper: int,
             fv_pos: np.ndarray,
             my_pos: np.ndarray,
             my_heading: float,
@@ -1519,10 +1519,10 @@ class _TrafficActor:
                         RefLinePoint(offset)
                     ).as_np_array[:2]
                     f_rb, f_rng = self._bumper_wins_front.add_to_win(
-                        fv.actor_id, bool(bumper), fv_pos, my_front, my_heading, dt
+                        fv.actor_id, bumper, fv_pos, my_front, my_heading, dt
                     )
                     b_rb, b_rng = self._bumper_wins_back.add_to_win(
-                        fv.actor_id, bool(bumper), fv_pos, my_back, my_heading, dt
+                        fv.actor_id, bumper, fv_pos, my_back, my_heading, dt
                     )
                     updated.add(fv.actor_id)
                     # we will only do something if the potential collider is "ahead" of us...
