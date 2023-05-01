@@ -33,13 +33,9 @@ def copytree(src, dst, symlinks=False, ignore=None):
             if os.path.lexists(d):
                 os.remove(d)
             os.symlink(os.readlink(s), d)
-            try:
-                st = os.lstat(s)
-                mode = stat.S_IMODE(st.st_mode)
-                os.lchmod(d, mode)
-            except Exception as e:
-                print(e)
-                pass  # lchmod not available
+            st = os.lstat(s)
+            mode = stat.S_IMODE(st.st_mode)
+            os.chmod(d, mode, follow_symlinks=False)
         elif os.path.isdir(s):
             copytree(s, d, symlinks, ignore)
         else:

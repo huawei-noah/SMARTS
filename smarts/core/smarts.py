@@ -135,7 +135,7 @@ class SMARTS(ProviderManager):
         else:
             visdom = None
 
-        self._visdom = visdom
+        self._visdom: Any = None
         if conf("visdom", "enabled", default=False, cast=bool) or visdom is True:
             from smarts.visdom.visdom_client import VisdomClient
 
@@ -143,6 +143,8 @@ class SMARTS(ProviderManager):
                 hostname=conf("visdom", "hostname", default="http://localhost"),
                 port=conf("visdom", "port", default=8097),
             )
+        elif not isinstance(self._visdom, bool):
+            self._visdom = visdom
         self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
@@ -1472,18 +1474,18 @@ class SMARTS(ProviderManager):
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = np.array(self._map_bb.min_pt)[:2] if self._map_bb else None
-        map_max = np.array(self._map_bb.max_pt)[:2] if self._map_bb else None
+        map_min = np.array(self._map_bb.min_pt)[:2] if self._map_bb else np.array([])
+        map_max = np.array(self._map_bb.max_pt)[:2] if self._map_bb else np.array([])
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
             map_spot = vehicle.pose.point.as_np_array[:2]
-            if map_min is None:
+            if len(map_min) == 0:
                 map_min = map_spot
                 rescale_plane = True
             elif any(map_spot < map_min):
                 map_min = np.minimum(map_spot, map_min)
                 rescale_plane = True
-            if map_max is None:
+            if len(map_max) == 0:
                 map_max = map_spot
                 rescale_plane = True
             elif any(map_spot > map_max):
