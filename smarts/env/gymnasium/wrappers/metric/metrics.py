@@ -338,9 +338,12 @@ def _get_end_point_and_dist(
         history:TrafficHistory.TrafficHistoryVehicleWindow = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         start_pos = Point(x=history.start_position_x, y=history.start_position_y)
         end_pos = Point(x=history.end_position_x, y=history.end_position_y)
+        # TODO : Plan.create_route() creates the shortest route which is 
+        # sufficient in simple maps, but it may or may not match the actual 
+        # roads traversed by the history vehicle in complex maps. Ideally we 
+        # should use the actual road ids traversed by the history vehicle to 
+        # compute the distance. 
         dist_tot = get_dist(road_map=road_map,point_a=start_pos,point_b=end_pos)
-        print(start_pos, end_pos, dist_tot)
-        input()
         return end_pos, dist_tot
     else:
         raise MetricsError(f"Received unsupported traffic sim {source}.")
