@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 ### Removed
 ### Security
 

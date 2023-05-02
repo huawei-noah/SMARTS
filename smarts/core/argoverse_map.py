@@ -32,7 +32,7 @@ from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
 from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from smarts.core.lanepoints import LanePoints, LinkedLanePoint
+from smarts.core.lanepoints import LanePoint, LanePoints, LinkedLanePoint
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
 from smarts.core.utils.glb import make_map_glb, make_road_line_glb
@@ -972,12 +972,14 @@ class ArgoverseMap(RoadMapWithCaches):
         if road_ids:
             return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
 
-        closest_lps = self._lanepoints.closest_lanepoints(
+        # No route provided, so generate paths based on the closest lanepoints
+        waypoint_paths = []
+        closest_lps: List[LanePoint] = self._lanepoints.closest_lanepoints(
             pose, within_radius=within_radius
         )
         closest_lane: RoadMap.Lane = closest_lps[0].lane
 
-        waypoint_paths = []
+        # First, see if we are in a junction and need to do something special
         if closest_lane.in_junction:
             junction_lanes: Set[RoadMap.Lane] = set([closest_lane])
             for lp in closest_lps:
@@ -1005,11 +1007,15 @@ class ArgoverseMap(RoadMapWithCaches):
                         and np.linalg.norm(path[0].pos - pose.position[:2]) < 5
                     ):
                         waypoint_paths.append(path)
-            return waypoint_paths
 
-        for lane in closest_lane.road.lanes:
-            waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
-        return sorted(waypoint_paths, key=lambda p: p[0].lane_index)
+        # Otherwise, just generate waypoints for the closest lane
+        if len(waypoint_paths) < 1:
+            for lane in closest_lane.road.lanes:
+                waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
+
+        result = sorted(waypoint_paths, key=lambda p: p[0].lane_id)
+        assert len(result) > 0, "Waypoint paths should not be empty"
+        return result
 
     def _waypoint_paths_along_route(
         self, point: Point, lookahead: int, route: Sequence[str]
