@@ -388,8 +388,8 @@ class Scenario:
 
         file_match = os.path.join(social_agents_path, "*.pkl")
         for missions_file_path in glob.glob(file_match):
+            count = 0
             with open(missions_file_path, "rb") as missions_file:
-                count = 0
                 missions = pickle.load(missions_file)
 
             for mission_and_actor in missions:
@@ -428,7 +428,7 @@ class Scenario:
         social_agents_info = []
         for l in agent_bucketer:
             social_agents_info.append(
-                {agent.id: (agent, mission) for agent, mission in l}
+                {agent.actor_name: (agent, mission) for agent, mission in l}
             )
         return social_agents_info
 
