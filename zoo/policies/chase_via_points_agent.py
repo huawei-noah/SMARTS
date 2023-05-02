@@ -1,14 +1,8 @@
-import math
-from functools import reduce
-from typing import Dict, List
-
 import numpy as np
 
 from smarts.core.agent import Agent
-from smarts.core.observations import Observation, VehicleObservation
+from smarts.core.observations import Observation
 from smarts.core.sensors import LANE_ID_CONSTANT
-from smarts.core.utils.math import squared_dist
-from smarts.env.custom_observations import scan_for_vehicles
 
 
 class ChaseViaPointsAgent(Agent):
