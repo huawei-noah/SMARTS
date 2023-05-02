@@ -315,6 +315,11 @@ def _get_end_point_and_dist(
     Returns:
         Tuple[Point, float]: End point and route distance.
     """
+
+    w = scenario.social_agents.keys()
+    print(w)
+    print(vehicle_name)
+    
     traffic_sim = [
         traffic_sim
         for traffic_sim in traffic_sims
