@@ -959,11 +959,12 @@ class SumoRoadNetwork(RoadMap):
                     )
 
         # No route provided, so generate paths based on the closest lanepoints
-        closest_lps = self._lanepoints.closest_lanepoints(
+        waypoint_paths = []
+        closest_lps: List[LanePoint] = self._lanepoints.closest_lanepoints(
             pose, within_radius=within_radius
         )
 
-        waypoint_paths = []
+        # First, see if we are in a junction and need to do something special
         junction_paths = self._resolve_in_junction(pose, closest_lps)
         if junction_paths:
             for lanes in junction_paths:
@@ -994,13 +995,18 @@ class SumoRoadNetwork(RoadMap):
                         or np.linalg.norm(path[0].pos - pose.position[:2]) < 5.0
                     ):
                         waypoint_paths.append(path)
-        else:
+
+        # Otherwise, just generate waypoints for the closest lane
+        if len(waypoint_paths) < 1:
             # TAI: the above lines could be replaced by:
             # closest_lane = self.nearest_lane(pose.position, radius=within_radius)
             closest_lane: RoadMap.Lane = closest_lps[0].lane
             for lane in closest_lane.road.lanes:
                 waypoint_paths += lane._waypoint_paths_at(pose.point, lookahead)
-        return sorted(waypoint_paths, key=lambda p: p[0].lane_id)
+
+        result = sorted(waypoint_paths, key=lambda p: p[0].lane_id)
+        assert len(result) > 0, "Waypoint paths should not be empty"
+        return result
 
     def _resolve_in_junction(
         self, pose: Pose, closest_lps: List[LanePoint]
@@ -1010,8 +1016,9 @@ class SumoRoadNetwork(RoadMap):
         # We take the 10 closest lanepoints then filter down to that which has
         # the closest heading. This way we get the lanepoint on our lane instead of
         # a potentially closer lane that is on a different junction connection.
-        closest_lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
-        lane: RoadMap.Lane = closest_lps[0].lane
+        lps = closest_lps.copy()
+        lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
+        lane: RoadMap.Lane = lps[0].lane
         if not lane.in_junction:
             return []
 
