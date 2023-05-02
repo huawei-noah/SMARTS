@@ -21,10 +21,8 @@
 import logging
 import math
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import Dict, List, Optional, Sequence, Set, Tuple
-
-from cached_property import cached_property
 
 from .road_map import RoadMap
 
@@ -38,7 +36,7 @@ class _LaneContinuation:
 
     dist_to_end: float = 0.0
     dist_to_junction: float = math.inf
-    next_junction: RoadMap.Lane = None
+    next_junction: Optional[RoadMap.Lane] = None
     dist_to_road: Dict[RoadMap.Road, float] = field(default_factory=dict)
 
 
@@ -55,7 +53,8 @@ class RouteWithCache(RoadMap.Route):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def __hash__(self) -> int:
-        return self._cache_key
+        key: int = self._cache_key  # pytype: disable=annotation-type-mismatch
+        return key
 
     def __eq__(self, other) -> bool:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
@@ -101,7 +100,9 @@ class RouteWithCache(RoadMap.Route):
             return
 
         cache_key = self._cache_key
-        _route_sub_lengths[cache_key] = dict()
+        _route_sub_lengths[
+            cache_key
+        ] = dict()  # pytype: disable=container-type-mismatch
 
         def _backprop_length(
             bplane: RoadMap.Lane,
@@ -157,7 +158,7 @@ class RouteWithCache(RoadMap.Route):
             rpt.pt, radius, include_junctions=True
         ):
             try:
-                rind = self._roads.index(cand_lane.road)
+                rind = self.roads.index(cand_lane.road)
                 if rind >= 0 and (rpt.road_index is None or rpt.road_index == rind):
                     return RoadMap.Route.RouteLane(cand_lane, rind)
             except ValueError:
@@ -195,7 +196,7 @@ class RouteWithCache(RoadMap.Route):
             start_offset, end_offset = end_offset, start_offset
             negate = True
         d = end_offset + start_lane.length - start_offset
-        for rind, road in enumerate(self._roads):
+        for rind, road in enumerate(self.roads):
             if rind >= eind:
                 break
             if rind <= sind:
@@ -214,7 +215,7 @@ class RouteWithCache(RoadMap.Route):
         sind = rt_ln.road_index
 
         orig_offset = start_lane.offset_along_lane(start.pt)
-        for rind, road in enumerate(self._roads):
+        for rind, road in enumerate(self.roads):
             if rind < sind:
                 continue
             start_offset = 0 if rind != sind else orig_offset

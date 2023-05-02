@@ -27,11 +27,10 @@ import xml.etree.ElementTree as XET
 from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 
 import numpy as np
-from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
@@ -123,7 +122,9 @@ class LocalTrafficProvider(TrafficProvider):
                 assert vtype, f"undefined vehicle type {flow['type']} used in flow"
                 flow["vtype"] = vtype
                 route = routes.get(flow["route"])
-                assert route, f"undefined route {flow['route']} used in flow"
+                assert isinstance(
+                    route, str
+                ), f"undefined route {flow['route']} used in flow"
                 route = self.road_map.route_from_road_ids(route.split())
                 route.add_to_cache()
                 flow["route"] = route
@@ -468,7 +469,7 @@ class _TrafficActor:
         self._route_ind: int = 0
         self._done_with_route: bool = False
         self._off_route: bool = False
-        self._route: RouteWithCache = flow["route"]
+        self._route: RoadMap.Route = flow["route"]
         self._stranded: bool = False
         self._teleporting: bool = False
 
@@ -686,12 +687,13 @@ class _TrafficActor:
         """The route this actor will attempt to take."""
         return self._route
 
-    def update_route(self, route: RouteWithCache):
+    def update_route(self, route: RoadMap.Route):
         """Update the route (sequence of road_ids) this actor will attempt to take.
         A unique route_key is provided for referencing the route cache in the owner provider.
         """
         self._route = route
-        self._route.add_to_cache()
+        if isinstance(self._route, RouteWithCache):
+            self._route.add_to_cache()
         self._dest_lane, self._dest_offset = self._resolve_flow_pos(
             self._flow, "arrival", self._state.dimensions
         )
@@ -1272,7 +1274,7 @@ class _TrafficActor:
         def __init__(self, width: int = 5):
             self._width = width
             self._junction_foes: Dict[
-                Tuple[str, bool], Deque[_TrafficActor._RelWindow._RelativeVehInfo]
+                Tuple[str, int], Deque[_TrafficActor._RelWindow._RelativeVehInfo]
             ] = dict()
 
         def add_to_win(
@@ -1484,7 +1486,7 @@ class _TrafficActor:
         assert owner
         l_offset = owner._cached_lane_offset(self._state, self._target_lane_win.lane)
         njl, nj_dist = self._route.next_junction(rl, l_offset)
-        if not njl or nj_dist > max_range:
+        if njl is None or nj_dist > max_range:
             return
         updated = set()
         my_pos = self._state.pose.point.as_np_array[:2]

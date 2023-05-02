@@ -22,13 +22,12 @@ import heapq
 import logging
 import random
 import time
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
-from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
@@ -373,7 +372,7 @@ class ArgoverseMap(RoadMapWithCaches):
         def is_drivable(self) -> bool:
             return True
 
-    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+    def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMapWithCaches.Lane, Surface):
@@ -415,6 +414,10 @@ class ArgoverseMap(RoadMapWithCaches):
 
         def __hash__(self) -> int:
             return hash(self.lane_id)
+
+        @property
+        def bounding_box(self):
+            return self._bbox
 
         @property
         def lane_id(self) -> str:
@@ -471,7 +474,7 @@ class ArgoverseMap(RoadMapWithCaches):
             return [lane for lane in self.road.lanes if lane.lane_id != self.lane_id]
 
         @cached_property
-        def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
+        def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             result = None
             for other in self.lanes_in_same_direction:
                 if other.index > self.index and (
@@ -481,7 +484,7 @@ class ArgoverseMap(RoadMapWithCaches):
             return result, True
 
         @cached_property
-        def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
+        def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             result = None
             for other in self.lanes_in_same_direction:
                 if other.index < self.index and (
@@ -546,7 +549,7 @@ class ArgoverseMap(RoadMapWithCaches):
             return False
 
         def waypoint_paths_for_pose(
-            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+            self, pose: Pose, lookahead: int, route: Optional[RoadMap.Route] = None
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -554,7 +557,10 @@ class ArgoverseMap(RoadMapWithCaches):
             return self._waypoint_paths_at(pose.point, lookahead, road_ids)
 
         def waypoint_paths_at_offset(
-            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+            self,
+            offset: float,
+            lookahead: int = 30,
+            route: Optional[RoadMap.Route] = None,
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -582,7 +588,7 @@ class ArgoverseMap(RoadMapWithCaches):
                 point,
             )
 
-    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
+    def lane_by_id(self, lane_id: str) -> "ArgoverseMap.Lane":
         lane = self._lanes.get(lane_id)
         assert lane, f"ArgoverseMap got request for unknown lane_id: '{lane_id}'"
         return lane
@@ -632,7 +638,7 @@ class ArgoverseMap(RoadMapWithCaches):
         return candidate_lanes
 
     @lru_cache(maxsize=16)
-    def road_with_point(self, point: Point) -> RoadMap.Road:
+    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
         radius = 5
         for nl, dist in self.nearest_lanes(point, radius):
             if nl.contains_point(point):
@@ -649,10 +655,12 @@ class ArgoverseMap(RoadMapWithCaches):
 
             x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
             for lane in self._lanes:
-                x_mins.append(lane._bbox.min_pt.x)
-                y_mins.append(lane._bbox.min_pt.y)
-                x_maxs.append(lane._bbox.max_pt.x)
-                y_maxs.append(lane._bbox.max_pt.y)
+                # pytype: disable=attribute-error
+                x_mins.append(lane.bounding_box.min_pt.x)
+                y_mins.append(lane.bounding_box.min_pt.y)
+                x_maxs.append(lane.bounding_box.max_pt.x)
+                y_maxs.append(lane.bounding_box.max_pt.y)
+                # pytype: enable=attribute-error
 
             self._bbox = BoundingBox(
                 min_pt=Point(x=min(x_mins), y=min(y_mins)),
@@ -792,12 +800,11 @@ class ArgoverseMap(RoadMapWithCaches):
         came_from[start] = None
         cost_so_far = dict()
         cost_so_far[start] = start.length
-        current = None
+        current: Optional[RoadMap.Road] = None
 
         # Dijkstra’s Algorithm
         while queue:
             (_, _, current) = heapq.heappop(queue)
-            current: RoadMap.Road
             if current == end:
                 break
             for out_road in current.outgoing_roads:
@@ -815,7 +822,8 @@ class ArgoverseMap(RoadMapWithCaches):
         current = end
         path = []
         while current != start:
-            path.append(current)
+            if current is not None:
+                path.append(current)
             current = came_from[current]
         path.append(start)
         path.reverse()
@@ -956,7 +964,7 @@ class ArgoverseMap(RoadMapWithCaches):
         pose: Pose,
         lookahead: int,
         within_radius: float = 5,
-        route: RoadMap.Route = None,
+        route: Optional[RoadMap.Route] = None,
     ) -> List[List[Waypoint]]:
         road_ids = []
         if route and route.roads:

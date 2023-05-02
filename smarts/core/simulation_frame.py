@@ -22,10 +22,8 @@
 import logging
 import re
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import Any, Dict, List, Optional, Set
-
-from cached_property import cached_property
 
 from smarts.core.actor import ActorState
 from smarts.core.agent_interface import AgentInterface

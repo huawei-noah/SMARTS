@@ -25,11 +25,10 @@ import math
 from bisect import bisect
 from dataclasses import dataclass
 from enum import IntEnum
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import Any, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-from cached_property import cached_property
 from shapely.geometry import LineString
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
@@ -89,19 +88,19 @@ class RoadMap:
         """Build a glb file for camera rendering and envision"""
         raise NotImplementedError()
 
-    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+    def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
         """Find a surface within the road map that has the given identifier."""
         raise NotImplementedError()
 
-    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
+    def lane_by_id(self, lane_id: str) -> Optional[RoadMap.Lane]:
         """Find a lane in this road map that has the given identifier."""
         raise NotImplementedError()
 
-    def road_by_id(self, road_id: str) -> RoadMap.Road:
+    def road_by_id(self, road_id: str) -> Optional[RoadMap.Road]:
         """Find a road in this road map that has the given identifier."""
         raise NotImplementedError()
 
-    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+    def feature_by_id(self, feature_id: str) -> Optional[RoadMap.Feature]:
         """Find a feature in this road map that has the given identifier."""
         raise NotImplementedError()
 
@@ -259,6 +258,11 @@ class RoadMap:
         def __eq__(self, other) -> bool:
             """Required for set usage; derived classes may override this."""
             return self.__class__ == other.__class__ and hash(self) == hash(other)
+
+        @property
+        def bounding_box(self):
+            """Gets the lane bounding box."""
+            raise NotImplementedError()
 
         @property
         def lane_id(self) -> str:
@@ -701,7 +705,7 @@ class RoadMap:
 
         def next_junction(
             self, cur_lane: RouteLane, offset: float
-        ) -> Optional[Tuple[RoadMap.Lane, float]]:
+        ) -> Tuple[Optional[RoadMap.Lane], float]:
             """Returns a lane within the next junction along the route from beginning
             of the current lane to the returned lane it connects with in the junction,
             and the distance to it from this offset, or (None, inf) if there aren't any.
@@ -926,7 +930,9 @@ class RoadMapWithCaches(RoadMap):
                 def __init__(self):
                     self.offset = 0
 
-                def seg(self, pt1: Point, pt2: Point) -> float:
+                def seg(
+                    self, pt1: Point, pt2: Point
+                ) -> RoadMapWithCaches._SegmentCache.Segment:
                     """Create a Segment for a successive pair of polyline points."""
                     # TAI: include lane width sometimes?
                     rval = RoadMapWithCaches._SegmentCache.Segment(

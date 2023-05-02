@@ -23,12 +23,11 @@ import json
 import math
 from dataclasses import dataclass, field
 from enum import IntEnum
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import Any, Callable, Dict
 
 import gymnasium as gym
 import numpy as np
-from cached_property import cached_property
 
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 

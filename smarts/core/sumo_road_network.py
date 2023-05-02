@@ -20,13 +20,12 @@
 import logging
 import os
 import random
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from subprocess import check_output
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
-from cached_property import cached_property
 from shapely.geometry import Point as shPoint
 from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap
@@ -293,7 +292,7 @@ class SumoRoadNetwork(RoadMap):
                 if radius >= feat.min_dist_from(pt)
             ]
 
-    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+    def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMap.Lane, Surface):
@@ -310,11 +309,15 @@ class SumoRoadNetwork(RoadMap):
             return hash(self.lane_id) ^ hash(self._map)
 
         @property
+        def bounding_box(self):
+            raise NotImplementedError()
+
+        @property
         def lane_id(self) -> str:
             return self._lane_id
 
         @property
-        def road(self) -> RoadMap.Road:
+        def road(self) -> "SumoRoadNetwork.Road":
             return self._road
 
         @cached_property
@@ -362,7 +365,7 @@ class SumoRoadNetwork(RoadMap):
             return result
 
         @cached_property
-        def lane_to_left(self) -> Tuple[RoadMap.Lane, bool]:
+        def lane_to_left(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             result = None
             for other in self.lanes_in_same_direction:
                 if other.index > self.index and (
@@ -372,7 +375,7 @@ class SumoRoadNetwork(RoadMap):
             return result, True
 
         @cached_property
-        def lane_to_right(self) -> Tuple[RoadMap.Lane, bool]:
+        def lane_to_right(self) -> Tuple[Optional[RoadMap.Lane], bool]:
             result = None
             for other in self.lanes_in_same_direction:
                 if other.index < self.index and (
@@ -468,13 +471,16 @@ class SumoRoadNetwork(RoadMap):
             return list(set(result))
 
         def waypoint_paths_for_pose(
-            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+            self, pose: Pose, lookahead: int, route: Optional[RoadMap.Route] = None
         ) -> List[List[Waypoint]]:
             road_ids = [road.road_id for road in route.roads] if route else None
             return self._waypoint_paths_at(pose.point, lookahead, road_ids)
 
         def waypoint_paths_at_offset(
-            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+            self,
+            offset: float,
+            lookahead: int = 30,
+            route: Optional[RoadMap.Route] = None,
         ) -> List[List[Waypoint]]:
             wp_start = self.from_lane_coord(RefLinePoint(offset))
             road_ids = [road.road_id for road in route.roads] if route else None
@@ -605,7 +611,7 @@ class SumoRoadNetwork(RoadMap):
         ) -> float:
             return super().curvature_radius_at_offset(offset, lookahead)
 
-    def lane_by_id(self, lane_id: str) -> RoadMap.Lane:
+    def lane_by_id(self, lane_id: str) -> "SumoRoadNetwork.Lane":
         lane = self._lanes.get(lane_id)
         if lane:
             return lane
@@ -799,7 +805,7 @@ class SumoRoadNetwork(RoadMap):
         return [(self.lane_by_id(lane.getID()), dist) for lane, dist in candidate_lanes]
 
     @lru_cache(maxsize=16)
-    def road_with_point(self, point: Point) -> RoadMap.Road:
+    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
         radius = max(5, 2 * self._default_lane_width)
         for nl, dist in self.nearest_lanes(point, radius):
             if dist < 0.5 * nl._width + 1e-1:
@@ -808,9 +814,9 @@ class SumoRoadNetwork(RoadMap):
 
     def generate_routes(
         self,
-        start_road: RoadMap.Road,
-        end_road: RoadMap.Road,
-        via: Optional[Sequence[RoadMap.Road]] = None,
+        start_road: "SumoRoadNetwork.Road",
+        end_road: "SumoRoadNetwork.Road",
+        via: Optional[Sequence["SumoRoadNetwork.Road"]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
@@ -903,7 +909,7 @@ class SumoRoadNetwork(RoadMap):
     def random_route(
         self,
         max_route_len: int = 10,
-        starting_road: Optional[RoadMap.Road] = None,
+        starting_road: Optional["SumoRoadNetwork.Road"] = None,
         only_drivable: bool = True,
     ) -> RoadMap.Route:
         """Generate a random route."""
@@ -948,7 +954,7 @@ class SumoRoadNetwork(RoadMap):
         pose: Pose,
         lookahead: int,
         within_radius: float = 5,
-        route: RoadMap.Route = None,
+        route: Optional[RoadMap.Route] = None,
     ) -> List[List[Waypoint]]:
         if route:
             if route.roads:
@@ -1107,7 +1113,7 @@ class SumoRoadNetwork(RoadMap):
         def min_dist_from(self, point: Point) -> float:
             return np.linalg.norm(self.geometry[0].as_np_array - point.as_np_array)
 
-    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+    def feature_by_id(self, feature_id: str) -> Optional[RoadMap.Feature]:
         return self._features.get(feature_id)
 
     class Route(RouteWithCache):
@@ -1493,10 +1499,11 @@ class SumoRoadNetwork(RoadMap):
             )
             ref_lanepoints_coordinates["lane_id"].append(lanepoint.lp.lane.lane_id)
             ref_lanepoints_coordinates["lane_index"].append(lanepoint.lp.lane.index)
-            ref_lanepoints_coordinates["lane_width"].append(lanepoint.lp.lane._width)
-            ref_lanepoints_coordinates["lane_offset"].append(
-                lanepoint.lp.lane.offset_along_lane(lanepoint.lp.pose.point)
+            lane_offset = lanepoint.lp.lane.offset_along_lane(lanepoint.lp.pose.point)
+            ref_lanepoints_coordinates["lane_width"].append(
+                lanepoint.lp.lane.width_at_offset(lane_offset)[0]
             )
+            ref_lanepoints_coordinates["lane_offset"].append(lane_offset)
             ref_lanepoints_coordinates["speed_limit"].append(
                 lanepoint.lp.lane.speed_limit
             )
@@ -1530,15 +1537,16 @@ class SumoRoadNetwork(RoadMap):
 
         if len(cumulative_path_dist) <= lp_spacing:
             lp = path[0].lp
+            lane_offset = lp.lane.offset_along_lane(lp.pose.point)
             return [
                 Waypoint(
                     pos=lp.pose.as_position2d(),
                     heading=lp.pose.heading,
-                    lane_width=lp.lane._width,
+                    lane_width=lp.lane.width_at_offset(lane_offset)[0],
                     speed_limit=lp.lane.speed_limit,
                     lane_id=lp.lane.lane_id,
                     lane_index=lp.lane.index,
-                    lane_offset=lp.lane.offset_along_lane(lp.pose.point),
+                    lane_offset=lane_offset,
                 )
             ]
 

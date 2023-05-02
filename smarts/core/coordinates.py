@@ -19,10 +19,10 @@
 # THE SOFTWARE.
 import math
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Any, NamedTuple, Optional, SupportsFloat, Tuple, Union
 
 import numpy as np
-from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
