@@ -187,11 +187,35 @@ class MetricsBase(gym.Wrapper):
 
         _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
+        # Get the actor of interest, if any is present in the current scenario.
         interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
-        assert len(interest_actors) <= 1, (
-            f"Expected <=1 actor of interest, but got {len(interest_actors)} "
-            "actors of interest."
-        )
+        if len(interest_actors) == 0:
+            interest_actor = ""
+            social_agent_mission = None
+            traffic_sim = None
+        elif len(interest_actors) == 1:
+            interest_actor = next(iter(interest_actors))
+            # Check if actor of interest is a social agent.
+            social_agent_mission = [(name, mission) for name, mission in self._scen.missions.items() if interest_actor in name]
+            assert len(social_agent_mission) <= 1, (
+                f"Expected <=1 actor of interest in social agents, but got {len(social_agent_mission)} "
+                "actors of interest in social agents."
+            )
+            if len(social_agent_mission) == 0:
+                # Check if the actor of interest is a traffic vehicle.
+                traffic_sim = [
+                    traffic_sim
+                    for traffic_sim in traffic_sims
+                    if traffic_sim.manages_actor(vehicle_name)
+                ]
+                assert (
+                    len(traffic_sim) == 1
+                ), "None or multiple, traffic sims contain the vehicle of interest."
+                traffic_sim = traffic_sim[0]
+        else:
+            raise MetricsError(f"Expected <=1 actor of interest, but got {len(interest_actors)} "
+                "actors of interest."
+            )
 
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
@@ -201,6 +225,21 @@ class MetricsBase(gym.Wrapper):
             end_pos = Point(-np.inf, -np.inf, -np.inf)
             dist_tot = -np.inf
             if self._params.dist_to_destination.active:
+                if interest_criteria == None:
+                    end_pos = self._scen.missions[agent_name].goal.position
+                    dist_tot = get_dist(
+                        road_map=self._road_map,
+                        point_a=Point(*self._scen.missions[agent_name].start.position),
+                        point_b=end_pos,
+                    )
+                elif (isinstance(interest_criteria, InterestDoneCriteria)) and (social_agent_mission is not None):
+                    # Do the following if the actor of interest is a social agent.
+                    mission = social_agent_mission[0][1]
+                        if vehicle_name in agent_name:
+                            agent_mission
+                        else:
+                            continue
+                        return end_pos, dist_tot
                 if isinstance(interest_criteria, InterestDoneCriteria):
                     end_pos, dist_tot = _get_end_point_and_dist(
                         vehicle_name=next(iter(interest_actors)),
@@ -208,13 +247,7 @@ class MetricsBase(gym.Wrapper):
                         scenario = self._scen,
                         road_map=self._road_map,
                     )
-                elif interest_criteria == None:
-                    end_pos = self._scen.missions[agent_name].goal.position
-                    dist_tot = get_dist(
-                        road_map=self._road_map,
-                        point_a=Point(*self._scen.missions[agent_name].start.position),
-                        point_b=end_pos,
-                    )
+
 
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params,
@@ -316,10 +349,7 @@ def _get_end_point_and_dist(
         Tuple[Point, float]: End point and route distance.
     """
 
-    w = scenario.social_agents.keys()
-    print(w)
-    print(vehicle_name)
-    
+    # Do the following if the actor of interest is a traffic vehicle
     traffic_sim = [
         traffic_sim
         for traffic_sim in traffic_sims
@@ -353,7 +383,7 @@ def _get_end_point_and_dist(
         dist_tot = get_dist(road_map=road_map,point_a=start_pos,point_b=end_pos)
         return end_pos, dist_tot
     else:
-        raise MetricsError(f"Received unsupported traffic sim {source}.")
+        raise MetricsError(f"Received unsupported traffic provider {source}.")
 
 
 class Metrics(gym.Wrapper):
