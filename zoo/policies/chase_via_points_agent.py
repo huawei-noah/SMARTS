@@ -1,16 +1,25 @@
+import math
+from functools import reduce
+from typing import Dict, List
+
 import numpy as np
 
 from smarts.core.agent import Agent
-from smarts.core.observations import Observation
+from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.sensors import LANE_ID_CONSTANT
+from smarts.core.utils.math import squared_dist
+from smarts.env.custom_observations import scan_for_vehicles
 
 
 class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
-        assert obs.waypoint_paths, (
+        assert obs.waypoint_paths is not None, (
             f"Waypoint paths = {obs.waypoint_paths}; "
             "cannot be empty or None. Enable waypoint paths in agent interface."
         )
+
+        if len(obs.waypoint_paths) == 0:
+            return (1, 0)
 
         lane_change_dist = 80
 

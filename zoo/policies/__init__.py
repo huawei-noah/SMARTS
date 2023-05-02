@@ -63,7 +63,7 @@ register(
             lane_positions=False,
             lidar_point_cloud=False,
             max_episode_steps=None,
-            neighborhood_vehicle_states=True,
+            neighborhood_vehicle_states=False,
             occupancy_grid_map=False,
             top_down_rgb=False,
             road_waypoints=False,
