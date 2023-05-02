@@ -24,7 +24,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 
-from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentsAliveDoneCriteria
+from smarts.core.agent_interface import (
+    AgentInterface,
+    AgentsAliveDoneCriteria,
+    InterestDoneCriteria,
+)
 from smarts.core.coordinates import Heading, Point
 from smarts.core.events import Events
 from smarts.core.observations import (
@@ -41,6 +45,7 @@ from smarts.core.observations import (
     Vias,
 )
 from smarts.core.plan import Plan, PlanFrame
+from smarts.core.renderer_base import RendererBase
 from smarts.core.road_map import RoadMap
 from smarts.core.sensor import (
     AccelerometerSensor,
@@ -70,7 +75,12 @@ ROAD_ID_CONSTANT = "off_road"
 LANE_INDEX_CONSTANT = -1
 
 
-def _make_vehicle_observation(road_map, neighborhood_vehicle):
+def _make_vehicle_observation(
+    road_map,
+    neighborhood_vehicle: VehicleState,
+    sim_frame: SimulationFrame,
+    interest_extension: Optional[re.Pattern],
+):
     nv_lane = road_map.nearest_lane(neighborhood_vehicle.pose.point, radius=3)
     if nv_lane:
         nv_road_id = nv_lane.road.road_id
@@ -91,6 +101,9 @@ def _make_vehicle_observation(road_map, neighborhood_vehicle):
         lane_id=nv_lane_id,
         lane_index=nv_lane_index,
         lane_position=None,
+        interest=sim_frame.actor_is_interest(
+            neighborhood_vehicle.actor_id, extension=interest_extension
+        ),
     )
 
 
@@ -102,14 +115,24 @@ class SensorState:
         self._plan_frame = plan_frame
         self._step = 0
         self._seen_interest_actors = False
+        self._seen_alive_actors = False
 
     def step(self):
         """Update internal state."""
         self._step += 1
 
     @property
+    def seen_alive_actors(self) -> bool:
+        """If an agents alive actor has been spotted before."""
+        return self._seen_alive_actors
+
+    @seen_alive_actors.setter
+    def seen_alive_actors(self, value: bool):
+        self._seen_alive_actors = value
+
+    @property
     def seen_interest_actors(self) -> bool:
-        """If a relevant actor has been spotted before."""
+        """If an interest actor has been spotted before."""
         return self._seen_interest_actors
 
     @seen_interest_actors.setter
@@ -143,7 +166,7 @@ class SensorResolver:
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
-        renderer,
+        renderer: RendererBase,
         bullet_client,
     ):
         """Generate observations
@@ -152,7 +175,7 @@ class SensorResolver:
             sim_frame (SimulationFrame): The simulation frame.
             sim_local_constants (SimulationLocalConstants): Constraints defined by the local simulator.
             agent_ids (Set[str]): The agents to run.
-            renderer (Renderer): The renderer to use.
+            renderer (RendererBase): The renderer to use.
             bullet_client (Any): The bullet client. This parameter is likely to be removed.
         """
         raise NotImplementedError()
@@ -176,6 +199,7 @@ class Sensors:
         observations, dones, updated_sensors = {}, {}, {}
         for agent_id in agent_ids_for_group:
             vehicle_ids = sim_frame.vehicles_for_agents.get(agent_id)
+            interface = sim_frame.agent_interfaces.get(agent_id)
             if not vehicle_ids:
                 continue
             for vehicle_id in vehicle_ids:
@@ -186,9 +210,10 @@ class Sensors:
                 ) = cls.process_serialization_safe_sensors(
                     sim_frame,
                     sim_local_constants,
-                    agent_id,
+                    interface,
                     sim_frame.sensor_states[vehicle_id],
                     vehicle_id,
+                    agent_id,
                 )
         return observations, dones, updated_sensors
 
@@ -196,7 +221,7 @@ class Sensors:
     def process_serialization_unsafe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
-        agent_id,
+        interface,
         sensor_state,
         vehicle_id,
         renderer,
@@ -245,9 +270,10 @@ class Sensors:
     def process_serialization_safe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
-        agent_id,
+        interface: AgentInterface,
         sensor_state,
         vehicle_id,
+        agent_id=None,
     ):
         """Observations that can be done on any thread."""
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
@@ -259,10 +285,18 @@ class Sensors:
         )
         if neighborhood_vehicle_states_sensor:
             neighborhood_vehicle_states = []
+            interest_pattern = (
+                interface.done_criteria.interest.actors_pattern
+                if interface is not None
+                and interface.done_criteria.interest is not None
+                else None
+            )
             for nv in neighborhood_vehicle_states_sensor(
                 vehicle_state, sim_frame.vehicle_states.values()
             ):
-                veh_obs = _make_vehicle_observation(sim_local_constants.road_map, nv)
+                veh_obs = _make_vehicle_observation(
+                    sim_local_constants.road_map, nv, sim_frame, interest_pattern
+                )
                 lane_position_sensor = vehicle_sensors.get("lane_position_sensor")
                 nv_lane_pos = None
                 if veh_obs.lane_id is not LANE_ID_CONSTANT and lane_position_sensor:
@@ -391,7 +425,7 @@ class Sensors:
         done, events = Sensors._is_done_with_events(
             sim_frame,
             sim_local_constants,
-            agent_id,
+            interface,
             vehicle_state,
             sensor_state,
             plan,
@@ -399,12 +433,7 @@ class Sensors:
         )
 
         if done and sensor_state.steps_completed == 1:
-            agent_type = "Social agent"
-            if agent_id in sim_frame.ego_ids:
-                agent_type = "Ego agent"
-            logger.warning(
-                "%s with Agent ID: %s is done on the first step", agent_type, agent_id
-            )
+            logger.warning("Vehicle with ID: %s is done on the first step", vehicle_id)
 
         signals = None
         signals_sensor = vehicle_sensors.get("signals_sensor")
@@ -418,8 +447,9 @@ class Sensors:
                 provider_state,
             )
 
-        agent_controls = agent_id == sim_frame.agent_vehicle_controls.get(
-            vehicle_state.actor_id
+        agent_controls = (
+            agent_id is not None
+            and agent_id == sim_frame.agent_vehicle_controls.get(vehicle_state.actor_id)
         )
         updated_sensors = {
             sensor_name: sensor
@@ -452,14 +482,14 @@ class Sensors:
         cls,
         sim_frame: SimulationFrame,
         sim_local_constants,
-        agent_id,
+        interface,
         sensor_state,
         vehicle,
         renderer,
         bullet_client,
     ) -> Tuple[Observation, bool, Dict[str, "Sensor"]]:
         """Generate observations for the given agent around the given vehicle."""
-        args = [sim_frame, sim_local_constants, agent_id, sensor_state, vehicle.id]
+        args = [sim_frame, sim_local_constants, interface, sensor_state, vehicle.id]
         safe_obs, dones, updated_safe_sensors = cls.process_serialization_safe_sensors(
             *args
         )
@@ -511,28 +541,17 @@ class Sensors:
         return False
 
     @classmethod
-    def _actors_alive_done_check(
+    def _interest_done_check(
         cls,
-        vehicle_ids,
-        sensor_state,
-        actors_alive: Optional[ActorsAliveDoneCriteria],
+        interest_actors,
+        sensor_state: SensorState,
+        interest_criteria: Optional[InterestDoneCriteria],
     ):
-        if actors_alive is None:
+        if interest_criteria is None or len(interest_actors) > 0:
+            sensor_state.seen_interest_actors = True
             return False
 
-        sensor_state: SensorState = sensor_state
-
-        pattern = re.compile(
-            "|".join(rf"(?:{aoi})" for aoi in actors_alive.actors_of_interest)
-        )
-        ## TODO optimization to get vehicles that were added and removed last step
-        ## TODO second optimization to check for already known vehicles
-        for vehicle_id in vehicle_ids:
-            # get vehicles by pattern
-            if pattern.match(vehicle_id):
-                sensor_state.seen_interest_actors = True
-                return False
-        if actors_alive.strict or sensor_state.seen_interest_actors:
+        if interest_criteria.strict or sensor_state.seen_interest_actors:
             # if agent requires the actor to exist immediately
             # OR if previously seen relevant actors but no actors match anymore
             return True
@@ -544,17 +563,17 @@ class Sensors:
     def _is_done_with_events(
         cls,
         sim_frame: SimulationFrame,
-        sim_local_constants,
-        agent_id,
+        sim_local_constants: SimulationLocalConstants,
+        interface: AgentInterface,
         vehicle_state: VehicleState,
         sensor_state,
         plan,
         vehicle_sensors,
     ):
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_state.actor_id]
-        interface = sim_frame.agent_interfaces[agent_id]
         done_criteria = interface.done_criteria
         event_config = interface.event_configuration
+        interest = interface.done_criteria.interest
 
         # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(
@@ -580,9 +599,13 @@ class Sensors:
         agents_alive_done = cls._agents_alive_done_check(
             sim_frame.ego_ids, sim_frame.potential_agent_ids, done_criteria.agents_alive
         )
-        actors_alive_done = cls._actors_alive_done_check(
-            sim_frame.vehicle_ids, sensor_state, done_criteria.actors_alive
-        )
+        interest_done = False
+        if interest:
+            interest_done = cls._interest_done_check(
+                sim_frame.interest_actors(interest.actors_pattern),
+                sensor_state,
+                interest_criteria=interest,
+            )
 
         done = not sim_frame.resetting and (
             (is_off_road and done_criteria.off_road)
@@ -594,7 +617,7 @@ class Sensors:
             or (is_off_route and done_criteria.off_route)
             or (is_wrong_way and done_criteria.wrong_way)
             or agents_alive_done
-            or actors_alive_done
+            or interest_done
         )
 
         events = Events(
@@ -607,7 +630,7 @@ class Sensors:
             wrong_way=is_wrong_way,
             not_moving=is_not_moving,
             agents_alive_done=agents_alive_done,
-            actors_alive_done=actors_alive_done,
+            interest_done=interest_done,
         )
 
         return done, events

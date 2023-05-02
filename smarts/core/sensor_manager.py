@@ -24,6 +24,8 @@ from collections import Counter
 from typing import Dict, FrozenSet, List, Optional, Set, Tuple
 
 from smarts.core import config
+from smarts.core.agent_interface import AgentInterface
+from smarts.core.renderer_base import RendererBase
 from smarts.core.sensors import Observation, Sensor, Sensors, SensorState
 from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
 from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
@@ -85,7 +87,7 @@ class SensorManager:
         sim_frame,
         sim_local_constants,
         agent_ids,
-        renderer_ref,
+        renderer_ref: RendererBase,
         physics_ref,
     ):
         """Runs observations and updates the sensor states.
@@ -96,7 +98,7 @@ class SensorManager:
                 The values that should stay the same for a simulation over a reset.
             agent_ids ({str, ...}):
                 The agent ids to process.
-            renderer_ref (Optional[Renderer]):
+            renderer_ref (Optional[RendererBase]):
                 The renderer (if any) that should be used.
             physics_ref (bc.BulletClient):
                 The physics client.
@@ -122,7 +124,7 @@ class SensorManager:
         self,
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
-        agent_id,
+        interface: AgentInterface,
         sensor_states,
         vehicles,
         renderer,
@@ -143,7 +145,7 @@ class SensorManager:
             ) = Sensors.observe_vehicle(
                 sim_frame,
                 sim_local_constants,
-                agent_id,
+                interface,
                 sensor_state,
                 vehicle,
                 renderer,

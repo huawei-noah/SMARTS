@@ -53,6 +53,8 @@ class VehicleObservation(NamedTuple):
     lane_position: Optional[RefLinePoint] = None
     """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
     See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
+    interest: bool = False
+    """If this vehicle is of interest in the current scenario."""
 
 
 class EgoVehicleObservation(NamedTuple):
@@ -115,7 +117,7 @@ class GridMapMetadata(NamedTuple):
     """Map height in # of cells."""
     camera_position: Tuple[float, float, float]
     """Camera position when projected onto the map."""
-    camera_heading_in_degrees: float
+    camera_heading: float
     """Camera rotation angle along z-axis when projected onto the map."""
 
 

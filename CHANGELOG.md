@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.1.0] # 2023-04-28
+### Added
 - Added an actor capture manager interface, `ActorCaptureManager`, which describes a manager that handles the change of control of actors. Operations in an actor manager step should not cause conflict in the simulation.
 - Added a new entry tactic, `IdEntryTactic`, which provides the scenario the ability to select a specific actor for an agent to take over.
 - Registered a new `chase-via-points-agent-v0` agent in agent zoo, which can effectively chase via points across different road sections by using the waypoints.
@@ -28,6 +36,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added engine `reset_retries` configuration engine retries before the simulator will raise an error on reset.
 - Introduced new comfort cost function in metric module.
 - Introduced new gap-between-vehicles cost function in metric module.
+- Added baseline example, consisting of training, inference, and zoo agent registration, for the driving and turning tasks in Driving SMARTS 2023.1 and 2023.2 benchmarks, respectively. It uses RelativeTargetPose action space.
+- Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
+- Added an env wrapper for constraining the relative target pose action range.
+- Added a specialised metric formula module for Driving SMARTS 2023.1 and 2023.2 benchmark.
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.
@@ -51,6 +63,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Benchmark listing may specify specialised metric formula for each benchmark.
 - Changed `benchmark_runner_v0.py` to only average records across scenarios that share the same environment. Records are not averaged across different environments, because the scoring formula may differ in different environments.
 - Renamed GapBetweenVehicles cost to VehicleGap cost in metric module.
+- Camera metadata now uses radians instead of degrees.
+- The `Panda3d` implementation of `Renderer` has been extracted from the interface and moved to `smarts.p3d`.
+- Made all metrics as functions to be minimised, except the overall score which is to be maximised.
+- Driving SMARTS 2023.3 benchmark and the metrics module now uses `actor_of_interest_re_filter` from scenario metadata to identify the lead vehicle.
+- Included `RelativeTargetPose` action space to the set of allowed action spaces in `platoon-v0` env.
+- `Collision.collidee_id` now gives the vehicle id rather than the name of the owner of the vehicle (usually the agent id.) `Collision.collidee_owner_id` now provides the id of the controlling `agent` (or other controlling entity in the future.) This is because 1) `collidee_id` should refer to the body and 2) in most cases the owner name would be `None`.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
@@ -60,6 +78,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `VehicleIndex` no longer segfaults when attempting to `repr()` it.
 - Fixed issues related to waypoints in SUMO maps. Waypoints in junctions should now return all possible paths through the junction.
 - Fixed CI tests for metrics.
+- Fixed `traffic_histories_to_observations` script.
+- Fixed an issue where the actor states and vehicle states were not synchronized after simulation vehicle updates resulting in different values from the simulation frame.
+- Minor fix in regular expression compilation of `actor_of_interest_re_filter` from scenario metadata.
+- Fixed acceleration and jerk computation in comfort metric, by ignoring vehicle position jitters smaller than a threshold.
+- Fixed an issue in Envision where vehicle debug info would not update correctly.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.

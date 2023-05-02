@@ -231,11 +231,7 @@ export default function Vehicles({
         ) {
           boxMaterial.alpha = 0.5;
           setVehicleSelected(true);
-          let debugInfo = {};
-          for (const prop of DEBUG_PROPS) {
-            debugInfo[prop] = state[prop];
-          }
-          setDebugInfo(debugInfo);
+          setDebugInfo(evt.meshUnderPointer.parent.metadata.debugInfo);
         })
       );
       box.actionManager.registerAction(
@@ -273,6 +269,12 @@ export default function Vehicles({
       if (!mesh) {
         continue;
       }
+
+      let debugInfo = {};
+      for (const prop of DEBUG_PROPS) {
+        debugInfo[prop] = state[prop];
+      }
+      mesh.metadata.debugInfo = debugInfo;
 
       let pos = state.position;
       mesh.position = new Vector3(pos[0], pos[2], pos[1]);

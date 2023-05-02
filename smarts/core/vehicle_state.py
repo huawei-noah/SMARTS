@@ -99,6 +99,9 @@ class Collision(NamedTuple):
 
     # XXX: This might not work for boid agents
     collidee_id: str
+    """The id of the body that was collided with."""
+    collidee_owner_id: str
+    """The id of the controlling agent or other controlling entity."""
 
 
 @dataclass
@@ -120,7 +123,11 @@ class VehicleState(ActorState):
         assert self.pose is not None and self.dimensions is not None
 
     def __eq__(self, __o: object):
-        return super().__eq__(__o)
+        return (
+            isinstance(__o, type(self))
+            and super().__eq__(__o)
+            and self.pose == __o.pose
+        )
 
     @property
     def bounding_box_points(

@@ -364,6 +364,7 @@ def get_spaces() -> Dict[str, Callable[[Any], gym.Space]]:
             "lane_index": gym.spaces.Box(low=0, high=127, shape=(_NEIGHBOR_SHP,), dtype=np.int8),
             "pos": gym.spaces.Box(low=-1e10, high=1e10, shape=(_NEIGHBOR_SHP,3), dtype=np.float64),    
             "speed": gym.spaces.Box(low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32),
+            "interest": gym.spaces.MultiBinary(_NEIGHBOR_SHP),
         }),
         "occupancy_grid_map": lambda val: gym.spaces.Box(low=0, high=255,shape=(val.height, val.width, 1), dtype=np.uint8),
         "top_down_rgb": lambda val: gym.spaces.Box(low=0, high=255, shape=(val.height, val.width, 3), dtype=np.uint8),
@@ -520,6 +521,7 @@ def _std_neighborhood_vehicle_states(
             "lane_index": np.zeros((des_shp,), dtype=np.int8),
             "pos": np.zeros((des_shp, 3), dtype=np.float64),
             "speed": np.zeros((des_shp,), dtype=np.float32),
+            "interest": np.zeros((des_shp,), dtype=np.int8),
         }
 
     nghbs = [
@@ -529,16 +531,18 @@ def _std_neighborhood_vehicle_states(
             nghb.lane_index,
             nghb.position,
             nghb.speed,
+            nghb.interest,
         )
         for nghb in nghbs[:des_shp]
     ]
-    box, heading, lane_index, pos, speed = zip(*nghbs)
+    box, heading, lane_index, pos, speed, interest = zip(*nghbs)
 
     box = np.array(box, dtype=np.float32)
     heading = np.array(heading, dtype=np.float32)
     lane_index = np.array(lane_index, dtype=np.int8)
     pos = np.array(pos, dtype=np.float64)
     speed = np.array(speed, dtype=np.float32)
+    interest = np.array(interest, dtype=np.int8)
 
     # fmt: off
     box = np.pad(box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
@@ -546,6 +550,7 @@ def _std_neighborhood_vehicle_states(
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
+    interest = np.pad(interest, ((0,pad_shp)), mode="constant", constant_values=0)
     # fmt: on
 
     return {
@@ -554,6 +559,7 @@ def _std_neighborhood_vehicle_states(
         "lane_index": lane_index,
         "pos": pos,
         "speed": speed,
+        "interest": interest,
     }
 
 

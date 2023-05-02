@@ -98,24 +98,24 @@ def agent_spec(agent_interface):
 
 
 @pytest.fixture
-def env(agent_spec):
-    env = gym.make(
+def env(agent_spec: AgentSpec):
+    _env = gym.make(
         "smarts.env:hiway-v0",
         scenarios=["scenarios/sumo/figure_eight"],
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces={AGENT_ID: agent_spec.interface},
         headless=True,
         visdom=False,
         fixed_timestep_sec=0.1,
         seed=42,
     )
 
-    yield env
-    env.close()
+    yield _env
+    _env.close()
 
 
 def project_2d(lens, img_metadata: GridMapMetadata, pos):
     center = np.array(img_metadata.camera_position)
-    heading = np.radians(img_metadata.camera_heading_in_degrees)
+    heading = img_metadata.camera_heading
 
     # Translate according to the camera center
     p_translated = pos - center

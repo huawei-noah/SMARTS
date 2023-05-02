@@ -20,6 +20,7 @@
 import importlib.resources as pkg_resources
 import logging
 import os
+import re
 import warnings
 from functools import cached_property
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
@@ -32,6 +33,7 @@ from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
+from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import timeit
 
@@ -124,7 +126,7 @@ class SMARTS(ProviderManager):
         self._is_setup = False
         self._is_destroyed = False
         self._scenario: Optional[Scenario] = None
-        self._renderer = None
+        self._renderer: RendererBase = None
         self._envision: Optional[EnvisionClient] = envision
         self._visdom: Optional[VisdomClient] = visdom
         self._external_provider: ExternalProvider = None
@@ -217,6 +219,7 @@ class SMARTS(ProviderManager):
         Dict[str, Dict[str, float]],
     ]:
         """Progress the simulation by a fixed or specified time.
+
         Args:
             agent_actions:
                 Actions that the agents want to perform on their actors.
@@ -293,7 +296,6 @@ class SMARTS(ProviderManager):
         # 2. Step all providers and harmonize state
         with timeit("Stepping all providers and harmonizing state", self._log.debug):
             provider_state = self._step_providers(all_agent_actions)
-        self._last_provider_state = provider_state
         with timeit("Checking if all agents are active", self._log.debug):
             self._check_if_acting_on_active_agents(agent_actions)
 
@@ -311,7 +313,7 @@ class SMARTS(ProviderManager):
         # want these during their observation/reward computations.
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
-        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._sync_smarts_and_provider_actor_states(provider_state)
         self._sensor_manager.clean_up_sensors_for_actors(
             set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
         )
@@ -407,14 +409,15 @@ class SMARTS(ProviderManager):
         """Reset the simulation, reinitialize with the specified scenario. Then progress the
          simulation up to the first time an agent returns an observation, or `start_time` if there
          are no agents in the simulation.
+
         Args:
-            scenario(Scenario):
-                The scenario to reset the simulation with.
+            scenario(smarts.core.scenario.Scenario): The scenario to reset the simulation with.
             start_time(float):
                 The initial amount of simulation time to skip. This has implications on all time
                 dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
                 If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
                 simulation should start at `start_time==0.2`.
+
         Returns:
             Agent observations. This observation is as follows:
                 - If no agents: the initial simulation observation at `start_time`
@@ -625,7 +628,7 @@ class SMARTS(ProviderManager):
         ), f"Vehicle has already been hijacked: {vehicle_id}"
         assert not vehicle_id in self.vehicle_index.agent_vehicle_ids(), (
             f"`{agent_id}` can't hijack vehicle that is already controlled by an agent"
-            f" `{self.vehicle_index.actor_id_from_vehicle_id(vehicle_id)}`: {vehicle_id}"
+            f" `{self.agent_manager.agent_for_vehicle(vehicle_id)}`: {vehicle_id}"
         )
 
         # Switch control to agent
@@ -946,24 +949,36 @@ class SMARTS(ProviderManager):
             )
 
     def observe_from(
-        self, vehicle_ids: Sequence[str]
-    ) -> Tuple[
-        Dict[str, Observation], Dict[str, float], Dict[str, float], Dict[str, bool]
-    ]:
+        self, vehicle_ids: Sequence[str], interface: AgentInterface
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Generate observations from the specified vehicles."""
         self._check_valid()
-        return self._agent_manager.observe_from(
-            vehicle_ids, self._traffic_history_provider.done_this_step
+
+        vehicles = {
+            v_id: self.vehicle_index.vehicle_by_id(v_id) for v_id in vehicle_ids
+        }
+        sensor_states = {
+            vehicle.id: self._sensor_manager.sensor_state_for_actor_id(vehicle.id)
+            for vehicle in vehicles.values()
+        }
+        return self.sensor_manager.observe_batch(
+            self.cached_frame,
+            self.local_constants,
+            interface,
+            sensor_states,
+            vehicles,
+            self.renderer_ref,
+            self.bc,
         )
 
     @property
-    def renderer(self):
+    def renderer(self) -> RendererBase:
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
             from .utils.custom_exceptions import RendererException
 
             try:
-                from .renderer import Renderer
+                from smarts.p3d.renderer import Renderer
 
                 self._renderer = Renderer(self._sim_id)
             except ImportError as e:
@@ -1053,10 +1068,10 @@ class SMARTS(ProviderManager):
         return VERSION
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
-        """
-        Teardown agents in the given sequence
-        Params:
-            agent_ids: Sequence of agent ids
+        """Teardown agents in the given sequence.
+
+        Args:
+            agent_ids: A sequence of agent ids to terminate and release.
         """
         agents_to_teardown = {
             id_
@@ -1067,10 +1082,10 @@ class SMARTS(ProviderManager):
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
-        """
-        Teardown agents in the given list that have no actors registered as
+        """Teardown agents in the given list that have no actors registered as
         controlled-by or shadowed-by (for each given agent.)
-        Params:
+
+        Args:
             agent_ids: Sequence of agent ids
         """
         self._check_valid()
@@ -1328,6 +1343,13 @@ class SMARTS(ProviderManager):
         self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
+    def _sync_smarts_and_provider_actor_states(
+        self, external_provider_state: ProviderState
+    ):
+        self._last_provider_state = external_provider_state
+        self._vehicle_states = [v.state for v in self._vehicle_index.vehicles]
+        self._last_provider_state.replace_actor_type(self._vehicle_states, VehicleState)
+
     @property
     def should_reset(self):
         """If the simulation requires a reset."""
@@ -1381,7 +1403,6 @@ class SMARTS(ProviderManager):
     ) -> List[VehicleState]:
         """Find vehicles in the vicinity of the target vehicle."""
         self._check_valid()
-        from smarts.core.sensors import Sensors
 
         vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
         return neighborhood_vehicles_around_vehicle(
@@ -1411,10 +1432,10 @@ class SMARTS(ProviderManager):
             vehicle_collisions = self._vehicle_collisions.setdefault(vehicle_id, [])
             for bullet_id in collidee_bullet_ids:
                 collidee = self._bullet_id_to_vehicle(bullet_id)
-                actor_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
-                # TODO: Should we specify the collidee as the vehicle ID instead of
-                #       the agent/social ID?
-                collision = Collision(collidee_id=actor_id)
+                owner_id = self._vehicle_index.owner_id_from_vehicle_id(collidee.id)
+                collision = Collision(
+                    collidee_id=collidee.id, collidee_owner_id=owner_id
+                )
                 vehicle_collisions.append(collision)
 
         traffic_providers = [
@@ -1642,7 +1663,7 @@ class SMARTS(ProviderManager):
         )
 
     @cached_property
-    def cached_frame(self):
+    def cached_frame(self) -> SimulationFrame:
         """Generate a frozen frame state of the simulation."""
         self._check_valid()
         agent_actor_ids = self.vehicle_index.agent_vehicle_ids()
@@ -1668,7 +1689,8 @@ class SMARTS(ProviderManager):
             step_count=self.step_count,
             vehicle_collisions=self._vehicle_collisions,
             vehicle_states={
-                vehicle_id: vehicle.state for vehicle_id, vehicle in vehicles.items()
+                vehicle_state.actor_id: vehicle_state
+                for vehicle_state in self._vehicle_states
             },
             vehicles_for_agents={
                 agent_id: self.vehicle_index.vehicle_ids_by_owner_id(
@@ -1680,4 +1702,7 @@ class SMARTS(ProviderManager):
             vehicle_sensors=self.sensor_manager.sensors_for_actor_ids(vehicle_ids),
             sensor_states=dict(self.sensor_manager.sensor_states_items()),
             _ground_bullet_id=self._ground_bullet_id,
+            interest_filter=re.compile(
+                self.scenario.metadata.get("actor_of_interest_re_filter", "")
+            ),
         )

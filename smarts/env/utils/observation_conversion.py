@@ -196,6 +196,7 @@ def _format_neighborhood_vehicle_states(
             "lane_index": np.zeros((des_shp,), dtype=np.int8),
             "position": np.zeros((des_shp, 3), dtype=np.float64),
             "speed": np.zeros((des_shp,), dtype=np.float32),
+            "interest": np.zeros((des_shp,), dtype=np.int8),
         }
 
     neighborhood_vehicle_states = [
@@ -206,16 +207,20 @@ def _format_neighborhood_vehicle_states(
             nghb.lane_index,
             nghb.position,
             nghb.speed,
+            nghb.interest,
         )
         for nghb in neighborhood_vehicle_states[:des_shp]
     ]
-    box, heading, vehicle_id, lane_index, pos, speed = zip(*neighborhood_vehicle_states)
+    box, heading, vehicle_id, lane_index, pos, speed, interest = zip(
+        *neighborhood_vehicle_states
+    )
 
     box = np.array(box, dtype=np.float32)
     heading = np.array(heading, dtype=np.float32)
     lane_index = np.array(lane_index, dtype=np.int8)
     pos = np.array(pos, dtype=np.float64)
     speed = np.array(speed, dtype=np.float32)
+    interest = np.array(interest, dtype=np.int8)
 
     # fmt: off
     box = np.pad(box, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
@@ -224,6 +229,7 @@ def _format_neighborhood_vehicle_states(
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
+    interest = np.pad(interest, ((0,pad_shp)), mode="constant", constant_values=False)
     # fmt: on
 
     return {
@@ -233,6 +239,7 @@ def _format_neighborhood_vehicle_states(
         "lane_index": lane_index,
         "position": pos,
         "speed": speed,
+        "interest": interest,
     }
 
 
@@ -572,10 +579,10 @@ distance_travelled_space_format = StandardSpaceFormat(
 )
 
 
-events_actors_alive_done_space_format = StandardSpaceFormat(
-    lambda obs: np.int64(obs.events.actors_alive_done),
+events_interest_done_space_format = StandardSpaceFormat(
+    lambda obs: np.int64(obs.events.interest_done),
     lambda _: True,
-    "actors_alive_done",
+    "interest_done",
     _DISCRETE2_SPACE,
 )
 
@@ -707,6 +714,7 @@ neighborhood_vehicle_states_space_format = StandardSpaceFormat(
             "speed": gym.spaces.Box(
                 low=0, high=1e10, shape=(_NEIGHBOR_SHP,), dtype=np.float32
             ),
+            "interest": gym.spaces.MultiBinary(_NEIGHBOR_SHP),
         }
     ),
 )
@@ -846,7 +854,7 @@ ego_vehicle_state_space_format = StandardCompoundSpaceFormat(
 
 events_space_format = StandardCompoundSpaceFormat(
     space_generators=[
-        events_actors_alive_done_space_format,
+        events_interest_done_space_format,
         events_agents_alive_done_space_format,
         events_collisions_space_format,
         events_not_moving_space_format,
@@ -957,8 +965,8 @@ class ObservationSpacesFormatter:
 
             A dictionary of event markers.
             "events": dict({
-                "actors_alive_done":
-                    1 if `DoneCriteria.actors_alive` is triggered, else 0.
+                "interest_done":
+                    1 if `DoneCriteria.interest` is triggered, else 0.
                 "agents_alive_done":
                     1 if `DoneCriteria.agents_alive` is triggered, else 0.
                 "collisions":

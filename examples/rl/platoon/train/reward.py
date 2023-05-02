@@ -8,8 +8,6 @@ class Reward(gym.Wrapper):
     def __init__(self, env):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
-        self._half_pi = np.pi / 2
-        self._two_pi = 2 * np.pi
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._total_dist = {}
 
@@ -45,8 +43,8 @@ class Reward(gym.Wrapper):
                     agent_obs["events"]["collisions"] | agent_obs["events"]["off_road"]
                 ):
                     pass
-                elif agent_obs["events"]["actors_alive_done"]:
-                    print(f"{agent_id}: Actors alive done triggered.")
+                elif agent_obs["events"]["interest_done"]:
+                    print(f"{agent_id}: Interest done triggered.")
                 else:
                     print("Events: ", agent_obs["events"])
                     raise Exception("Episode ended for unknown reason.")

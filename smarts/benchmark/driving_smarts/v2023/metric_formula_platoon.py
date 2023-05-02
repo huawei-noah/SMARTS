@@ -30,6 +30,7 @@ from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
     DistToObstacles,
+    JerkLinear,
     Params,
     Steps,
     VehicleGap,
@@ -63,6 +64,7 @@ class Formula(FormulaBase):
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
+            jerk_linear=JerkLinear(active=False),
             vehicle_gap=VehicleGap(
                 active=True,
                 actor="Leader-007",
@@ -87,14 +89,14 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
         | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
         +-------------------+--------+-----------------------------------------------------------+
-        | Humanness         | [0, 1] | Humanness indicator. The higher, the better.              |
+        | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
         +-------------------+--------+-----------------------------------------------------------+
-        | Rules             | [0, 1] | Traffic rules compliance. The higher, the better.         |
+        | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
             Score: Contains "Overall", "DistToDestination", "VehicleGap",
-            "Humanness", and "Rules" scores.
+            "HumannessError", and "RuleViolation" scores.
         """
 
         costs_total = Costs()
@@ -121,14 +123,14 @@ class Formula(FormulaBase):
 
         # Compute sub-components of score.
         dist_to_destination = costs_final.dist_to_destination
-        humanness = _humanness(costs=costs_final)
-        rules = _rules(costs=costs_final)
+        humanness_error = _humanness_error(costs=costs_final)
+        rule_violation = _rule_violation(costs=costs_final)
         vehicle_gap = costs_final.vehicle_gap
         overall = (
-            0.50 * (1 - dist_to_destination)
+            0.25 * (1 - dist_to_destination)
             + 0.25 * (1 - vehicle_gap)
-            + 0.20 * humanness
-            + 0.05 * rules
+            + 0.25 * (1 - humanness_error)
+            + 0.25 * (1 - rule_violation)
         )
 
         return Score(
@@ -136,19 +138,19 @@ class Formula(FormulaBase):
                 "overall": overall,
                 "dist_to_destination": dist_to_destination,
                 "vehicle_gap": vehicle_gap,
-                "humanness": humanness,
-                "rules": rules,
+                "humanness_error": humanness_error,
+                "rule_violation": rule_violation,
             }
         )
 
 
-def _humanness(costs: Costs) -> float:
-    humanness = np.array([costs.comfort, costs.lane_center_offset])
-    humanness = np.mean(humanness, dtype=float)
-    return 1 - humanness
+def _humanness_error(costs: Costs) -> float:
+    humanness_error = np.array([costs.comfort, costs.lane_center_offset])
+    humanness_error = np.mean(humanness_error, dtype=float)
+    return humanness_error
 
 
-def _rules(costs: Costs) -> float:
-    rules = np.array([costs.speed_limit, costs.wrong_way])
-    rules = np.mean(rules, dtype=float)
-    return 1 - rules
+def _rule_violation(costs: Costs) -> float:
+    rule_violation = np.array([costs.speed_limit, costs.wrong_way])
+    rule_violation = np.mean(rule_violation, dtype=float)
+    return rule_violation

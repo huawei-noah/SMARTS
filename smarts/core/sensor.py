@@ -46,6 +46,7 @@ from smarts.core.observations import (
     Vias,
 )
 from smarts.core.plan import Plan
+from smarts.core.renderer_base import RendererBase
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
 from smarts.core.utils.math import squared_dist
@@ -79,8 +80,8 @@ class CameraSensor(Sensor):
 
     def __init__(
         self,
-        vehicle_state,
-        renderer,  # type Renderer or None
+        vehicle_state: VehicleState,
+        renderer: RendererBase,
         name: str,
         mask: int,
         width: int,
@@ -108,7 +109,7 @@ class CameraSensor(Sensor):
         )
 
     def teardown(self, **kwargs):
-        renderer = kwargs.get("renderer")
+        renderer: Optional[RendererBase] = kwargs.get("renderer")
         if not renderer:
             return
         camera = renderer.camera_for_id(self._camera_name)
@@ -121,7 +122,7 @@ class CameraSensor(Sensor):
             sim_frame.actor_states_by_id[self._target_actor], kwargs.get("renderer")
         )
 
-    def _follow_actor(self, vehicle_state, renderer):
+    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
         if not renderer:
             return
         camera = renderer.camera_for_id(self._camera_name)
@@ -137,11 +138,11 @@ class DrivableAreaGridMapSensor(CameraSensor):
 
     def __init__(
         self,
-        vehicle_state,
+        vehicle_state: VehicleState,
         width: int,
         height: int,
         resolution: float,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
     ):
         super().__init__(
             vehicle_state,
@@ -154,22 +155,23 @@ class DrivableAreaGridMapSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def __call__(self, renderer) -> DrivableAreaGridMap:
+    def __call__(self, renderer: RendererBase) -> DrivableAreaGridMap:
         camera = renderer.camera_for_id(self._camera_name)
         assert camera is not None, "Drivable area grid map has not been initialized"
 
         ram_image = camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
-        image = np.frombuffer(mem_view, np.uint8)
-        image.shape = (camera.tex.getYSize(), camera.tex.getXSize(), 1)
+        image: np.ndarray = np.frombuffer(mem_view, np.uint8)
+        width, height = camera.image_dimensions
+        image.shape = (height, width, 1)
         image = np.flipud(image)
 
         metadata = GridMapMetadata(
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_position=camera.camera_np.getPos(),
-            camera_heading_in_degrees=camera.camera_np.getH(),
+            camera_position=camera.position,
+            camera_heading=camera.heading,
         )
         return DrivableAreaGridMap(data=image, metadata=metadata)
 
@@ -179,11 +181,11 @@ class OGMSensor(CameraSensor):
 
     def __init__(
         self,
-        vehicle_state,
+        vehicle_state: VehicleState,
         width: int,
         height: int,
         resolution: float,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
     ):
         super().__init__(
             vehicle_state,
@@ -196,22 +198,23 @@ class OGMSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def __call__(self, renderer) -> OccupancyGridMap:
+    def __call__(self, renderer: RendererBase) -> OccupancyGridMap:
         camera = renderer.camera_for_id(self._camera_name)
         assert camera is not None, "OGM has not been initialized"
 
         ram_image = camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
-        grid = np.frombuffer(mem_view, np.uint8)
-        grid.shape = (camera.tex.getYSize(), camera.tex.getXSize(), 1)
+        grid: np.ndarray = np.frombuffer(mem_view, np.uint8)
+        width, height = camera.image_dimensions
+        grid.shape = (height, width, 1)
         grid = np.flipud(grid)
 
         metadata = GridMapMetadata(
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_position=camera.camera_np.getPos(),
-            camera_heading_in_degrees=camera.camera_np.getH(),
+            camera_position=camera.position,
+            camera_heading=camera.heading,
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
 
@@ -221,11 +224,11 @@ class RGBSensor(CameraSensor):
 
     def __init__(
         self,
-        vehicle_state,
+        vehicle_state: VehicleState,
         width: int,
         height: int,
         resolution: float,
-        renderer,  # type Renderer or None
+        renderer: RendererBase,
     ):
         super().__init__(
             vehicle_state,
@@ -238,22 +241,23 @@ class RGBSensor(CameraSensor):
         )
         self._resolution = resolution
 
-    def __call__(self, renderer) -> TopDownRGB:
+    def __call__(self, renderer: RendererBase) -> TopDownRGB:
         camera = renderer.camera_for_id(self._camera_name)
         assert camera is not None, "RGB has not been initialized"
 
         ram_image = camera.wait_for_ram_image(img_format="RGB")
         mem_view = memoryview(ram_image)
-        image = np.frombuffer(mem_view, np.uint8)
-        image.shape = (camera.tex.getYSize(), camera.tex.getXSize(), 3)
+        image: np.ndarray = np.frombuffer(mem_view, np.uint8)
+        width, height = camera.image_dimensions
+        image.shape = (height, width, 3)
         image = np.flipud(image)
 
         metadata = GridMapMetadata(
             resolution=self._resolution,
             height=image.shape[0],
             width=image.shape[1],
-            camera_position=camera.camera_np.getPos(),
-            camera_heading_in_degrees=camera.camera_np.getH(),
+            camera_position=camera.position,
+            camera_heading=camera.heading,
         )
         return TopDownRGB(data=image, metadata=metadata)
 

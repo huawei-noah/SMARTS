@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Dict, List, NewType
 
@@ -58,17 +59,34 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     T_u = 0
     step = 0
     dyn_window = SlidingWindow(size=T_p)
+    vehicle_pos = deque(maxlen=4)
+    dt = 0.1
+    min_disp = 0.1  # Minimum displacement to filter-out coordinate jitter. Units: m
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window
+        nonlocal jerk_linear_max, acc_linear_max, T_p, T_u, step, dyn_window, vehicle_pos, dt, min_disp
 
         step = step + 1
+        vehicle_pos.appendleft(obs.ego_vehicle_state.position[:2])
+        jerk = 0
+        acc = 0
+        if len(vehicle_pos) >= 3:
+            disp_0 = np.linalg.norm(vehicle_pos[0] - vehicle_pos[1])
+            disp_1 = np.linalg.norm(vehicle_pos[1] - vehicle_pos[2])
+            speed_0 = disp_0 / dt
+            speed_1 = disp_1 / dt
+            if valid_0 := (disp_0 > min_disp and disp_1 > min_disp):
+                acc = (speed_0 - speed_1) / dt
+            if valid_0 and len(vehicle_pos) == 4:
+                disp_2 = np.linalg.norm(vehicle_pos[2] - vehicle_pos[3])
+                speed_2 = disp_2 / dt
+                acc_1 = (speed_1 - speed_2) / dt
+                if disp_2 > min_disp:
+                    jerk = (acc - acc_1) / dt
 
-        jerk_linear = np.linalg.norm(obs.ego_vehicle_state.linear_jerk)
-        acc_linear = np.linalg.norm(obs.ego_vehicle_state.linear_acceleration)
-        dyn = max(jerk_linear / jerk_linear_max, acc_linear / acc_linear_max)
+        dyn = max(jerk / jerk_linear_max, acc / acc_linear_max)
 
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
@@ -336,7 +354,7 @@ def _steps(
         if not done:
             return Costs(steps=-1)
 
-        if obs.events.reached_goal or obs.events.actors_alive_done:
+        if obs.events.reached_goal or obs.events.interest_done:
             return Costs(steps=step / max_episode_steps)
         elif (
             len(obs.events.collisions) > 0
@@ -347,7 +365,7 @@ def _steps(
         else:
             raise CostError(
                 "Expected reached_goal, collisions, off_road, "
-                "max_episode_steps, or actors_alive_done, to be true "
+                "max_episode_steps, or interest_done, to be true "
                 f"on agent done, but got events: {obs.events}."
             )
 

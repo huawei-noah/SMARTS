@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 import gymnasium as gym
 
-from smarts.core.agent_interface import ActorsAliveDoneCriteria, AgentInterface
+from smarts.core.agent_interface import AgentInterface, InterestDoneCriteria
 from smarts.core.coordinates import Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
@@ -39,7 +39,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
     get_dist,
     make_cost_funcs,
 )
-from smarts.env.gymnasium.wrappers.metric.formula import Score
+from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
@@ -68,7 +68,7 @@ class MetricsBase(gym.Wrapper):
         else:
             from smarts.env.gymnasium.wrappers.metric.formula import Formula
 
-        self._formula = Formula()
+        self._formula: FormulaBase = Formula()
         self._params = self._formula.params()
 
         _check_env(agent_interfaces=self.env.agent_interfaces, params=self._params)
@@ -143,11 +143,11 @@ class MetricsBase(gym.Wrapper):
                 or len(base_obs.events.collisions)
                 or base_obs.events.off_road
                 or base_obs.events.reached_max_episode_steps
-                or base_obs.events.actors_alive_done
+                or base_obs.events.interest_done
             ):
                 raise MetricsError(
                     "Expected reached_goal, collisions, off_road, "
-                    "max_episode_steps, or actors_alive_done, to be true "
+                    "max_episode_steps, or interest_done, to be true "
                     f"on agent done, but got events: {base_obs.events}."
                 )
 
@@ -185,21 +185,27 @@ class MetricsBase(gym.Wrapper):
 
         _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
 
+        interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
+        assert len(interest_actors) <= 1, (
+            f"Expected <=1 actor of interest, but got {len(interest_actors)} "
+            "actors of interest."
+        )
+
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
             end_pos = Point(0, 0, 0)
             dist_tot = 0
             if self._params.dist_to_destination.active:
-                actors_alive = self.env.agent_interfaces[
+                interest_criteria = self.env.agent_interfaces[
                     agent_name
-                ].done_criteria.actors_alive
-                if isinstance(actors_alive, ActorsAliveDoneCriteria):
+                ].done_criteria.interest
+                if isinstance(interest_criteria, InterestDoneCriteria):
                     end_pos, dist_tot = _get_sumo_smarts_dist(
-                        vehicle_name=actors_alive.actors_of_interest[0],
+                        vehicle_name=interest_criteria.actors_filter[0],
                         traffic_sims=self.env.smarts.traffic_sims,
                         road_map=self._road_map,
                     )
-                elif actors_alive == None:
+                elif interest_criteria == None:
                     end_pos = self._scen.missions[agent_name].goal.position
                     dist_tot = get_dist(
                         road_map=self._road_map,
@@ -393,19 +399,21 @@ def _check_env(agent_interfaces: Dict[str, AgentInterface], params: Params):
                 ).format(agent_name, intrfc)
             )
 
-        actors_alive = agent_interface.done_criteria.actors_alive
+        interest_criteria = agent_interface.done_criteria.interest
         if (
             params.dist_to_destination.active
-            and isinstance(actors_alive, ActorsAliveDoneCriteria)
-            and len(actors_alive.actors_of_interest) != 1
+            and isinstance(interest_criteria, InterestDoneCriteria)
+        ) and not (
+            len(interest_criteria.actors_filter) == 0
+            and interest_criteria.include_scenario_marked == True
         ):
             raise AttributeError(
                 (
-                    "ActorsAliveDoneCriteria with none or multiple actors of "
+                    "InterestDoneCriteria with none or multiple actors of "
                     "interest is currently not supported when "
                     "dist_to_destination cost function is enabled. Current "
                     "interface is {0}:{1}."
-                ).format(agent_name, actors_alive)
+                ).format(agent_name, interest_criteria)
             )
 
 
@@ -424,16 +432,20 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         for agent_name, agent_mission in scenario.missions.items()
     }
 
+    aoi = scenario.metadata.get("actor_of_interest_re_filter", None)
     for agent_name, agent_interface in agent_interfaces.items():
-        actors_alive = agent_interface.done_criteria.actors_alive
+        interest_criteria = agent_interface.done_criteria.interest
         if not (
-            (goal_types[agent_name] == PositionalGoal and actors_alive == None)
+            (goal_types[agent_name] == PositionalGoal and interest_criteria is None)
             or (
                 goal_types[agent_name] == EndlessGoal
-                and isinstance(actors_alive, ActorsAliveDoneCriteria)
+                and isinstance(interest_criteria, InterestDoneCriteria)
+                and aoi != None
             )
         ):
             raise AttributeError(
-                "{0} has an unsupported goal type {1} and actors alive done criteria {2} "
-                "combination.".format(agent_name, goal_types[agent_name], actors_alive)
+                "{0} has an unsupported goal type {1} and interest done criteria {2} "
+                "combination.".format(
+                    agent_name, goal_types[agent_name], interest_criteria
+                )
             )

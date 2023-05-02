@@ -89,6 +89,23 @@ def test_state(sim: SMARTS, scenario):
     assert hasattr(frame, "vehicle_collisions")
 
 
+def test_vehicles_in_actors(sim: SMARTS, scenario):
+    sim.setup(scenario)
+    frame: SimulationFrame = sim.cached_frame
+
+    while (frame := sim.cached_frame) and len(frame.vehicle_states) < 1:
+        sim.step({})
+
+    assert set(k for k in frame.vehicle_states) == set(
+        actor_state.actor_id for actor_state in frame.actor_states
+    )
+    actor_states = {
+        actor_state.actor_id: actor_state for actor_state in frame.actor_states
+    }
+    for k, vehicle_state in frame.vehicle_states.items():
+        assert vehicle_state == actor_states[k]
+
+
 def test_state_serialization(sim: SMARTS, scenario: Scenario):
     sim.setup(scenario)
     sim.reset(scenario, start_time=10)

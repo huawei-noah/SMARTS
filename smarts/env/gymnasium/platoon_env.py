@@ -25,14 +25,17 @@ from typing import Optional
 from envision.client import Client as Envision
 from envision.client import EnvisionDataFormatterArgs
 from smarts.core.agent_interface import (
-    ActorsAliveDoneCriteria,
     AgentInterface,
     DoneCriteria,
+    InterestDoneCriteria,
     NeighborhoodVehicles,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
+from smarts.env.gymnasium.wrappers.limit_relative_target_pose import (
+    LimitRelativeTargetPose,
+)
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.env.utils.scenario import get_scenario_specs
 from smarts.sstudio.scenario_construction import build_scenario
@@ -40,7 +43,10 @@ from smarts.sstudio.scenario_construction import build_scenario
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
 
-SUPPORTED_ACTION_TYPES = (ActionSpaceType.Continuous,)
+SUPPORTED_ACTION_TYPES = (
+    ActionSpaceType.Continuous,
+    ActionSpaceType.RelativeTargetPose,
+)
 
 
 def platoon_env(
@@ -52,12 +58,13 @@ def platoon_env(
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
-    """Each ego is supposed to track and follow its specified leader (i.e., lead
-    vehicle) in a single file or in a platoon fashion. The name of the lead vehicle
-    to track is given to the ego through its
-    :attr:`~smarts.core.agent_interface.ActorsAliveDoneCriteria.actors_of_interest` attribute.
-    The episode ends for an ego when its assigned leader reaches the leader's
-    destination. Egos do not have prior knowledge of their assigned leader's destination.
+    """All ego agents should track and follow the leader (i.e., lead vehicle) in a
+    single-file fashion. The lead vehicle is marked as a vehicle of interest
+    and may be found by filtering the
+    :attr:`~smarts.core.observations.VehicleObservation.interest` attribute of
+    the neighborhood vehicles in the observation. The episode ends when the
+    leader reaches its destination. Ego agents do not have prior knowledge of the
+    leader's destination.
 
     Observation space for each agent:
         Formatted :class:`~smarts.core.observations.Observation` using
@@ -67,7 +74,9 @@ def platoon_env(
         a sample formatted observation data structure.
 
     Action space for each agent:
-        Action space for each agent is :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`.
+        Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
+        or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
+        one of the action spaces and specify the chosen action space through the ego's agent interface.
 
     Agent interface:
         Using the input argument agent_interface, users may configure any field of
@@ -137,7 +146,7 @@ def platoon_env(
     env = HiWayEnvV1(
         scenarios=[env_specs["scenario"]],
         agent_interfaces=agent_interfaces,
-        sim_name="Platoon",
+        sim_name="VehicleFollowing",
         headless=headless,
         visdom=visdom,
         seed=seed,
@@ -145,6 +154,8 @@ def platoon_env(
         visualization_client_builder=visualization_client_builder,
         observation_options=ObservationOptions.multi_agent,
     )
+    if resolved_agent_interface.action == ActionSpaceType.RelativeTargetPose:
+        env = LimitRelativeTargetPose(env)
 
     return env
 
@@ -162,8 +173,8 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         on_shoulder=False,
         wrong_way=False,
         not_moving=False,
-        actors_alive=ActorsAliveDoneCriteria(
-            actors_of_interest=("Leader-007",),
+        interest=InterestDoneCriteria(
+            include_scenario_marked=True,
             strict=True,
         ),
     )
