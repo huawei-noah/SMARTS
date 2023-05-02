@@ -998,7 +998,7 @@ class SumoRoadNetwork(RoadMap):
                     # Only include paths that start in the junction, or are close to the vehicle
                     if (
                         self.lane_by_id(path[0].lane_id).in_junction
-                        or np.linalg.norm(path[0].pos - pose.position[:2]) < 5.0
+                        or np.linalg.norm(path[0].pos - pose.position[:2]) < 7.0
                     ):
                         waypoint_paths.append(path)
 
@@ -1038,7 +1038,12 @@ class SumoRoadNetwork(RoadMap):
 
         # Create all paths through the junction
         junction_paths = []
-        for junction_lane in inc_lane.outgoing_lanes:
+        junction_lanes = [
+            lane
+            for road_lane in inc_lane.road.lanes
+            for lane in road_lane.outgoing_lanes
+        ]
+        for junction_lane in junction_lanes:
             if not junction_lane.in_junction:
                 continue  # Skip outgoing lanes that are not in a junction
 
