@@ -223,12 +223,13 @@ class MetricsBase(gym.Wrapper):
                 "actors of interest."
             )
 
-        # fmt: off
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
             cost_funcs_kwargs = {}
             if self._params.dist_to_destination.active:
-                interest_criteria = self.env.agent_interfaces[agent_name].done_criteria.interest
+                interest_criteria = self.env.agent_interfaces[
+                    agent_name
+                ].done_criteria.interest
                 if interest_criteria == None:
                     end_pos = self._scen.missions[agent_name].goal.position
                     dist_tot = get_dist(
@@ -236,9 +237,11 @@ class MetricsBase(gym.Wrapper):
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_pos,
                     )
-                elif (isinstance(interest_criteria, InterestDoneCriteria)) and \
-                    (isinstance(interest_social_mission, Mission)) and \
-                    (interest_actor is not None):
+                elif (
+                    (isinstance(interest_criteria, InterestDoneCriteria))
+                    and (isinstance(interest_social_mission, Mission))
+                    and (interest_actor is not None)
+                ):
                     # Do the following if the actor of interest is a social agent.
                     end_pos = interest_social_mission.goal.position
                     dist_tot = get_dist(
@@ -246,43 +249,55 @@ class MetricsBase(gym.Wrapper):
                         point_a=Point(*interest_social_mission.start.position),
                         point_b=end_pos,
                     )
-                    cost_funcs_kwargs.update({
-                        "vehicle_gap": {
-                            "num_agents": len(self._cur_agents), 
-                            "actor": interest_actor
+                    cost_funcs_kwargs.update(
+                        {
+                            "vehicle_gap": {
+                                "num_agents": len(self._cur_agents),
+                                "actor": interest_actor,
+                            }
                         }
-                    })
-                elif (isinstance(interest_criteria, InterestDoneCriteria)) and \
-                    (isinstance(interest_traffic_sim, TrafficProvider)) and \
-                    (interest_actor is not None):
+                    )
+                elif (
+                    (isinstance(interest_criteria, InterestDoneCriteria))
+                    and (isinstance(interest_traffic_sim, TrafficProvider))
+                    and (interest_actor is not None)
+                ):
                     end_pos, dist_tot = _get_traffic_end_and_dist(
                         vehicle_name=interest_actor,
                         traffic_sim=interest_traffic_sim,
                         road_map=self._road_map,
                     )
-                    cost_funcs_kwargs.update({
-                        "vehicle_gap": {
-                            "num_agents": len(self._cur_agents), 
-                            "actor": interest_actor
+                    cost_funcs_kwargs.update(
+                        {
+                            "vehicle_gap": {
+                                "num_agents": len(self._cur_agents),
+                                "actor": interest_actor,
+                            }
                         }
-                    })
+                    )
                 else:
-                    raise MetricsError("Unsupported configuration for distance-to-destination cost function.")
-                cost_funcs_kwargs.update({
-                    "dist_to_destination": {
-                        "end_pos": end_pos, 
-                        "dist_tot": dist_tot
-                    }
-                })
+                    raise MetricsError(
+                        "Unsupported configuration for distance-to-destination cost function."
+                    )
+                cost_funcs_kwargs.update(
+                    {"dist_to_destination": {"end_pos": end_pos, "dist_tot": dist_tot}}
+                )
 
-            cost_funcs_kwargs.update({
-                "dist_to_obstacles": {"ignore": self._params.dist_to_obstacles.ignore},
-                "steps": {"max_episode_steps": self.env.agent_interfaces[agent_name].max_episode_steps},
-            })
+            cost_funcs_kwargs.update(
+                {
+                    "dist_to_obstacles": {
+                        "ignore": self._params.dist_to_obstacles.ignore
+                    },
+                    "steps": {
+                        "max_episode_steps": self.env.agent_interfaces[
+                            agent_name
+                        ].max_episode_steps
+                    },
+                }
+            )
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params, **cost_funcs_kwargs
             )
-        # fmt: on
 
         # Create new entry in records_sum for new scenarios.
         if self._scen_name not in self._records_sum.keys():
