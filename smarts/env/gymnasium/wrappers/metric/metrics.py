@@ -398,7 +398,7 @@ def _get_traffic_end_and_dist(
         end_pos = (
             road_map.road_by_id(dest_road)
             .lane_at_index(0)
-            .from_lane_coord(RefLinePoint(s=1e10))
+            .from_lane_coord(RefLinePoint(s=np.inf))
         )
         route = traffic_sim.route_for_vehicle(vehicle_name)
         dist_tot = route.road_length
