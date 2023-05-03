@@ -795,7 +795,7 @@ class SumoRoadNetwork(RoadMap):
             point[1],
             r=radius,
             includeJunctions=not include_junctions,
-            allowFallback=False,
+            allowFallback=False,  # makes this call fail if rtree is not installed
         )
         if not include_junctions:
             candidate_lanes = [
