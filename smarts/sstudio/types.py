@@ -58,7 +58,6 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import pickle_hash_int
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_cw_around_point
-from smarts.sstudio.types import ConditionState
 
 
 class _SUMO_PARAMS_MODE(IntEnum):
