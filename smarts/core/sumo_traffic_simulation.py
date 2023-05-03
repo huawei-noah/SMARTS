@@ -934,6 +934,8 @@ class SumoTrafficSimulation(TrafficProvider):
         if not self.connected:
             return None
         try:
+            # The TraCI `getRoute` method returns edge ids which form the 
+            # vehicle's route. Any junctions in the route are not included.
             route = self._traci_conn.vehicle.getRoute(vehicle_id)
         except self._traci_exceptions as err:
             self._handle_traci_exception(err)

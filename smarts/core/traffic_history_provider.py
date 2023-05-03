@@ -25,15 +25,16 @@ from typing import Iterable, Optional, Set
 
 from shapely.geometry import Polygon
 
-from .actor import ActorRole, ActorState
-from .controllers import ActionSpaceType
-from .coordinates import Dimensions, Heading, Point, Pose
-from .provider import ProviderManager, ProviderRecoveryFlags, ProviderState
-from .road_map import RoadMap
-from .signals import SignalLightState, SignalState
-from .traffic_provider import TrafficProvider
-from .utils.math import rounder_for_dt
-from .vehicle import VEHICLE_CONFIGS, VehicleState
+from smarts.core.actor import ActorRole, ActorState
+from smarts.core.controllers import ActionSpaceType
+from smarts.core.coordinates import Dimensions, Heading, Point, Pose
+from smarts.core.provider import ProviderManager, ProviderRecoveryFlags, ProviderState
+from smarts.core.road_map import RoadMap
+from smarts.core.signals import SignalLightState, SignalState
+from smarts.core.traffic_history import TrafficHistory
+from smarts.core.traffic_provider import TrafficProvider
+from smarts.core.utils.math import rounder_for_dt
+from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 
 class TrafficHistoryProvider(TrafficProvider):
@@ -256,6 +257,29 @@ class TrafficHistoryProvider(TrafficProvider):
                 "called vehicle_dest_road() for non-history vehicle_id: {vehicle_id}"
             )
             return None
+
+    def vehicle_history_window(
+        self, vehicle_id: str
+    ) -> TrafficHistory.TrafficHistoryVehicleWindow:
+        """Retrieves vehicle history in the specified time window.
+
+        Args:
+            vehicle_id (str): Id of vehicle of interest.
+
+        Raises:
+            ValueError: If `vehicle_id` is not present in traffic history.
+
+        Returns:
+            TrafficHistory.TrafficHistoryVehicleWindow: Vehicle history in the
+                specified time window.
+        """
+        if vehicle_id in self.history_vehicle_ids:
+            vehicle_id = vehicle_id[len(self._vehicle_id_prefix) :]
+        else:
+            raise ValueError(
+                f"Vehicle id {vehicle_id} is not present in traffic history."
+            )
+        return self._histories.vehicle_window_by_id(vehicle_id=vehicle_id)
 
     def can_accept_actor(self, state: ActorState) -> bool:
         # TAI consider:
