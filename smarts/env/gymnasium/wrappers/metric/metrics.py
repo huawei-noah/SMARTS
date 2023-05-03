@@ -21,17 +21,16 @@
 import copy
 import numpy as np
 from pathlib import Path
-from typing import Any, Dict, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import gymnasium as gym
 
 from smarts.core.agent_interface import AgentInterface, InterestDoneCriteria
 from smarts.core.coordinates import Point, RefLinePoint
 from smarts.core.observations import Observation
-from smarts.core.plan import EndlessGoal, Mission, PositionalGoal
+from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -194,32 +193,8 @@ class MetricsBase(gym.Wrapper):
         interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
         if len(interest_actors) == 0:
             interest_actor = None
-            interest_social_mission = None
-            interest_traffic_sim = None
         elif len(interest_actors) == 1:
             interest_actor = next(iter(interest_actors))
-            # Check if the actor of interest is a social agent.
-            interest_social_missions = [
-                mission
-                for name, mission in self._scen.missions.items()
-                if interest_actor in name
-            ]
-            # Check if the actor of interest is a traffic vehicle.
-            interest_traffic_sims = [
-                traffic_sim
-                for traffic_sim in self.env.smarts.traffic_sims
-                if traffic_sim.manages_actor(interest_actor)
-            ]
-            if len(interest_social_missions) == 1:
-                interest_social_mission = interest_social_missions[0]
-                interest_traffic_sim = None
-            elif len(interest_traffic_sims) == 1:
-                interest_social_mission = None
-                interest_traffic_sim = interest_traffic_sims[0]
-            else:
-                raise MetricsError(
-                    "Social agents and traffic providers contain zero or multiple actor of interest."
-                )
         else:
             raise MetricsError(
                 f"Expected <=1 actor of interest, but got {len(interest_actors)} "
@@ -240,38 +215,13 @@ class MetricsBase(gym.Wrapper):
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_pos,
                     )
-                elif (
-                    (isinstance(interest_criteria, InterestDoneCriteria))
-                    and (isinstance(interest_social_mission, Mission))
-                    and (interest_actor is not None)
-                ):
-                    # Do the following if the actor of interest is a social agent.
-                    goal = interest_social_mission.goal
-                    assert isinstance(goal, PositionalGoal)
-                    end_pos = goal.position
-                    dist_tot = get_dist(
-                        road_map=self._road_map,
-                        point_a=Point(*interest_social_mission.start.position),
-                        point_b=end_pos,
-                    )
-                    cost_funcs_kwargs.update(
-                        {
-                            "vehicle_gap": {
-                                "num_agents": len(self._cur_agents),
-                                "actor": interest_actor,
-                            }
-                        }
-                    )
-                elif (
-                    (isinstance(interest_criteria, InterestDoneCriteria))
-                    and (isinstance(interest_traffic_sim, TrafficProvider))
-                    and (interest_actor is not None)
-                ):
-                    end_pos, dist_tot = _get_traffic_end_and_dist(
-                        vehicle_name=interest_actor,
-                        vehicle_index=self._vehicle_index,
-                        traffic_sim=interest_traffic_sim,
-                        road_map=self._road_map,
+                elif isinstance(interest_criteria, InterestDoneCriteria) and (interest_actor is not None):
+                    end_pos, dist_tot = _get_end_and_dist(
+                        interest_actor=interest_actor, 
+                        vehicle_index=self._vehicle_index, 
+                        traffic_sims=self.env.smarts.traffic_sims, 
+                        scenario=self._scen,
+                        road_map=self._road_map
                     )
                     cost_funcs_kwargs.update(
                         {
@@ -365,6 +315,62 @@ class MetricsBase(gym.Wrapper):
         records_sum_copy = copy.deepcopy(self._records_sum)
         return self._formula.score(records_sum=records_sum_copy)
 
+
+def _get_end_and_dist(
+    interest_actor: str, 
+    vehicle_index:VehicleIndex, 
+    traffic_sims: List[TrafficProvider], 
+    scenario: Scenario,
+    road_map: RoadMap
+) -> Tuple[Point, float]:
+    """Computes the end point and route distance for a given vehicle of interest.
+
+    Args:
+        interest_actor (str): Name of vehicle of interest.
+        vehicle_index (VehicleIndex): Index of all vehicles currently present.
+        traffic_sims (List[TrafficProvider]): List of traffic providers.
+        scenario (Scenario): Current scenario.
+        road_map (RoadMap): Underlying road map.
+
+    Returns:
+        Tuple[Point, float]: End point and route distance.
+    """
+    # Check if the interest vehicle is a social agent.
+    interest_social_missions = [
+        mission
+        for name, mission in scenario.missions.items()
+        if interest_actor in name
+    ]
+    # Check if the actor of interest is a traffic vehicle.
+    interest_traffic_sims = [
+        traffic_sim
+        for traffic_sim in traffic_sims
+        if traffic_sim.manages_actor(interest_actor)
+    ]
+    if len(interest_social_missions) + len(interest_traffic_sims) != 1:
+        raise MetricsError("Social agents and traffic providers contain zero or "
+            "more than one actor of interest.")
+    
+    if len(interest_social_missions) == 1:
+        interest_social_mission = interest_social_missions[0]
+        goal = interest_social_mission.goal
+        assert isinstance(goal, PositionalGoal)
+        end_pos = goal.position
+        dist_tot = get_dist(
+            road_map=road_map,
+            point_a=Point(*interest_social_mission.start.position),
+            point_b=end_pos,
+        )
+    else:
+        interest_traffic_sim = interest_traffic_sims[0]
+        end_pos, dist_tot = _get_traffic_end_and_dist(
+            vehicle_name=interest_actor,
+            vehicle_index=vehicle_index,
+            traffic_sim=interest_traffic_sim,
+            road_map=road_map,
+        )
+
+    return end_pos, dist_tot
 
 def _get_traffic_end_and_dist(
     vehicle_name: str, vehicle_index:VehicleIndex, traffic_sim: TrafficProvider, road_map: RoadMap
