@@ -11,8 +11,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 ### Changed
+- Changed waypoints in sumo maps to use more incoming lanes into junctions.
+- Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
 - Reward function in platoon RL example retrieves actor-of-interest from marked neighborhood vehicles.
-- `dist_to_destination` metric cost function computes the route distance an end point for vehicle of interest contained in social agents, SMARTS traffic provider, SUMO traffic provider, and traffic history provider.
+- `dist_to_destination` metric cost function computes the route distance and end point for vehicle of interest contained in social agents, SMARTS traffic provider, SUMO traffic provider, and traffic history provider.
 ### Deprecated
 ### Fixed
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
