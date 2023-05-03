@@ -26,13 +26,12 @@ import random
 import time
 from bisect import bisect
 from dataclasses import dataclass
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Dict, Generator, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 import rtree
-from cached_property import cached_property
 
 from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 
@@ -432,18 +431,22 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                         road_bounding_box = [
                             (
                                 min(
-                                    road_bounding_box[0][0], lane.bounding_box.min_pt.x
+                                    road_bounding_box[0][0],
+                                    lane.bounding_box.min_pt.x,
                                 ),
                                 min(
-                                    road_bounding_box[0][1], lane.bounding_box.min_pt.y
+                                    road_bounding_box[0][1],
+                                    lane.bounding_box.min_pt.y,
                                 ),
                             ),
                             (
                                 max(
-                                    road_bounding_box[1][0], lane.bounding_box.max_pt.x
+                                    road_bounding_box[1][0],
+                                    lane.bounding_box.max_pt.x,
                                 ),
                                 max(
-                                    road_bounding_box[1][1], lane.bounding_box.max_pt.y
+                                    road_bounding_box[1][1],
+                                    lane.bounding_box.max_pt.y,
                                 ),
                             ),
                         ]
@@ -640,7 +643,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
     def _junction_road_lanes(
         self, jx_elem: JunctionElement, od: OpenDriveElement
-    ) -> Generator[List[RoadMap.Lane], None, None]:
+    ) -> Generator[List["OpenDriveRoadNetwork.Lane"], None, None]:
         for cnxn_elem in jx_elem.connections:
             cnxn_elem: ConnectionElement = cnxn_elem
             cnxn_road_elem = od.getRoad(cnxn_elem.connectingRoad)
@@ -669,13 +672,13 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                 return True
         return False
 
-    def _compute_lane_intersections(self, od: OpenDriveElement):
+    def _compute_lane_intersections(self, od_element: OpenDriveElement):
         intersections: Dict[
             OpenDriveRoadNetwork.Lane, Set[OpenDriveRoadNetwork.Lane]
         ] = dict()
-        for jx_elem in od.junctions:
-            for jx_road_lanes1 in self._junction_road_lanes(jx_elem, od):
-                for jx_road_lanes2 in self._junction_road_lanes(jx_elem, od):
+        for jx_elem in od_element.junctions:
+            for jx_road_lanes1 in self._junction_road_lanes(jx_elem, od_element):
+                for jx_road_lanes2 in self._junction_road_lanes(jx_elem, od_element):
                     if jx_road_lanes2 == jx_road_lanes1:
                         continue
                     for jl1 in jx_road_lanes1:
@@ -707,18 +710,20 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             and map_spec.shift_to_origin == self._map_spec.shift_to_origin
         )
 
-    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+    def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
         return self._surfaces.get(surface_id)
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
         x_mins, y_mins, x_maxs, y_maxs = [], [], [], []
-        for road_id in self._roads:
-            road = self._roads[road_id]
-            x_mins.append(road.bounding_box.min_pt.x)
-            y_mins.append(road.bounding_box.min_pt.y)
-            x_maxs.append(road.bounding_box.max_pt.x)
-            y_maxs.append(road.bounding_box.max_pt.y)
+        for road in self._roads.values():
+            bounding_box = road.bounding_box
+            if bounding_box is None:
+                continue
+            x_mins.append(bounding_box.min_pt.x)
+            y_mins.append(bounding_box.min_pt.y)
+            x_maxs.append(bounding_box.max_pt.x)
+            y_maxs.append(bounding_box.max_pt.y)
 
         return BoundingBox(
             min_pt=Point(x=min(x_mins), y=min(y_mins)),
@@ -753,8 +758,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         road_dividers = []  # divider between roads with opposite traffic direction
         road_borders = []
         dividers_checked = []
-        for road_id in self._roads:
-            road = self._roads[road_id]
+        for road_id, road in self._roads.items():
             road_left_border = None
             if not road.is_junction:
                 leftmost_edge_shape, rightmost_edge_shape = road._edge_shape(0)
@@ -823,7 +827,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             self,
             road_map,
             lane_id: str,
-            road: RoadMap.Road,
+            road: "OpenDriveRoadNetwork.Road",
             index: int,
             length: float,
             is_drivable: bool,
@@ -875,7 +879,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return self._lane_id
 
         @property
-        def road(self) -> RoadMap.Road:
+        def road(self) -> "OpenDriveRoadNetwork.Road":
             return self._road
 
         @property
@@ -927,7 +931,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             self._lanes_in_same_dir = lanes
 
         @property
-        def lane_to_left(self) -> Tuple[RoadMapWithCaches.Lane, bool]:
+        def lane_to_left(self) -> Tuple[Optional[RoadMapWithCaches.Lane], bool]:
             return self._lane_to_left
 
         @lane_to_left.setter
@@ -935,7 +939,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             self._lane_to_left = value
 
         @property
-        def lane_to_right(self) -> Tuple[RoadMapWithCaches.Lane, bool]:
+        def lane_to_right(self) -> Tuple[Optional[RoadMapWithCaches.Lane], bool]:
             return self._lane_to_right
 
         @lane_to_right.setter
@@ -952,7 +956,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return self._lane_polygon
 
         @cached_property
-        def bounding_box(self) -> Optional[BoundingBox]:
+        def bounding_box(self) -> BoundingBox:
             """Get the minimal axis aligned bounding box that contains all geometry in this lane."""
             # XXX: This shoudn't be public.
             x_coordinates, y_coordinates = zip(*self.lane_polygon)
@@ -1042,7 +1046,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return list(zip(xs, ys))
 
         def waypoint_paths_for_pose(
-            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+            self, pose: Pose, lookahead: int, route: Optional[RoadMap.Route] = None
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -1050,7 +1054,10 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return self._waypoint_paths_at(pose.point, lookahead, road_ids)
 
         def waypoint_paths_at_offset(
-            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+            self,
+            offset: float,
+            lookahead: int = 30,
+            route: Optional[RoadMap.Route] = None,
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -1279,14 +1286,12 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             return self._parallel_roads
 
         @property
-        def lanes(self) -> List[RoadMapWithCaches.Lane]:
+        def lanes(self) -> List["OpenDriveRoadNetwork.Lane"]:
             return self._lanes
 
         @property
         def bounding_box(self) -> Optional[BoundingBox]:
             """Get the minimal axis aligned bounding box that contains all road geometry."""
-            # XXX: This shouldn't be public.
-            # XXX: The return here should be Optional[BoundingBox]
             return self._bounding_box
 
         @bounding_box.setter
@@ -1381,7 +1386,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             )
             return Polygon(road_polygon)
 
-        def lane_at_index(self, index: int) -> RoadMapWithCaches.Lane:
+        def lane_at_index(self, index: int) -> "OpenDriveRoadNetwork.Lane":
             lanes_with_index = [lane for lane in self.lanes if lane.index == index]
             if len(lanes_with_index) == 0:
                 self._log.warning(
@@ -1391,7 +1396,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             assert len(lanes_with_index) == 1
             return lanes_with_index[0]
 
-    def road_by_id(self, road_id: str) -> RoadMap.Road:
+    def road_by_id(self, road_id: str) -> "OpenDriveRoadNetwork.Road":
         road = self._roads.get(road_id)
         assert (
             road
@@ -1460,7 +1465,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         return nearest_lanes[0][0] if nearest_lanes else None
 
     @lru_cache(maxsize=16)
-    def road_with_point(self, point: Point) -> RoadMap.Road:
+    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
         radius = max(5, 2 * self._default_lane_width)
         for nl, dist in self.nearest_lanes(point, radius):
             if nl.contains_point(point):
@@ -1498,12 +1503,11 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         came_from[start] = None
         cost_so_far = dict()
         cost_so_far[start] = start.length
-        current = None
+        current: Optional[RoadMap.Road] = None
 
         # Dijkstra’s Algorithm
         while queue:
             (_, _, current) = heapq.heappop(queue)
-            current: RoadMap.Road
             if current == end:
                 break
             for out_road in current.outgoing_roads:
@@ -1648,7 +1652,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         pose: Pose,
         lookahead: int,
         within_radius: float = 5,
-        route: RoadMap.Route = None,
+        route: Optional[RoadMap.Route] = None,
     ) -> List[List[Waypoint]]:
         road_ids = []
         if route and route.roads:

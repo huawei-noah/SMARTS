@@ -17,10 +17,10 @@ cloudpickle==1.6.0
 colorama==0.4.6
 constantly==15.1.0
 contourpy==1.0.7
-coverage==7.2.3
+coverage==7.2.5
 cycler==0.11.0
 dm-tree==0.1.8
-eclipse-sumo==1.16.0
+eclipse-sumo==1.17.0
 exceptiongroup==1.1.1
 execnet==1.9.0
 filelock==3.12.0
@@ -89,7 +89,7 @@ py-cpuinfo==9.0.0
 py-spy==0.3.14
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
-pybullet==3.0.6
+pybullet==3.2.5
 pydantic==1.10.7
 Pygments==2.15.1
 pyparsing==3.0.9
@@ -104,9 +104,9 @@ pytz==2023.3
 PyYAML==6.0
 ray==1.4.0
 redis==4.5.4
-requests==2.28.2
+requests==2.29.0
 requests-oauthlib==1.3.1
-rich==13.3.4
+rich==13.3.5
 rsa==4.9
 Rtree==1.0.1
 scipy==1.10.1
@@ -136,9 +136,9 @@ urllib3==1.26.15
 visdom==0.2.4
 wcwidth==0.2.6
 websocket-client==1.5.1
-Werkzeug==2.2.3
+Werkzeug==2.3.3
 wrapt==1.14.1
-yarl==1.9.1
+yarl==1.9.2
 yattag==1.15.1
 zipp==3.15.0
 zope.interface==6.0

@@ -26,7 +26,7 @@ import os
 import random
 import sqlite3
 from contextlib import closing, nullcontext
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import (
     Dict,
     Generator,
@@ -38,8 +38,6 @@ from typing import (
     TypeVar,
     Union,
 )
-
-from cached_property import cached_property
 
 from smarts.core.coordinates import Dimensions
 from smarts.core.utils.math import radians_to_vec
@@ -101,19 +99,19 @@ class TrafficHistory:
             cur.close()
 
     @cached_property
-    def dataset_source(self) -> str:
+    def dataset_source(self) -> Optional[str]:
         """The known source of the history data"""
         query = "SELECT value FROM Spec where key='source_type'"
         return self._query_val(str, query)
 
     @cached_property
-    def lane_width(self) -> float:
+    def lane_width(self) -> Optional[float]:
         """The general lane width in the history data"""
         query = "SELECT value FROM Spec where key='map_net.lane_width'"
         return self._query_val(float, query)
 
     @cached_property
-    def target_speed(self) -> float:
+    def target_speed(self) -> Optional[float]:
         """The general speed limit in the history data."""
         query = "SELECT value FROM Spec where key='speed_limit_mps'"
         return self._query_val(float, query)
@@ -124,7 +122,7 @@ class TrafficHistory:
         return (row[0] for row in self._query_list(query))
 
     @cached_property
-    def ego_vehicle_id(self) -> int:
+    def ego_vehicle_id(self) -> Optional[int]:
         """The id of the ego's actor in the history data."""
         query = "SELECT id FROM Vehicle WHERE is_ego_vehicle = 1"
         ego_id = self._query_val(int, query)
@@ -270,7 +268,7 @@ class TrafficHistory:
         """General information about a vehicle between a time window."""
 
         vehicle_id: int
-        vehicle_type: int
+        vehicle_type: str
         vehicle_length: float
         vehicle_width: float
         vehicle_height: float

@@ -22,11 +22,11 @@
 import math
 import warnings
 from enum import IntEnum
+from functools import cached_property
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import gymnasium as gym
 import numpy as np
-from cached_property import cached_property
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.observations import Observation, SignalObservation, VehicleObservation

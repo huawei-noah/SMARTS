@@ -10,6 +10,15 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+- Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
+### Removed
+### Security
+
+## [1.1.0] # 2023-04-28
+### Added
 - Added an actor capture manager interface, `ActorCaptureManager`, which describes a manager that handles the change of control of actors. Operations in an actor manager step should not cause conflict in the simulation.
 - Added a new entry tactic, `IdEntryTactic`, which provides the scenario the ability to select a specific actor for an agent to take over.
 - Registered a new `chase-via-points-agent-v0` agent in agent zoo, which can effectively chase via points across different road sections by using the waypoints.
@@ -76,9 +85,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where the actor states and vehicle states were not synchronized after simulation vehicle updates resulting in different values from the simulation frame.
 - Minor fix in regular expression compilation of `actor_of_interest_re_filter` from scenario metadata.
 - Fixed acceleration and jerk computation in comfort metric, by ignoring vehicle position jitters smaller than a threshold.
+- Fixed an issue in Envision where vehicle debug info would not update correctly.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
+- Removed `cached_property` as a dependency.
 ### Security
 
 ## [1.0.11] # 2023-04-02

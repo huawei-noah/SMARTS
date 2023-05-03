@@ -285,7 +285,6 @@ class Sensors:
         )
         if neighborhood_vehicle_states_sensor:
             neighborhood_vehicle_states = []
-            interface = sim_frame.agent_interfaces.get(agent_id)
             interest_pattern = (
                 interface.done_criteria.interest.actors_pattern
                 if interface is not None
