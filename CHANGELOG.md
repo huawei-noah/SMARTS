@@ -13,10 +13,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
+- Made Envision dependencies optional. Use `pip install -e .[envision]` to install them.
+- Made Waymo dependencies optional. Use `pip install -e .[waymo]` to install them.
 ### Deprecated
 ### Fixed
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 ### Removed
+- Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 ### Security
 
 ## [1.1.0] # 2023-04-28
