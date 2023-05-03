@@ -7,13 +7,10 @@ from smarts.core.sensors import LANE_ID_CONSTANT
 
 class ChaseViaPointsAgent(Agent):
     def act(self, obs: Observation):
-        assert obs.waypoint_paths is not None, (
+        assert obs.waypoint_paths, (
             f"Waypoint paths = {obs.waypoint_paths}; "
             "cannot be empty or None. Enable waypoint paths in agent interface."
         )
-
-        if len(obs.waypoint_paths) == 0:
-            return (1, 0)
 
         lane_change_dist = 80
 
