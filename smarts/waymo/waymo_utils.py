@@ -21,9 +21,15 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.lines import Line2D
+
+try:
+    from matplotlib import pyplot as plt
+    from matplotlib.animation import FuncAnimation
+    from matplotlib.lines import Line2D
+except:
+    raise ImportError(
+        "Missing dependencies for Waymo. Install them using the command `pip install -e .[waymo]` at the source directory."
+    )
 
 from smarts.core.utils.file import read_tfrecord_file
 
