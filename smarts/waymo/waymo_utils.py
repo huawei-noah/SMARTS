@@ -32,6 +32,8 @@ except:
     )
 
 from smarts.core.utils.file import read_tfrecord_file
+from smarts.core.waymo_map import WaymoMap
+from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 
 
 class WaymoDatasetError(Exception):
@@ -272,7 +274,6 @@ def _plot_trajectories(
 
 def get_tfrecord_info(tfrecord_file: str) -> Dict[str, Dict[str, Any]]:
     """Extract info about each scenario in the TFRecord file."""
-    from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 
     scenarios = dict()
     records = read_tfrecord_file(tfrecord_file)
@@ -304,7 +305,6 @@ def plot_scenario(
 ):
     """Plot the map features of a Waymo scenario,
     and optionally plot/animate the vehicle trajectories."""
-    from smarts.core.waymo_map import WaymoMap
 
     source = f"{tfrecord_file}#{scenario_id}"
     scenario = WaymoMap.parse_source_to_scenario(source)

@@ -12,3 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
+
+try:
+    import google.protobuf
+except:
+    raise ImportError(
+        "You may not have installed the [waymo] dependencies required for using Argoverse 2 maps with SMARTS. Install it first using the command `pip install -e .[waymo]` at the source directory."
+    )
