@@ -812,12 +812,13 @@ class CompoundCondition(Condition):
         return ConditionState.FALSE
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, )
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
-    condition: Condition
-    """The condition to determine if this entry tactic should be used."""
+    pass
+    # condition: Condition
+    # """The condition to determine if this entry tactic should be used."""
 
 
 @dataclass(frozen=True)
