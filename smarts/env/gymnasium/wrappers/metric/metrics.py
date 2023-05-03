@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import copy
+import numpy as np
 from pathlib import Path
 from typing import Any, Dict, Optional, Set, Tuple
 
@@ -268,6 +269,7 @@ class MetricsBase(gym.Wrapper):
                 ):
                     end_pos, dist_tot = _get_traffic_end_and_dist(
                         vehicle_name=interest_actor,
+                        vehicle_index=self._vehicle_index,
                         traffic_sim=interest_traffic_sim,
                         road_map=self._road_map,
                     )
@@ -365,7 +367,7 @@ class MetricsBase(gym.Wrapper):
 
 
 def _get_traffic_end_and_dist(
-    vehicle_name: str, traffic_sim: TrafficProvider, road_map: RoadMap
+    vehicle_name: str, vehicle_index:VehicleIndex, traffic_sim: TrafficProvider, road_map: RoadMap
 ) -> Tuple[Point, float]:
     """Computes the end point and route distance of a (i) SUMO traffic,
     (ii) SMARTS traffic, or (iii) history traffic vehicle
@@ -373,6 +375,7 @@ def _get_traffic_end_and_dist(
 
     Args:
         vehicle_name (str): Name of vehicle.
+        vehicle_index (VehicleIndex): Index of all vehicles currently present.
         traffic_sim (TrafficProvider): Traffic provider.
         road_map (RoadMap): Underlying road map.
 
@@ -380,7 +383,17 @@ def _get_traffic_end_and_dist(
         Tuple[Point, float]: End point and route distance.
     """
 
-    if isinstance(traffic_sim, SumoTrafficSimulation) or isinstance(traffic_sim, LocalTrafficProvider):
+    if isinstance(traffic_sim, SumoTrafficSimulation):
+        start_pos = Point(*vehicle_index.vehicle_position(vehicle_name))
+        dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
+        end_pos = (
+            road_map.road_by_id(dest_road)
+            .lane_at_index(0)
+            .from_lane_coord(RefLinePoint(s=np.inf))
+        )
+        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        return end_pos, dist_tot
+    elif isinstance(traffic_sim, LocalTrafficProvider):
         dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
         end_pos = (
             road_map.road_by_id(dest_road)
@@ -391,9 +404,7 @@ def _get_traffic_end_and_dist(
         dist_tot = route.road_length
         return end_pos, dist_tot
     elif isinstance(traffic_sim, TrafficHistoryProvider):
-        history: TrafficHistory.TrafficHistoryVehicleWindow = (
-            traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
-        )
+        history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         start_pos = Point(x=history.start_position_x, y=history.start_position_y)
         end_pos = Point(x=history.end_position_x, y=history.end_position_y)
         # TODO : Plan.create_route() creates the shortest route which is
