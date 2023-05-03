@@ -11,8 +11,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased]
 ### Added
 ### Changed
+- Changed waypoints in sumo maps to use more incoming lanes into junctions.
+- Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
 ### Deprecated
 ### Fixed
+- Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 ### Removed
 ### Security
 
@@ -86,6 +89,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 - Removed the deprecated `waymo_browser` utility.
 - Removed camera observation `created_at` attribute from metadata to make observation completely reproducible.
+- Removed `cached_property` as a dependency.
 ### Security
 
 ## [1.0.11] # 2023-04-02

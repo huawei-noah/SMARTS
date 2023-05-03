@@ -8,7 +8,6 @@ async-timeout==4.0.2
 attrs==23.1.0
 Automat==22.10.0
 blessed==1.20.0
-cached-property==1.5.2
 cachetools==5.3.0
 certifi==2022.12.7
 charset-normalizer==3.1.0
@@ -116,9 +115,8 @@ Shimmy==0.2.1
 six==1.16.0
 tableprint==0.9.1
 tabulate==0.9.0
-tensorboard==2.12.2
+tensorboard==2.12.3
 tensorboard-data-server==0.7.0
-tensorboard-plugin-wit==1.8.1
 tensorboardX==2.6
 tensorflow==2.12.0
 tensorflow-estimator==2.12.0

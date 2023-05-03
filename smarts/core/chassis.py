@@ -21,11 +21,11 @@ import importlib.resources as pkg_resources
 import logging
 import math
 import os
+from functools import cached_property
 from typing import Optional, Sequence, Tuple
 
 import numpy as np
 import yaml
-from cached_property import cached_property
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
@@ -297,7 +297,7 @@ class BoxChassis(Chassis):
         self._speed = speed
 
     @property
-    def pose(self) -> Pose:
+    def pose(self) -> Optional[Pose]:
         return self._pose
 
     @property
@@ -666,7 +666,7 @@ class AckermannChassis(Chassis):
             self._set_road_friction(current_simulation_time)
         self._clear_step_cache()
 
-    def inherit_physical_values(self, other: BoxChassis):
+    def inherit_physical_values(self, other: Chassis):
         self.set_pose(other.pose)
         self._initialize_speed(other.speed)
 

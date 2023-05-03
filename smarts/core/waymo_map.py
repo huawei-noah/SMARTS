@@ -26,13 +26,12 @@ import time
 from collections import defaultdict, deque
 from copy import deepcopy
 from dataclasses import dataclass, field
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 import rtree
-from cached_property import cached_property
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
@@ -793,10 +792,13 @@ class WaymoMap(RoadMapWithCaches):
         # use original lane polylines for geometry
         for feat_id, lane_dict in self._feat_dicts.items():
             lane_dict["_normals"] = self._calculate_normals(feat_id)
-            left_widths, right_widths = self._raycast_boundaries(lane_dict, feat_id)
-            max_width = max(
-                left_widths[0], left_widths[-1], right_widths[0], right_widths[-1]
-            )
+            max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
+            raycast = self._raycast_boundaries(lane_dict, feat_id)
+            if raycast is not None:
+                left_widths, right_widths = raycast
+                max_width = max(
+                    left_widths[0], left_widths[-1], right_widths[0], right_widths[-1]
+                )
             if max_width < 0.5:
                 max_width = WaymoMap.DEFAULT_LANE_WIDTH / 2
             max_width = min(max_width, WaymoMap.DEFAULT_LANE_WIDTH / 2)
@@ -1015,7 +1017,7 @@ class WaymoMap(RoadMapWithCaches):
                 if radius >= feat.min_dist_from(pt)
             ]
 
-    def surface_by_id(self, surface_id: str) -> RoadMap.Surface:
+    def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMapWithCaches.Lane, Surface):
@@ -1052,9 +1054,14 @@ class WaymoMap(RoadMapWithCaches):
                 min_pt=Point(x=min(x_coordinates), y=min(y_coordinates)),
                 max_pt=Point(x=max(x_coordinates), y=max(y_coordinates)),
             )
+            self._intersections = set()
 
         def __hash__(self) -> int:
             return hash(self.lane_id) + hash(self._map)
+
+        @property
+        def bounding_box(self):
+            return self._bbox
 
         def _create_polygon(self, lane_dict: Dict[str, Any]):
             new_left_pts = [None] * self._n_pts
@@ -1273,7 +1280,7 @@ class WaymoMap(RoadMapWithCaches):
             return super().project_along(start_offset, distance)
 
         def waypoint_paths_for_pose(
-            self, pose: Pose, lookahead: int, route: RoadMap.Route = None
+            self, pose: Pose, lookahead: int, route: Optional[RoadMap.Route] = None
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -1281,7 +1288,10 @@ class WaymoMap(RoadMapWithCaches):
             return self._waypoint_paths_at(pose.point, lookahead, road_ids)
 
         def waypoint_paths_at_offset(
-            self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
+            self,
+            offset: float,
+            lookahead: int = 30,
+            route: Optional[RoadMap.Route] = None,
         ) -> List[List[Waypoint]]:
             if not self.is_drivable:
                 return []
@@ -1316,7 +1326,7 @@ class WaymoMap(RoadMapWithCaches):
         def __init__(
             self,
             road_map,
-            road_lanes: Sequence[RoadMapWithCaches.Lane],
+            road_lanes: Sequence["WaymoMap.Lane"],
             is_junction: bool,
         ):
             self._composite = None
@@ -1333,10 +1343,10 @@ class WaymoMap(RoadMapWithCaches):
                 lane._road = self
                 lane._index = ind
                 self._length += lane.length
-                x_mins.append(lane._bbox.min_pt.x)
-                y_mins.append(lane._bbox.min_pt.y)
-                x_maxs.append(lane._bbox.max_pt.x)
-                y_maxs.append(lane._bbox.max_pt.y)
+                x_mins.append(lane.bounding_box.min_pt.x)
+                y_mins.append(lane.bounding_box.min_pt.y)
+                x_maxs.append(lane.bounding_box.max_pt.x)
+                y_maxs.append(lane.bounding_box.max_pt.y)
                 if self._road_type == -1:
                     self._road_type = lane._type
                 elif lane._type != self._road_type:
@@ -1493,7 +1503,7 @@ class WaymoMap(RoadMapWithCaches):
         def lanes(self) -> Sequence[RoadMapWithCaches.Lane]:
             return self._lanes
 
-        def lane_at_index(self, index: int) -> RoadMapWithCaches.Lane:
+        def lane_at_index(self, index: int) -> "WaymoMap.Lane":
             return self._lanes[index]
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
@@ -1580,7 +1590,7 @@ class WaymoMap(RoadMapWithCaches):
         return nearest_lanes[0][0] if nearest_lanes else None
 
     @lru_cache(maxsize=16)
-    def road_with_point(self, point: Point) -> RoadMap.Road:
+    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
         radius = max(5, 2 * self._default_lane_width)
         for nl, dist in self.nearest_lanes(point, radius):
             if nl.contains_point(point):
@@ -1597,7 +1607,7 @@ class WaymoMap(RoadMapWithCaches):
             self._type = self._proto_type_to_type(feat_proto)
 
         @staticmethod
-        def _proto_type_to_type(feat_proto) -> int:
+        def _proto_type_to_type(feat_proto) -> RoadMap.FeatureType:
             if isinstance(feat_proto, Crosswalk):
                 return RoadMap.FeatureType.CROSSWALK
             if isinstance(feat_proto, SpeedBump):
@@ -1644,7 +1654,7 @@ class WaymoMap(RoadMapWithCaches):
                 np.linalg.norm(geo_pt.as_np_array - pt) for geo_pt in self.geometry
             )
 
-    def feature_by_id(self, feature_id: str) -> RoadMap.Feature:
+    def feature_by_id(self, feature_id: str) -> Optional[RoadMap.Feature]:
         return self._features.get(feature_id)
 
     class Route(RouteWithCache):
@@ -1678,12 +1688,11 @@ class WaymoMap(RoadMapWithCaches):
         came_from[start] = None
         cost_so_far = dict()
         cost_so_far[start] = start.length
-        current = None
+        current: Optional[RoadMap.Road] = None
 
         # Dijkstra’s Algorithm
         while queue:
             (_, _, current) = heapq.heappop(queue)
-            current: RoadMap.Road
             if current == end:
                 break
             for out_road in current.outgoing_roads:
@@ -1825,7 +1834,7 @@ class WaymoMap(RoadMapWithCaches):
         pose: Pose,
         lookahead: int,
         within_radius: float = 5,
-        route: RoadMap.Route = None,
+        route: Optional[RoadMap.Route] = None,
     ) -> List[List[Waypoint]]:
         road_ids = []
         if route and route.roads:
