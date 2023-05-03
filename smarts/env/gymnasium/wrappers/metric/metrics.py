@@ -20,10 +20,9 @@
 
 import copy
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Optional, Set, Tuple
 
 import gymnasium as gym
-import numpy as np
 
 from smarts.core.agent_interface import AgentInterface, InterestDoneCriteria
 from smarts.core.coordinates import Point, RefLinePoint
@@ -33,6 +32,9 @@ from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_provider import TrafficProvider
+from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
@@ -243,7 +245,9 @@ class MetricsBase(gym.Wrapper):
                     and (interest_actor is not None)
                 ):
                     # Do the following if the actor of interest is a social agent.
-                    end_pos = interest_social_mission.goal.position
+                    goal = interest_social_mission.goal
+                    assert isinstance(goal, PositionalGoal)
+                    end_pos = goal.position
                     dist_tot = get_dist(
                         road_map=self._road_map,
                         point_a=Point(*interest_social_mission.start.position),
@@ -376,8 +380,7 @@ def _get_traffic_end_and_dist(
         Tuple[Point, float]: End point and route distance.
     """
 
-    source = traffic_sim.source_str
-    if source == "SumoTrafficSimulation" or source == "LocalTrafficProvider":
+    if isinstance(traffic_sim, SumoTrafficSimulation) or isinstance(traffic_sim, LocalTrafficProvider):
         dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
         end_pos = (
             road_map.road_by_id(dest_road)
@@ -387,7 +390,7 @@ def _get_traffic_end_and_dist(
         route = traffic_sim.route_for_vehicle(vehicle_name)
         dist_tot = route.road_length
         return end_pos, dist_tot
-    elif source == "TrafficHistoryProvider":
+    elif isinstance(traffic_sim, TrafficHistoryProvider):
         history: TrafficHistory.TrafficHistoryVehicleWindow = (
             traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         )
@@ -401,7 +404,7 @@ def _get_traffic_end_and_dist(
         dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
         return end_pos, dist_tot
     else:
-        raise MetricsError(f"Unsupported traffic provider {source}.")
+        raise MetricsError(f"Unsupported traffic provider {traffic_sim.source_str}.")
 
 
 class Metrics(gym.Wrapper):
