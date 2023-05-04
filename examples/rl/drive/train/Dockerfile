@@ -24,10 +24,10 @@ RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.8 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-RUN pip install --upgrade pip wheel
+RUN pip install --upgrade pip && pip install wheel==0.38.4
 
 # Install requirements.txt .
-COPY ./examples/rl/baseline/train/requirements.txt /tmp/requirements.txt
+COPY ./examples/rl/drive/train/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install.

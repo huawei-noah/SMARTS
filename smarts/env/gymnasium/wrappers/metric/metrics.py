@@ -345,7 +345,7 @@ def _get_end_and_dist(
     interest_traffic_sims = [
         traffic_sim
         for traffic_sim in traffic_sims
-        if traffic_sim.connected and traffic_sim.manages_actor(interest_actor)
+        if traffic_sim.manages_actor(interest_actor)
     ]
     if len(interest_social_missions) + len(interest_traffic_sims) != 1:
         raise MetricsError("Social agents and traffic providers contain zero or "
