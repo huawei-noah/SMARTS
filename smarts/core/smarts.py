@@ -67,7 +67,6 @@ from .utils import pybullet
 from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
-from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
 from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle
@@ -100,7 +99,7 @@ class SMARTS(ProviderManager):
         agent_interfaces (Dict[str, AgentInterface]): The interfaces providing SMARTS with the understanding of what features each agent needs.
         traffic_sims (Optional[List[TrafficProvider]], optional): An optional list of traffic simulators for providing non-agent traffic. Defaults to None.
         envision (Optional[EnvisionClient], optional): An envision client for connecting to an envision visualization server. Defaults to None.
-        visdom (Optional[VisdomClient], optional): A visdom client for connecting to a visdom visualization server. Defaults to None.
+        visdom (Union[bool, Any], optional): Deprecated. Use SMARTS_VISDOM_ENABLED. A visdom client for connecting to a visdom visualization server.
         fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
         reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
         zoo_addrs (Optional[Tuple[str, int]], optional): The (ip:port) values of remote agent workers for externally hosted agents. Defaults to None.
@@ -114,12 +113,13 @@ class SMARTS(ProviderManager):
         traffic_sim: Optional[TrafficProvider] = None,
         traffic_sims: Optional[List[TrafficProvider]] = None,
         envision: Optional[EnvisionClient] = None,
-        visdom: Optional[VisdomClient] = None,
+        visdom: Optional[Union[bool, Any]] = False,
         fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
     ):
+        conf = config()
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(level=logging.ERROR)
         self._sim_id = Id.new("smarts")
@@ -128,7 +128,23 @@ class SMARTS(ProviderManager):
         self._scenario: Optional[Scenario] = None
         self._renderer: RendererBase = None
         self._envision: Optional[EnvisionClient] = envision
-        self._visdom: Optional[VisdomClient] = visdom
+        if visdom is not False or visdom is not None:
+            warnings.warn(
+                "Using visdom through the arguments is deprecated. Please use engine configuration or SMARTS_VISDOM_ENABLED."
+            )
+        else:
+            visdom = None
+
+        self._visdom: Any = None
+        if conf("visdom", "enabled", default=False, cast=bool) or visdom is True:
+            from smarts.visdom.visdom_client import VisdomClient
+
+            self._visdom = VisdomClient(
+                hostname=conf("visdom", "hostname", default="http://localhost"),
+                port=conf("visdom", "port", default=8097),
+            )
+        elif not isinstance(self._visdom, bool):
+            self._visdom = visdom
         self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False
@@ -655,9 +671,11 @@ class SMARTS(ProviderManager):
                 return provider
         return None
 
-    def _stop_managing_with_providers(self, actor_id: str):
+    def _stop_managing_with_providers(self, actor_id: str, exclusion=None):
         managing_providers = [p for p in self.providers if p.manages_actor(actor_id)]
         for provider in managing_providers:
+            if provider is exclusion:
+                continue
             provider.stop_managing(actor_id)
 
     def _remove_vehicle_from_providers(self, vehicle_id: str):
@@ -673,10 +691,10 @@ class SMARTS(ProviderManager):
         """Notify providers of the existence of an agent-controlled vehicle,
         one of which should assume management of it."""
         self._check_valid()
+        prev_provider: Optional[Provider] = self._provider_for_actor(vehicle.id)
         self._stop_managing_with_providers(vehicle.id)
         role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
-        prev_provider = self._provider_for_actor(vehicle.id)
         for provider in self.providers:
             if interface.action in provider.actions:
                 state = VehicleState(
@@ -756,30 +774,36 @@ class SMARTS(ProviderManager):
         return new_prov
 
     def provider_relinquishing_actor(
-        self, provider: Provider, state: ActorState
+        self, previous_provider: Provider, state: ActorState
     ) -> Optional[Provider]:
         """Find a new provider for an actor.  Returns the new provider
         or None if a suitable one could not be found."""
-        self._stop_managing_with_providers(state.actor_id)
-
         # now try to find one who will take it...
         if isinstance(state, VehicleState):
             state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
-        for new_provider in self.providers:
-            if new_provider == provider:
+        new_provider = None
+        for provider in self.providers:
+            if provider is previous_provider:
                 continue
-            if new_provider.can_accept_actor(state):
+            if provider.can_accept_actor(state):
                 # Here we just use the first provider we find that accepts it.
                 # If we want to give preference to, say, Sumo over SMARTS traffic,
                 # then we should ensure that Sumo comes first in the traffic_sims
                 # list we pass to SMARTS __init__().
-                new_provider.add_actor(state, provider)
-                return new_provider
-        self._log.warning(
-            f"could not find a provider to assume control of vehicle {state.actor_id} with role={state.role.name} after being relinquished.  removing it."
-        )
-        self.provider_removing_actor(provider, state.actor_id)
-        return None
+                new_provider = provider
+                break
+        else:
+            self._log.warning(
+                "could not find a provider to assume control of vehicle %s with role=%s after being relinquished.  removing it.",
+                state.actor_id,
+                state.role.name,
+            )
+            self.provider_removing_actor(previous_provider, state.actor_id)
+
+        if new_provider is not None:
+            new_provider.add_actor(state, previous_provider)
+        self._stop_managing_with_providers(state.actor_id, exclusion=new_provider)
+        return new_provider
 
     def provider_removing_actor(self, provider: Provider, actor_id: str):
         # Note: for vehicles, pybullet_provider_sync() will also call teardown

@@ -49,7 +49,6 @@ def env(agent_spec: AgentSpec):
         scenarios=["scenarios/sumo/loop"],
         agent_interfaces=agent_interfaces,
         headless=True,
-        visdom=False,
         fixed_timestep_sec=0.01,
     )
     assert isinstance(env, HiWayEnv)

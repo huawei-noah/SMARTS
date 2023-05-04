@@ -25,7 +25,6 @@ import sys
 from pathlib import Path
 
 import click
-from rich import print
 
 
 @click.group(name="zoo", help="Build, install, or instantiate workers.")

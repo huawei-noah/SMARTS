@@ -60,7 +60,6 @@ def base_env(request):
         scenarios=["scenarios/sumo/figure_eight"],
         agent_specs=_make_agent_specs(request.param),
         headless=True,
-        visdom=False,
         fixed_timestep_sec=0.01,
     )
 

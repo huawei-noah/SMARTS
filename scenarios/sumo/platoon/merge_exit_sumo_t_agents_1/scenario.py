@@ -8,6 +8,8 @@ from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
     Flow,
+    JunctionModel,
+    MapSpec,
     Route,
     Scenario,
     ScenarioMetadata,
@@ -19,11 +21,13 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0.5, mean=1.0),
+    speed=Distribution(sigma=0, mean=1.0),
 )
 leader = TrafficActor(
     name="Leader-007",
     depart_speed=0,
+    speed=Distribution(sigma=0.2, mean=0.8),
+    junction_model=JunctionModel(impatience=1),
 )
 
 # Social path = (start_lane, end_lane)
@@ -38,8 +42,8 @@ social_paths = [
     (2, 1),
     (2, 2),
 ]
-min_flows = 3
-max_flows = 5
+min_flows = 2
+max_flows = 4
 social_comb = [
     com
     for elems in range(min_flows, max_flows + 1)
@@ -63,7 +67,7 @@ for name, (social_path, leader_path) in enumerate(route_comb):
                     end=("E3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60 * random.uniform(3, 4),
+                rate=60 * random.uniform(1, 3),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
@@ -80,20 +84,20 @@ for name, (social_path, leader_path) in enumerate(route_comb):
             Trip(
                 vehicle_name="Leader-007",
                 route=Route(
-                    begin=("E0", leader_path, 15),
+                    begin=("E0", leader_path, 25),
                     end=("E4", 0, "max"),
                 ),
-                depart=19,
+                depart=30,
                 actor=leader,
+                vehicle_type="truck",
             ),
         ],
     )
 
-
 ego_missions = [
     EndlessMission(
         begin=("E0", 2, 5),
-        start_time=20,
+        start_time=31,
         entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
     )  # Delayed start, to ensure road has prior traffic.
 ]
@@ -102,10 +106,10 @@ gen_scenario(
     scenario=Scenario(
         traffic=traffic,
         ego_missions=ego_missions,
-        scenario_metadata=ScenarioMetadata(
-            actor_of_interest_re_filter="Leader-007",
-            actor_of_interest_color=Colors.Blue,
+        map_spec=MapSpec(
+            source=Path(__file__).resolve().parents[0], lanepoint_spacing=1.0
         ),
+        scenario_metadata=ScenarioMetadata(actor_of_interest_re_filter="Leader-007", actor_of_interest_color=Colors.Blue),
     ),
     output_dir=Path(__file__).parent,
 )

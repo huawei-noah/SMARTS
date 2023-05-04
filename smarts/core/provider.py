@@ -119,7 +119,7 @@ class ProviderManager:
     # other Providers that are willing to accept new actors could watch for this.
 
     def provider_relinquishing_actor(
-        self, provider: "Provider", state: ActorState
+        self, previous_provider: "Provider", state: ActorState
     ) -> Optional["Provider"]:
         """Find a new Provider for an actor from among the Providers managed
         by this ProviderManager.  Returns the new provider or None if a suitable
@@ -190,7 +190,7 @@ class Provider:
     ):
         """Management of the actor with state is being assigned
         (or transferred if from_provider is not None) to this Provider.
-        Will only be called if can_accept_actor() has returned True."""
+        Should only be called if can_accept_actor() has returned True."""
         raise NotImplementedError
 
     def reset(self):

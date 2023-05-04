@@ -47,7 +47,6 @@ def env(agent_interface: AgentInterface):
         scenarios=["scenarios/sumo/zoo_intersection"],
         agent_interfaces={AGENT_ID: agent_interface},
         headless=True,
-        visdom=False,
         fixed_timestep_sec=0.01,
     )
 

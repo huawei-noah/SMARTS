@@ -31,11 +31,23 @@ from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
-import rtree
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
+from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
+from smarts.core.lanepoints import LanePoints, LinkedLanePoint
+from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
+from smarts.core.route_cache import RouteWithCache
+from smarts.core.utils.file import read_tfrecord_file
+from smarts.core.utils.geometry import buffered_shape
 from smarts.core.utils.glb import make_map_glb, make_road_line_glb
+from smarts.core.utils.math import (
+    inplace_unwrap,
+    line_intersect_vectorized,
+    radians_to_vec,
+    ray_boundary_intersect,
+    vec_2d,
+)
 from smarts.sstudio.types import MapSpec
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (
@@ -47,19 +59,12 @@ from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (
 )
 from smarts.waymo.waymo_utils import WaymoDatasetError
 
-from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from .lanepoints import LanePoints, LinkedLanePoint
-from .road_map import RoadMap, RoadMapWithCaches, Waypoint
-from .route_cache import RouteWithCache
-from .utils.file import read_tfrecord_file
-from .utils.geometry import buffered_shape
-from .utils.math import (
-    inplace_unwrap,
-    line_intersect_vectorized,
-    radians_to_vec,
-    ray_boundary_intersect,
-    vec_2d,
-)
+try:
+    import rtree
+except:
+    raise ImportError(
+        "Missing dependencies for Waymo. Install them using the command `pip install -e .[waymo]` at the source directory."
+    )
 
 
 class WaymoMap(RoadMapWithCaches):

@@ -17,7 +17,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
 import heapq
 import logging
 import random
@@ -27,7 +26,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-import rtree
 from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
@@ -45,13 +43,13 @@ from smarts.core.utils.math import (
 from smarts.sstudio.types import MapSpec
 
 try:
+    import rtree
     from av2.geometry.interpolate import interp_arc
     from av2.map.lane_segment import LaneMarkType, LaneSegment
     from av2.map.map_api import ArgoverseStaticMap
 except:
     raise ImportError(
-        "You may not have installed the [argoverse] dependencies required for using Argoverse 2 maps with SMARTS. Install it first using the command `pip install -e .[argoverse]` at the source directory."
-        ""
+        "Missing dependencies for Argoverse. Install them using the command `pip install -e .[argoverse]` at the source directory."
     )
 
 
@@ -887,8 +885,10 @@ class ArgoverseMap(RoadMapWithCaches):
     def empty_route(self) -> RoadMap.Route:
         return ArgoverseMap.Route(self)
 
-    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
-        return ArgoverseMap.Route.from_road_ids(self, road_ids)
+    def route_from_road_ids(
+        self, road_ids: Sequence[str], resolve_intermediaries: bool = False
+    ) -> RoadMap.Route:
+        return ArgoverseMap.Route.from_road_ids(self, road_ids, resolve_intermediaries)
 
     class _WaypointsCache:
         def __init__(self):
