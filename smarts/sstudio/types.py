@@ -769,7 +769,7 @@ class OnRoadCondition(SubjectCondition):
 
 
 @dataclass(frozen=True)
-class IsVehicleType(SubjectCondition):
+class VehicleTypeCondition(SubjectCondition):
     """This condition is true if the subject is of the given types."""
 
     vehicle_type: str
@@ -812,7 +812,7 @@ class CompoundCondition(Condition):
         return ConditionState.FALSE
 
 
-@dataclass(frozen=True, )
+@dataclass(frozen=True)
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
@@ -834,6 +834,8 @@ class TrapEntryTactic(EntryTactic):
     default_entry_speed: Optional[float] = None
     """The speed that the vehicle starts at when the hijack limit expiry emits a new vehicle"""
 
+    condition: Condition = LiteralCondition(ConditionState.FALSE)
+
 
 @dataclass(frozen=True)
 class IdEntryTactic(EntryTactic):
@@ -844,6 +846,8 @@ class IdEntryTactic(EntryTactic):
 
     patience: float = 0.1
     """Defines the amount of time this tactic will wait for an actor."""
+
+    condition: Condition = LiteralCondition(ConditionState.FALSE)
 
     def __post_init__(self):
         assert isinstance(self.actor_id, str)
