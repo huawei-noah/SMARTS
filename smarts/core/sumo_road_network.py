@@ -941,8 +941,12 @@ class SumoRoadNetwork(RoadMap):
     def empty_route(self) -> RoadMap.Route:
         return SumoRoadNetwork.Route(self)
 
-    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
-        return SumoRoadNetwork.Route.from_road_ids(self, road_ids)
+    def route_from_road_ids(
+        self, road_ids: Sequence[str], resolve_intermediaries: bool = False
+    ) -> RoadMap.Route:
+        return SumoRoadNetwork.Route.from_road_ids(
+            self, road_ids, resolve_intermediaries
+        )
 
     @cached_property
     def _lanepoints(self):

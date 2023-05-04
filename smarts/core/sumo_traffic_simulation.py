@@ -41,6 +41,7 @@ from smarts.core.provider import (
     ProviderState,
 )
 from smarts.core.road_map import RoadMap
+from smarts.core.route_cache import RouteWithCache
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
@@ -117,6 +118,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._traffic_lights = dict()
         self._tls_cache = dict()
         self._last_provider_state = ProviderState()
+        self._last_vehicle_subscriptions = dict()
         self._sim = None
         self._handling_error = False
 
@@ -323,13 +325,16 @@ class SumoTrafficSimulation(TrafficProvider):
             except traci.exceptions.FatalTraCIError:
                 return ProviderState()
         elif self._allow_reload:
+            assert (
+                self._traci_conn is not None
+            ), "TraCI should be connected at this point."
             try:
                 self._traci_conn.load(self._base_sumo_load_params())
             except traci.exceptions.FatalTraCIError as err:
                 self._handle_traci_exception(err, actors_relinquishable=False)
                 return ProviderState()
 
-        assert self._traci_conn is not None, "No active traci connection"
+        assert self._traci_conn is not None, "No active TraCI connection"
 
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
@@ -434,6 +439,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._num_dynamic_ids_used = 0
         self._to_be_teleported = dict()
         self._reserved_areas = dict()
+        self._last_vehicle_subscriptions = dict()
 
     @property
     def connected(self):
@@ -504,6 +510,7 @@ class SumoTrafficSimulation(TrafficProvider):
         # Represents current state
         traffic_vehicle_states = self._traci_conn.vehicle.getAllSubscriptionResults()
         traffic_vehicle_ids = set(traffic_vehicle_states)
+        self._last_vehicle_subscriptions = traffic_vehicle_states
 
         # State / ownership changes
         external_vehicles_that_have_joined = (
@@ -760,6 +767,8 @@ class SumoTrafficSimulation(TrafficProvider):
         )
 
     def manages_actor(self, actor_id: str) -> bool:
+        if not self.connected:
+            return False
         return actor_id in self._sumo_vehicle_ids
 
     def _compute_traffic_vehicles(self) -> List[VehicleState]:
@@ -931,14 +940,10 @@ class SumoTrafficSimulation(TrafficProvider):
             self._traci_conn.vehicle.setRoute(vehicle_id, new_route_edges)
 
     def _route_for_vehicle(self, vehicle_id: str) -> Optional[List[str]]:
-        if not self.connected:
+        state = self._last_vehicle_subscriptions.get(vehicle_id)
+        if state is None:
             return None
-        try:
-            route = self._traci_conn.vehicle.getRoute(vehicle_id)
-        except self._traci_exceptions as err:
-            self._handle_traci_exception(err)
-            return None
-        return route
+        return state[tc.VAR_EDGES]
 
     def vehicle_dest_road(self, vehicle_id: str) -> Optional[str]:
         route = self._route_for_vehicle(vehicle_id)
@@ -948,8 +953,12 @@ class SumoTrafficSimulation(TrafficProvider):
         sim = self._sim()
         if sim is None or sim.road_map is None:
             return None
-        route = self._route_for_vehicle(vehicle_id)
-        return sim.road_map.route_from_road_ids(route) if route else None
+        route_ids = self._route_for_vehicle(vehicle_id)
+        return (
+            sim.road_map.route_from_road_ids(route_ids, resolve_intermediaries=True)
+            if route_ids
+            else None
+        )
 
     def reserve_traffic_location_for_vehicle(
         self,
@@ -1020,12 +1029,21 @@ class SumoTrafficSimulation(TrafficProvider):
         self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         assert isinstance(provider_actor, VehicleState)
-        assert provider_actor.actor_id in self._hijacked
-        self._hijacked.remove(provider_actor.actor_id)
+        if provider_actor.actor_id not in self._hijacked:
+            route = None
+            if from_provider and isinstance(from_provider, TrafficProvider):
+                route = from_provider.route_for_vehicle(provider_actor.actor_id)
+                assert not route or isinstance(route, RouteWithCache)
+                self._traci_conn.vehicle.setRoute(
+                    provider_actor.actor_id, route.road_ids
+                )
+        # elif hijacked there is no need to get the route from from_provider because this vehicle
+        # is one that we used to manage, and Sumo/Traci should remember it.
+
+        self._non_sumo_vehicle_ids.discard(provider_actor.actor_id)
+        self._hijacked.discard(provider_actor.actor_id)
         provider_actor.source = self.source_str
         provider_actor.role = ActorRole.Social
-        # no need to get the route from from_provider because this vehicle
-        # is one that we used to manage, and Sumo/Traci should remember it.
         self._log.info(
             "traffic actor %s transferred to %s.",
             provider_actor.actor_id,
