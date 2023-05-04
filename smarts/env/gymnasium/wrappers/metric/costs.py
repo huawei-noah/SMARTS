@@ -87,13 +87,12 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
                     jerk = (acc - acc_1) / dt
 
         dyn = max(jerk / jerk_linear_max, acc / acc_linear_max)
-
         dyn_window.move(dyn)
         u_t = 1 if dyn_window.max() > 1 else 0
         T_u += u_t
 
         if not done:
-            return Costs(comfort=-1)
+            return Costs(comfort=-np.inf)
         else:
             T_trv = step
             for _ in range(T_p):
@@ -107,7 +106,7 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point = Point(0, 0, 0), dist_tot: float = 0
+    end_pos: Point, dist_tot: float
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
@@ -120,7 +119,7 @@ def _dist_to_destination(
         nonlocal mean, step, end_pos, dist_tot
 
         if not done:
-            return Costs(dist_to_destination=-1)
+            return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
@@ -128,9 +127,7 @@ def _dist_to_destination(
             dist_remainder = get_dist(
                 road_map=road_map, point_a=cur_pos, point_b=end_pos
             )
-            dist_remainder_capped = min(
-                dist_remainder, dist_tot
-            )  # Cap remainder distance
+            dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
     return func
@@ -352,7 +349,7 @@ def _steps(
         step = step + 1
 
         if not done:
-            return Costs(steps=-1)
+            return Costs(steps=-np.inf)
 
         if obs.events.reached_goal or obs.events.interest_done:
             return Costs(steps=step / max_episode_steps)

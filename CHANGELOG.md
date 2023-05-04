@@ -18,6 +18,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Made Envision dependencies optional. Use `pip install -e .[envision]` to install them.
 - Made Waymo dependencies optional. Use `pip install -e .[waymo]` to install them.
 - `SumoTrafficSimulator` now uses the last vehicle subscription update to back `route_for_vehicle()`. This means that the routes of vehicles can still be determined even if `SumoTrafficSimulation` disconnects.
+- Reward function in platoon RL example retrieves actor-of-interest from marked neighborhood vehicles.
+- `dist_to_destination` metric cost function computes the route distance and end point for vehicle of interest contained in social agents, SMARTS traffic provider, SUMO traffic provider, and traffic history provider.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 ### Fixed

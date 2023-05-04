@@ -25,7 +25,6 @@ class Preprocess(gym.Wrapper):
         self._prev_heading: float
         self._format_action = FormatAction(agent_interface.action)
         self.action_space = self._format_action.action_space
-        print("Policy initialised.")
 
     def _process(self, obs):
         obs = self._filter_obs.filter(obs)

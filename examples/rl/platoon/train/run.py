@@ -130,7 +130,7 @@ def run(
             checkpoint_callback = CheckpointCallback(
                 save_freq=config.checkpoint_freq,
                 save_path=config.logdir / "checkpoint",
-                name_prefix=f"PPO_{index}",
+                name_prefix=f"PPO",
             )
             eval_callback = EvalCallback(
                 env_eval,

@@ -59,18 +59,15 @@ class Reward(gym.Wrapper):
     def _reward(self, obs, env_reward):
         reward = {agent_id: np.float64(0) for agent_id in obs.keys()}
 
-        leader_name = "Leader-007"
         leader = None
         max_agent_steps_completed = 0
         for agent_id, agent_obs in obs.items():
-            neighbor_vehicles = _get_neighbor_vehicles(
-                obs=agent_obs, neighbor_name=leader_name
-            )
+            interest_vehicles = _get_interest_vehicles(obs=agent_obs)
             max_agent_steps_completed = max(
                 max_agent_steps_completed, agent_obs["steps_completed"]
             )
-            if neighbor_vehicles:
-                leader = neighbor_vehicles[0]
+            if interest_vehicles:
+                leader = interest_vehicles[0]
                 break
 
         if leader == None and max_agent_steps_completed == 1:
@@ -135,21 +132,22 @@ class Reward(gym.Wrapper):
         return reward
 
 
-def _get_neighbor_vehicles(obs, neighbor_name):
-    keys = ["id", "heading", "lane_index", "position", "speed"]
-    neighbors_tuple = [
+def _get_interest_vehicles(obs):
+    keys = ["interest", "id", "heading", "lane_index", "position", "speed"]
+    interest_vehicles = [
         neighbor
         for neighbor in zip(
+            obs["neighborhood_vehicle_states"]["interest"],
             obs["neighborhood_vehicle_states"]["id"],
             obs["neighborhood_vehicle_states"]["heading"],
             obs["neighborhood_vehicle_states"]["lane_index"],
             obs["neighborhood_vehicle_states"]["position"],
             obs["neighborhood_vehicle_states"]["speed"],
         )
-        if neighbor_name in neighbor[0]
+        if neighbor[0] == 1
     ]
-    neighbors_dict = [dict(zip(keys, neighbor)) for neighbor in neighbors_tuple]
-    return neighbors_dict
+    interest_vehicles_dict = [dict(zip(keys, interest_vehicle)) for interest_vehicle in interest_vehicles]
+    return interest_vehicles_dict
 
 
 def _nearest_waypoint(matrix: np.ndarray, points: np.ndarray, radius: float = 1):

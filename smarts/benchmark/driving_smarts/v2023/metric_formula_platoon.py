@@ -20,15 +20,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import functools
 from typing import Dict
 
 import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
-from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
+from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score, avg_costs
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
+    DistToDestination,
     DistToObstacles,
     JerkLinear,
     Params,
@@ -36,11 +36,6 @@ from smarts.env.gymnasium.wrappers.metric.params import (
     VehicleGap,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
-from smarts.env.gymnasium.wrappers.metric.utils import (
-    add_dataclass,
-    divide,
-    op_dataclass,
-)
 
 
 class Formula(FormulaBase):
@@ -61,13 +56,15 @@ class Formula(FormulaBase):
             comfort=Comfort(
                 active=True,
             ),
+            dist_to_destination=DistToDestination(
+                active=True,
+            ),
             dist_to_obstacles=DistToObstacles(
                 active=False,
             ),
             jerk_linear=JerkLinear(active=False),
             vehicle_gap=VehicleGap(
                 active=True,
-                actor="Leader-007",
             ),
             steps=Steps(
                 active=False,
@@ -99,27 +96,7 @@ class Formula(FormulaBase):
             "HumannessError", and "RuleViolation" scores.
         """
 
-        costs_total = Costs()
-        episodes = 0
-        for scen, val in records_sum.items():
-            # Number of agents in scenario.
-            agents_in_scenario = len(val.keys())
-            costs_list, counts_list = zip(
-                *[(record.costs, record.counts) for agent, record in val.items()]
-            )
-            # Sum costs over all agents in scenario.
-            costs_sum_agent: Costs = functools.reduce(
-                lambda a, b: add_dataclass(a, b), costs_list
-            )
-            # Average costs over number of agents in scenario.
-            costs_mean_agent = op_dataclass(costs_sum_agent, agents_in_scenario, divide)
-            # Sum costs over all scenarios.
-            costs_total = add_dataclass(costs_total, costs_mean_agent)
-            # Increment total number of episodes.
-            episodes += counts_list[0].episodes
-
-        # Average costs over total number of episodes.
-        costs_final = op_dataclass(costs_total, episodes, divide)
+        costs_final = avg_costs(records_sum=records_sum)
 
         # Compute sub-components of score.
         dist_to_destination = costs_final.dist_to_destination
