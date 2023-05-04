@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 
 
+import warnings
 from dataclasses import replace
 from typing import Optional
 
@@ -101,7 +102,10 @@ class ActorCaptureManager:
 
         assert isinstance(sim, SMARTS)
         if social:
-            # Not supported
+            # MTA: TODO implement this section of actor capture.
+            warnings.warn(
+                f"Unable to capture for {agent_id} because social agent id capture not yet implemented."
+            )
             return None
         vehicle = sim.switch_control_to_agent(
             vehicle_id, agent_id, mission, recreate=True, is_hijacked=False

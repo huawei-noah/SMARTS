@@ -22,6 +22,7 @@ import enum
 import logging
 import math
 import random
+import sys
 from dataclasses import dataclass, field, replace
 from enum import IntEnum, IntFlag
 from sys import maxsize
@@ -696,10 +697,10 @@ class TimeWindowCondition(Condition):
     end: float
     """The ending simulation time as of which this condition becomes expired."""
 
-    def evaluate(self, *args, simulation_time, **kwargs):
+    def evaluate(self, *args, simulation_time, mission_start_time, **kwargs):
         if self.start <= simulation_time < self.end:
             return ConditionState.TRUE
-        elif self.end >= simulation_time:
+        elif simulation_time > self.end:
             return ConditionState.EXPIRED
         return ConditionState.BEFORE
 
@@ -833,8 +834,8 @@ class TrapEntryTactic(EntryTactic):
     """The prefixes of vehicles to avoid hijacking"""
     default_entry_speed: Optional[float] = None
     """The speed that the vehicle starts at when the hijack limit expiry emits a new vehicle"""
-
-    condition: Condition = LiteralCondition(ConditionState.FALSE)
+    condition: Condition = LiteralCondition(ConditionState.TRUE)
+    """A condition that is used to add additional exclusions."""
 
 
 @dataclass(frozen=True)
@@ -844,14 +845,12 @@ class IdEntryTactic(EntryTactic):
     actor_id: str
     """The id of the actor to take over."""
 
-    patience: float = 0.1
-    """Defines the amount of time this tactic will wait for an actor."""
-
-    condition: Condition = LiteralCondition(ConditionState.FALSE)
+    condition: Condition = TimeWindowCondition(0.1, sys.maxsize)
+    """A condition that is used to add additional exclusions."""
 
     def __post_init__(self):
         assert isinstance(self.actor_id, str)
-        assert isinstance(self.patience, (float, int))
+        assert isinstance(self.condition, (Condition))
 
 
 @dataclass(frozen=True)
