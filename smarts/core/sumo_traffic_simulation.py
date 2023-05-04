@@ -325,7 +325,9 @@ class SumoTrafficSimulation(TrafficProvider):
             except traci.exceptions.FatalTraCIError:
                 return ProviderState()
         elif self._allow_reload:
-            assert self._traci_conn is not None, "TraCI should be connected at this point."
+            assert (
+                self._traci_conn is not None
+            ), "TraCI should be connected at this point."
             try:
                 self._traci_conn.load(self._base_sumo_load_params())
             except traci.exceptions.FatalTraCIError as err:
@@ -951,8 +953,12 @@ class SumoTrafficSimulation(TrafficProvider):
         sim = self._sim()
         if sim is None or sim.road_map is None:
             return None
-        route = self._route_for_vehicle(vehicle_id)
-        return sim.road_map.route_from_road_ids(route) if route else None
+        route_ids = self._route_for_vehicle(vehicle_id)
+        return (
+            sim.road_map.route_from_road_ids(route_ids, resolve_junction_roads=True)
+            if route_ids
+            else None
+        )
 
     def reserve_traffic_location_for_vehicle(
         self,

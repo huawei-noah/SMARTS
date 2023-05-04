@@ -182,7 +182,9 @@ class RoadMap:
         """Generate an empty route."""
         raise NotImplementedError()
 
-    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
+    def route_from_road_ids(
+        self, road_ids: Sequence[str], resolve_junction_roads: bool = False
+    ) -> RoadMap.Route:
         """Generate a route containing the specified roads."""
         raise NotImplementedError()
 

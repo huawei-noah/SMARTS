@@ -69,9 +69,23 @@ class RouteWithCache(RoadMap.Route):
 
     @classmethod
     def from_road_ids(
-        cls, road_map: RoadMap, road_ids: Sequence[str]
+        cls,
+        road_map: RoadMap,
+        road_ids: Sequence[str],
+        resolve_junction_roads: bool = False,
     ) -> "RouteWithCache":
         """Factory to generate a new RouteWithCache from a sequence of road ids."""
+
+        if len(road_ids) > 0 and resolve_junction_roads:
+            routes = road_map.generate_routes(
+                start=road_map.road_by_id(road_ids[0]),
+                end=road_map.road_by_id(road_ids[-1]),
+                via=road_ids[1:-1],
+                max_to_gen=1,
+            )
+            if len(routes) > 0:
+                return routes[0]
+
         route = cls(road_map)
         for road_id in road_ids:
             road = road_map.road_by_id(road_id)
