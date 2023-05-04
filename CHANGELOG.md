@@ -16,10 +16,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
 - Made Envision dependencies optional. Use `pip install -e .[envision]` to install them.
 - Made Waymo dependencies optional. Use `pip install -e .[waymo]` to install them.
+- `SumoTrafficSimulator` now uses the last vehicle subscription update to back `route_for_vehicle()`. This means that the routes of vehicles can still be determined even if `SumoTrafficSimulation` disconnects.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 ### Fixed
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
+- The routes of `SumoTrafficSimulation` traffic vehicles are now preserved to be passed over to other traffic simulators when the `SumoTrafficSimulation` disconnects.
+- `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 ### Security

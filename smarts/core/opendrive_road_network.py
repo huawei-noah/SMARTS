@@ -1588,8 +1588,12 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
     def empty_route(self) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route(self)
 
-    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
-        return OpenDriveRoadNetwork.Route.from_road_ids(self, road_ids)
+    def route_from_road_ids(
+        self, road_ids: Sequence[str], resolve_intermediaries: bool = False
+    ) -> RoadMap.Route:
+        return OpenDriveRoadNetwork.Route.from_road_ids(
+            self, road_ids, resolve_intermediaries
+        )
 
     class _WaypointsCache:
         def __init__(self):
