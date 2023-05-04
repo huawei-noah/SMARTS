@@ -190,8 +190,7 @@ class RoadMap:
             road_ids (Sequence[str]):
                 The road ids of the route.
             resolve_intermediaries (bool):
-                If to fill in the gaps in the route. This may be needed to complete an
-                incomplete route or fill in junctions roads.
+                If to fill in the gaps in the route. This may be needed to complete an incomplete route or fill in junctions roads.
 
         Returns:
             A route that satisfies the given road id restrictions.
