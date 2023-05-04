@@ -36,7 +36,6 @@ from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.visdom_client import VisdomClient
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -57,8 +56,7 @@ class HiWayEnv(gym.Env):
             True.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
-        visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
+        visdom (bool): Deprecated. Use SMARTS_VISDOM_ENABLED.
         fixed_timestep_sec (Optional[float], optional): Step duration for
             all components of the simulation. May be None if time deltas
             are externally-driven. Defaults to None.
@@ -170,10 +168,6 @@ class HiWayEnv(gym.Env):
 
         self._env_renderer = None
 
-        visdom_client = None
-        if visdom:
-            visdom_client = VisdomClient()
-
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
             sumo_traffic = SumoTrafficSimulation(
@@ -191,7 +185,7 @@ class HiWayEnv(gym.Env):
             agent_interfaces=self._agent_interfaces,
             traffic_sims=traffic_sims,
             envision=envision_client,
-            visdom=visdom_client,
+            visdom=visdom,
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )

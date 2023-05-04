@@ -47,7 +47,6 @@ def env(agent_interfaces: Dict[str, AgentInterface]):
         action_options="unformatted",
         observation_options="unformatted",
         headless=True,
-        visdom=False,
         fixed_timestep_sec=0.01,
         disable_env_checker=True,
     )

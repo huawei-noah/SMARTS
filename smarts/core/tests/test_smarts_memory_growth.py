@@ -102,7 +102,6 @@ def env_and_spec(
         scenarios=scenarios,
         agent_specs={agent_id: agent_spec},
         headless=True,
-        visdom=False,
         fixed_timestep_sec=TIMESTEP_SEC,
         sumo_headless=True,
         seed=seed,

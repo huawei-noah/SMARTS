@@ -67,7 +67,6 @@ from .utils import pybullet
 from .utils.id import Id
 from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
-from .utils.visdom_client import VisdomClient
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
 from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle
@@ -100,7 +99,7 @@ class SMARTS(ProviderManager):
         agent_interfaces (Dict[str, AgentInterface]): The interfaces providing SMARTS with the understanding of what features each agent needs.
         traffic_sims (Optional[List[TrafficProvider]], optional): An optional list of traffic simulators for providing non-agent traffic. Defaults to None.
         envision (Optional[EnvisionClient], optional): An envision client for connecting to an envision visualization server. Defaults to None.
-        visdom (Optional[VisdomClient], optional): A visdom client for connecting to a visdom visualization server. Defaults to None.
+        visdom (Union[bool, Any], optional): Deprecated. Use SMARTS_VISDOM_ENABLED. A visdom client for connecting to a visdom visualization server.
         fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
         reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
         zoo_addrs (Optional[Tuple[str, int]], optional): The (ip:port) values of remote agent workers for externally hosted agents. Defaults to None.
@@ -114,12 +113,13 @@ class SMARTS(ProviderManager):
         traffic_sim: Optional[TrafficProvider] = None,
         traffic_sims: Optional[List[TrafficProvider]] = None,
         envision: Optional[EnvisionClient] = None,
-        visdom: Optional[VisdomClient] = None,
+        visdom: Optional[Union[bool, Any]] = False,
         fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
         zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
     ):
+        conf = config()
         self._log = logging.getLogger(self.__class__.__name__)
         self._log.setLevel(level=logging.ERROR)
         self._sim_id = Id.new("smarts")
@@ -128,7 +128,23 @@ class SMARTS(ProviderManager):
         self._scenario: Optional[Scenario] = None
         self._renderer: RendererBase = None
         self._envision: Optional[EnvisionClient] = envision
-        self._visdom: Optional[VisdomClient] = visdom
+        if visdom is not False or visdom is not None:
+            warnings.warn(
+                "Using visdom through the arguments is deprecated. Please use engine configuration or SMARTS_VISDOM_ENABLED."
+            )
+        else:
+            visdom = None
+
+        self._visdom: Any = None
+        if conf("visdom", "enabled", default=False, cast=bool) or visdom is True:
+            from smarts.visdom.visdom_client import VisdomClient
+
+            self._visdom = VisdomClient(
+                hostname=conf("visdom", "hostname", default="http://localhost"),
+                port=conf("visdom", "port", default=8097),
+            )
+        elif not isinstance(self._visdom, bool):
+            self._visdom = visdom
         self._external_provider: ExternalProvider = None
         self._resetting = False
         self._reset_required = False

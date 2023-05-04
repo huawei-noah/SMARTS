@@ -54,7 +54,6 @@ def platoon_env(
     agent_interface: AgentInterface,
     seed: int = 42,
     headless: bool = True,
-    visdom: bool = False,
     sumo_headless: bool = True,
     envision_record_data_replay_path: Optional[str] = None,
 ):
@@ -104,8 +103,6 @@ def platoon_env(
         seed (int, optional): Random number generator seed. Defaults to 42.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
-        visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
         sumo_headless (bool, optional): If True, disables visualization in
             SUMO GUI. Defaults to True.
         envision_record_data_replay_path (Optional[str], optional):
@@ -148,7 +145,6 @@ def platoon_env(
         agent_interfaces=agent_interfaces,
         sim_name="VehicleFollowing",
         headless=headless,
-        visdom=visdom,
         seed=seed,
         sumo_options=SumoOptions(headless=sumo_headless),
         visualization_client_builder=visualization_client_builder,
