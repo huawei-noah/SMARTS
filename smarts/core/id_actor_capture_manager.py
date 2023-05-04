@@ -58,8 +58,9 @@ class IdActorCaptureManager(ActorCaptureManager):
             for a, (b, m) in self._actor_for_agent.items()
             if m.start_time <= sim.elapsed_sim_time and a in social_vehicle_ids
         ):
-            assert isinstance(mission.entry_tactic, IdEntryTactic)
-            patience_expiry = mission.start_time + mission.entry_tactic.patience
+            entry_tactic = mission.entry_tactic
+            assert isinstance(entry_tactic, IdEntryTactic)
+            patience_expiry = mission.start_time + entry_tactic.patience
             if sim.elapsed_sim_time > patience_expiry:
                 self._log.error(
                     f"Actor aquisition skipped for `{agent_id}` scheduled to start between "
@@ -68,6 +69,13 @@ class IdActorCaptureManager(ActorCaptureManager):
                 )
                 used_actors.append(actor_id)
                 sim.agent_manager.teardown_ego_agents({agent_id})
+                continue
+            vehicle = sim.vehicle_index.vehicle_by_id(actor_id)
+            if not entry_tactic.condition.evaluate(
+                simulation_time = sim.elapsed_sim_time,
+                actor_ids = sim.vehicle_index.vehicle_ids,
+                vehicle_state = vehicle.state if vehicle else None,
+            ):
                 continue
             vehicle: Optional[Vehicle] = self._take_existing_vehicle(
                 sim,

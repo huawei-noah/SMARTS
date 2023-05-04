@@ -774,10 +774,10 @@ class VehicleTypeCondition(SubjectCondition):
 
     vehicle_type: str
 
-    def evaluate(self, *args, actor_info, **kwargs) -> ConditionState:
+    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
         return (
             ConditionState.TRUE
-            if actor_info.vehicle_type == self.vehicle_type
+            if vehicle_state.vehicle_config_type == self.vehicle_type
             else ConditionState.FALSE
         )
 
