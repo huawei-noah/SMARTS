@@ -21,11 +21,18 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from matplotlib import pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.lines import Line2D
+
+try:
+    from matplotlib import pyplot as plt
+    from matplotlib.animation import FuncAnimation
+    from matplotlib.lines import Line2D
+except:
+    raise ImportError(
+        "Missing dependencies for Waymo. Install them using the command `pip install -e .[waymo]` at the source directory."
+    )
 
 from smarts.core.utils.file import read_tfrecord_file
+from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 
 
 class WaymoDatasetError(Exception):
@@ -266,7 +273,6 @@ def _plot_trajectories(
 
 def get_tfrecord_info(tfrecord_file: str) -> Dict[str, Dict[str, Any]]:
     """Extract info about each scenario in the TFRecord file."""
-    from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 
     scenarios = dict()
     records = read_tfrecord_file(tfrecord_file)

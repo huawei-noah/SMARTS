@@ -33,13 +33,18 @@ import time
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Union
 
-import ijson
-import tornado.gen
-import tornado.ioloop
-import tornado.iostream
-import tornado.web
-import tornado.websocket
-from tornado.websocket import WebSocketClosedError
+try:
+    import ijson
+    import tornado.gen
+    import tornado.ioloop
+    import tornado.iostream
+    import tornado.web
+    import tornado.websocket
+    from tornado.websocket import WebSocketClosedError
+except:
+    raise ImportError(
+        "Missing dependencies for Envision. Install them using the command `pip install -e .[envision]` at the source directory."
+    )
 
 import smarts.core.models
 from envision.web import dist as web_dist

@@ -308,6 +308,7 @@ def test_bubble_manager_state_change(
         got_hijacked = index.vehicle_is_hijacked(vehicle_id)
         assert_msg = (
             f"position={next_position}\n"
+            f"\tvehicle_position={index.vehicle_position(vehicle_id)}\n"
             f"\t(expected: shadowed={shadowed}, hijacked={hijacked})\n"
             f"\t(received: shadowed={got_shadowed}, hijacked={got_hijacked})"
         )

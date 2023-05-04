@@ -20,10 +20,10 @@
 import logging
 import os
 import random
+import subprocess
 import tempfile
 from typing import Optional
 
-import sh
 from yattag import Doc, indent
 
 from smarts.core.road_map import RoadMap
@@ -176,22 +176,33 @@ class TrafficGenerator:
             log_path = f"{self._log_dir}/{scenario_name}"
             os.makedirs(log_path, exist_ok=True)
 
-            import smarts.core.utils.sumo  # Set SUMO_HOME environment variable
             from smarts.core.utils.sumo import sumolib
 
-            duarouter = sh.Command(sumolib.checkBinary("duarouter"))
-
-            # Validates, and runs route planner
-            duarouter(
-                unsorted_input=True,
-                net_file=self.road_network.source,
-                route_files=trips_path,
-                output_file=route_path,
-                seed=seed,
-                ignore_errors=False,
-                no_step_log=True,
-                repair=True,
-                error_log=f"{log_path}/{name}.log",
+            duarouter_path = sumolib.checkBinary("duarouter")
+            subprocess.check_call(
+                [
+                    duarouter_path,
+                    "--unsorted-input",
+                    "true",
+                    "--net-file",
+                    self.road_network.source,
+                    "--route-files",
+                    trips_path,
+                    "--output-file",
+                    route_path,
+                    "--seed",
+                    str(seed),
+                    "--ignore-errors",
+                    "false",
+                    "--no-step-log",
+                    "true",
+                    "--repair",
+                    "true",
+                    "--error-log",
+                    f"{log_path}/{name}.log",
+                ],
+                stderr=subprocess.DEVNULL,  # suppress warnings from duarouter
+                stdout=subprocess.DEVNULL,  # suppress success messages from duarouter
             )
 
             # Remove the rou.alt.xml file

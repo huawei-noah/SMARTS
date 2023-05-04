@@ -94,7 +94,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip "setuptools<58.3.0"
           pip install wheel==0.38.4
-          pip install .[camera_obs,doc,train,ray]
+          pip install .[camera_obs,doc,train,ray,envision,argoverse,opendrive,waymo]
           cd ${GITHUB_WORKSPACE}/docs
           make html SPHINXOPTS="-W -T -E --keep-going"
       - name: Check build output
@@ -106,3 +106,27 @@ jobs:
               echo "Sphinx build failed."
               exit 1
           fi
+
+  test-package-conflicts:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: huaweinoah/smarts:v0.6.1-minimal
+    steps:
+      - name: Install packages
+        run: |
+          apt-get update
+          apt-get install -y python3.8-dev
+      - name: Add safe directory
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install SMARTS with all extras and check for conflicts
+        run: |
+          python3.8 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip "setuptools<58.3.0"
+          pip install wheel==0.38.4
+          pip install .[all]
+          pip check

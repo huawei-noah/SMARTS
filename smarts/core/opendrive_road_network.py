@@ -31,14 +31,13 @@ from pathlib import Path
 from typing import Dict, Generator, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
-import rtree
 
 from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 
 # pytype: disable=import-error
 
-
 try:
+    import rtree
     from lxml import etree
     from opendrive2lanelet.opendriveparser.elements.geometry import Line as LineGeometry
     from opendrive2lanelet.opendriveparser.elements.junction import (
@@ -68,7 +67,6 @@ try:
 except ImportError:
     raise ImportError(
         "You may not have installed the [opendrive] dependencies required for using the OpenDRIVE maps with SMARTS. Install it first using the command `pip install -e .[opendrive]` at the source directory."
-        ""
     )
 # pytype: enable=import-error
 
@@ -1590,8 +1588,12 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
     def empty_route(self) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route(self)
 
-    def route_from_road_ids(self, road_ids: Sequence[str]) -> RoadMap.Route:
-        return OpenDriveRoadNetwork.Route.from_road_ids(self, road_ids)
+    def route_from_road_ids(
+        self, road_ids: Sequence[str], resolve_intermediaries: bool = False
+    ) -> RoadMap.Route:
+        return OpenDriveRoadNetwork.Route.from_road_ids(
+            self, road_ids, resolve_intermediaries
+        )
 
     class _WaypointsCache:
         def __init__(self):
