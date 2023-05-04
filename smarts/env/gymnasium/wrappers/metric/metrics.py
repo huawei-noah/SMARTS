@@ -19,22 +19,22 @@
 # THE SOFTWARE.
 
 import copy
-import numpy as np
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 import gymnasium as gym
+import numpy as np
 
 from smarts.core.agent_interface import AgentInterface, InterestDoneCriteria
 from smarts.core.coordinates import Point, RefLinePoint
+from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.observations import Observation
 from smarts.core.plan import EndlessGoal, PositionalGoal
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
-from smarts.core.traffic_provider import TrafficProvider
-from smarts.core.traffic_history_provider import TrafficHistoryProvider
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.local_traffic_provider import LocalTrafficProvider
+from smarts.core.traffic_history_provider import TrafficHistoryProvider
+from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.costs import (
@@ -215,13 +215,15 @@ class MetricsBase(gym.Wrapper):
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_pos,
                     )
-                elif isinstance(interest_criteria, InterestDoneCriteria) and (interest_actor is not None):
+                elif isinstance(interest_criteria, InterestDoneCriteria) and (
+                    interest_actor is not None
+                ):
                     end_pos, dist_tot = _get_end_and_dist(
-                        interest_actor=interest_actor, 
-                        vehicle_index=self._vehicle_index, 
-                        traffic_sims=self.env.smarts.traffic_sims, 
+                        interest_actor=interest_actor,
+                        vehicle_index=self._vehicle_index,
+                        traffic_sims=self.env.smarts.traffic_sims,
                         scenario=self._scen,
-                        road_map=self._road_map
+                        road_map=self._road_map,
                     )
                     cost_funcs_kwargs.update(
                         {
@@ -317,11 +319,11 @@ class MetricsBase(gym.Wrapper):
 
 
 def _get_end_and_dist(
-    interest_actor: str, 
-    vehicle_index:VehicleIndex, 
-    traffic_sims: List[TrafficProvider], 
+    interest_actor: str,
+    vehicle_index: VehicleIndex,
+    traffic_sims: List[TrafficProvider],
     scenario: Scenario,
-    road_map: RoadMap
+    road_map: RoadMap,
 ) -> Tuple[Point, float]:
     """Computes the end point and route distance for a given vehicle of interest.
 
@@ -337,9 +339,7 @@ def _get_end_and_dist(
     """
     # Check if the interest vehicle is a social agent.
     interest_social_missions = [
-        mission
-        for name, mission in scenario.missions.items()
-        if interest_actor in name
+        mission for name, mission in scenario.missions.items() if interest_actor in name
     ]
     # Check if the actor of interest is a traffic vehicle.
     interest_traffic_sims = [
@@ -348,9 +348,11 @@ def _get_end_and_dist(
         if traffic_sim.manages_actor(interest_actor)
     ]
     if len(interest_social_missions) + len(interest_traffic_sims) != 1:
-        raise MetricsError("Social agents and traffic providers contain zero or "
-            "more than one actor of interest.")
-    
+        raise MetricsError(
+            "Social agents and traffic providers contain zero or "
+            "more than one actor of interest."
+        )
+
     if len(interest_social_missions) == 1:
         interest_social_mission = interest_social_missions[0]
         goal = interest_social_mission.goal
@@ -372,8 +374,12 @@ def _get_end_and_dist(
 
     return end_pos, dist_tot
 
+
 def _get_traffic_end_and_dist(
-    vehicle_name: str, vehicle_index:VehicleIndex, traffic_sim: TrafficProvider, road_map: RoadMap
+    vehicle_name: str,
+    vehicle_index: VehicleIndex,
+    traffic_sim: TrafficProvider,
+    road_map: RoadMap,
 ) -> Tuple[Point, float]:
     """Computes the end point and route distance of a (i) SUMO traffic,
     (ii) SMARTS traffic, or (iii) history traffic vehicle
@@ -398,7 +404,7 @@ def _get_traffic_end_and_dist(
             .from_lane_coord(RefLinePoint(s=np.inf))
         )
         dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-        return end_pos, dist_tot    
+        return end_pos, dist_tot
     elif isinstance(traffic_sim, TrafficHistoryProvider):
         history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         start_pos = Point(x=history.start_position_x, y=history.start_position_y)
