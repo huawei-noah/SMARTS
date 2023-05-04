@@ -169,9 +169,7 @@ def _get_interest_vehicles(obs):
         )
         if neighbor[0] == 1
     ]
-    interest_vehicles_dict = [
-        dict(zip(keys, interest_vehicle)) for interest_vehicle in interest_vehicles
-    ]
+    interest_vehicles_dict = [dict(zip(keys, interest_vehicle)) for interest_vehicle in interest_vehicles]
     return interest_vehicles_dict
 
 
