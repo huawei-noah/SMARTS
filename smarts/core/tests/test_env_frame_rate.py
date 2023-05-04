@@ -66,7 +66,6 @@ def env_and_spec(scenarios, seed, headless=True, max_episode_steps=None):
         agent_specs={AGENT_ID: agent_spec},
         sim_name=None,
         headless=headless,
-        visdom=False,
         timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,

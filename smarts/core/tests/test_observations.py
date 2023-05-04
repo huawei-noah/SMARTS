@@ -104,7 +104,6 @@ def env(agent_spec: AgentSpec):
         scenarios=["scenarios/sumo/figure_eight"],
         agent_interfaces={AGENT_ID: agent_spec.interface},
         headless=True,
-        visdom=False,
         fixed_timestep_sec=0.1,
         seed=42,
     )

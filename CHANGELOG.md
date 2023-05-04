@@ -10,12 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
 - Reward function in platoon RL example retrieves actor-of-interest from marked neighborhood vehicles.
 - `dist_to_destination` metric cost function computes the route distance and end point for vehicle of interest contained in social agents, SMARTS traffic provider, SUMO traffic provider, and traffic history provider.
 ### Deprecated
+- `visdom` is set to be removed from the SMARTS object parameters.
 ### Fixed
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 ### Removed
