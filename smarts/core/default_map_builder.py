@@ -33,7 +33,7 @@ def _cache_result(map_spec, road_map, road_map_hash: str):
     from smarts.sstudio.types import MapSpec
 
     class _RoadMapInfo(NamedTuple):
-        map_spec: MapSpec
+        map_spec: MapSpec  # pytype: disable=invalid-annotation
         obj: RoadMap
         map_hash: str
 
