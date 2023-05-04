@@ -115,7 +115,7 @@ jobs:
       - name: Install packages
         run: |
           apt-get update
-          apt-get install python3-dev
+          apt-get install -y python3-dev
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
