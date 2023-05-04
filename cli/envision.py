@@ -19,8 +19,6 @@
 # THE SOFTWARE.
 import click
 
-from envision.server import run
-
 
 @click.group(
     name="envision",
@@ -43,6 +41,8 @@ def envision_cli():
     type=float,
 )
 def start_server(port, max_capacity):
+    from envision.server import run
+
     run(max_capacity_mb=max_capacity, port=port)
 
 

@@ -1001,7 +1001,7 @@ class Argoverse(_TrajectoryDataset):
             # pytype: enable=import-error
         except ImportError:
             print(
-                "You may not have installed the [argoverse] dependencies required to use the Argoverse 2 replay simulation. Install them first using the command `pip install -e .[argoverse]` at the source directory."
+                "Missing dependencies for Argoverse. Install them using the command `pip install -e .[argoverse]` at the source directory."
             )
 
         ALLOWED_TYPES = frozenset(

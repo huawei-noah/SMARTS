@@ -31,7 +31,6 @@ from pathlib import Path
 from typing import Any, Optional, Union
 
 import numpy as np
-import websocket
 
 from envision import types
 from envision.client_config import EnvisionStateFilter
@@ -267,6 +266,13 @@ class Client:
             ws.close()
 
         def run_socket(endpoint, wait_between_retries):
+            try:
+                import websocket
+            except:
+                raise ImportError(
+                    "Missing dependencies for Envision. Install them using the command `pip install -e .[envision]` at the source directory."
+                )
+
             nonlocal connection_established
             tries = 1
             while True:

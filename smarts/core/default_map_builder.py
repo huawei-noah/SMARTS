@@ -33,7 +33,7 @@ def _cache_result(map_spec, road_map, road_map_hash: str):
     from smarts.sstudio.types import MapSpec
 
     class _RoadMapInfo(NamedTuple):
-        map_spec: MapSpec
+        map_spec: MapSpec  # pytype: disable=invalid-annotation
         obj: RoadMap
         map_hash: str
 
@@ -142,7 +142,7 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
         except (ImportError, ModuleNotFoundError):
             print(sys.exc_info())
             print(
-                "You may not have installed the [argoverse] dependencies required to build and use Argoverse scenarios. Install them first using the command `pip install -e .[argoverse]` at the source directory."
+                "Missing dependencies for Argoverse. Install them using the command `pip install -e .[argoverse]` at the source directory."
             )
             return None, None
         map_class = ArgoverseMap

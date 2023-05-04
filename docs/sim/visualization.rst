@@ -18,6 +18,8 @@ An example is shown below to run SMARTS with Envision.
 .. code-block:: bash
     
     $ cd <path>/SMARTS
+    # Install the dependencies for Envision
+    $ pip install smarts[envision]
     # Build scenarios/sumo/loop
     $ scl scenario build --clean scenarios/sumo/loop
     # Run the chase_via_points.py example with the loop scenario
