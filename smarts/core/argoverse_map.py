@@ -49,7 +49,7 @@ try:
     from av2.map.map_api import ArgoverseStaticMap
 except:
     raise ImportError(
-        "You may not have installed the [argoverse] dependencies required for using Argoverse 2 maps with SMARTS. Install it first using the command `pip install -e .[argoverse]` at the source directory."
+        "Missing dependencies for Argoverse. Install them using the command `pip install -e .[argoverse]` at the source directory."
     )
 
 

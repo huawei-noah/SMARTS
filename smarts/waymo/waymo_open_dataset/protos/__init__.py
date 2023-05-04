@@ -17,5 +17,5 @@ try:
     import google.protobuf
 except:
     raise ImportError(
-        "You may not have installed the [waymo] dependencies required for using Argoverse 2 maps with SMARTS. Install it first using the command `pip install -e .[waymo]` at the source directory."
+        "Missing dependencies for Waymo. Install them using the command `pip install -e .[waymo]` at the source directory."
     )

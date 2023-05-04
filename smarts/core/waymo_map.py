@@ -63,7 +63,7 @@ try:
     import rtree
 except:
     raise ImportError(
-        "You may not have installed the [argoverse] dependencies required for using Argoverse 2 maps with SMARTS. Install it first using the command `pip install -e .[argoverse]` at the source directory."
+        "Missing dependencies for Waymo. Install them using the command `pip install -e .[waymo]` at the source directory."
     )
 
 
