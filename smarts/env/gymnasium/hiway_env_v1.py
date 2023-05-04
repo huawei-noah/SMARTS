@@ -21,6 +21,7 @@
 # THE SOFTWARE.
 import logging
 import os
+import warnings
 from enum import IntEnum
 from functools import partial
 from pathlib import Path
@@ -51,7 +52,6 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.visdom_client import VisdomClient
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.env.utils.observation_conversion import (
     ObservationOptions,
@@ -103,8 +103,7 @@ class HiWayEnvV1(gym.Env):
             scenarios provided over successive resets.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
-        visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
+        visdom (bool): Deprecated. Use SMARTS_VISDOM_ENABLED.
         fixed_timestep_sec (float, optional): Step duration for
             all components of the simulation. May be None if time deltas
             are externally-driven. Defaults to None.
@@ -184,8 +183,6 @@ class HiWayEnvV1(gym.Env):
 
         self._env_renderer = None
 
-        visdom_client = VisdomClient() if visdom else None
-
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
             if isinstance(sumo_options, tuple):
@@ -221,7 +218,7 @@ class HiWayEnvV1(gym.Env):
             agent_interfaces=agent_interfaces,
             traffic_sims=traffic_sims,
             envision=visualization_client,
-            visdom=visdom_client,
+            visdom=visdom,
             fixed_timestep_sec=fixed_timestep_sec,
             zoo_addrs=zoo_addrs,
         )

@@ -66,7 +66,6 @@ def run_scenario(
         agent_specs={AGENT_ID: agent_spec},
         sim_name=sim_name,
         headless=headless,
-        visdom=False,
         fixed_timestep_sec=0.1,
         sumo_headless=True,
         seed=seed,

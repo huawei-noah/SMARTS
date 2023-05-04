@@ -62,7 +62,6 @@ def make(env_name: Optional[str], config: Dict[str, Any], seed: int) -> gym.Env:
         scenarios=scenarios,
         agent_specs=agent_specs,
         headless=config["headless"],
-        visdom=config["visdom"],
         seed=seed,
         sim_name=env_name,
     )

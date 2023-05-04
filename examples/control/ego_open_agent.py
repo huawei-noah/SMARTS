@@ -33,7 +33,6 @@ def main(scenarios, headless, num_episodes):
         scenarios=scenarios,
         agent_interfaces={AGENT_ID: open_agent_spec.interface},
         headless=headless,
-        visdom=False,
         sumo_headless=True,
     )
 
