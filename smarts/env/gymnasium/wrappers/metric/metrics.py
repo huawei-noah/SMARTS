@@ -389,7 +389,7 @@ def _get_traffic_end_and_dist(
         Tuple[Point, float]: End point and route distance.
     """
 
-    if isinstance(traffic_sim, SumoTrafficSimulation):
+    if isinstance(traffic_sim, (SumoTrafficSimulation, LocalTrafficProvider)):
         start_pos = Point(*vehicle_index.vehicle_position(vehicle_name))
         dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
         end_pos = (
@@ -398,17 +398,7 @@ def _get_traffic_end_and_dist(
             .from_lane_coord(RefLinePoint(s=np.inf))
         )
         dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-        return end_pos, dist_tot
-    elif isinstance(traffic_sim, LocalTrafficProvider):
-        dest_road = traffic_sim.vehicle_dest_road(vehicle_name)
-        end_pos = (
-            road_map.road_by_id(dest_road)
-            .lane_at_index(0)
-            .from_lane_coord(RefLinePoint(s=np.inf))
-        )
-        route = traffic_sim.route_for_vehicle(vehicle_name)
-        dist_tot = route.road_length
-        return end_pos, dist_tot
+        return end_pos, dist_tot    
     elif isinstance(traffic_sim, TrafficHistoryProvider):
         history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         start_pos = Point(x=history.start_position_x, y=history.start_position_y)

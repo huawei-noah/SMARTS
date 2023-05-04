@@ -324,7 +324,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 return ProviderState()
         elif self._allow_reload:
             try:
-                self._traci_conn.load(self._base_sumo_load_params()) # pytype: disable=attribute-error
+                self._traci_conn.load(self._base_sumo_load_params())
             except traci.exceptions.FatalTraCIError as err:
                 self._handle_traci_exception(err, actors_relinquishable=False)
                 return ProviderState()
