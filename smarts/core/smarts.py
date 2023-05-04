@@ -766,14 +766,15 @@ class SMARTS(ProviderManager):
         if isinstance(state, VehicleState):
             state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
         new_provider = None
-        for new_provider in self.providers:
-            if new_provider is previous_provider:
+        for provider in self.providers:
+            if provider is previous_provider:
                 continue
-            if new_provider.can_accept_actor(state):
+            if provider.can_accept_actor(state):
                 # Here we just use the first provider we find that accepts it.
                 # If we want to give preference to, say, Sumo over SMARTS traffic,
                 # then we should ensure that Sumo comes first in the traffic_sims
                 # list we pass to SMARTS __init__().
+                new_provider = provider
                 break
         else:
             self._log.warning(
