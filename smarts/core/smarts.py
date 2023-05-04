@@ -783,7 +783,8 @@ class SMARTS(ProviderManager):
             )
             self.provider_removing_actor(previous_provider, state.actor_id)
 
-        new_provider.add_actor(state, previous_provider)
+        if new_provider is not None:
+            new_provider.add_actor(state, previous_provider)
         self._stop_managing_with_providers(state.actor_id, exclusion=previous_provider)
         return new_provider
 
