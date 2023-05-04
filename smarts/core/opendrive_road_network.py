@@ -1591,10 +1591,10 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         return OpenDriveRoadNetwork.Route(self)
 
     def route_from_road_ids(
-        self, road_ids: Sequence[str], resolve_junction_roads: bool = False
+        self, road_ids: Sequence[str], resolve_intermediaries: bool = False
     ) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route.from_road_ids(
-            self, road_ids, resolve_junction_roads
+            self, road_ids, resolve_intermediaries
         )
 
     class _WaypointsCache:

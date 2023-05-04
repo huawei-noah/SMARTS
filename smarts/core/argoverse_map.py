@@ -888,9 +888,9 @@ class ArgoverseMap(RoadMapWithCaches):
         return ArgoverseMap.Route(self)
 
     def route_from_road_ids(
-        self, road_ids: Sequence[str], resolve_junction_roads: bool = False
+        self, road_ids: Sequence[str], resolve_intermediaries: bool = False
     ) -> RoadMap.Route:
-        return ArgoverseMap.Route.from_road_ids(self, road_ids, resolve_junction_roads)
+        return ArgoverseMap.Route.from_road_ids(self, road_ids, resolve_intermediaries)
 
     class _WaypointsCache:
         def __init__(self):

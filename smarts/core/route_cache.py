@@ -72,11 +72,11 @@ class RouteWithCache(RoadMap.Route):
         cls,
         road_map: RoadMap,
         road_ids: Sequence[str],
-        resolve_junction_roads: bool = False,
+        resolve_intermediaries: bool = False,
     ) -> "RouteWithCache":
         """Factory to generate a new RouteWithCache from a sequence of road ids."""
 
-        if len(road_ids) > 0 and resolve_junction_roads:
+        if len(road_ids) > 0 and resolve_intermediaries:
             routes = road_map.generate_routes(
                 start=road_map.road_by_id(road_ids[0]),
                 end=road_map.road_by_id(road_ids[-1]),

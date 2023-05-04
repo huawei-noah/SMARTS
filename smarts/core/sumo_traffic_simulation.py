@@ -955,7 +955,7 @@ class SumoTrafficSimulation(TrafficProvider):
             return None
         route_ids = self._route_for_vehicle(vehicle_id)
         return (
-            sim.road_map.route_from_road_ids(route_ids, resolve_junction_roads=True)
+            sim.road_map.route_from_road_ids(route_ids, resolve_intermediaries=True)
             if route_ids
             else None
         )
