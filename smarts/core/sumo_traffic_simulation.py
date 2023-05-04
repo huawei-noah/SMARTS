@@ -325,13 +325,14 @@ class SumoTrafficSimulation(TrafficProvider):
             except traci.exceptions.FatalTraCIError:
                 return ProviderState()
         elif self._allow_reload:
+            assert self._traci_conn is not None, "TraCI should be connected at this point."
             try:
                 self._traci_conn.load(self._base_sumo_load_params())
             except traci.exceptions.FatalTraCIError as err:
                 self._handle_traci_exception(err, actors_relinquishable=False)
                 return ProviderState()
 
-        assert self._traci_conn is not None, "No active traci connection"
+        assert self._traci_conn is not None, "No active TraCI connection"
 
         self._traci_conn.simulation.subscribe(
             [tc.VAR_DEPARTED_VEHICLES_IDS, tc.VAR_ARRIVED_VEHICLES_IDS]
