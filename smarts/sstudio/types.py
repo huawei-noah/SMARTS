@@ -737,29 +737,33 @@ class DelayCondition(Condition):
 
     This can be used to wait for some time after the inner condition has become true to be true.
     Note that the original condition may no longer be true by the time delay has expired.
+
+    This will never resolve TRUE on the first evaluate.
     """
 
     inner_condition: Condition
     """The inner condition to delay."""
 
-    delay_seconds: float
+    seconds: float
     """The number of seconds to delay for."""
 
-    inner_affects_final_result: bool = False
+    persistant: bool = False
     """If the inner condition must still be true at the end of the delay to be true."""
 
     def evaluate(self, *args, simulation_time, **kwargs) -> ConditionState:
         key = "met_time"
         if (met_time := getattr(self, key, None)) is not None:
-            if simulation_time > met_time + self.delay_seconds:
+            if simulation_time >= met_time + self.seconds:
                 result = ConditionState.TRUE
-                if self.inner_affects_final_result:
+                if self.persistant:
                     result &= self.inner_condition.evaluate(
-                        *args, simulation_time, **kwargs
+                        *args, simulation_time=simulation_time, **kwargs
                     )
                 return result
-        elif self.inner_condition.evaluate(*args, simulation_time, **kwargs):
-            setattr(self, key, simulation_time)
+        elif self.inner_condition.evaluate(
+            *args, simulation_time=simulation_time, **kwargs
+        ):
+            object.__setattr__(self, key, simulation_time)
         return ConditionState.FALSE
 
 
