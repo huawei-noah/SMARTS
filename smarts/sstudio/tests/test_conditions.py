@@ -19,7 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 
@@ -35,6 +35,7 @@ from smarts.sstudio.types import (
     OnRoadCondition,
     SubjectCondition,
     TimeWindowCondition,
+    VehicleSpeedCondition,
     VehicleTypeCondition,
 )
 
@@ -249,6 +250,26 @@ def test_subject_condition():
 
     with pytest.raises(TypeError):
         subject_condition.delay(10)
+
+
+def test_vehicle_speed_condition():
+    low = 30
+    between = 50
+    high = 100
+    vehicle_speed_condition = VehicleSpeedCondition(low, high)
+
+    slow_vehicle_state = Mock()
+    slow_vehicle_state.speed = low - 10
+
+    between_vehicle_state = Mock()
+    between_vehicle_state.speed = between
+
+    fast_vehicle_state = Mock()
+    fast_vehicle_state.speed = high + 50
+
+    assert not vehicle_speed_condition.evaluate(vehicle_state=slow_vehicle_state)
+    assert vehicle_speed_condition.evaluate(vehicle_state=between_vehicle_state)
+    assert not vehicle_speed_condition.evaluate(vehicle_state=fast_vehicle_state)
 
 
 def test_vehicle_type_condition():

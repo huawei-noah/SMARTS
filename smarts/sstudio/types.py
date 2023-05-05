@@ -35,6 +35,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Type,
     Union,
 )
 
@@ -793,7 +794,7 @@ class OnRoadCondition(SubjectCondition):
 
 @dataclass(frozen=True)
 class VehicleTypeCondition(SubjectCondition):
-    """This condition is true if the subject is of the given types."""
+    """This condition is true if the subject is of the given vehicle types."""
 
     vehicle_type: str
 
@@ -803,6 +804,28 @@ class VehicleTypeCondition(SubjectCondition):
             if vehicle_state.vehicle_config_type == self.vehicle_type
             else ConditionState.FALSE
         )
+
+
+@dataclass(frozen=True)
+class VehicleSpeedCondition(SubjectCondition):
+    """This condition is true if the subject has a speed between low and high."""
+
+    low: float
+    """The lowest speed allowed."""
+
+    high: float
+    """The highest speed allowed."""
+
+    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
+        return (
+            ConditionState.TRUE
+            if self.low <= vehicle_state.speed <= self.high
+            else ConditionState.FALSE
+        )
+
+    @classmethod
+    def loitering(cls: Type["VehicleSpeedCondition"], abs_error=0.01):
+        return cls(low=abs_error, high=abs_error)
 
 
 @dataclass(frozen=True)
