@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import warnings
 from typing import NamedTuple, Sequence
 
 
@@ -48,4 +49,5 @@ class Events(NamedTuple):
     @property
     def actors_alive_done(self):
         """Deprecated. Use interest_done."""
-        raise NameError("Deprecated. Use interest_done.")
+        warnings.warn("Use interest_done.", category=DeprecationWarning)
+        return self.interest_done

@@ -254,7 +254,8 @@ class DoneCriteria:
     @property
     def actors_alive(self):
         """Deprecated. Use interest."""
-        raise NameError("Deprecated. Use interest.")
+        warnings.warn("Use interest.", category=DeprecationWarning)
+        return self.interest
 
 
 @dataclass
