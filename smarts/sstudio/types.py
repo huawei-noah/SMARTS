@@ -679,6 +679,7 @@ class SubjectCondition(Condition):
         """
         raise NotImplementedError()
 
+_abstract_conditions = (Condition, SubjectCondition)
 
 @dataclass(frozen=True)
 class LiteralCondition(Condition):
@@ -735,8 +736,7 @@ class NegatedCondition(Condition):
         return ~self.inner_condition.evaluate(*args, **kwargs)
 
     def __post_init__(self):
-        abstract_conditions = (Condition, SubjectCondition)
-        if self.inner_condition.__class__ in abstract_conditions:
+        if self.inner_condition.__class__ in _abstract_conditions:
             raise TypeError(
                 f"Abstract `{self.inner_condition.__name__}` cannot use the negation operation."
             )
@@ -778,8 +778,7 @@ class DelayCondition(Condition):
         return ConditionState.FALSE
 
     def __post_init__(self):
-        abstract_conditions = (Condition, SubjectCondition)
-        if self.inner_condition.__class__ in abstract_conditions:
+        if self.inner_condition.__class__ in _abstract_conditions:
             raise TypeError(
                 f"Abstract `{self.inner_condition.__name__}` cannot use delay operations."
             )
@@ -837,10 +836,9 @@ class CompoundCondition(Condition):
         return ConditionState.FALSE
 
     def __post_init__(self):
-        abstract_conditions = (Condition, SubjectCondition)
         if (
-            self.first_condition.__class__ in abstract_conditions
-            or self.second_condition.__class__ in abstract_conditions
+            self.first_condition.__class__ in _abstract_conditions
+            or self.second_condition.__class__ in _abstract_conditions
         ):
             raise TypeError(
                 f"Abstract `{self.inner_condition.__name__}` cannot use compound operations."
