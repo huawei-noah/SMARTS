@@ -830,7 +830,24 @@ class VehicleSpeedCondition(SubjectCondition):
 
 @dataclass(frozen=True)
 class CompoundCondition(Condition):
-    """This condition should be true if the given actor exists."""
+    """This compounds multiple conditions.
+
+    The following cases are notable
+        CONJUNCTION
+            If both conditions evaluate TRUE the result is exclusively TRUE.
+            Else if either condition evaluates EXPIRED the result will be EXPIRED.
+            Else if either condition evaluates BEFORE the result will be BEFORE.
+            Else FALSE
+        DISJUNCTION
+            If either condition evaluates TRUE the result is exclusively TRUE.
+            Else if either condition evaluates BEFORE then the result will be BEFORE.
+            Else if either condition evaluates EXPIRED then the result will be EXPIRED.
+            Else FALSE
+        IMPLICATION
+            If the first condition evaluates *not* TRUE the result is exclusively TRUE.
+            Else if the first condition evaluates TRUE and the second condition evaluates TRUE the result is exclusively TRUE.
+            Else FALSE
+    """
 
     first_condition: Condition
     """The first condition."""
@@ -842,23 +859,39 @@ class CompoundCondition(Condition):
     """The operator used to combine these conditions."""
 
     def evaluate(self, *args, **kwargs):
-        eval_0 = self.first_condition.evaluate(*args, **kwargs)
-        if self.operator == ConditionOperator.IMPLICATION and not eval_0:
+        first_eval = self.first_condition.evaluate(*args, **kwargs)
+        if self.operator == ConditionOperator.IMPLICATION and not first_eval:
             return ConditionState.TRUE
 
-        eval_1 = self.second_condition.evaluate(*args, **kwargs)
-        if self.operator == ConditionOperator.IMPLICATION and eval_0 and eval_1:
+        second_eval = self.second_condition.evaluate(*args, **kwargs)
+        if (
+            self.operator == ConditionOperator.IMPLICATION
+            and first_eval
+            and second_eval
+        ):
             return ConditionState.TRUE
 
         if self.operator == ConditionOperator.CONJUNCTION:
-            result = eval_0 & eval_1
+            result = first_eval & second_eval
             if result:
                 return ConditionState.TRUE
-            return result
+
+            temporals = (first_eval | second_eval) & (
+                ConditionState.BEFORE | ConditionState.EXPIRED
+            )
+            if ConditionState.EXPIRED in temporals:
+                return ConditionState.EXPIRED
+
+            return temporals
         elif self.operator == ConditionOperator.DISJUNCTION:
-            result = eval_0 | eval_1
+            result = first_eval | second_eval
+
             if result:
                 return ConditionState.TRUE
+
+            if ConditionState.BEFORE in result:
+                return ConditionState.BEFORE
+
             return result
 
         return ConditionState.FALSE
