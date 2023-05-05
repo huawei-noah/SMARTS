@@ -646,46 +646,22 @@ class Condition:
 
     def negate(self) -> "NegatedCondition":
         """Negates this condition."""
-        abstract_conditions = (Condition, SubjectCondition)
-        if self.__class__ in abstract_conditions:
-            raise TypeError("Base condition cannot be negated.")
         return NegatedCondition(self)
 
     def conjoin(self, other: "Condition") -> "CompoundCondition":
         """AND's this condition with the other condition."""
-        abstract_conditions = (Condition, SubjectCondition)
-        if (
-            self.__class__ in abstract_conditions
-            or other.__class__ in abstract_conditions
-        ):
-            raise TypeError("Base condition cannot be conjoined.")
         return CompoundCondition(self, other, operator=ConditionOperator.CONJUNCTION)
 
     def disjoin(self, other: "Condition") -> "CompoundCondition":
         """OR's this condition with the other condition."""
-        abstract_conditions = (Condition, SubjectCondition)
-        if (
-            self.__class__ in abstract_conditions
-            or other.__class__ in abstract_conditions
-        ):
-            raise TypeError("Base condition cannot be disjoined.")
         return CompoundCondition(self, other, operator=ConditionOperator.DISJUNCTION)
 
     def implicate(self, other: "Condition") -> "CompoundCondition":
         """Current condition must be false or both conditions true to be true."""
-        abstract_conditions = (Condition, SubjectCondition)
-        if (
-            self.__class__ in abstract_conditions
-            or other.__class__ in abstract_conditions
-        ):
-            raise TypeError("Base condition cannot be implicated.")
         return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
 
     def delay(self, seconds, persistant=False) -> "DelayCondition":
         """Delays the current condition until the given number of simulation seconds have occured."""
-        abstract_conditions = (Condition, SubjectCondition)
-        if self.__class__ in abstract_conditions:
-            raise TypeError("Base condition cannot be delayed.")
         return DelayCondition(self, seconds=seconds, persistant=persistant)
 
 
@@ -758,6 +734,13 @@ class NegatedCondition(Condition):
     def evaluate(self, *args, **kwargs) -> ConditionState:
         return ~self.inner_condition.evaluate(*args, **kwargs)
 
+    def __post_init__(self):
+        abstract_conditions = (Condition, SubjectCondition)
+        if self.inner_condition.__class__ in abstract_conditions:
+            raise TypeError(
+                f"Abstract `{self.inner_condition.__name__}` cannot use the negation operation."
+            )
+
 
 @dataclass(frozen=True)
 class DelayCondition(Condition):
@@ -793,6 +776,13 @@ class DelayCondition(Condition):
         ):
             object.__setattr__(self, key, simulation_time)
         return ConditionState.FALSE
+
+    def __post_init__(self):
+        abstract_conditions = (Condition, SubjectCondition)
+        if self.inner_condition.__class__ in abstract_conditions:
+            raise TypeError(
+                f"Abstract `{self.inner_condition.__name__}` cannot use delay operations."
+            )
 
 
 @dataclass(frozen=True)
@@ -842,9 +832,19 @@ class CompoundCondition(Condition):
         if self.operator == ConditionOperator.CONJUNCTION:
             return eval_0 & eval_1
         elif self.operator == ConditionOperator.DISJUNCTION:
-            return eval_0 | eval_1
+            return (eval_0 | eval_1) & ConditionState.TRUE
 
         return ConditionState.FALSE
+
+    def __post_init__(self):
+        abstract_conditions = (Condition, SubjectCondition)
+        if (
+            self.first_condition.__class__ in abstract_conditions
+            or self.second_condition.__class__ in abstract_conditions
+        ):
+            raise TypeError(
+                f"Abstract `{self.inner_condition.__name__}` cannot use compound operations."
+            )
 
 
 @dataclass(frozen=True)
