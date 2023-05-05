@@ -833,17 +833,17 @@ class CompoundCondition(Condition):
     """This compounds multiple conditions.
 
     The following cases are notable
-        CONJUNCTION
+        CONJUNCTION (A AND B)
             If both conditions evaluate TRUE the result is exclusively TRUE.
             Else if either condition evaluates EXPIRED the result will be EXPIRED.
             Else if either condition evaluates BEFORE the result will be BEFORE.
             Else FALSE
-        DISJUNCTION
+        DISJUNCTION (A OR B)
             If either condition evaluates TRUE the result is exclusively TRUE.
             Else if either condition evaluates BEFORE then the result will be BEFORE.
             Else if either condition evaluates EXPIRED then the result will be EXPIRED.
             Else FALSE
-        IMPLICATION
+        IMPLICATION (A AND B or not A)
             If the first condition evaluates *not* TRUE the result is exclusively TRUE.
             Else if the first condition evaluates TRUE and the second condition evaluates TRUE the result is exclusively TRUE.
             Else FALSE
