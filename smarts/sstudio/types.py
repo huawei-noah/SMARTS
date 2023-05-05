@@ -670,7 +670,7 @@ class Condition:
 class SubjectCondition(Condition):
     """This condition assumes that there is a subject involved."""
 
-    def evaluate(self, *args, actor_info, **kwargs) -> ConditionState:
+    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
         """Used to evaluate if a condition is met.
 
         Args:
@@ -788,8 +788,8 @@ class DelayCondition(Condition):
 class OnRoadCondition(SubjectCondition):
     """This condition is true if the subject is on road."""
 
-    def evaluate(self, *args, actor_info, **kwargs) -> ConditionState:
-        return ConditionState.TRUE if actor_info.on_road else ConditionState.FALSE
+    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
+        return ConditionState.TRUE if vehicle_state.on_road else ConditionState.FALSE
 
 
 @dataclass(frozen=True)
