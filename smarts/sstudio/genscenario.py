@@ -256,6 +256,7 @@ def gen_scenario(
                         grid_offset=mission.offset,
                         used_lanes=mission.lanes,
                         vehicle_count=mission.actor_count,
+                        entry_tactic=mission.entry_tactic,
                         num_laps=mission.num_laps,
                         map_spec=map_spec,
                     )
@@ -475,6 +476,7 @@ def gen_group_laps(
     grid_offset: int,
     used_lanes: int,
     vehicle_count: int,
+    entry_tactic: Optional[types.EntryTactic],
     num_laps: int = 3,
     map_spec: Optional[types.MapSpec] = None,
 ):
@@ -516,6 +518,7 @@ def gen_group_laps(
                     end=(end_road_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
+                entry_tactic=entry_tactic,
                 # route_length=route_length,
             )
         )

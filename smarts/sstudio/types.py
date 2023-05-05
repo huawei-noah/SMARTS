@@ -951,6 +951,8 @@ class GroupedLapMission:
     """The amount of times to repeat the mission"""
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
+    entry_tactic: Optional[EntryTactic] = None
+    """A specific tactic the mission should employ to start the mission"""
 
 
 @dataclass(frozen=True)
