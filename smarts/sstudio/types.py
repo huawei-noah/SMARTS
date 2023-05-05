@@ -701,7 +701,7 @@ class TimeWindowCondition(Condition):
     end: float
     """The ending simulation time as of which this condition becomes expired."""
 
-    def evaluate(self, *args, simulation_time, mission_start_time, **kwargs):
+    def evaluate(self, *args, simulation_time, **kwargs):
         if self.start <= simulation_time < self.end:
             return ConditionState.TRUE
         elif simulation_time > self.end:
