@@ -650,15 +650,15 @@ class Condition:
         return NegatedCondition(self)
 
     def conjoin(self, other: "Condition") -> "CompoundCondition":
-        """AND's this condition with the other condition."""
+        """Resolve conditions as A AND B."""
         return CompoundCondition(self, other, operator=ConditionOperator.CONJUNCTION)
 
     def disjoin(self, other: "Condition") -> "CompoundCondition":
-        """OR's this condition with the other condition."""
+        """Resolve conditions as A OR B."""
         return CompoundCondition(self, other, operator=ConditionOperator.DISJUNCTION)
 
     def implicate(self, other: "Condition") -> "CompoundCondition":
-        """Current condition must be false or both conditions true to be true."""
+        """Resolve conditions as A AND B OR NOT A."""
         return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
 
     def delay(self, seconds, persistant=False) -> "DelayCondition":
