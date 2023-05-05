@@ -226,6 +226,7 @@ def test_time_window_condition():
     assert window_condition.evaluate(simulation_time=start)
     assert window_condition.evaluate(simulation_time=between)
     assert not window_condition.evaluate(simulation_time=end)
+    assert not window_condition.evaluate(simulation_time=end + 1)
 
 
 def test_subject_condition():
