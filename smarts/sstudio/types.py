@@ -826,9 +826,15 @@ class CompoundCondition(Condition):
             return ConditionState.TRUE
 
         if self.operator == ConditionOperator.CONJUNCTION:
-            return eval_0 & eval_1
+            result = eval_0 & eval_1
+            if result:
+                return ConditionState.TRUE
+            return result
         elif self.operator == ConditionOperator.DISJUNCTION:
-            return (eval_0 | eval_1) & ConditionState.TRUE
+            result = eval_0 | eval_1
+            if result:
+                return ConditionState.TRUE
+            return result
 
         return ConditionState.FALSE
 
