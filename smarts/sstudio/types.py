@@ -691,9 +691,6 @@ class LiteralCondition(Condition):
     def evaluate(self, *args, **kwargs) -> ConditionState:
         return self.literal
 
-    def negate(self) -> "LiteralCondition":
-        return LiteralCondition(~self.literal)
-
 
 @dataclass(frozen=True)
 class TimeWindowCondition(Condition):
