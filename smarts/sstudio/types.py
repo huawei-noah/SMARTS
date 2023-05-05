@@ -23,9 +23,9 @@ import logging
 import math
 import random
 import sys
+import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum, IntFlag
-from sys import maxsize
 from typing import (
     Any,
     Callable,
@@ -59,6 +59,8 @@ from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import pickle_hash_int
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.math import rotate_cw_around_point
+
+MISSING = sys.maxsize
 
 
 class _SUMO_PARAMS_MODE(IntEnum):
