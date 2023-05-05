@@ -642,13 +642,11 @@ class Scenario:
         positional_mission = Mission(
             start=start,
             entry_tactic=entry_tactic,
-            start_time=0,
             goal=PositionalGoal(veh_goal, radius=positional_radius),
         )
         traverse_mission = Mission(
             start=start,
             entry_tactic=entry_tactic,
-            start_time=0,
             goal=TraverseGoal(self._road_map),
         )
         return positional_mission, traverse_mission
@@ -795,12 +793,13 @@ class Scenario:
             )
             goal = PositionalGoal(position, radius=2)
 
+            entry_tactic = mission.entry_tactic
             return Mission(
                 start=start,
                 route_vias=mission.route.via,
                 goal=goal,
-                start_time=mission.start_time,
-                entry_tactic=mission.entry_tactic,
+                start_time=entry_tactic.start_time if entry_tactic else 0,
+                entry_tactic=entry_tactic,
                 via=to_scenario_via(mission.via, road_map),
             )
         elif isinstance(mission, sstudio_types.EndlessMission):
@@ -810,11 +809,12 @@ class Scenario:
             )
             start = Start(position, heading)
 
+            entry_tactic = mission.entry_tactic
             return Mission(
                 start=start,
                 goal=EndlessGoal(),
-                start_time=mission.start_time,
-                entry_tactic=mission.entry_tactic,
+                start_time=entry_tactic.start_time if entry_tactic else 0,
+                entry_tactic=entry_tactic,
                 via=to_scenario_via(mission.via, road_map),
             )
         elif isinstance(mission, sstudio_types.LapMission):
@@ -839,12 +839,13 @@ class Scenario:
                 road_map,
             )
 
+            entry_tactic = mission.entry_tactic
             return LapMission(
                 start=Start(start_position, start_heading),
                 goal=PositionalGoal(end_position, radius=2),
                 route_vias=mission.route.via,
-                start_time=mission.start_time,
-                entry_tactic=mission.entry_tactic,
+                start_time=entry_tactic.start_time if entry_tactic else 0,
+                entry_tactic=entry_tactic,
                 via=to_scenario_via(mission.via, road_map),
                 num_laps=mission.num_laps,
                 route_length=route.road_length,

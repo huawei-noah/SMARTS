@@ -817,7 +817,7 @@ class CompoundCondition(Condition):
 class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
-    pass
+    start_time: float
     # condition: Condition
     # """The condition to determine if this entry tactic should be used."""
 
@@ -863,11 +863,6 @@ class Mission:
     via: Tuple[Via, ...] = ()
     """Points on an road that an actor must pass through"""
 
-    start_time: float = 0.1
-    """The earliest simulation time that this mission starts but may start later in couple with
-    `entry_tactic`.
-    """
-
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission."""
 
@@ -888,8 +883,6 @@ class EndlessMission:
     """
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
-    start_time: float = 0.1
-    """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
@@ -906,8 +899,6 @@ class LapMission:
     """The amount of times to repeat the mission"""
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
-    start_time: float = 0.1
-    """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 

@@ -68,6 +68,7 @@ class IdActorCaptureManager(ActorCaptureManager):
                 mission_start_time=mission.start_time,
             )
             if condition_result == ConditionState.EXPIRED:
+                print(condition_result)
                 self._log.warning(
                     f"Actor aquisition skipped for `{agent_id}` scheduled to start between "
                     + f"`Condition `{entry_tactic.condition}` has expired with no vehicle."
@@ -77,6 +78,7 @@ class IdActorCaptureManager(ActorCaptureManager):
                 continue
             if not condition_result:
                 continue
+            print(condition_result)
             vehicle: Optional[Vehicle] = self._take_existing_vehicle(
                 sim,
                 actor_id,

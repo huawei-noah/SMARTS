@@ -166,6 +166,7 @@ class TraverseGoal(Goal):
 def default_entry_tactic(default_entry_speed: Optional[float] = None) -> EntryTactic:
     """The default tactic the simulation will use to acquire an actor for an agent."""
     return TrapEntryTactic(
+        start_time=0,
         wait_to_hijack_limit_s=0,
         exclusion_prefixes=tuple(),
         zone=None,

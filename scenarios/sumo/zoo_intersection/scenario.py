@@ -96,7 +96,12 @@ gen_scenario(
             f"s-agent-{social_agent1.name}": (
                 [social_agent1],
                 [
-                    EndlessMission(begin=("edge-south-SN", 0, 10), start_time=0.7),
+                    EndlessMission(
+                        begin=("edge-south-SN", 0, 10),
+                        entry_tactic=TrapEntryTactic(
+                            start_time=0.7, wait_to_hijack_limit_s=0.1
+                        ),
+                    ),
                 ],
             ),
         },

@@ -56,7 +56,9 @@ gen_scenario(
                     t.Mission(
                         route=t.RandomRoute(),
                         entry_tactic=t.IdEntryTactic(
-                            "other_interest", t.TimeWindowCondition(0.1, 20.0)
+                            start_time=0.1,
+                            actor_id="other_interest",
+                            condition=t.TimeWindowCondition(0.1, 20.0),
                         ),
                     )
                 ],
