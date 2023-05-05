@@ -13,6 +13,7 @@ from smarts.sstudio.types import (
     SocialAgentActor,
     Traffic,
     TrafficActor,
+    TrapEntryTactic,
 )
 
 # Traffic Vehicles
