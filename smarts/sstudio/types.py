@@ -738,7 +738,7 @@ class NegatedCondition(Condition):
     def __post_init__(self):
         if self.inner_condition.__class__ in _abstract_conditions:
             raise TypeError(
-                f"Abstract `{self.inner_condition.__name__}` cannot use the negation operation."
+                f"Abstract `{self.inner_condition.__class__.__name__}` cannot use the negation operation."
             )
 
 
@@ -780,7 +780,7 @@ class DelayCondition(Condition):
     def __post_init__(self):
         if self.inner_condition.__class__ in _abstract_conditions:
             raise TypeError(
-                f"Abstract `{self.inner_condition.__name__}` cannot use delay operations."
+                f"Abstract `{self.inner_condition.__class__.__name__}` cannot use delay operations."
             )
 
 
@@ -836,13 +836,11 @@ class CompoundCondition(Condition):
         return ConditionState.FALSE
 
     def __post_init__(self):
-        if (
-            self.first_condition.__class__ in _abstract_conditions
-            or self.second_condition.__class__ in _abstract_conditions
-        ):
-            raise TypeError(
-                f"Abstract `{self.inner_condition.__name__}` cannot use compound operations."
-            )
+        for condition in (self.first_condition, self.second_condition):
+            if condition.__class__ in _abstract_conditions:
+                raise TypeError(
+                    f"Abstract `{condition.__class__.__name__}` cannot use compound operations."
+                )
 
 
 @dataclass(frozen=True)
