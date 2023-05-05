@@ -863,8 +863,20 @@ class Mission:
     via: Tuple[Via, ...] = ()
     """Points on an road that an actor must pass through"""
 
+    start_time: float = MISSING
+    """The earliest simulation time that this mission starts but may start later in couple with
+    `entry_tactic`.
+    """
+
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission."""
+
+    def __post_init__(self):
+        if self.start_time != sys.maxsize:
+            warnings.warn(
+                "`start_time` is deprecated. Instead use `entry_tactic=EntryTactic(start_time=...)`.",
+                category=DeprecationWarning,
+            )
 
 
 @dataclass(frozen=True)
@@ -883,8 +895,17 @@ class EndlessMission:
     """
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
+    start_time: float = MISSING
+    """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
+
+    def __post_init__(self):
+        if self.start_time != sys.maxsize:
+            warnings.warn(
+                "`start_time` is deprecated. Instead use `entry_tactic=EntryTactic(start_time=...)`.",
+                category=DeprecationWarning,
+            )
 
 
 @dataclass(frozen=True)
@@ -899,8 +920,17 @@ class LapMission:
     """The amount of times to repeat the mission"""
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
+    start_time: float = MISSING
+    """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
+
+    def __post_init__(self):
+        if self.start_time != sys.maxsize:
+            warnings.warn(
+                "`start_time` is deprecated. Instead use `entry_tactic=EntryTactic(start_time=...)`.",
+                category=DeprecationWarning,
+            )
 
 
 @dataclass(frozen=True)
@@ -1139,9 +1169,9 @@ class ConfigurableZone(Zone):
 class BubbleLimits:
     """Defines the capture limits of a bubble."""
 
-    hijack_limit: int = maxsize
+    hijack_limit: int = sys.maxsize
     """The maximum number of vehicles the bubble can hijack"""
-    shadow_limit: int = maxsize
+    shadow_limit: int = sys.maxsize
     """The maximum number of vehicles the bubble can shadow"""
 
     def __post_init__(self):
