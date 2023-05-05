@@ -19,6 +19,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from unittest.mock import MagicMock, Mock
+
 import pytest
 
 from smarts.sstudio.types import (
@@ -250,4 +252,13 @@ def test_subject_condition():
 
 
 def test_vehicle_type_condition():
-    pass
+    vehicle_type_condition = VehicleTypeCondition("passenger")
+
+    passenger_vehicle_state = Mock()
+    passenger_vehicle_state.vehicle_config_type = "passenger"
+
+    truck_vehicle_state = Mock()
+    truck_vehicle_state.vehicle_config_type = "truck"
+
+    assert vehicle_type_condition.evaluate(vehicle_state=passenger_vehicle_state)
+    assert not vehicle_type_condition.evaluate(vehicle_state=truck_vehicle_state)

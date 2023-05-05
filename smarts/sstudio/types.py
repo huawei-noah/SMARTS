@@ -679,7 +679,9 @@ class SubjectCondition(Condition):
         """
         raise NotImplementedError()
 
+
 _abstract_conditions = (Condition, SubjectCondition)
+
 
 @dataclass(frozen=True)
 class LiteralCondition(Condition):
