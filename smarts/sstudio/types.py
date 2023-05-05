@@ -841,7 +841,7 @@ class CompoundCondition(Condition):
         DISJUNCTION (A OR B)
             If either condition evaluates TRUE the result is exclusively TRUE.
             Else if either condition evaluates BEFORE then the result will be BEFORE.
-            Else if either condition evaluates EXPIRED then the result will be EXPIRED.
+            Else if both conditions evaluate EXPIRED then the result will be EXPIRED.
             Else FALSE
         IMPLICATION (A AND B or not A)
             If the first condition evaluates *not* TRUE the result is exclusively TRUE.
@@ -892,7 +892,10 @@ class CompoundCondition(Condition):
             if ConditionState.BEFORE in result:
                 return ConditionState.BEFORE
 
-            return result
+            if ConditionState.EXPIRED in first_eval & second_eval:
+                return ConditionState.EXPIRED
+
+            return ConditionState.FALSE
 
         return ConditionState.FALSE
 

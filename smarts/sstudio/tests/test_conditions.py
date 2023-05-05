@@ -137,8 +137,8 @@ def test_compound_condition():
     assert literal_before.disjoin(literal_false).evaluate() == ConditionState.BEFORE
 
     assert literal_expired.disjoin(literal_expired).evaluate() == ConditionState.EXPIRED
-    assert literal_expired.disjoin(literal_false).evaluate() == ConditionState.EXPIRED
 
+    assert literal_expired.disjoin(literal_false).evaluate() == ConditionState.FALSE
     assert literal_false.disjoin(literal_false).evaluate() == ConditionState.FALSE
 
     assert CompoundCondition(
