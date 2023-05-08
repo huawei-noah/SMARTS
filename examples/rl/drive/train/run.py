@@ -12,7 +12,7 @@ from datetime import datetime
 from itertools import cycle
 from typing import Any, Dict
 
-import gym
+import gymnasium as gym
 
 # Load inference module to register agent
 import inference
