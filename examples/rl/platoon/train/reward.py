@@ -90,7 +90,7 @@ class Reward(gym.Wrapper):
             # if agent_obs["events"]["reached_goal"]:
             #     reward[agent_id] += np.float64(30)
 
-            # Reward for distance travelled by driving
+            # Reward for distance travelled in one step
             reward[agent_id] += np.float64(env_reward[agent_id])
 
             # Check if leader is in front and within the rgb observation
