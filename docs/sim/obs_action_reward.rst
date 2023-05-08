@@ -48,6 +48,10 @@ The complete set of possible :class:`~smarts.core.observations.Observation` retu
 
 .. note::
 
+    The :attr:`~smarts.core.observations.Observation.occupancy_grid_map` is recommended when using scenarios with pedestrians. A higher resolution is preferable to ensure pedestrians are visible.
+
+.. note::
+
     Some observations like :attr:`~smarts.core.observations.Observation.occupancy_grid_map`, :attr:`~smarts.core.observations.Observation.drivable_area_grid_map`,
     and :attr:`~smarts.core.observations.Observation.top_down_rgb`, require the installation of optional packages for image rendering, so install them via 
     ``pip install -e .[camera_obs]``.
