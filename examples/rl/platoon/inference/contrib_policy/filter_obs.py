@@ -1,7 +1,7 @@
 import math
 from typing import Any, Dict, Sequence, Tuple
 
-import gymnasium as gym
+import gym
 import numpy as np
 
 from smarts.core.agent_interface import RGB

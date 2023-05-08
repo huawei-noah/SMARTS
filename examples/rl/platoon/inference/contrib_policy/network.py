@@ -1,4 +1,4 @@
-import gymnasium as gym
+import gym
 import torch as th
 import torch.nn as nn
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim

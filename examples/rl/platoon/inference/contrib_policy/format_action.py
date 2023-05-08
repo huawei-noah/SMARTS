@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 
-import gymnasium as gym
+import gym
 import numpy as np
 
 from smarts.core.controllers import ActionSpaceType

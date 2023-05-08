@@ -1,7 +1,7 @@
 import copy
 from collections import deque
 
-import gymnasium as gym
+import gym
 import numpy as np
 
 
