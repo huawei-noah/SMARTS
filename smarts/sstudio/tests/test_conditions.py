@@ -222,7 +222,9 @@ def test_delay_condition():
 
 def test_dependee_condition():
     dependee_condition = DependeeActorCondition("leader")
-    pass
+
+    assert dependee_condition.evaluate(active_actor_ids={"mr", "leader"})
+    assert not dependee_condition.evaluate(active_actor_ids={"other", "vehicle"})
 
 
 def test_literal_condition():

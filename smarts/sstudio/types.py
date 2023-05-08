@@ -719,10 +719,13 @@ class DependeeActorCondition(Condition):
     actor_id: str
     """The id of an actor in the simulation that needs to exist for this condition to be true."""
 
-    def evaluate(self, *args, actor_ids, **kwargs):
-        if self.actor_id in actor_ids:
+    def evaluate(self, *args, active_actor_ids, **kwargs):
+        if self.actor_id in active_actor_ids:
             return ConditionState.TRUE
         return ConditionState.FALSE
+
+    def __post_init__(self):
+        assert isinstance(self.actor_id, str)
 
 
 @dataclass(frozen=True)
