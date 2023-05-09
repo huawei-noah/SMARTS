@@ -116,7 +116,7 @@ typing_extensions==4.5.0
 tzdata==2023.3
 urllib3==2.0.2
 wcwidth==0.2.6
-Werkzeug==2.3.3
+Werkzeug==2.3.4
 wrapt==1.14.1
 yarl==1.9.2
 yattag==1.15.1
