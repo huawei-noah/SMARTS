@@ -10,6 +10,7 @@ RUN apt-get update --fix-missing && \
     apt-get update && \
     apt-get install -y \
         git \
+        gosu \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
@@ -36,4 +37,9 @@ WORKDIR /SMARTS
 RUN pip install -e .[camera_obs,argoverse]
 RUN pip install -e ./examples/rl/platoon/inference
 
-SHELL ["/bin/bash", "-c", "-l"]
+# SHELL ["/bin/bash", "-c", "-l"]
+
+# Set up entrypoint
+COPY ./docker/server_entrypoint.sh /server_entrypoint.sh
+RUN chmod a+x /server_entrypoint.sh
+ENTRYPOINT ["/server_entrypoint.sh"]
