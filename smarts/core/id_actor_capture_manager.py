@@ -23,9 +23,10 @@ import logging
 from typing import Dict, Optional, Set, Tuple
 
 from smarts.core.actor_capture_manager import ActorCaptureManager
+from smarts.core.condition_state import ConditionState
 from smarts.core.plan import Mission
 from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import ConditionState, IdEntryTactic
+from smarts.sstudio.types import IdEntryTactic
 
 
 class IdActorCaptureManager(ActorCaptureManager):
@@ -66,6 +67,7 @@ class IdActorCaptureManager(ActorCaptureManager):
                 actor_ids=sim.vehicle_index.vehicle_ids,
                 vehicle_state=vehicle.state if vehicle else None,
                 mission_start_time=mission.start_time,
+                mission=mission,
             )
             if condition_result == ConditionState.EXPIRED:
                 print(condition_result)

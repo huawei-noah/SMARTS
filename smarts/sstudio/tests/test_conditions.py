@@ -28,13 +28,13 @@ from smarts.sstudio.types import (
     Condition,
     ConditionOperator,
     ConditionState,
-    DelayCondition,
     DependeeActorCondition,
     LiteralCondition,
     NegatedCondition,
     OnRoadCondition,
     SubjectCondition,
     TimeWindowCondition,
+    TriggerCondition,
     VehicleSpeedCondition,
     VehicleTypeCondition,
 )
@@ -82,19 +82,19 @@ def test_condition():
         condition.evaluate(actor_info=None)
 
     with pytest.raises(TypeError):
-        condition.negate()
+        condition.negation()
 
     with pytest.raises(TypeError):
-        condition.conjoin(literal_true)
+        condition.conjunction(literal_true)
 
     with pytest.raises(TypeError):
-        condition.disjoin(literal_true)
+        condition.disjunction(literal_true)
 
     with pytest.raises(TypeError):
-        condition.implicate(literal_true)
+        condition.implication(literal_true)
 
     with pytest.raises(TypeError):
-        condition.delay(10)
+        condition.trigger(10)
 
 
 def test_compound_condition():
@@ -107,65 +107,85 @@ def test_compound_condition():
         first_condition=literal_true,
         second_condition=literal_false,
         operator=ConditionOperator.CONJUNCTION,
-    ) == literal_true.conjoin(literal_false)
-    assert literal_true.conjoin(literal_true).evaluate() == ConditionState.TRUE
+    ) == literal_true.conjunction(literal_false)
+    assert literal_true.conjunction(literal_true).evaluate() == ConditionState.TRUE
 
-    assert literal_expired.conjoin(literal_expired).evaluate() == ConditionState.EXPIRED
-    assert literal_expired.conjoin(literal_true).evaluate() == ConditionState.EXPIRED
-    assert literal_expired.conjoin(literal_before).evaluate() == ConditionState.EXPIRED
-    assert literal_expired.conjoin(literal_false).evaluate() == ConditionState.EXPIRED
+    assert (
+        literal_expired.conjunction(literal_expired).evaluate()
+        == ConditionState.EXPIRED
+    )
+    assert (
+        literal_expired.conjunction(literal_true).evaluate() == ConditionState.EXPIRED
+    )
+    assert (
+        literal_expired.conjunction(literal_before).evaluate() == ConditionState.EXPIRED
+    )
+    assert (
+        literal_expired.conjunction(literal_false).evaluate() == ConditionState.EXPIRED
+    )
 
-    assert literal_before.conjoin(literal_true).evaluate() == ConditionState.BEFORE
-    assert literal_before.conjoin(literal_before).evaluate() == ConditionState.BEFORE
-    assert literal_before.conjoin(literal_false).evaluate() == ConditionState.BEFORE
+    assert literal_before.conjunction(literal_true).evaluate() == ConditionState.BEFORE
+    assert (
+        literal_before.conjunction(literal_before).evaluate() == ConditionState.BEFORE
+    )
+    assert literal_before.conjunction(literal_false).evaluate() == ConditionState.BEFORE
 
-    assert literal_false.conjoin(literal_true).evaluate() == ConditionState.FALSE
-    assert literal_false.conjoin(literal_false).evaluate() == ConditionState.FALSE
+    assert literal_false.conjunction(literal_true).evaluate() == ConditionState.FALSE
+    assert literal_false.conjunction(literal_false).evaluate() == ConditionState.FALSE
 
     assert CompoundCondition(
         first_condition=literal_true,
         second_condition=literal_false,
         operator=ConditionOperator.DISJUNCTION,
-    ) == literal_true.disjoin(literal_false)
-    assert literal_true.disjoin(literal_true).evaluate() == ConditionState.TRUE
-    assert literal_true.disjoin(literal_false).evaluate() == ConditionState.TRUE
-    assert literal_true.disjoin(literal_before).evaluate() == ConditionState.TRUE
-    assert literal_true.disjoin(literal_expired).evaluate() == ConditionState.TRUE
+    ) == literal_true.disjunction(literal_false)
+    assert literal_true.disjunction(literal_true).evaluate() == ConditionState.TRUE
+    assert literal_true.disjunction(literal_false).evaluate() == ConditionState.TRUE
+    assert literal_true.disjunction(literal_before).evaluate() == ConditionState.TRUE
+    assert literal_true.disjunction(literal_expired).evaluate() == ConditionState.TRUE
 
-    assert literal_before.disjoin(literal_before).evaluate() == ConditionState.BEFORE
-    assert literal_before.disjoin(literal_expired).evaluate() == ConditionState.BEFORE
-    assert literal_before.disjoin(literal_false).evaluate() == ConditionState.BEFORE
+    assert (
+        literal_before.disjunction(literal_before).evaluate() == ConditionState.BEFORE
+    )
+    assert (
+        literal_before.disjunction(literal_expired).evaluate() == ConditionState.BEFORE
+    )
+    assert literal_before.disjunction(literal_false).evaluate() == ConditionState.BEFORE
 
-    assert literal_expired.disjoin(literal_expired).evaluate() == ConditionState.EXPIRED
+    assert (
+        literal_expired.disjunction(literal_expired).evaluate()
+        == ConditionState.EXPIRED
+    )
 
-    assert literal_expired.disjoin(literal_false).evaluate() == ConditionState.FALSE
-    assert literal_false.disjoin(literal_false).evaluate() == ConditionState.FALSE
+    assert literal_expired.disjunction(literal_false).evaluate() == ConditionState.FALSE
+    assert literal_false.disjunction(literal_false).evaluate() == ConditionState.FALSE
 
     assert CompoundCondition(
         first_condition=literal_true,
         second_condition=literal_false,
         operator=ConditionOperator.IMPLICATION,
-    ) == literal_true.implicate(literal_false)
-    assert literal_true.implicate(literal_true).evaluate() == ConditionState.TRUE
+    ) == literal_true.implication(literal_false)
+    assert literal_true.implication(literal_true).evaluate() == ConditionState.TRUE
 
-    assert literal_true.implicate(literal_expired).evaluate() == ConditionState.FALSE
-    assert literal_true.implicate(literal_before).evaluate() == ConditionState.FALSE
-    assert literal_true.implicate(literal_false).evaluate() == ConditionState.FALSE
+    assert literal_true.implication(literal_expired).evaluate() == ConditionState.FALSE
+    assert literal_true.implication(literal_before).evaluate() == ConditionState.FALSE
+    assert literal_true.implication(literal_false).evaluate() == ConditionState.FALSE
 
-    assert literal_expired.implicate(literal_true).evaluate() == ConditionState.TRUE
-    assert literal_expired.implicate(literal_expired).evaluate() == ConditionState.TRUE
-    assert literal_expired.implicate(literal_before).evaluate() == ConditionState.TRUE
-    assert literal_expired.implicate(literal_false).evaluate() == ConditionState.TRUE
+    assert literal_expired.implication(literal_true).evaluate() == ConditionState.TRUE
+    assert (
+        literal_expired.implication(literal_expired).evaluate() == ConditionState.TRUE
+    )
+    assert literal_expired.implication(literal_before).evaluate() == ConditionState.TRUE
+    assert literal_expired.implication(literal_false).evaluate() == ConditionState.TRUE
 
-    assert literal_before.implicate(literal_true).evaluate() == ConditionState.TRUE
-    assert literal_before.implicate(literal_expired).evaluate() == ConditionState.TRUE
-    assert literal_before.implicate(literal_before).evaluate() == ConditionState.TRUE
-    assert literal_before.implicate(literal_false).evaluate() == ConditionState.TRUE
+    assert literal_before.implication(literal_true).evaluate() == ConditionState.TRUE
+    assert literal_before.implication(literal_expired).evaluate() == ConditionState.TRUE
+    assert literal_before.implication(literal_before).evaluate() == ConditionState.TRUE
+    assert literal_before.implication(literal_false).evaluate() == ConditionState.TRUE
 
-    assert literal_false.implicate(literal_true).evaluate() == ConditionState.TRUE
-    assert literal_false.implicate(literal_expired).evaluate() == ConditionState.TRUE
-    assert literal_false.implicate(literal_false).evaluate() == ConditionState.TRUE
-    assert literal_false.implicate(literal_false).evaluate() == ConditionState.TRUE
+    assert literal_false.implication(literal_true).evaluate() == ConditionState.TRUE
+    assert literal_false.implication(literal_expired).evaluate() == ConditionState.TRUE
+    assert literal_false.implication(literal_false).evaluate() == ConditionState.TRUE
+    assert literal_false.implication(literal_false).evaluate() == ConditionState.TRUE
 
 
 def test_delay_condition():
@@ -173,11 +193,11 @@ def test_delay_condition():
     long_delay = 10
     first_time_window_true = 5
     window_condition = TimeWindowCondition(4, 10)
-    delayed_condition = window_condition.delay(long_delay, persistant=False)
+    delayed_condition = window_condition.trigger(long_delay, persistant=False)
 
-    assert delayed_condition == DelayCondition(
+    assert delayed_condition == TriggerCondition(
         inner_condition=window_condition,
-        seconds=long_delay,
+        delay_seconds=long_delay,
         persistant=False,
     )
 
@@ -211,7 +231,7 @@ def test_delay_condition():
     assert not delayed_condition.evaluate(simulation_time=time)
 
     # Test persistant true
-    delayed_condition = window_condition.delay(short_delay, persistant=True)
+    delayed_condition = window_condition.trigger(short_delay, persistant=True)
     time = first_time_window_true
     assert not delayed_condition.evaluate(simulation_time=time)
     time = first_time_window_true + short_delay
@@ -223,8 +243,8 @@ def test_delay_condition():
 def test_dependee_condition():
     dependee_condition = DependeeActorCondition("leader")
 
-    assert dependee_condition.evaluate(active_actor_ids={"mr", "leader"})
-    assert not dependee_condition.evaluate(active_actor_ids={"other", "vehicle"})
+    assert dependee_condition.evaluate(actor_ids={"mr", "leader"})
+    assert not dependee_condition.evaluate(actor_ids={"other", "vehicle"})
 
 
 def test_literal_condition():
@@ -241,11 +261,11 @@ def test_negated_condition():
     literal_true = LiteralCondition(ConditionState.TRUE)
     literal_false = LiteralCondition(ConditionState.FALSE)
 
-    assert literal_false.negate() == NegatedCondition(literal_false)
-    assert literal_true.negate() == NegatedCondition(literal_true)
+    assert literal_false.negation() == NegatedCondition(literal_false)
+    assert literal_true.negation() == NegatedCondition(literal_true)
 
-    assert literal_false.negate().evaluate()
-    assert not literal_true.negate().evaluate()
+    assert literal_false.negation().evaluate()
+    assert not literal_true.negation().evaluate()
 
 
 def test_on_road_condition():
@@ -276,19 +296,19 @@ def test_subject_condition():
         subject_condition.evaluate(vehicle_state=None)
 
     with pytest.raises(TypeError):
-        subject_condition.negate()
+        subject_condition.negation()
 
     with pytest.raises(TypeError):
-        subject_condition.conjoin(literal_true)
+        subject_condition.conjunction(literal_true)
 
     with pytest.raises(TypeError):
-        subject_condition.disjoin(literal_true)
+        subject_condition.disjunction(literal_true)
 
     with pytest.raises(TypeError):
-        subject_condition.implicate(literal_true)
+        subject_condition.implication(literal_true)
 
     with pytest.raises(TypeError):
-        subject_condition.delay(10)
+        subject_condition.trigger(10)
 
 
 def test_vehicle_speed_condition():

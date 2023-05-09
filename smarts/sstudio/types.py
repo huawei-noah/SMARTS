@@ -26,6 +26,7 @@ import sys
 import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum, IntFlag
+from functools import cached_property
 from typing import (
     Any,
     Callable,
@@ -34,6 +35,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     Union,
@@ -54,6 +56,7 @@ from shapely.ops import split, unary_union
 
 from smarts.core import gen_id
 from smarts.core.colors import Colors
+from smarts.core.condition_state import ConditionState
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
@@ -600,22 +603,6 @@ class Traffic:
     """
 
 
-class ConditionState(IntFlag):
-    """Represents the state of a condition."""
-
-    FALSE = 0
-    """This condition is false."""
-    BEFORE = 1
-    """This condition is false and never evaluated true before."""
-    EXPIRED = 2
-    """This condition is false and will never evaluate true."""
-    TRUE = 4
-    """This condition is true."""
-
-    def __bool__(self) -> bool:
-        return self.TRUE in self
-
-
 class ConditionOperator(IntEnum):
     """Represents logical operators between conditions."""
 
@@ -633,6 +620,35 @@ class ConditionOperator(IntEnum):
     # """True if its operand is false, otherwise false."""
 
 
+class ConditionRequires(IntFlag):
+    none = enum.auto()
+
+    # MISSION CONSTANTS
+    agent_id = enum.auto()
+    mission = enum.auto()
+
+    # SIMULATION STATE
+    simulation_time = enum.auto()
+    actor_ids = enum.auto()
+    actor_states = enum.auto()
+    simulation = enum.auto()
+
+    # ACTOR STATE
+    current_actor_state = enum.auto()
+    current_actor_road_status = enum.auto()
+
+    all_simulation_state = simulation_time | actor_ids | actor_states | simulation
+    all_current_actor_state = mission | current_actor_state | current_actor_road_status
+
+
+@dataclass(frozen=True)
+class ConditionEvaluationArgs:
+    actor_ids: Set[str]
+    mission_start_time: float
+    simulation_time: Union[float, int]
+    vehicle_state: Any
+
+
 @dataclass(frozen=True)
 class Condition:
     """This encompasses an expression to evaluate to a logical result."""
@@ -645,25 +661,48 @@ class Condition:
         """
         raise NotImplementedError()
 
-    def negate(self) -> "NegatedCondition":
+    @property
+    def requires(self) -> ConditionRequires:
+        """Information that the condition requires to evaluate state.
+
+        Returns:
+            ConditionRequires: The types of information this condition needs in order to evaluate.
+        """
+        raise NotImplementedError()
+
+    def negation(self) -> "NegatedCondition":
         """Negates this condition."""
         return NegatedCondition(self)
 
-    def conjoin(self, other: "Condition") -> "CompoundCondition":
+    def conjunction(self, other: "Condition") -> "CompoundCondition":
         """Resolve conditions as A AND B."""
         return CompoundCondition(self, other, operator=ConditionOperator.CONJUNCTION)
 
-    def disjoin(self, other: "Condition") -> "CompoundCondition":
+    def disjunction(self, other: "Condition") -> "CompoundCondition":
         """Resolve conditions as A OR B."""
         return CompoundCondition(self, other, operator=ConditionOperator.DISJUNCTION)
 
-    def implicate(self, other: "Condition") -> "CompoundCondition":
+    def implication(self, other: "Condition") -> "CompoundCondition":
         """Resolve conditions as A AND B OR NOT A."""
         return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
 
-    def delay(self, seconds, persistant=False) -> "DelayCondition":
+    def trigger(self, seconds, persistant=False) -> "TriggerCondition":
         """Delays the current condition until the given number of simulation seconds have occured."""
-        return DelayCondition(self, seconds=seconds, persistant=persistant)
+        return TriggerCondition(self, delay_seconds=seconds, persistant=persistant)
+
+    def __and__(self, other: "Condition") -> "CompoundCondition":
+        """Resolve conditions as A AND B"""
+        assert isinstance(other, Condition)
+        return self.conjunction(other)
+
+    def __or__(self, other: "Condition") -> "CompoundCondition":
+        """Resolve conditions as A OR B."""
+        assert isinstance(other, Condition)
+        return self.disjunction(other)
+
+    def __neg__(self) -> "NegatedCondition":
+        """Negates this condition"""
+        return self.negation()
 
 
 @dataclass(frozen=True)
@@ -680,6 +719,13 @@ class SubjectCondition(Condition):
         """
         raise NotImplementedError()
 
+    @property
+    def requires(self) -> ConditionRequires:
+        return (
+            ConditionRequires.all_current_actor_state
+            | ConditionRequires.all_simulation_state
+        )
+
 
 _abstract_conditions = (Condition, SubjectCondition)
 
@@ -693,6 +739,10 @@ class LiteralCondition(Condition):
 
     def evaluate(self, *args, **kwargs) -> ConditionState:
         return self.literal
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return ConditionRequires.none
 
 
 @dataclass(frozen=True)
@@ -711,6 +761,10 @@ class TimeWindowCondition(Condition):
             return ConditionState.EXPIRED
         return ConditionState.BEFORE
 
+    @property
+    def requires(self) -> ConditionRequires:
+        return ConditionRequires.simulation_time
+
 
 @dataclass(frozen=True)
 class DependeeActorCondition(Condition):
@@ -719,10 +773,14 @@ class DependeeActorCondition(Condition):
     actor_id: str
     """The id of an actor in the simulation that needs to exist for this condition to be true."""
 
-    def evaluate(self, *args, active_actor_ids, **kwargs):
-        if self.actor_id in active_actor_ids:
+    def evaluate(self, *args, actor_ids, **kwargs):
+        if self.actor_id in actor_ids:
             return ConditionState.TRUE
         return ConditionState.FALSE
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return ConditionRequires.actor_ids
 
     def __post_init__(self):
         assert isinstance(self.actor_id, str)
@@ -738,6 +796,10 @@ class NegatedCondition(Condition):
     def evaluate(self, *args, **kwargs) -> ConditionState:
         return ~self.inner_condition.evaluate(*args, **kwargs)
 
+    @property
+    def requires(self) -> ConditionRequires:
+        return self.inner_condition.requires
+
     def __post_init__(self):
         if self.inner_condition.__class__ in _abstract_conditions:
             raise TypeError(
@@ -746,8 +808,9 @@ class NegatedCondition(Condition):
 
 
 @dataclass(frozen=True)
-class DelayCondition(Condition):
-    """This condition delays the inner condition by a number of seconds.
+class TriggerCondition(Condition):
+    """This condition is a trigger that assumes FALSE and then turns true permanently on the inner section
+    becoming TRUE. The is an option to delay repsonse to the the inner condition by a number of seconds.
 
     This can be used to wait for some time after the inner condition has become true to be true.
     Note that the original condition may no longer be true by the time delay has expired.
@@ -758,7 +821,7 @@ class DelayCondition(Condition):
     inner_condition: Condition
     """The inner condition to delay."""
 
-    seconds: float
+    delay_seconds: float
     """The number of seconds to delay for."""
 
     persistant: bool = False
@@ -766,19 +829,28 @@ class DelayCondition(Condition):
 
     def evaluate(self, *args, simulation_time, **kwargs) -> ConditionState:
         key = "met_time"
+        result = ConditionState.FALSE
         if (met_time := getattr(self, key, None)) is not None:
-            if simulation_time >= met_time + self.seconds:
+            if simulation_time >= met_time + self.delay_seconds:
                 result = ConditionState.TRUE
                 if self.persistant:
                     result &= self.inner_condition.evaluate(
                         *args, simulation_time=simulation_time, **kwargs
                     )
                 return result
-        elif self.inner_condition.evaluate(
+        elif result := self.inner_condition.evaluate(
             *args, simulation_time=simulation_time, **kwargs
         ):
             object.__setattr__(self, key, simulation_time)
-        return ConditionState.FALSE
+
+        temporals = result & (ConditionState.BEFORE | ConditionState.EXPIRED)
+        if ConditionState.EXPIRED in temporals:
+            return ConditionState.EXPIRED
+        return temporals & ConditionState.BEFORE
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return self.inner_condition.requires
 
     def __post_init__(self):
         if self.inner_condition.__class__ in _abstract_conditions:
@@ -791,8 +863,16 @@ class DelayCondition(Condition):
 class OnRoadCondition(SubjectCondition):
     """This condition is true if the subject is on road."""
 
-    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
-        return ConditionState.TRUE if vehicle_state.on_road else ConditionState.FALSE
+    def evaluate(self, *args, current_actor_road_status, **kwargs) -> ConditionState:
+        return (
+            ConditionState.TRUE
+            if current_actor_road_status.on_road
+            else ConditionState.FALSE
+        )
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return ConditionRequires.current_actor_road_status
 
 
 @dataclass(frozen=True)
@@ -807,6 +887,10 @@ class VehicleTypeCondition(SubjectCondition):
             if vehicle_state.vehicle_config_type == self.vehicle_type
             else ConditionState.FALSE
         )
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return ConditionRequires.current_actor_state
 
 
 @dataclass(frozen=True)
@@ -825,6 +909,10 @@ class VehicleSpeedCondition(SubjectCondition):
             if self.low <= vehicle_state.speed <= self.high
             else ConditionState.FALSE
         )
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return ConditionRequires.current_actor_state
 
     @classmethod
     def loitering(cls: Type["VehicleSpeedCondition"], abs_error=0.01):
@@ -902,6 +990,10 @@ class CompoundCondition(Condition):
 
         return ConditionState.FALSE
 
+    @cached_property
+    def requires(self) -> ConditionRequires:
+        return self.first_condition.requires | self.second_condition.requires
+
     def __post_init__(self):
         for condition in (self.first_condition, self.second_condition):
             if condition.__class__ in _abstract_conditions:
@@ -948,6 +1040,9 @@ class IdEntryTactic(EntryTactic):
     def __post_init__(self):
         assert isinstance(self.actor_id, str)
         assert isinstance(self.condition, (Condition))
+        assert not (
+            self.condition.requires & ConditionRequires.all_current_actor_state
+        ), f"Id entry tactic cannot use conditions that require any_vehicle_state."
 
 
 @dataclass(frozen=True)

@@ -22,11 +22,12 @@ import math
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from shapely.geometry import Polygon
 
 from smarts.core.actor_capture_manager import ActorCaptureManager
+from smarts.core.condition_state import ConditionState
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.file import replace
@@ -69,6 +70,28 @@ class Trap:
             if vehicle_id.startswith(prefix):
                 return False
         return True
+
+    def evaluate(
+        self,
+        simulation,
+        vehicle_state: Optional[Any],
+    ) -> ConditionState:
+        """Considers the given vehicle to see if it is applicable.
+
+        Args:
+            simulation (SMARTS): The simulation reference
+            vehicle_state (VehicleState): The current vehicle state.
+
+        Returns:
+            ConditionState: The current state of the condition.
+        """
+        entry_tactic: TrapEntryTactic = self.mission.entry_tactic
+        return entry_tactic.condition.evaluate(
+            simulation_time=simulation.elapsed_sim_time,
+            actor_ids=simulation.vehicle_index.vehicle_ids,
+            vehicle_state=vehicle_state,
+            mission_start_time=self.mission.start_time,
+        )
 
 
 class TrapManager(ActorCaptureManager):
