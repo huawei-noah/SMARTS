@@ -202,8 +202,8 @@ class SMARTS(ProviderManager):
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
         self._bullet_client = bc.BulletClient(
-            pybullet.DIRECT  # pylint: disable=no-member
-        )
+            pybullet.DIRECT
+        )  # pylint: disable=no-member
 
         # Set up indices
         self._sensor_manager = SensorManager()
@@ -813,8 +813,8 @@ class SMARTS(ProviderManager):
     def _setup_bullet_client(self, client: bc.BulletClient):
         client.resetSimulation()
         client.configureDebugVisualizer(
-            pybullet.COV_ENABLE_GUI, 0  # pylint: disable=no-member
-        )
+            pybullet.COV_ENABLE_GUI, 0
+        )  # pylint: disable=no-member
         max_pybullet_freq = config()(
             "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
         )
@@ -1544,7 +1544,9 @@ class SMARTS(ProviderManager):
                 elif v.state | SignalLightState.GO:
                     env_ss = envision_types.SignalLightState.Go
                 # TODO: eventually do flashing and arrow states too
-                signals[v.actor_id] = envision_types.SignalState(v.actor_id, env_ss)
+                signals[v.actor_id] = envision_types.SignalState(
+                    v.actor_id, env_ss, tuple(v.stopping_pos.as_np_array)
+                )
                 continue
             if not isinstance(v, VehicleState):
                 continue
