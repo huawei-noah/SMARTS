@@ -37,9 +37,10 @@ WORKDIR /SMARTS
 RUN pip install -e .[camera_obs,argoverse]
 RUN pip install -e ./examples/rl/platoon/inference
 
-# SHELL ["/bin/bash", "-c", "-l"]
+SHELL ["/bin/bash", "-c"]
 
 # Set up entrypoint
+RUN chmod -R a+rwx /SMARTS
 COPY ./docker/server_entrypoint.sh /server_entrypoint.sh
 RUN chmod a+x /server_entrypoint.sh
 ENTRYPOINT ["/server_entrypoint.sh"]
