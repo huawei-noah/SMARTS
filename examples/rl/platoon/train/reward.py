@@ -108,7 +108,7 @@ class Reward(gym.Wrapper):
             #     reward[agent_id] += np.float64(30)
 
             # Reward for distance travelled in one step
-            reward[agent_id] += np.float64(env_reward[agent_id])
+            # reward[agent_id] += np.float64(env_reward[agent_id])
 
             # Check if leader is in front and within the rgb observation
             if leader:
@@ -147,10 +147,10 @@ class Reward(gym.Wrapper):
 
                 # Reward for being in the same lane as the leader
                 if (leader_ind is not None) and (leader_wp_ind[0] in ego_wp_inds):
-                    reward[agent_id] += np.float64(2.5)
+                    reward[agent_id] += np.float64(3)
 
             else:
-                reward[agent_id] -= np.float64(1)
+                reward[agent_id] -= np.float64(0.3)
 
         return reward
 

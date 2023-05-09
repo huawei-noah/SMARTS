@@ -20,6 +20,7 @@ smarts:
     batch_size: 512
     n_epochs: 4
     target_kl: 0.1
+    ent_coef: 0.01 # For exploration. Range = 0 to 0.01
 
   # Training over all scenarios
   epochs: 500 # Number of training loops.
