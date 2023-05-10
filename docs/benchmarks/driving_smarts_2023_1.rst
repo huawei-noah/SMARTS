@@ -230,6 +230,7 @@ Train
     # In a different terminal-B
     $ cd <path>/SMARTS/examples/rl/drive
     $ source ./.venv/bin/activate
+    $ pip install -e ./../../../.[envision]
     $ scl envision start
     # Open http://localhost:8081/
 
