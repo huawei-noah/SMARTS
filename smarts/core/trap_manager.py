@@ -95,7 +95,7 @@ class Trap:
 
 
 @dataclass(frozen=True)
-class CaptureState:
+class _CaptureState:
     ready_state: ConditionState
     trap: Optional[Trap]
     vehicle_id: Optional[str] = None
@@ -195,8 +195,8 @@ class TrapManager(ActorCaptureManager):
         from smarts.core.smarts import SMARTS
 
         assert isinstance(sim, SMARTS)
-        capture_by_agent_id: Dict[str, CaptureState] = defaultdict(
-            lambda: CaptureState(ConditionState.FALSE, None, default=True)
+        capture_by_agent_id: Dict[str, _CaptureState] = defaultdict(
+            lambda: _CaptureState(ConditionState.FALSE, None, default=True)
         )
 
         # An optimization to short circuit if there are no pending agents.
@@ -236,20 +236,20 @@ class TrapManager(ActorCaptureManager):
                 continue
 
             if not trap.ready(sim.elapsed_sim_time):
-                capture_by_agent_id[agent_id] = CaptureState(
+                capture_by_agent_id[agent_id] = _CaptureState(
                     ConditionState.BEFORE, trap
                 )
                 continue
 
             if trap.patience_expired(sim.elapsed_sim_time):
-                capture_by_agent_id[agent_id] = CaptureState(
+                capture_by_agent_id[agent_id] = _CaptureState(
                     ConditionState.EXPIRED, trap, updated_mission=trap.mission
                 )
                 continue
 
             trap_condition = trap.evaluate(sim)
             if not trap_condition:
-                capture_by_agent_id[agent_id] = CaptureState(trap_condition, trap)
+                capture_by_agent_id[agent_id] = _CaptureState(trap_condition, trap)
                 continue
 
             # Order vehicle ids by distance.
@@ -269,7 +269,7 @@ class TrapManager(ActorCaptureManager):
                 if not point.within(trap.geometry):
                     continue
 
-                capture_by_agent_id[agent_id] = CaptureState(
+                capture_by_agent_id[agent_id] = _CaptureState(
                     ready_state=trap_condition,
                     trap=trap,
                     updated_mission=replace(
@@ -281,7 +281,7 @@ class TrapManager(ActorCaptureManager):
                 social_vehicle_ids.remove(vehicle_id)
                 break
             else:
-                capture_by_agent_id[agent_id] = CaptureState(
+                capture_by_agent_id[agent_id] = _CaptureState(
                     ready_state=trap_condition,
                     trap=trap,
                 )

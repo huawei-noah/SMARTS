@@ -621,6 +621,8 @@ class ConditionOperator(IntEnum):
 
 
 class ConditionRequires(IntFlag):
+    """This bitfield lays out the required information that a condition needs in order to evaluate."""
+
     none = enum.auto()
 
     # MISSION CONSTANTS
@@ -643,6 +645,8 @@ class ConditionRequires(IntFlag):
 
 @dataclass(frozen=True)
 class ConditionEvaluationArgs:
+    """Standard arguments given to condition evaluations."""
+
     agent_id: Optional[str]
     mission: Optional[Any]
     time: Optional[float]
@@ -984,6 +988,7 @@ class VehicleSpeedCondition(SubjectCondition):
 
     @classmethod
     def loitering(cls: Type["VehicleSpeedCondition"], abs_error=0.01):
+        """Generates a speed condition which assumes that the subject is stationary."""
         return cls(low=abs_error, high=abs_error)
 
 
