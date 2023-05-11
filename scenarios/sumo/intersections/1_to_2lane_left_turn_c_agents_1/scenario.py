@@ -95,7 +95,7 @@ ego_missions = [
     Mission(
         route=route,
         entry_tactic=TrapEntryTactic(
-            start_time=4, wait_to_hijack_limit_s=0.1
+            start_time=4, wait_to_hijack_limit_s=0
         ),  # Delayed start, to ensure road has prior traffic.
     )
 ]
