@@ -25,12 +25,14 @@ from dataclasses import dataclass, field
 from typing import Optional, Tuple
 
 from smarts.core import gen_id
+from smarts.core.condition_state import ConditionState
 from smarts.core.utils.id import SocialAgentId
 from smarts.sstudio.types.actor.social_agent_actor import (
     BoidAgentActor,
     SocialAgentActor,
 )
 from smarts.sstudio.types.bubble_limits import BubbleLimits
+from smarts.sstudio.types.condition import Condition, LiteralCondition
 from smarts.sstudio.types.zone import MapZone, Zone
 
 
@@ -71,6 +73,7 @@ class Bubble:
     which means it moves to follow the `follow_vehicle_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
+    condition: Condition = LiteralCondition(ConditionState.TRUE)
 
     def __post_init__(self):
         if self.margin < 0:

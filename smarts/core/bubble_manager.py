@@ -111,6 +111,7 @@ class Bubble:
         self._limit = bubble_limit
         self._cached_inner_geometry = geometry
         self._exclusion_prefixes = bubble.exclusion_prefixes
+        self._condition = bubble.condition
 
         self._cached_airlock_geometry = self._cached_inner_geometry.buffer(
             bubble.margin,
