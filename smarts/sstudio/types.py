@@ -947,14 +947,19 @@ class ConditionTrigger(Condition):
 
 
 @dataclass(frozen=True)
-class OnRoadCondition(SubjectCondition):
+class OffRoadCondition(SubjectCondition):
     """This condition is true if the subject is on road."""
 
     def evaluate(self, **kwargs) -> ConditionState:
         current_actor_road_status = kwargs[self.requires.name]
+        if (
+            current_actor_road_status.road is None
+            and not current_actor_road_status.off_road
+        ):
+            return ConditionState.BEFORE
         return (
             ConditionState.TRUE
-            if current_actor_road_status.on_road
+            if current_actor_road_status.off_road
             else ConditionState.FALSE
         )
 

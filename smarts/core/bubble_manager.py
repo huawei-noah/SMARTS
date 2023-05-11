@@ -295,7 +295,7 @@ class Bubble:
         return hash(self.id)
 
 
-@dataclass(frozen=True, eq=True)
+@dataclass(frozen=True)
 class Cursor:
     """Tracks an actor through an airlock or a bubble."""
 
@@ -306,9 +306,8 @@ class Cursor:
     transition: Optional[BubbleTransition] = None
     bubble: Optional[Bubble] = None
 
-    @classmethod
+    @staticmethod
     def for_removed(
-        cls,
         vehicle_id: str,
         bubble: Bubble,
         index: VehicleIndex,
@@ -332,16 +331,15 @@ class Cursor:
         transition = None
         if was_in_this_bubble and (is_shadowed or is_hijacked):
             transition = BubbleTransition.AirlockExited
-        return cls(
+        return Cursor(
             vehicle_id=vehicle_id,
             transition=transition,
             state=BubbleState.WasInBubble,
             bubble=bubble,
         )
 
-    @classmethod
+    @staticmethod
     def from_pos(
-        cls,
         pos: Point,
         vehicle_id: str,
         bubble: Bubble,
@@ -409,7 +407,7 @@ class Cursor:
         elif in_airlock_zone:
             state = BubbleState.InAirlock
 
-        return cls(
+        return Cursor(
             vehicle_id=vehicle_id, transition=transition, state=state, bubble=bubble
         )
 

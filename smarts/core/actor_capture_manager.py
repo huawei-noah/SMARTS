@@ -22,6 +22,7 @@
 
 
 import warnings
+from collections import namedtuple
 from dataclasses import replace
 from typing import Any, Dict, Optional
 
@@ -200,6 +201,15 @@ class ActorCaptureManager:
         if ConditionRequires.current_actor_state in condition_requires:
             out_kwargs[ConditionRequires.current_actor_state.name] = actor_state
         if ConditionRequires.current_actor_road_status in condition_requires:
-            out_kwargs[ConditionRequires.current_actor_road_status.name] = None
+            current_actor_road_status = namedtuple(
+                "actor_road_status", ["road", "off_road"], defaults=[None, False]
+            )
+            if hasattr(actor_state, "pose"):
+                road = road_map.road_with_point(actor_state.pose.point)
+                current_actor_road_status.road = road
+                current_actor_road_status.off_road = not road
+            out_kwargs[
+                ConditionRequires.current_actor_road_status.name
+            ] = current_actor_road_status
 
         return out_kwargs

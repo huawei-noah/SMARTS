@@ -34,7 +34,7 @@ from smarts.sstudio.types import (
     ExpireTrigger,
     LiteralCondition,
     NegatedCondition,
-    OnRoadCondition,
+    OffRoadCondition,
     SubjectCondition,
     TimeWindowCondition,
     VehicleSpeedCondition,
@@ -288,9 +288,32 @@ def test_negated_condition():
     assert not literal_true.negation().evaluate()
 
 
-def test_on_road_condition():
-    on_road_condition = OnRoadCondition()
-    pass
+def test_off_road_condition():
+    off_road_condition = OffRoadCondition()
+
+    current_actor_road_status = Mock()
+    current_actor_road_status.off_road = False
+    current_actor_road_status.road = "c-ew"
+    assert (
+        off_road_condition.evaluate(current_actor_road_status=current_actor_road_status)
+        == ConditionState.FALSE
+    )
+
+    current_actor_road_status = Mock()
+    current_actor_road_status.off_road = True
+    current_actor_road_status.road = None
+    assert (
+        off_road_condition.evaluate(current_actor_road_status=current_actor_road_status)
+        == ConditionState.TRUE
+    )
+
+    current_actor_road_status = Mock()
+    current_actor_road_status.off_road = False
+    current_actor_road_status.road = None
+    assert (
+        off_road_condition.evaluate(current_actor_road_status=current_actor_road_status)
+        == ConditionState.BEFORE
+    )
 
 
 def test_time_window_condition():
