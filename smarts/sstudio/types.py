@@ -628,7 +628,7 @@ class ConditionRequires(IntFlag):
     mission = enum.auto()
 
     # SIMULATION STATE
-    simulation_time = enum.auto()
+    time = enum.auto()
     actor_ids = enum.auto()
     actor_states = enum.auto()
     simulation = enum.auto()
@@ -637,16 +637,20 @@ class ConditionRequires(IntFlag):
     current_actor_state = enum.auto()
     current_actor_road_status = enum.auto()
 
-    all_simulation_state = simulation_time | actor_ids | actor_states | simulation
-    all_current_actor_state = mission | current_actor_state | current_actor_road_status
+    any_simulation_state = time | actor_ids | actor_states | simulation
+    any_current_actor_state = mission | current_actor_state | current_actor_road_status
 
 
 @dataclass(frozen=True)
 class ConditionEvaluationArgs:
-    actor_ids: Set[str]
-    mission_start_time: float
-    simulation_time: Union[float, int]
-    vehicle_state: Any
+    agent_id: Optional[str]
+    mission: Optional[Any]
+    time: Optional[float]
+    actor_ids: Optional[Set[str]]
+    actor_states: Optional[List[Any]]
+    simulation: Any
+    current_actor_state: Optional[Any]
+    current_actor_road_status: Optional[Any]
 
 
 @dataclass(frozen=True)
@@ -686,9 +690,41 @@ class Condition:
         """Resolve conditions as A AND B OR NOT A."""
         return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
 
-    def trigger(self, seconds, persistant=False) -> "TriggerCondition":
-        """Delays the current condition until the given number of simulation seconds have occured."""
-        return TriggerCondition(self, delay_seconds=seconds, persistant=persistant)
+    def trigger(
+        self, delay_seconds: float, persistant: bool = False
+    ) -> "ConditionTrigger":
+        """Converts the condition to a trigger which becomes permanently TRUE after the inner condition becomes TRUE.
+
+        Args:
+            delay_seconds (float): Applies the trigger after the delay has passed since the inner condition first TRUE. Defaults to False.
+            persistant (bool, optional): Mixes the inner result with the trigger result using an AND operation.
+
+        Returns:
+            ConditionTrigger: A resulting condition.
+        """
+        return ConditionTrigger(
+            self, delay_seconds=delay_seconds, persistant=persistant
+        )
+
+    def expire(self, time, expired_state=ConditionState.EXPIRED) -> "ExpireTrigger":
+        """This trigger evaluates to the expired state value after the given simulation time.
+
+        >>> trigger = LiteralCondition(ConditionState.TRUE).expire(20)
+        >>> trigger.evaluate(time=10)
+        ConditionState.TRUE
+        >>> trigger.evaluate(time=30)
+        ConditionState.FALSE
+
+        Args:
+            time (float): The simulation time when this trigger changes.
+            expired_state (ConditionState, optional): The condition state to use when the simulation is after the given time. Defaults to ConditionState.EXPIRED.
+
+        Returns:
+            ExpireTrigger: The resulting condition.
+        """
+        return ExpireTrigger(
+            inner_condition=self, time=time, expired_state=expired_state
+        )
 
     def __and__(self, other: "Condition") -> "CompoundCondition":
         """Resolve conditions as A AND B"""
@@ -722,8 +758,8 @@ class SubjectCondition(Condition):
     @property
     def requires(self) -> ConditionRequires:
         return (
-            ConditionRequires.all_current_actor_state
-            | ConditionRequires.all_simulation_state
+            ConditionRequires.any_current_actor_state
+            | ConditionRequires.any_simulation_state
         )
 
 
@@ -754,16 +790,16 @@ class TimeWindowCondition(Condition):
     end: float
     """The ending simulation time as of which this condition becomes expired."""
 
-    def evaluate(self, *args, simulation_time, **kwargs):
-        if self.start <= simulation_time < self.end:
+    def evaluate(self, *args, time, **kwargs):
+        if self.start <= time < self.end or self.end == sys.maxsize:
             return ConditionState.TRUE
-        elif simulation_time > self.end:
+        elif time > self.end:
             return ConditionState.EXPIRED
         return ConditionState.BEFORE
 
     @property
     def requires(self) -> ConditionRequires:
-        return ConditionRequires.simulation_time
+        return ConditionRequires.time
 
 
 @dataclass(frozen=True)
@@ -808,9 +844,39 @@ class NegatedCondition(Condition):
 
 
 @dataclass(frozen=True)
-class TriggerCondition(Condition):
-    """This condition is a trigger that assumes FALSE and then turns true permanently on the inner section
-    becoming TRUE. The is an option to delay repsonse to the the inner condition by a number of seconds.
+class ExpireTrigger(Condition):
+    """This condition allows for expiration after a given time."""
+
+    inner_condition: Condition
+    """The inner condition to delay."""
+
+    time: float
+    """The simulation time when this trigger becomes expired."""
+
+    expired_state: ConditionState = ConditionState.EXPIRED
+    """The state value this trigger should have when it expires."""
+
+    def evaluate(self, *args, time, **kwargs) -> ConditionState:
+        if time >= self.time:
+            return self.expired_state
+        return self.inner_condition.evaluate(*args, time=time, **kwargs)
+
+    @property
+    def requires(self) -> ConditionRequires:
+        return self.inner_condition.requires | ConditionRequires.time
+
+    def __post_init__(self):
+        if self.inner_condition.__class__ in _abstract_conditions:
+            raise TypeError(
+                f"Abstract `{self.inner_condition.__class__.__name__}` cannot be wrapped by a trigger."
+            )
+
+
+@dataclass(frozen=True)
+class ConditionTrigger(Condition):
+    """This condition is a trigger that assumes an untriggered constant state and then turns to the other state permanently
+    on the inner condition becoming TRUE. There is also an option to delay repsonse to the the inner condition by a number
+    of seconds. This will convey an EXPIRED value immediately because that state means the inner value will never be true.
 
     This can be used to wait for some time after the inner condition has become true to be true.
     Note that the original condition may no longer be true by the time delay has expired.
@@ -824,29 +890,31 @@ class TriggerCondition(Condition):
     delay_seconds: float
     """The number of seconds to delay for."""
 
+    untriggered_state: ConditionState = ConditionState.BEFORE
+    """The state before the inner trigger condition and delay is resolved."""
+
+    triggered_state: ConditionState = ConditionState.TRUE
+    """The state after the inner trigger condition and delay is resolved."""
+
     persistant: bool = False
-    """If the inner condition must still be true at the end of the delay to be true."""
+    """If the inner condition state is used in conjuction with the triggered state. (inner_condition_state & triggered_state)"""
 
-    def evaluate(self, *args, simulation_time, **kwargs) -> ConditionState:
+    def evaluate(self, *args, time, **kwargs) -> ConditionState:
         key = "met_time"
-        result = ConditionState.FALSE
-        if (met_time := getattr(self, key, None)) is not None:
-            if simulation_time >= met_time + self.delay_seconds:
-                result = ConditionState.TRUE
+        result = self.untriggered_state
+        if self.delay_seconds <= 0 or (met_time := getattr(self, key, -1)) > -1:
+            if time >= met_time + self.delay_seconds:
+                result = self.triggered_state
                 if self.persistant:
-                    result &= self.inner_condition.evaluate(
-                        *args, simulation_time=simulation_time, **kwargs
-                    )
+                    result &= self.inner_condition.evaluate(*args, time=time, **kwargs)
                 return result
-        elif result := self.inner_condition.evaluate(
-            *args, simulation_time=simulation_time, **kwargs
-        ):
-            object.__setattr__(self, key, simulation_time)
+        elif result := self.inner_condition.evaluate(*args, time=time, **kwargs):
+            object.__setattr__(self, key, time)
 
-        temporals = result & (ConditionState.BEFORE | ConditionState.EXPIRED)
+        temporals = result & (ConditionState.EXPIRED)
         if ConditionState.EXPIRED in temporals:
             return ConditionState.EXPIRED
-        return temporals & ConditionState.BEFORE
+        return self.untriggered_state
 
     @property
     def requires(self) -> ConditionRequires:
@@ -855,7 +923,7 @@ class TriggerCondition(Condition):
     def __post_init__(self):
         if self.inner_condition.__class__ in _abstract_conditions:
             raise TypeError(
-                f"Abstract `{self.inner_condition.__class__.__name__}` cannot use delay operations."
+                f"Abstract `{self.inner_condition.__class__.__name__}` cannot be wrapped by a trigger."
             )
 
 
@@ -1026,6 +1094,12 @@ class TrapEntryTactic(EntryTactic):
     condition: Condition = LiteralCondition(ConditionState.TRUE)
     """A condition that is used to add additional exclusions."""
 
+    def __post_init__(self):
+        assert isinstance(self.condition, (Condition))
+        assert not (
+            self.condition.requires & ConditionRequires.any_current_actor_state
+        ), f"Trap entry tactic cannot use conditions that require any_vehicle_state."
+
 
 @dataclass(frozen=True)
 class IdEntryTactic(EntryTactic):
@@ -1040,9 +1114,6 @@ class IdEntryTactic(EntryTactic):
     def __post_init__(self):
         assert isinstance(self.actor_id, str)
         assert isinstance(self.condition, (Condition))
-        assert not (
-            self.condition.requires & ConditionRequires.all_current_actor_state
-        ), f"Id entry tactic cannot use conditions that require any_vehicle_state."
 
 
 @dataclass(frozen=True)

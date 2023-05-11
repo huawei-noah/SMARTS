@@ -63,7 +63,7 @@ class IdActorCaptureManager(ActorCaptureManager):
             assert isinstance(entry_tactic, IdEntryTactic)
             vehicle = sim.vehicle_index.vehicle_by_id(actor_id)
             condition_result = entry_tactic.condition.evaluate(
-                simulation_time=sim.elapsed_sim_time,
+                time=sim.elapsed_sim_time,
                 actor_ids=sim.vehicle_index.vehicle_ids,
                 vehicle_state=vehicle.state if vehicle else None,
                 mission_start_time=mission.start_time,
@@ -113,7 +113,7 @@ class IdActorCaptureManager(ActorCaptureManager):
                 continue
             vehicle = sim.vehicle_index.vehicle_by_id(entry_tactic.actor_id, None)
             condition_result = entry_tactic.condition.evaluate(
-                simulation_time=sim.elapsed_sim_time,
+                time=sim.elapsed_sim_time,
                 actor_ids=sim.vehicle_index.vehicle_ids,
                 vehicle_state=vehicle.state if vehicle else None,
                 mission_start_time=mission.start_time,

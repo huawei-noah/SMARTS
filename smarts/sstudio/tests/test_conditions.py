@@ -28,16 +28,22 @@ from smarts.sstudio.types import (
     Condition,
     ConditionOperator,
     ConditionState,
+    ConditionTrigger,
     DependeeActorCondition,
+    ExpireTrigger,
     LiteralCondition,
     NegatedCondition,
     OnRoadCondition,
     SubjectCondition,
     TimeWindowCondition,
-    TriggerCondition,
     VehicleSpeedCondition,
     VehicleTypeCondition,
 )
+
+literal_true = LiteralCondition(ConditionState.TRUE)
+literal_false = LiteralCondition(ConditionState.FALSE)
+literal_before = LiteralCondition(ConditionState.BEFORE)
+literal_expired = LiteralCondition(ConditionState.EXPIRED)
 
 
 def test_condition_state():
@@ -74,8 +80,6 @@ def test_condition_state():
 
 
 def test_condition():
-    literal_true = LiteralCondition(ConditionState.TRUE)
-
     condition = Condition()
 
     with pytest.raises(NotImplementedError):
@@ -96,12 +100,11 @@ def test_condition():
     with pytest.raises(TypeError):
         condition.trigger(10)
 
+    with pytest.raises(TypeError):
+        condition.expire(10)
+
 
 def test_compound_condition():
-    literal_true = LiteralCondition(ConditionState.TRUE)
-    literal_false = LiteralCondition(ConditionState.FALSE)
-    literal_before = LiteralCondition(ConditionState.BEFORE)
-    literal_expired = LiteralCondition(ConditionState.EXPIRED)
 
     assert CompoundCondition(
         first_condition=literal_true,
@@ -188,14 +191,14 @@ def test_compound_condition():
     assert literal_false.implication(literal_false).evaluate() == ConditionState.TRUE
 
 
-def test_delay_condition():
+def test_condition_trigger():
     short_delay = 4
     long_delay = 10
     first_time_window_true = 5
     window_condition = TimeWindowCondition(4, 10)
     delayed_condition = window_condition.trigger(long_delay, persistant=False)
 
-    assert delayed_condition == TriggerCondition(
+    assert delayed_condition == ConditionTrigger(
         inner_condition=window_condition,
         delay_seconds=long_delay,
         persistant=False,
@@ -204,40 +207,53 @@ def test_delay_condition():
     # before
     time = 2
     assert (
-        not delayed_condition.evaluate(simulation_time=time)
-    ) and not window_condition.evaluate(simulation_time=time)
+        not delayed_condition.evaluate(time=time)
+    ) and not window_condition.evaluate(time=time)
     # first true
     time = first_time_window_true
-    assert (
-        not delayed_condition.evaluate(simulation_time=time)
-    ) and window_condition.evaluate(simulation_time=time)
+    assert (not delayed_condition.evaluate(time=time)) and window_condition.evaluate(
+        time=time
+    )
     # delay not expired
     time = first_time_window_true + long_delay - 1
     assert (
-        not delayed_condition.evaluate(simulation_time=time)
-    ) and not window_condition.evaluate(simulation_time=time)
+        not delayed_condition.evaluate(time=time)
+    ) and not window_condition.evaluate(time=time)
     # delay expired
     time = first_time_window_true + long_delay
-    assert delayed_condition.evaluate(
-        simulation_time=time
-    ) and not window_condition.evaluate(simulation_time=time)
+    assert delayed_condition.evaluate(time=time) and not window_condition.evaluate(
+        time=time
+    )
     # delay expired
     time = first_time_window_true + long_delay + 1
-    assert delayed_condition.evaluate(
-        simulation_time=time
-    ) and not window_condition.evaluate(simulation_time=time)
+    assert delayed_condition.evaluate(time=time) and not window_condition.evaluate(
+        time=time
+    )
     # delay not expired
     time = first_time_window_true + long_delay - 1
-    assert not delayed_condition.evaluate(simulation_time=time)
+    assert not delayed_condition.evaluate(time=time)
 
     # Test persistant true
     delayed_condition = window_condition.trigger(short_delay, persistant=True)
     time = first_time_window_true
-    assert not delayed_condition.evaluate(simulation_time=time)
+    assert not delayed_condition.evaluate(time=time)
     time = first_time_window_true + short_delay
-    assert delayed_condition.evaluate(simulation_time=time)
+    assert delayed_condition.evaluate(time=time)
     time = first_time_window_true + long_delay
-    assert not delayed_condition.evaluate(simulation_time=time)
+    assert not delayed_condition.evaluate(time=time)
+
+
+def test_expiring_trigger():
+    end_time = 10
+    before = end_time - 1
+    after = end_time + 1
+    expire_trigger = literal_true.expire(end_time)
+
+    assert expire_trigger == ExpireTrigger(literal_true, end_time)
+
+    assert expire_trigger.evaluate(time=before)
+    assert not expire_trigger.evaluate(time=end_time)
+    assert not expire_trigger.evaluate(time=after)
 
 
 def test_dependee_condition():
@@ -253,14 +269,9 @@ def test_literal_condition():
 
     assert literal_false.evaluate() == ConditionState.FALSE
     assert literal_true.evaluate() == ConditionState.TRUE
-    assert literal_true.evaluate()
-    assert not literal_false.evaluate()
 
 
 def test_negated_condition():
-    literal_true = LiteralCondition(ConditionState.TRUE)
-    literal_false = LiteralCondition(ConditionState.FALSE)
-
     assert literal_false.negation() == NegatedCondition(literal_false)
     assert literal_true.negation() == NegatedCondition(literal_true)
 
@@ -280,16 +291,14 @@ def test_time_window_condition():
 
     window_condition = TimeWindowCondition(start=start, end=end)
 
-    assert not window_condition.evaluate(simulation_time=start - 1)
-    assert window_condition.evaluate(simulation_time=start)
-    assert window_condition.evaluate(simulation_time=between)
-    assert not window_condition.evaluate(simulation_time=end)
-    assert not window_condition.evaluate(simulation_time=end + 1)
+    assert not window_condition.evaluate(time=start - 1)
+    assert window_condition.evaluate(time=start)
+    assert window_condition.evaluate(time=between)
+    assert not window_condition.evaluate(time=end)
+    assert not window_condition.evaluate(time=end + 1)
 
 
 def test_subject_condition():
-    literal_true = LiteralCondition(ConditionState.TRUE)
-
     subject_condition = SubjectCondition()
 
     with pytest.raises(NotImplementedError):
@@ -309,6 +318,9 @@ def test_subject_condition():
 
     with pytest.raises(TypeError):
         subject_condition.trigger(10)
+
+    with pytest.raises(TypeError):
+        subject_condition.expire(10)
 
 
 def test_vehicle_speed_condition():
