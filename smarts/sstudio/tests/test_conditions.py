@@ -54,19 +54,27 @@ def test_condition_state():
 
     assert ConditionState.TRUE
     assert (not ConditionState.TRUE) == False
-    assert not ~ConditionState.TRUE
+    assert (
+        ConditionState.FALSE | ConditionState.BEFORE | ConditionState.EXPIRED
+    ) in ~ConditionState.TRUE
 
     assert ConditionState.FALSE == False
     assert not ConditionState.FALSE
-    assert ~ConditionState.FALSE
+    assert (
+        ConditionState.TRUE | ConditionState.BEFORE | ConditionState.EXPIRED
+    ) in ~ConditionState.FALSE
 
     assert bool(ConditionState.EXPIRED) == False
     assert not ConditionState.EXPIRED
-    assert ~ConditionState.EXPIRED
+    assert (
+        ConditionState.TRUE | ConditionState.BEFORE | ConditionState.FALSE
+    ) in ~ConditionState.EXPIRED
 
     assert bool(ConditionState.BEFORE) == False
     assert not ConditionState.BEFORE
-    assert ~ConditionState.BEFORE
+    assert (
+        ConditionState.TRUE | ConditionState.FALSE | ConditionState.EXPIRED
+    ) in ~ConditionState.BEFORE
 
     assert ConditionState.TRUE | ConditionState.FALSE
     assert not ConditionState.TRUE & ConditionState.FALSE
