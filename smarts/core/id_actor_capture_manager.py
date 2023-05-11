@@ -62,13 +62,14 @@ class IdActorCaptureManager(ActorCaptureManager):
             entry_tactic = mission.entry_tactic
             assert isinstance(entry_tactic, IdEntryTactic)
             vehicle = sim.vehicle_index.vehicle_by_id(actor_id)
-            condition_result = entry_tactic.condition.evaluate(
-                time=sim.elapsed_sim_time,
-                actor_ids=sim.vehicle_index.vehicle_ids,
-                vehicle_state=vehicle.state if vehicle else None,
-                mission_start_time=mission.start_time,
-                mission=mission,
+            condition_kwargs = ActorCaptureManager._gen_all_condition_kwargs(
+                agent_id,
+                mission,
+                sim,
+                vehicle.state if vehicle is not None else None,
+                entry_tactic.condition.requires,
             )
+            condition_result = entry_tactic.condition.evaluate(**condition_kwargs)
             if condition_result == ConditionState.EXPIRED:
                 print(condition_result)
                 self._log.warning(
@@ -112,12 +113,14 @@ class IdActorCaptureManager(ActorCaptureManager):
             if not isinstance(entry_tactic, IdEntryTactic):
                 continue
             vehicle = sim.vehicle_index.vehicle_by_id(entry_tactic.actor_id, None)
-            condition_result = entry_tactic.condition.evaluate(
-                time=sim.elapsed_sim_time,
-                actor_ids=sim.vehicle_index.vehicle_ids,
-                vehicle_state=vehicle.state if vehicle else None,
-                mission_start_time=mission.start_time,
+            condition_kwargs = ActorCaptureManager._gen_all_condition_kwargs(
+                agent_id,
+                mission,
+                sim,
+                vehicle.state if vehicle is not None else None,
+                entry_tactic.condition.requires,
             )
+            condition_result = entry_tactic.condition.evaluate(**condition_kwargs)
             if condition_result == ConditionState.EXPIRED:
                 self._log.warning(
                     f"Actor aquisition skipped for `{agent_id}` scheduled to start with"

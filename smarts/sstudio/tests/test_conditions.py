@@ -27,6 +27,7 @@ from smarts.sstudio.types import (
     CompoundCondition,
     Condition,
     ConditionOperator,
+    ConditionRequires,
     ConditionState,
     ConditionTrigger,
     DependeeActorCondition,
@@ -346,9 +347,9 @@ def test_vehicle_speed_condition():
     fast_vehicle_state = Mock()
     fast_vehicle_state.speed = high + 50
 
-    assert not vehicle_speed_condition.evaluate(vehicle_state=slow_vehicle_state)
-    assert vehicle_speed_condition.evaluate(vehicle_state=between_vehicle_state)
-    assert not vehicle_speed_condition.evaluate(vehicle_state=fast_vehicle_state)
+    assert not vehicle_speed_condition.evaluate(current_actor_state=slow_vehicle_state)
+    assert vehicle_speed_condition.evaluate(current_actor_state=between_vehicle_state)
+    assert not vehicle_speed_condition.evaluate(current_actor_state=fast_vehicle_state)
 
 
 def test_vehicle_type_condition():
@@ -360,5 +361,5 @@ def test_vehicle_type_condition():
     truck_vehicle_state = Mock()
     truck_vehicle_state.vehicle_config_type = "truck"
 
-    assert vehicle_type_condition.evaluate(vehicle_state=passenger_vehicle_state)
-    assert not vehicle_type_condition.evaluate(vehicle_state=truck_vehicle_state)
+    assert vehicle_type_condition.evaluate(current_actor_state=passenger_vehicle_state)
+    assert not vehicle_type_condition.evaluate(current_actor_state=truck_vehicle_state)

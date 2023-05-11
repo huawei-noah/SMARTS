@@ -623,7 +623,7 @@ class ConditionOperator(IntEnum):
 class ConditionRequires(IntFlag):
     """This bitfield lays out the required information that a condition needs in order to evaluate."""
 
-    none = enum.auto()
+    none = 0
 
     # MISSION CONSTANTS
     agent_id = enum.auto()
@@ -633,6 +633,7 @@ class ConditionRequires(IntFlag):
     time = enum.auto()
     actor_ids = enum.auto()
     actor_states = enum.auto()
+    road_map = enum.auto()
     simulation = enum.auto()
 
     # ACTOR STATE
@@ -641,27 +642,14 @@ class ConditionRequires(IntFlag):
 
     any_simulation_state = time | actor_ids | actor_states | simulation
     any_current_actor_state = mission | current_actor_state | current_actor_road_status
-
-
-@dataclass(frozen=True)
-class ConditionEvaluationArgs:
-    """Standard arguments given to condition evaluations."""
-
-    agent_id: Optional[str]
-    mission: Optional[Any]
-    time: Optional[float]
-    actor_ids: Optional[Set[str]]
-    actor_states: Optional[List[Any]]
-    simulation: Any
-    current_actor_state: Optional[Any]
-    current_actor_road_status: Optional[Any]
+    any_mission_state = agent_id | mission
 
 
 @dataclass(frozen=True)
 class Condition:
     """This encompasses an expression to evaluate to a logical result."""
 
-    def evaluate(self, *args, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
         """Used to evaluate if a condition is met.
 
         Returns:
@@ -749,7 +737,7 @@ class Condition:
 class SubjectCondition(Condition):
     """This condition assumes that there is a subject involved."""
 
-    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
         """Used to evaluate if a condition is met.
 
         Args:
@@ -761,10 +749,7 @@ class SubjectCondition(Condition):
 
     @property
     def requires(self) -> ConditionRequires:
-        return (
-            ConditionRequires.any_current_actor_state
-            | ConditionRequires.any_simulation_state
-        )
+        return ConditionRequires.current_actor_state
 
 
 _abstract_conditions = (Condition, SubjectCondition)
@@ -777,7 +762,7 @@ class LiteralCondition(Condition):
     literal: ConditionState
     """The literal value of this condition."""
 
-    def evaluate(self, *args, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
         return self.literal
 
     @property
@@ -794,7 +779,8 @@ class TimeWindowCondition(Condition):
     end: float
     """The ending simulation time as of which this condition becomes expired."""
 
-    def evaluate(self, *args, time, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        time = kwargs[ConditionRequires.time.name]
         if self.start <= time < self.end or self.end == sys.maxsize:
             return ConditionState.TRUE
         elif time > self.end:
@@ -813,7 +799,8 @@ class DependeeActorCondition(Condition):
     actor_id: str
     """The id of an actor in the simulation that needs to exist for this condition to be true."""
 
-    def evaluate(self, *args, actor_ids, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        actor_ids = kwargs[self.requires.name]
         if self.actor_id in actor_ids:
             return ConditionState.TRUE
         return ConditionState.FALSE
@@ -833,8 +820,8 @@ class NegatedCondition(Condition):
     inner_condition: Condition
     """The inner condition to negate."""
 
-    def evaluate(self, *args, **kwargs) -> ConditionState:
-        result = ~self.inner_condition.evaluate(*args, **kwargs)
+    def evaluate(self, **kwargs) -> ConditionState:
+        result = ~self.inner_condition.evaluate(**kwargs)
         assert isinstance(result, ConditionState)
         return result
 
@@ -862,12 +849,13 @@ class ExpireTrigger(Condition):
     expired_state: ConditionState = ConditionState.EXPIRED
     """The state value this trigger should have when it expires."""
 
-    def evaluate(self, *args, time, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        time = kwargs[ConditionRequires.time.name]
         if time >= self.time:
             return self.expired_state
-        return self.inner_condition.evaluate(*args, time=time, **kwargs)
+        return self.inner_condition.evaluate(**kwargs)
 
-    @property
+    @cached_property
     def requires(self) -> ConditionRequires:
         return self.inner_condition.requires | ConditionRequires.time
 
@@ -905,16 +893,17 @@ class ConditionTrigger(Condition):
     persistant: bool = False
     """If the inner condition state is used in conjuction with the triggered state. (inner_condition_state & triggered_state)"""
 
-    def evaluate(self, *args, time, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        time = kwargs[ConditionRequires.time.name]
         key = "met_time"
         result = self.untriggered_state
         if self.delay_seconds <= 0 or (met_time := getattr(self, key, -1)) > -1:
             if time >= met_time + self.delay_seconds:
                 result = self.triggered_state
                 if self.persistant:
-                    result &= self.inner_condition.evaluate(*args, time=time, **kwargs)
+                    result &= self.inner_condition.evaluate(**kwargs)
                 return result
-        elif result := self.inner_condition.evaluate(*args, time=time, **kwargs):
+        elif result := self.inner_condition.evaluate(**kwargs):
             object.__setattr__(self, key, time)
 
         temporals = result & (ConditionState.EXPIRED)
@@ -924,7 +913,7 @@ class ConditionTrigger(Condition):
 
     @property
     def requires(self) -> ConditionRequires:
-        return self.inner_condition.requires
+        return self.inner_condition.requires | ConditionRequires.time
 
     def __post_init__(self):
         if self.inner_condition.__class__ in _abstract_conditions:
@@ -937,7 +926,8 @@ class ConditionTrigger(Condition):
 class OnRoadCondition(SubjectCondition):
     """This condition is true if the subject is on road."""
 
-    def evaluate(self, *args, current_actor_road_status, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        current_actor_road_status = kwargs[self.requires.name]
         return (
             ConditionState.TRUE
             if current_actor_road_status.on_road
@@ -955,10 +945,11 @@ class VehicleTypeCondition(SubjectCondition):
 
     vehicle_type: str
 
-    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        current_actor_state = kwargs[self.requires.name]
         return (
             ConditionState.TRUE
-            if vehicle_state.vehicle_config_type == self.vehicle_type
+            if current_actor_state.vehicle_config_type == self.vehicle_type
             else ConditionState.FALSE
         )
 
@@ -977,7 +968,8 @@ class VehicleSpeedCondition(SubjectCondition):
     high: float
     """The highest speed allowed."""
 
-    def evaluate(self, *args, vehicle_state, **kwargs) -> ConditionState:
+    def evaluate(self, **kwargs) -> ConditionState:
+        vehicle_state = kwargs[self.requires.name]
         return (
             ConditionState.TRUE
             if self.low <= vehicle_state.speed <= self.high
@@ -1024,12 +1016,12 @@ class CompoundCondition(Condition):
     operator: ConditionOperator
     """The operator used to combine these conditions."""
 
-    def evaluate(self, *args, **kwargs) -> ConditionState:
-        first_eval = self.first_condition.evaluate(*args, **kwargs)
+    def evaluate(self, **kwargs) -> ConditionState:
+        first_eval = self.first_condition.evaluate(**kwargs)
         if self.operator == ConditionOperator.IMPLICATION and not first_eval:
             return ConditionState.TRUE
 
-        second_eval = self.second_condition.evaluate(*args, **kwargs)
+        second_eval = self.second_condition.evaluate(**kwargs)
         if (
             self.operator == ConditionOperator.IMPLICATION
             and first_eval

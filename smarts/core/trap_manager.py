@@ -71,27 +71,6 @@ class Trap:
                 return False
         return True
 
-    def evaluate(
-        self,
-        simulation,
-        vehicle_state: Optional[Any] = None,
-    ) -> ConditionState:
-        """Considers the given vehicle to see if it is applicable.
-
-        Args:
-            simulation (SMARTS): The simulation reference
-            vehicle_state (VehicleState): The current vehicle state.
-
-        Returns:
-            ConditionState: The current state of the condition.
-        """
-        return self.entry_tactic.condition.evaluate(
-            time=simulation.elapsed_sim_time,
-            actor_ids=simulation.vehicle_index.vehicle_ids,
-            vehicle_state=vehicle_state,
-            mission_start_time=self.mission.start_time,
-        )
-
 
 @dataclass(frozen=True)
 class _CaptureState:
@@ -246,7 +225,15 @@ class TrapManager(ActorCaptureManager):
                 )
                 continue
 
-            trap_condition = trap.evaluate(sim)
+            sim_eval_kwargs = ActorCaptureManager._gen_simulation_condition_kwargs(
+                sim, trap.entry_tactic.condition.requires
+            )
+            mission_eval_kwargs = ActorCaptureManager._gen_mission_condition_kwargs(
+                agent_id, trap.mission, trap.entry_tactic.condition.requires
+            )
+            trap_condition = trap.entry_tactic.condition.evaluate(
+                **sim_eval_kwargs, **mission_eval_kwargs
+            )
             if not trap_condition:
                 capture_by_agent_id[agent_id] = _CaptureState(trap_condition, trap)
                 continue
