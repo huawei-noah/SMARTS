@@ -685,7 +685,28 @@ class Condition:
     def trigger(
         self, delay_seconds: float, persistant: bool = False
     ) -> "ConditionTrigger":
-        """Converts the condition to a trigger which becomes permanently TRUE after the inner condition becomes TRUE.
+        """Converts the condition to a trigger which becomes permanently TRUE after the first time the inner condition becomes TRUE.
+
+        >>> trigger = TimeWindowCondition(2, 5).trigger(delay_seconds=0)
+        >>> trigger.evaluate(time=1)
+        <ConditionState.BEFORE: 1>
+        >>> trigger.evaluate(time=4)
+        <ConditionState.TRUE: 4>
+        >>> trigger.evaluate(time=90)
+        <ConditionState.TRUE: 4>
+
+        >>> start_time = 5
+        >>> between_time = 10
+        >>> delay_seconds = 20
+        >>> trigger = LiteralCondition(ConditionState.TRUE).trigger(delay_seconds=delay_seconds)
+        >>> trigger.evaluate(time=start_time)
+        <ConditionState.BEFORE: 1>
+        >>> trigger.evaluate(time=between_time)
+        <ConditionState.BEFORE: 1>
+        >>> trigger.evaluate(time=start_time + delay_seconds)
+        <ConditionState.TRUE: 4>
+        >>> trigger.evaluate(time=between_time)
+        <ConditionState.BEFORE: 1>
 
         Args:
             delay_seconds (float): Applies the trigger after the delay has passed since the inner condition first TRUE. Defaults to False.
@@ -703,9 +724,9 @@ class Condition:
 
         >>> trigger = LiteralCondition(ConditionState.TRUE).expire(20)
         >>> trigger.evaluate(time=10)
-        ConditionState.TRUE
+        <ConditionState.TRUE: 4>
         >>> trigger.evaluate(time=30)
-        ConditionState.FALSE
+        <ConditionState.EXPIRED: 2>
 
         Args:
             time (float): The simulation time when this trigger changes.
@@ -870,9 +891,9 @@ class ExpireTrigger(Condition):
 class ConditionTrigger(Condition):
     """This condition is a trigger that assumes an untriggered constant state and then turns to the other state permanently
     on the inner condition becoming TRUE. There is also an option to delay repsonse to the the inner condition by a number
-    of seconds. This will convey an EXPIRED value immediately because that state means the inner value will never be true.
+    of seconds. This will convey an EXPIRED value immediately because that state means the inner value will never be TRUE.
 
-    This can be used to wait for some time after the inner condition has become true to be true.
+    This can be used to wait for some time after the inner condition has become TRUE to trigger.
     Note that the original condition may no longer be true by the time delay has expired.
 
     This will never resolve TRUE on the first evaluate.
@@ -897,14 +918,17 @@ class ConditionTrigger(Condition):
         time = kwargs[ConditionRequires.time.name]
         key = "met_time"
         result = self.untriggered_state
-        if self.delay_seconds <= 0 or (met_time := getattr(self, key, -1)) > -1:
+        met_time = getattr(self, key, -1)
+        if met_time == -1 and self.inner_condition.evaluate(**kwargs):
+            object.__setattr__(self, key, time)
+        if met_time != -1 or (
+            self.delay_seconds == 0 and self.inner_condition.evaluate(**kwargs)
+        ):
             if time >= met_time + self.delay_seconds:
                 result = self.triggered_state
                 if self.persistant:
                     result &= self.inner_condition.evaluate(**kwargs)
                 return result
-        elif result := self.inner_condition.evaluate(**kwargs):
-            object.__setattr__(self, key, time)
 
         temporals = result & (ConditionState.EXPIRED)
         if ConditionState.EXPIRED in temporals:
