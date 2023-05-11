@@ -44,14 +44,14 @@ class Trap:
     """The trap area within which actors are considered for capture."""
     mission: Mission
     """The mission that this trap should assign the captured actor."""
-    exclusion_prefixes: Sequence[str]
-    """Prefixes of actors that should be ignored by this trap."""
     activation_time: float
     """The amount of time left until this trap activates."""
     patience: float
     """Patience to wait for better capture circumstances after which the trap expires."""
     default_entry_speed: float
     """The default entry speed of a new vehicle should this trap expire."""
+    entry_tactic: TrapEntryTactic
+    """The entry tactic that this trap was generated with."""
 
     def ready(self, sim_time: float):
         """If the trap is ready to capture a vehicle."""
@@ -66,7 +66,7 @@ class Trap:
 
     def includes(self, vehicle_id: str):
         """Returns if the given actor should be considered for capture."""
-        for prefix in self.exclusion_prefixes:
+        for prefix in self.entry_tactic.exclusion_prefixes:
             if vehicle_id.startswith(prefix):
                 return False
         return True
@@ -85,8 +85,7 @@ class Trap:
         Returns:
             ConditionState: The current state of the condition.
         """
-        entry_tactic: TrapEntryTactic = self.mission.entry_tactic
-        return entry_tactic.condition.evaluate(
+        return self.entry_tactic.condition.evaluate(
             time=simulation.elapsed_sim_time,
             actor_ids=simulation.vehicle_index.vehicle_ids,
             vehicle_state=vehicle_state,
@@ -357,11 +356,12 @@ class TrapManager(ActorCaptureManager):
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 
-        assert isinstance(mission.entry_tactic, TrapEntryTactic)
+        entry_tactic = mission.entry_tactic
+        assert isinstance(entry_tactic, TrapEntryTactic)
 
-        patience = mission.entry_tactic.wait_to_hijack_limit_s
-        zone = mission.entry_tactic.zone
-        default_entry_speed = mission.entry_tactic.default_entry_speed
+        patience = entry_tactic.wait_to_hijack_limit_s
+        zone = entry_tactic.zone
+        default_entry_speed = entry_tactic.default_entry_speed
         n_lane = None
 
         if default_entry_speed is None:
@@ -404,8 +404,8 @@ class TrapManager(ActorCaptureManager):
             activation_time=mission.start_time,
             patience=patience,
             mission=mission,
-            exclusion_prefixes=mission.entry_tactic.exclusion_prefixes,
             default_entry_speed=default_entry_speed,
+            entry_tactic=mission.entry_tactic,
         )
 
         return trap

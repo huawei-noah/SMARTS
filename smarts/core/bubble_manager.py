@@ -471,7 +471,7 @@ class BubbleManager(ActorCaptureManager):
     @lru_cache(maxsize=2)
     def _vehicle_ids_divided_by_bubble_state(
         cursors: FrozenSet[Cursor],
-    ) -> Dict[BubbleState, Dict[Bubble, Set[Bubble]]]:
+    ) -> Dict[BubbleState, Dict[Bubble, Set[str]]]:
         vehicle_ids_grouped_by_cursor = defaultdict(lambda: defaultdict(set))
         for cursor in cursors:
             vehicle_ids_grouped_by_cursor[cursor.state][cursor.bubble].add(

@@ -794,7 +794,7 @@ class TimeWindowCondition(Condition):
     end: float
     """The ending simulation time as of which this condition becomes expired."""
 
-    def evaluate(self, *args, time, **kwargs):
+    def evaluate(self, *args, time, **kwargs) -> ConditionState:
         if self.start <= time < self.end or self.end == sys.maxsize:
             return ConditionState.TRUE
         elif time > self.end:
@@ -813,7 +813,7 @@ class DependeeActorCondition(Condition):
     actor_id: str
     """The id of an actor in the simulation that needs to exist for this condition to be true."""
 
-    def evaluate(self, *args, actor_ids, **kwargs):
+    def evaluate(self, *args, actor_ids, **kwargs) -> ConditionState:
         if self.actor_id in actor_ids:
             return ConditionState.TRUE
         return ConditionState.FALSE
@@ -834,7 +834,9 @@ class NegatedCondition(Condition):
     """The inner condition to negate."""
 
     def evaluate(self, *args, **kwargs) -> ConditionState:
-        return ~self.inner_condition.evaluate(*args, **kwargs)
+        result = ~self.inner_condition.evaluate(*args, **kwargs)
+        assert isinstance(result, ConditionState)
+        return result
 
     @property
     def requires(self) -> ConditionRequires:
@@ -1022,7 +1024,7 @@ class CompoundCondition(Condition):
     operator: ConditionOperator
     """The operator used to combine these conditions."""
 
-    def evaluate(self, *args, **kwargs):
+    def evaluate(self, *args, **kwargs) -> ConditionState:
         first_eval = self.first_condition.evaluate(*args, **kwargs)
         if self.operator == ConditionOperator.IMPLICATION and not first_eval:
             return ConditionState.TRUE
@@ -1249,8 +1251,12 @@ class MapZone(Zone):
     n_lanes: int = 2
     """The number of lanes from right to left that this zone covers."""
 
-    def to_geometry(self, road_map: RoadMap) -> Polygon:
+    def to_geometry(self, road_map: Optional[RoadMap]) -> Polygon:
         """Generates a map zone over a stretch of the given lanes."""
+
+        assert (
+            road_map is not None
+        ), f"{self.__class__.__name__} requires a road map to resolve geometry."
 
         def resolve_offset(offset, geometry_length, lane_length):
             if offset == "base":
