@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 import logging
 import math
-import random as rand
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple

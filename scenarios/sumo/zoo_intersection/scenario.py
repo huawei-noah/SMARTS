@@ -100,7 +100,7 @@ gen_scenario(
                     EndlessMission(
                         begin=("edge-south-SN", 0, 10),
                         entry_tactic=TrapEntryTactic(
-                            start_time=0.7, wait_to_hijack_limit_s=0.1
+                            start_time=0.7, wait_to_hijack_limit_s=0
                         ),
                     ),
                 ],
