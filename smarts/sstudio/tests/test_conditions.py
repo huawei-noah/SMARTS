@@ -252,7 +252,7 @@ def test_condition_trigger():
     assert not delayed_condition.evaluate(time=time)
 
 
-def test_expiring_trigger():
+def test_expire_trigger():
     end_time = 10
     before = end_time - 1
     after = end_time + 1
@@ -263,6 +263,14 @@ def test_expiring_trigger():
     assert expire_trigger.evaluate(time=before)
     assert not expire_trigger.evaluate(time=end_time)
     assert not expire_trigger.evaluate(time=after)
+
+    first_time = 3
+    expire_trigger = literal_true.expire(end_time, relative=True)
+    assert expire_trigger.evaluate(time=first_time)
+    assert expire_trigger.evaluate(time=first_time + before)
+    assert expire_trigger.evaluate(time=end_time)
+    assert not expire_trigger.evaluate(time=first_time + end_time)
+    assert not expire_trigger.evaluate(time=first_time + after)
 
 
 def test_dependee_condition():

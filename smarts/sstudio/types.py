@@ -767,7 +767,9 @@ class Condition:
             self, delay_seconds=delay_seconds, persistant=persistant
         )
 
-    def expire(self, time, expired_state=ConditionState.EXPIRED) -> "ExpireTrigger":
+    def expire(
+        self, time, expired_state=ConditionState.EXPIRED, relative: bool = False
+    ) -> "ExpireTrigger":
         """This trigger evaluates to the expired state value after the given simulation time.
 
         >>> trigger = LiteralCondition(ConditionState.TRUE).expire(20)
@@ -779,12 +781,15 @@ class Condition:
         Args:
             time (float): The simulation time when this trigger changes.
             expired_state (ConditionState, optional): The condition state to use when the simulation is after the given time. Defaults to ConditionState.EXPIRED.
-
+            relative (bool, optional): If this trigger should resolve relative to the first evaluated time.
         Returns:
             ExpireTrigger: The resulting condition.
         """
         return ExpireTrigger(
-            inner_condition=self, time=time, expired_state=expired_state
+            inner_condition=self,
+            time=time,
+            expired_state=expired_state,
+            relative=relative,
         )
 
     def __and__(self, other: "Condition") -> "CompoundCondition":
@@ -922,8 +927,19 @@ class ExpireTrigger(Condition):
     expired_state: ConditionState = ConditionState.EXPIRED
     """The state value this trigger should have when it expires."""
 
+    relative: bool = False
+    """If this should start relative to the first time evaluated."""
+
     def evaluate(self, **kwargs) -> ConditionState:
         time = kwargs[ConditionRequires.time.name]
+        if self.relative:
+            key = "met"
+            met_time = getattr(self, key, -1)
+            if met_time == -1:
+                object.__setattr__(self, key, time)
+                time = 0
+            else:
+                time -= met_time
         if time >= self.time:
             return self.expired_state
         return self.inner_condition.evaluate(**kwargs)
@@ -971,16 +987,19 @@ class ConditionTrigger(Condition):
         key = "met_time"
         result = self.untriggered_state
         met_time = getattr(self, key, -1)
-        if met_time == -1 and self.inner_condition.evaluate(**kwargs):
-            object.__setattr__(self, key, time)
-        if met_time != -1 or (
-            self.delay_seconds == 0 and self.inner_condition.evaluate(**kwargs)
-        ):
-            if time >= met_time + self.delay_seconds:
-                result = self.triggered_state
-                if self.persistant:
-                    result &= self.inner_condition.evaluate(**kwargs)
-                return result
+        if met_time == -1:
+            if self.inner_condition.evaluate(**kwargs):
+                object.__setattr__(self, key, time)
+                time = 0
+            else:
+                time = -1
+        else:
+            time -= met_time
+        if time >= self.delay_seconds:
+            result = self.triggered_state
+            if self.persistant:
+                result &= self.inner_condition.evaluate(**kwargs)
+            return result
 
         temporals = result & (ConditionState.EXPIRED)
         if ConditionState.EXPIRED in temporals:
@@ -996,6 +1015,8 @@ class ConditionTrigger(Condition):
             raise TypeError(
                 f"Abstract `{self.inner_condition.__class__.__name__}` cannot be wrapped by a trigger."
             )
+        if self.delay_seconds < 0:
+            raise ValueError("Delay cannot be negative.")
 
 
 @dataclass(frozen=True)
