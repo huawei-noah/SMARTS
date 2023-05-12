@@ -1168,8 +1168,6 @@ class EntryTactic:
     """The tactic that the simulation should use to acquire a vehicle for an agent."""
 
     start_time: float
-    # condition: Condition
-    # """The condition to determine if this entry tactic should be used."""
 
 
 @dataclass(frozen=True)
