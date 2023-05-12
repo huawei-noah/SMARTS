@@ -107,7 +107,6 @@ def two_agent_capture_offset_tenth_of_second():
             t.Mission(
                 t.Route(begin=("west", 1, 20), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
-                    wait_to_hijack_limit_s=0,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
             ),

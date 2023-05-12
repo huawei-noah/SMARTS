@@ -1174,7 +1174,7 @@ class EntryTactic:
 class TrapEntryTactic(EntryTactic):
     """An entry tactic that repurposes a pre-existing vehicle for an agent."""
 
-    wait_to_hijack_limit_s: float
+    wait_to_hijack_limit_s: float = 0
     """The amount of seconds a hijack will wait to get a vehicle before defaulting to a new vehicle"""
     zone: Optional["MapZone"] = None
     """The zone of the hijack area"""

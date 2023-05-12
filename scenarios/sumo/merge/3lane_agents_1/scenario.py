@@ -83,7 +83,7 @@ for name, routes in enumerate(route_comb):
 ego_missions = [
     Mission(
         Route(begin=("gneE6", 0, 10), end=("gneE4", 2, "max")),
-        entry_tactic=TrapEntryTactic(start_time=15, wait_to_hijack_limit_s=0),
+        entry_tactic=TrapEntryTactic(start_time=15),
     ),
 ]
 
