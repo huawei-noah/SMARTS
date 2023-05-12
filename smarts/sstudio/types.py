@@ -667,19 +667,67 @@ class Condition:
         raise NotImplementedError()
 
     def negation(self) -> "NegatedCondition":
-        """Negates this condition."""
+        """Negates this condition giving the opposite result on evaluation.
+
+        >>> condition_true = LiteralCondition(ConditionState.TRUE)
+        >>> condition_true.evaluate()
+        <ConditionState.TRUE: 4>
+        >>> condition_false = condition_true.negation()
+        >>> condition_false.evaluate()
+        <ConditionState.FALSE: 0>
+
+        Note\\: This erases temporal values EXPIRED and BEFORE.
+        >>> condition_before = LiteralCondition(ConditionState.BEFORE)
+        >>> condition_before.negation().negation().evaluate()
+        <ConditionState.FALSE: 0>
+
+        Returns:
+            NegatedCondition: The wrapped condition.
+        """
         return NegatedCondition(self)
 
     def conjunction(self, other: "Condition") -> "CompoundCondition":
-        """Resolve conditions as A AND B."""
+        """Resolve conditions as A AND B.
+
+        The bit AND operator has been overloaded to call this method.
+        >>> dependee_condition = DependeeActorCondition("leader")
+        >>> dependee_condition.evaluate(actor_ids={"leader"})
+        <ConditionState.TRUE: 4>
+        >>> conjunction = dependee_condition & LiteralCondition(ConditionState.FALSE)
+        >>> conjunction.evaluate(actor_ids={"leader"})
+        <ConditionState.FALSE: 0>
+
+        Note that the resolution has the priority EXPIRED > BEFORE > FALSE > TRUE.
+        >>> conjunction = LiteralCondition(ConditionState.TRUE) & LiteralCondition(ConditionState.BEFORE)
+        >>> conjunction.evaluate()
+        <ConditionState.BEFORE: 1>
+        >>> (conjunction & LiteralCondition(ConditionState.EXPIRED)).evaluate()
+        <ConditionState.EXPIRED: 2>
+
+        Returns:
+            CompoundCondition: A condition combining two conditions using an AND operation.
+        """
         return CompoundCondition(self, other, operator=ConditionOperator.CONJUNCTION)
 
     def disjunction(self, other: "Condition") -> "CompoundCondition":
-        """Resolve conditions as A OR B."""
+        """Resolve conditions as A OR B.
+
+        The bit OR operator has been overloaded to call this method.
+        >>> disjunction = LiteralCondition(ConditionState.TRUE) | LiteralCondition(ConditionState.BEFORE)
+        >>> disjunction.evaluate()
+        <ConditionState.TRUE: 4>
+
+        Note that the resolution has the priority TRUE > BEFORE > FALSE > EXPIRED.
+        >>> disjunction = LiteralCondition(ConditionState.FALSE) | LiteralCondition(ConditionState.EXPIRED)
+        >>> disjunction.evaluate()
+        <ConditionState.FALSE: 0>
+        >>> (disjunction | LiteralCondition(ConditionState.BEFORE)).evaluate()
+        <ConditionState.BEFORE: 1>
+        """
         return CompoundCondition(self, other, operator=ConditionOperator.DISJUNCTION)
 
     def implication(self, other: "Condition") -> "CompoundCondition":
-        """Resolve conditions as A AND B OR NOT A."""
+        """Resolve conditions as A IMPLIES B. This is the same as A AND B OR NOT A."""
         return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
 
     def trigger(
@@ -740,7 +788,7 @@ class Condition:
         )
 
     def __and__(self, other: "Condition") -> "CompoundCondition":
-        """Resolve conditions as A AND B"""
+        """Resolve conditions as A AND B."""
         assert isinstance(other, Condition)
         return self.conjunction(other)
 
@@ -836,15 +884,19 @@ class DependeeActorCondition(Condition):
 
 @dataclass(frozen=True)
 class NegatedCondition(Condition):
-    """This condition negates the inner condition."""
+    """This condition negates the inner condition to flip between TRUE and FALSE.
+
+    Note\\: This erases temporal values EXPIRED and BEFORE.
+    """
 
     inner_condition: Condition
     """The inner condition to negate."""
 
     def evaluate(self, **kwargs) -> ConditionState:
-        result = ~self.inner_condition.evaluate(**kwargs)
-        assert isinstance(result, ConditionState)
-        return result
+        result = self.inner_condition.evaluate(**kwargs)
+        if ConditionState.TRUE in result:
+            return ConditionState.FALSE
+        return ConditionState.TRUE
 
     @property
     def requires(self) -> ConditionRequires:
@@ -1046,34 +1098,49 @@ class CompoundCondition(Condition):
     """The operator used to combine these conditions."""
 
     def evaluate(self, **kwargs) -> ConditionState:
+        # Short circuits
         first_eval = self.first_condition.evaluate(**kwargs)
-        if self.operator == ConditionOperator.IMPLICATION and not first_eval:
+        if (
+            self.operator == ConditionOperator.CONJUNCTION
+            and ConditionState.EXPIRED in first_eval
+        ):
+            return ConditionState.EXPIRED
+        elif (
+            self.operator == ConditionOperator.DISJUNCTION
+            and ConditionState.TRUE in first_eval
+        ):
+            return ConditionState.TRUE
+        elif (
+            self.operator == ConditionOperator.IMPLICATION
+            and ConditionState.TRUE not in first_eval
+        ):
             return ConditionState.TRUE
 
         second_eval = self.second_condition.evaluate(**kwargs)
         if (
             self.operator == ConditionOperator.IMPLICATION
-            and first_eval
-            and second_eval
+            and ConditionState.TRUE in first_eval
+            and ConditionState.TRUE in second_eval
         ):
             return ConditionState.TRUE
 
-        if self.operator == ConditionOperator.CONJUNCTION:
-            result = first_eval & second_eval
-            if result:
+        elif self.operator == ConditionOperator.CONJUNCTION:
+            conjuction = first_eval & second_eval
+            if ConditionState.TRUE in conjuction:
                 return ConditionState.TRUE
 
-            temporals = (first_eval | second_eval) & (
-                ConditionState.BEFORE | ConditionState.EXPIRED
-            )
-            if ConditionState.EXPIRED in temporals:
+            # To priority of temporal versions of FALSE
+            disjunction = first_eval | second_eval
+            if ConditionState.EXPIRED in disjunction:
                 return ConditionState.EXPIRED
 
-            return temporals
+            if ConditionState.BEFORE in disjunction:
+                return ConditionState.BEFORE
+
         elif self.operator == ConditionOperator.DISJUNCTION:
             result = first_eval | second_eval
 
-            if result:
+            if ConditionState.TRUE in result:
                 return ConditionState.TRUE
 
             if ConditionState.BEFORE in result:
@@ -1081,8 +1148,6 @@ class CompoundCondition(Condition):
 
             if ConditionState.EXPIRED in first_eval & second_eval:
                 return ConditionState.EXPIRED
-
-            return ConditionState.FALSE
 
         return ConditionState.FALSE
 
