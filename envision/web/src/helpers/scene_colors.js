@@ -66,4 +66,4 @@ export const SignalColors = Object.freeze({
   Stop: Red,
   Caution: Yellow,
   Go: Green,
-})
+});

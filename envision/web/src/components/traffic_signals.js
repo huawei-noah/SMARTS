@@ -49,27 +49,32 @@ export default function TrafficSignals({ scene, worldState }) {
       geom.dispose(false, true);
     }
 
-    let newSignalGeometry = Object.keys(worldState.signals).map(signalName => {
-      let state = worldState.signals[signalName].state;
-      let pos = worldState.signals[signalName].position;
-      let point = new Vector3(pos[0], 0.01, pos[1])
-      let mesh = MeshBuilder.CreateDisc(
-        `signal-${signalName}`,
-        { radius: 0.8 },
-        scene
-      );
-      mesh.position = point;
-      let axis = new Vector3(1, 0, 0);
-      mesh.rotate(axis, Math.PI / 2, Space.WORLD);
+    let newSignalGeometry = Object.keys(worldState.signals).map(
+      (signalName) => {
+        let state = worldState.signals[signalName].state;
+        let pos = worldState.signals[signalName].position;
+        let point = new Vector3(pos[0], 0.01, pos[1]);
+        let mesh = MeshBuilder.CreateDisc(
+          `signal-${signalName}`,
+          { radius: 0.8 },
+          scene
+        );
+        mesh.position = point;
+        let axis = new Vector3(1, 0, 0);
+        mesh.rotate(axis, Math.PI / 2, Space.WORLD);
 
-      let color = signalColorMap[state];
-      let material = new StandardMaterial(`signal-${signalName}-material`, scene);
-      material.diffuseColor = new Color4(...color);
-      material.specularColor = new Color3(0, 0, 0);
-      mesh.material = material;
-      mesh.isVisible = true;
-      return mesh;
-    });
+        let color = signalColorMap[state];
+        let material = new StandardMaterial(
+          `signal-${signalName}-material`,
+          scene
+        );
+        material.diffuseColor = new Color4(...color);
+        material.specularColor = new Color3(0, 0, 0);
+        mesh.material = material;
+        mesh.isVisible = true;
+        return mesh;
+      }
+    );
 
     signalGeometryRef.current = newSignalGeometry;
   }, [scene, worldState.signals]);

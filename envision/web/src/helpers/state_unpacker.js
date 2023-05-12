@@ -158,7 +158,10 @@ function unpack_signals(signals) {
     ...signals.map((t) => ({
       [t[TrafficSignal.SIGNAL_ID]]: {
         state: t[TrafficSignal.STATE],
-        position: t.slice(TrafficSignal.POSITION_BEGIN, TrafficSignal.POSITION_END),
+        position: t.slice(
+          TrafficSignal.POSITION_BEGIN,
+          TrafficSignal.POSITION_END
+        ),
       },
     }))
   );
@@ -176,7 +179,9 @@ function get_attribute_map(unpacked_traffic, attr) {
 export default function unpack_worldstate(formatted_state) {
   let unpacked_bubbles = unpack_bubbles(formatted_state[WorldState.BUBBLES]);
   let unpacked_traffic = unpack_traffic(formatted_state[WorldState.TRAFFIC]);
-  let unpacked_signals = unpack_signals(formatted_state[WorldState.TRAFFIC_SIGNALS]);
+  let unpacked_signals = unpack_signals(
+    formatted_state[WorldState.TRAFFIC_SIGNALS]
+  );
   const worldstate = {
     traffic: unpacked_traffic,
     signals: unpacked_signals,
