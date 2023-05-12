@@ -362,6 +362,7 @@ def _format_signal_state(obj: SignalState, data_formatter: EnvisionDataFormatter
     data_formatter.add(obj.signal_id, op=Operation.REDUCE)
     assert type(obj.signal_light_state) is SignalLightState
     data_formatter.add(obj.signal_light_state)
+    data_formatter.add(obj.signal_position, op=Operation.FLATTEN)
 
 
 def _format_events(obj: Events, data_formatter: EnvisionDataFormatter):

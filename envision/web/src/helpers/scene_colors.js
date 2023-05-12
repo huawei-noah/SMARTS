@@ -27,6 +27,7 @@ export const Yellow = [255 / 255, 190 / 255, 40 / 255, 1];
 export const GreenTransparent = [98 / 255, 178 / 255, 48 / 255, 0.3];
 export const Silver = [192 / 255, 192 / 255, 192 / 255, 1];
 export const Black = [0, 0, 0, 1];
+export const Green = [30 / 255, 210 / 255, 30 / 255, 1];
 
 export const DarkBlue = [5 / 255, 5 / 255, 70 / 255, 1];
 export const Blue = [0, 153 / 255, 1, 1];
@@ -58,4 +59,11 @@ export const SceneColors = Object.freeze({
   MissionRoute: GreenTransparent,
   LaneDivider: OffWhite,
   EdgeDivider: Yellow,
+});
+
+export const SignalColors = Object.freeze({
+  Unknown: Grey,
+  Stop: Red,
+  Caution: Yellow,
+  Go: Green,
 });

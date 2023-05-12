@@ -55,6 +55,13 @@ const Traffic = Object.freeze({
   VEHICLE_TYPE: 13,
 });
 
+const TrafficSignal = Object.freeze({
+  SIGNAL_ID: 0,
+  STATE: 1,
+  POSITION_BEGIN: 2,
+  POSITION_END: 5,
+});
+
 const POINT_2D_LENGTH = 2;
 const POINT_3D_LENGTH = 3;
 
@@ -145,6 +152,22 @@ function unpack_traffic(traffic) {
   return mapped_traffic;
 }
 
+function unpack_signals(signals) {
+  let mapped_signals = Object.assign(
+    {},
+    ...signals.map((t) => ({
+      [t[TrafficSignal.SIGNAL_ID]]: {
+        state: t[TrafficSignal.STATE],
+        position: t.slice(
+          TrafficSignal.POSITION_BEGIN,
+          TrafficSignal.POSITION_END
+        ),
+      },
+    }))
+  );
+  return mapped_signals;
+}
+
 function get_attribute_map(unpacked_traffic, attr) {
   return Object.fromEntries(
     Object.entries(unpacked_traffic)
@@ -156,8 +179,12 @@ function get_attribute_map(unpacked_traffic, attr) {
 export default function unpack_worldstate(formatted_state) {
   let unpacked_bubbles = unpack_bubbles(formatted_state[WorldState.BUBBLES]);
   let unpacked_traffic = unpack_traffic(formatted_state[WorldState.TRAFFIC]);
+  let unpacked_signals = unpack_signals(
+    formatted_state[WorldState.TRAFFIC_SIGNALS]
+  );
   const worldstate = {
     traffic: unpacked_traffic,
+    signals: unpacked_signals,
     scenario_id: formatted_state[WorldState.SCENARIO_ID],
     scenario_name: formatted_state[WorldState.SCENARIO_NAME],
     bubbles: unpacked_bubbles,
