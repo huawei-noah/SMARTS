@@ -22,7 +22,7 @@ import math
 import random as rand
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from shapely.geometry import Polygon
 
@@ -286,7 +286,15 @@ class TrapManager(ActorCaptureManager):
                 continue
 
             vehicle: Optional[Vehicle] = None
-            if ConditionState.EXPIRED in capture.ready_state:
+            if capture.ready_state and capture.vehicle_id is not None:
+                vehicle = self._take_existing_vehicle(
+                    sim,
+                    capture.vehicle_id,
+                    agent_id,
+                    capture.updated_mission,
+                    social=agent_id in sim.agent_manager.pending_social_agent_ids,
+                )
+            elif ConditionState.EXPIRED in capture.ready_state:
                 # Make sure there is not a vehicle in the same location
                 mission = capture.updated_mission
                 if mission is None:
@@ -310,14 +318,6 @@ class TrapManager(ActorCaptureManager):
                     agent_id,
                     mission,
                     trap.default_entry_speed,
-                    social=agent_id in sim.agent_manager.pending_social_agent_ids,
-                )
-            elif trap_condition and capture.vehicle_id is not None:
-                vehicle = self._take_existing_vehicle(
-                    sim,
-                    capture.vehicle_id,
-                    agent_id,
-                    capture.updated_mission,
                     social=agent_id in sim.agent_manager.pending_social_agent_ids,
                 )
             else:
