@@ -22,8 +22,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Reward function in platoon RL example retrieves actor-of-interest from marked neighborhood vehicles.
 - `dist_to_destination` metric cost function computes the route distance and end point for vehicle of interest contained in social agents, SMARTS traffic provider, SUMO traffic provider, and traffic history provider.
 - `sstudio` generated scenario vehicle traffic IDs are now shortened.
+- `TrapEntryTactic.wait_to_hijack_limit_s` field now defaults to `0`.
+- `EntryTactic` derived classes now contain `condition` to provide extra filtering of candidate actors.
+- `EntryTactic` derived classes now contain `start_time`.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
+- Deprecated `start_time` on missions.
 ### Fixed
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 - The routes of `SumoTrafficSimulation` traffic vehicles are now preserved to be passed over to other traffic simulators when the `SumoTrafficSimulation` disconnects.

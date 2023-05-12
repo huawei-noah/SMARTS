@@ -1190,6 +1190,11 @@ class EntryTactic:
 
     start_time: float
 
+    def __post_init__(self):
+        assert (
+            getattr(self, "condition", None) is not None
+        ), "Abstract class, inheriting types must implement the `condition` field."
+
 
 @dataclass(frozen=True)
 class TrapEntryTactic(EntryTactic):
