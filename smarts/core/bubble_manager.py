@@ -19,14 +19,13 @@
 # THE SOFTWARE.
 import logging
 import math
-from builtins import classmethod
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
