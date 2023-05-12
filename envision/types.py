@@ -77,6 +77,7 @@ class SignalState(NamedTuple):
 
     signal_id: str
     signal_light_state: SignalLightState
+    signal_position: Tuple[float, float, float]
 
 
 class State(NamedTuple):
