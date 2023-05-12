@@ -61,7 +61,7 @@ def scenarios(traffic_sim):
             t.Mission(
                 t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
-                    start_time=0,
+                    start_time=0.1,
                     wait_to_hijack_limit_s=3,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
@@ -85,7 +85,7 @@ def empty_scenarios():
             t.Mission(
                 t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
-                    start_time=0,
+                    start_time=0.1,
                     wait_to_hijack_limit_s=3,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
