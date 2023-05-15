@@ -1026,6 +1026,8 @@ class SumoRoadNetwork(RoadMap):
         # We take the 10 closest lanepoints then filter down to that which has
         # the closest heading. This way we get the lanepoint on our lane instead of
         # a potentially closer lane that is on a different junction connection.
+        if not closest_lps[0].lane.in_junction:
+            return []
         lps = closest_lps.copy()
         lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
         lane: RoadMap.Lane = lps[0].lane
