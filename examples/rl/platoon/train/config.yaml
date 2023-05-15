@@ -5,20 +5,20 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0
   scenarios:
-    - driving-smarts-2.competition-scenarios/t3/training/merge_exit_sumo_t_agents_1
+    # - driving-smarts-2.competition-scenarios/t3/training/merge_exit_sumo_t_agents_1
 
     # - driving-smarts-2.competition-scenarios/t3/training/straight_3lanes_sumo_t_agents_1
 
     - driving-smarts-2.competition-scenarios/t3/training/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1
-    - driving-smarts-2.competition-scenarios/t3/training/ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1
-    - driving-smarts-2.competition-scenarios/t3/training/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1
-    - driving-smarts-2.competition-scenarios/t3/training/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1
+    # - driving-smarts-2.competition-scenarios/t3/training/ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1
+    # - driving-smarts-2.competition-scenarios/t3/training/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1
+    # - driving-smarts-2.competition-scenarios/t3/training/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1
 
   # PPO algorithm
   alg:
     n_steps: 2048
     batch_size: 64
-    n_epochs: 10
+    n_epochs: 4
     target_kl: 0.1
     # ent_coef: 0.01 # For exploration. Range = 0 to 0.01
 
