@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
+- Traffic light signals are now visualized in Envision.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.

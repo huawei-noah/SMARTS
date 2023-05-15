@@ -53,6 +53,7 @@ import DebugInfoDisplay from "./DebugInfoDisplay.js";
 import earcut from "earcut";
 import { SceneColors } from "../helpers/scene_colors.js";
 import unpack_worldstate from "../helpers/state_unpacker.js";
+import TrafficSignals from "./traffic_signals.js";
 
 // Required by Babylon.js
 window.earcut = earcut;
@@ -330,6 +331,7 @@ export default function Simulation({
         laneDividerPos={laneDividerPos}
         edgeDividerPos={edgeDividerPos}
       />
+      <TrafficSignals scene={scene} worldState={worldState} />
       <div
         style={{
           zIndex: "1",
