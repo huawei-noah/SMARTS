@@ -27,7 +27,6 @@ from smarts.sstudio.types import (
     CompoundCondition,
     Condition,
     ConditionOperator,
-    ConditionRequires,
     ConditionState,
     ConditionTrigger,
     DependeeActorCondition,
