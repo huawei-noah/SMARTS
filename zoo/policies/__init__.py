@@ -210,3 +210,24 @@ def entry_point_dsac(**kwargs):
 
 
 register(locator="discrete-soft-actor-critic-agent-v0", entry_point=entry_point_dsac)
+
+
+def keyboard_entry_point(**kwargs):
+    from .keyboard_agent import KeyboardAgent
+
+    interface = AgentInterface(
+        action=ActionSpaceType.RelativeTargetPose,
+    )
+
+    agent_params = {
+        "action_space_type": interface.action,
+    }
+
+    return AgentSpec(
+        interface=interface,
+        agent_builder=KeyboardAgent,
+        agent_params=agent_params,
+    )
+
+
+register(locator="keyboard-agent-v0", entry_point=keyboard_entry_point)
