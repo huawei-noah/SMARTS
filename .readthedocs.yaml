@@ -14,12 +14,12 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.8"
+  commands:
+    - pip install wheel==0.38.4
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:
-    - method: pip
-      path: wheel==0.38.4
     - method: pip
       path: .
       extra_requirements:
