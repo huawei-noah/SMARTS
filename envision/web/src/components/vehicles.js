@@ -192,7 +192,10 @@ export default function Vehicles({
       let childMeshes = vehicleMeshTemplates[filename].getChildMeshes();
       for (const child of childMeshes) {
         let instancedSubMesh = child.createInstance(`${child.name}-${meshId}`);
-        if (
+        if (state.interest && instancedSubMesh.material.id == "body") {
+          instancedSubMesh.material.diffuseColor = new Color3(...SceneColors.Interest)
+        }
+        else if (
           state.actor_type == ActorTypes.SOCIAL_VEHICLE ||
           instancedSubMesh.material.id == "body" || // Change the car body color based on actor type
           childMeshes.length == 1
