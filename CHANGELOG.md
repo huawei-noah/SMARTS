@@ -27,6 +27,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 - The routes of `SumoTrafficSimulation` traffic vehicles are now preserved to be passed over to other traffic simulators when the `SumoTrafficSimulation` disconnects.
 - `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
+- Fixed waypoints so that they will always be the length of the `lookahead` parameter, even in junctions.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 ### Security
