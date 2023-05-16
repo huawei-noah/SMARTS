@@ -63,5 +63,5 @@ class BoidAgentActor(SocialAgentActor):
 
     # The max number of vehicles that this agent will control at a time. This value is
     # honored when using a bubble for boid dynamic assignment.
-    capacity: BubbleLimits = None
+    capacity: Optional[BubbleLimits] = None
     """The capacity of the boid agent to take over vehicles."""
