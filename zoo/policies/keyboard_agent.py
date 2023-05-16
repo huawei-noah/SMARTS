@@ -1,8 +1,8 @@
-import sys
 from typing import Callable, Tuple
 
 import gym
 import numpy as np
+from pynput import keyboard
 
 from smarts.core.agent import Agent
 from smarts.core.controllers import ActionSpaceType
@@ -14,17 +14,25 @@ class KeyboardAgent(Agent):
 
     def act(self, obs):
         action = 0
-        repeat = True
-        while repeat:
-            action = sys.stdin.read(1)
-            try:
-                assert int(action) in [0, 1, 2, 3]
-                repeat = False
-            except:
-                repeat = True
+        while True:
+            with keyboard.Events() as events:
+                event = events.get()
+                key = event.key
+                if key == keyboard.Key.down:
+                    action = 0
+                    break
+                elif key == keyboard.Key.up:
+                    action = 1
+                    break
+                elif key == keyboard.Key.left:
+                    action = 2
+                    break
+                elif key == keyboard.Key.right:
+                    action = 3
+                    break
 
         formatted_action = self._format_action.format(
-            action=int(action), prev_heading=obs["ego_vehicle_state"]["heading"]
+            action=action, prev_heading=obs["ego_vehicle_state"]["heading"]
         )
 
         return formatted_action
@@ -48,7 +56,7 @@ class FormatAction:
 
 def _relative_target_pose() -> Tuple[Callable[[int, float], np.ndarray], gym.Space]:
     time_delta = 0.1  # Time, in seconds, between steps.
-    angle = 5 / 180 * np.pi  # Turning angle in radians
+    angle = 10 / 180 * np.pi  # Turning angle in radians
     speed = 45  # Speed in km/h
     dist = (
         speed * 1000 / 3600 * time_delta
