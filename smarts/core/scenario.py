@@ -861,10 +861,10 @@ class Scenario:
     @staticmethod
     def _extract_mission_start_time(mission, entry_tactic: Optional[EntryTactic]):
         return (
-            entry_tactic.start_time
+            mission.start_time
+            if mission.start_time != sstudio_types.MISSING
+            else entry_tactic.start_time
             if entry_tactic
-            else mission.start_time
-            if mission.start_time < sstudio_types.MISSING
             else 0
         )
 
