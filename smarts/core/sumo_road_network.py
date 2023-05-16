@@ -980,9 +980,7 @@ class SumoRoadNetwork(RoadMap):
             for lanes in junction_paths:
                 road_ids = [lane.road.road_id for lane in lanes]
                 start_lane = lanes[0]
-                new_paths = start_lane._waypoint_paths_at(
-                    pose.point, lookahead, road_ids
-                )
+                new_paths = start_lane._waypoint_paths_at(pose.point, lookahead)
                 for path in new_paths:
 
                     def _angle_between(pose, wp):
@@ -1429,7 +1427,7 @@ class SumoRoadNetwork(RoadMap):
                 self.point = point
                 self.filter_road_ids = filter_road_ids
                 self._starts = {}
-            self._starts[llp.lp.lane.index] = paths
+            self._starts[llp.lp.lane.lane_id] = paths
 
         def query(
             self,
@@ -1440,7 +1438,7 @@ class SumoRoadNetwork(RoadMap):
         ) -> Optional[List[List[Waypoint]]]:
             """Attempt to find previously cached waypoints"""
             if self._match(lookahead, point, filter_road_ids):
-                hit = self._starts.get(llp.lp.lane.index, None)
+                hit = self._starts.get(llp.lp.lane.lane_id, None)
                 if hit:
                     # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]
