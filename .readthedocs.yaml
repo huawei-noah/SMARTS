@@ -19,6 +19,8 @@ build:
 python:
   install:
     - method: pip
+      path: wheel==0.38.4
+    - method: pip
       path: .
       extra_requirements:
         - camera_obs
