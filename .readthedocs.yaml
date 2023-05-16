@@ -16,7 +16,7 @@ build:
     python: "3.8"
   jobs:
     pre_install:
-      - pip install wheel==0.38.4
+      - python3.8 -m pip install wheel==0.38.4
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
