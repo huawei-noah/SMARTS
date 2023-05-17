@@ -125,7 +125,11 @@ def _dist_to_destination(
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
             dist_remainder = get_dist(
-                road_map=road_map, point_a=cur_pos, point_b=end_pos
+                road_map=road_map, 
+                point_a=cur_pos, 
+                point_b=end_pos, 
+                point_a_road_id=obs.ego_vehicle_state.road_id,
+                point_a_lane_index = obs.ego_vehicle_state.lane_index,
             )
             dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
@@ -528,7 +532,13 @@ class CostError(Exception):
     pass
 
 
-def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
+def get_dist(
+    road_map: RoadMap, 
+    point_a: Point, 
+    point_b: Point,
+    point_a_road_id: str,
+    point_a_lane_index: int
+) -> float:
     """
     Computes the shortest route distance from point_a to point_b in the road
     map. Both points should lie on a road in the road map. Key assumption about
@@ -544,33 +554,50 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         float: Shortest road distance between two points in the road map.
     """
 
-    def _get_dist(start: Point, end: Point) -> float:
-        mission = Mission(
-            start=Start(
-                position=start.as_np_array,
-                heading=Heading(0),
-                from_front_bumper=False,
-            ),
-            goal=PositionalGoal(
-                position=end,
-                radius=3,
-            ),
-        )
-        plan = Plan(road_map=road_map, mission=mission, find_route=False)
-        plan.create_route(mission=mission, radius=20)
-        from_route_point = RoadMap.Route.RoutePoint(pt=start)
-        to_route_point = RoadMap.Route.RoutePoint(pt=end)
+    start = point_a
+    end = point_b
 
-        dist_tot = plan.route.distance_between(
-            start=from_route_point, end=to_route_point
-        )
-        if dist_tot == None:
-            raise CostError("Unable to find road on route near given points.")
-        elif dist_tot < 0:
-            raise CostError(
-                "Path from start point to end point flows in "
-                "the opposite direction of the generated route."
-            )
-        return dist_tot
+    
+    mission = Mission(
+        start=Start(
+            position=start.as_np_array,
+            heading=Heading(0),
+            from_front_bumper=False,
+        ),
+        goal=PositionalGoal(
+            position=end,
+            radius=2,
+        ),
+    )
+    plan = Plan(road_map=road_map, mission=mission, find_route=False)
+    plan.create_route(mission=mission, radius=20)
+    from_route_point = RoadMap.Route.RoutePoint(pt=start)
+    to_route_point = RoadMap.Route.RoutePoint(pt=end)
 
-    return _get_dist(point_a, point_b)
+    dist_tot = plan.route.distance_between(
+        start=from_route_point, end=to_route_point
+    )
+    if dist_tot == None:
+        raise CostError("Unable to find road on route near given points.")
+    elif dist_tot < 0:
+        # This happens when agent overshoots the goal position while 
+        # remaining outside the goal capture radius at all times. Default 
+        # positional goal radius is 2m.
+        dist_tot = abs(dist_tot)
+        input("NEGATIVE DISTANCE ----------------")
+
+    # Account for agent ending in a different lane but in the same road as
+    # the goal position. 
+    if plan.route.road_length == 1:
+        start_lane = road_map.nearest_lanes(mission.start.point, 20)
+        end_lane = plan.route.find_along(to_route_point, 2).lane
+        if start_lane.road == end_lane.road and start_lane != end_lane:
+            lane_error = start_lane.wi
+
+        end_lane = self._road_map.nearest_lane(
+            self._mission.goal.position,
+            include_junctions=False,
+        )
+        start_lane.offset_along_lane(start.pt)
+
+    return dist_tot
