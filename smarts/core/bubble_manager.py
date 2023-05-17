@@ -19,18 +19,18 @@
 # THE SOFTWARE.
 import logging
 import math
-from builtins import classmethod
 from collections import defaultdict
 from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, Union
+from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
+from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
@@ -206,7 +206,6 @@ class Bubble:
                 )
             )
 
-            # pytype: disable=unsupported-operands
             all_hijacked_vehicle_ids = (
                 current_hijacked_vehicle_ids
                 | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self]
@@ -216,7 +215,6 @@ class Bubble:
                 current_shadowed_vehicle_ids
                 | vehicle_ids_by_bubble_state[BubbleState.InBubble][self]
             ) - {vehicle_id}
-            # pytype: enable=unsupported-operands
 
             hijackable = len(all_hijacked_vehicle_ids) < (
                 self._limit.hijack_limit or maxsize
@@ -296,7 +294,7 @@ class Bubble:
         return hash(self.id)
 
 
-@dataclass(frozen=True, eq=True)
+@dataclass(frozen=True)
 class Cursor:
     """Tracks an actor through an airlock or a bubble."""
 
@@ -307,9 +305,8 @@ class Cursor:
     transition: Optional[BubbleTransition] = None
     bubble: Optional[Bubble] = None
 
-    @classmethod
+    @staticmethod
     def for_removed(
-        cls,
         vehicle_id: str,
         bubble: Bubble,
         index: VehicleIndex,
@@ -333,16 +330,15 @@ class Cursor:
         transition = None
         if was_in_this_bubble and (is_shadowed or is_hijacked):
             transition = BubbleTransition.AirlockExited
-        return cls(
+        return Cursor(
             vehicle_id=vehicle_id,
             transition=transition,
             state=BubbleState.WasInBubble,
             bubble=bubble,
         )
 
-    @classmethod
+    @staticmethod
     def from_pos(
-        cls,
         pos: Point,
         vehicle_id: str,
         bubble: Bubble,
@@ -410,7 +406,7 @@ class Cursor:
         elif in_airlock_zone:
             state = BubbleState.InAirlock
 
-        return cls(
+        return Cursor(
             vehicle_id=vehicle_id, transition=transition, state=state, bubble=bubble
         )
 
@@ -421,7 +417,7 @@ class Cursor:
         return hash((self.vehicle_id, self.state, self.transition, self.bubble.id))
 
 
-class BubbleManager:
+class BubbleManager(ActorCaptureManager):
     """Manages bubble interactions."""
 
     def __init__(self, bubbles: Sequence[SSBubble], road_map: RoadMap):
@@ -472,7 +468,7 @@ class BubbleManager:
     @lru_cache(maxsize=2)
     def _vehicle_ids_divided_by_bubble_state(
         cursors: FrozenSet[Cursor],
-    ) -> Dict[Bubble, Set[Bubble]]:
+    ) -> Dict[BubbleState, Dict[Bubble, Set[str]]]:
         vehicle_ids_grouped_by_cursor = defaultdict(lambda: defaultdict(set))
         for cursor in cursors:
             vehicle_ids_grouped_by_cursor[cursor.state][cursor.bubble].add(

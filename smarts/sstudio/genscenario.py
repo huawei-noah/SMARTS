@@ -28,7 +28,7 @@ import logging
 import os
 import pickle
 import sqlite3
-from dataclasses import asdict, replace
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -44,6 +44,18 @@ from .generators import TrafficGenerator
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__file__)
 logger.setLevel(logging.WARNING)
+
+
+@dataclass(frozen=True)
+class ActorAndMission:
+    """Holds an Actor object and its associated Mission."""
+
+    actor: types.Actor
+    """Specification for traffic actor.
+    """
+    mission: Union[types.Mission, types.EndlessMission, types.LapMission]
+    """Mission for traffic actor.
+    """
 
 
 def _check_if_called_externally():
@@ -256,6 +268,7 @@ def gen_scenario(
                         grid_offset=mission.offset,
                         used_lanes=mission.lanes,
                         vehicle_count=mission.actor_count,
+                        entry_tactic=mission.entry_tactic,
                         num_laps=mission.num_laps,
                         map_spec=map_spec,
                     )
@@ -475,6 +488,7 @@ def gen_group_laps(
     grid_offset: int,
     used_lanes: int,
     vehicle_count: int,
+    entry_tactic: Optional[types.EntryTactic],
     num_laps: int = 3,
     map_spec: Optional[types.MapSpec] = None,
 ):
@@ -516,6 +530,7 @@ def gen_group_laps(
                     end=(end_road_id, (end_lane + i) % used_lanes, end_offset),
                 ),
                 num_laps=num_laps,
+                entry_tactic=entry_tactic,
                 # route_length=route_length,
             )
         )
@@ -589,7 +604,7 @@ def gen_missions(
     _validate_missions(missions)
 
     missions = [
-        types.ActorAndMission(actor=actor, mission=resolve_mission(mission))
+        ActorAndMission(actor=actor, mission=resolve_mission(mission))
         for actor, mission in itertools.product(actors, missions)
     ]
     with open(output_path, "wb") as f:

@@ -23,6 +23,7 @@ import logging
 from typing import Dict, Optional, Set, Tuple
 
 from smarts.core.actor_capture_manager import ActorCaptureManager
+from smarts.core.condition_state import ConditionState
 from smarts.core.plan import Mission
 from smarts.core.vehicle import Vehicle
 from smarts.sstudio.types import IdEntryTactic
@@ -58,16 +59,26 @@ class IdActorCaptureManager(ActorCaptureManager):
             for a, (b, m) in self._actor_for_agent.items()
             if m.start_time <= sim.elapsed_sim_time and a in social_vehicle_ids
         ):
-            assert isinstance(mission.entry_tactic, IdEntryTactic)
-            patience_expiry = mission.start_time + mission.entry_tactic.patience
-            if sim.elapsed_sim_time > patience_expiry:
-                self._log.error(
+            entry_tactic = mission.entry_tactic
+            assert isinstance(entry_tactic, IdEntryTactic)
+            vehicle = sim.vehicle_index.vehicle_by_id(actor_id)
+            condition_kwargs = ActorCaptureManager._gen_all_condition_kwargs(
+                agent_id,
+                mission,
+                sim,
+                vehicle.state if vehicle is not None else None,
+                entry_tactic.condition.requires,
+            )
+            condition_result = entry_tactic.condition.evaluate(**condition_kwargs)
+            if condition_result == ConditionState.EXPIRED:
+                self._log.warning(
                     f"Actor aquisition skipped for `{agent_id}` scheduled to start between "
-                    + f"`{mission.start_time}` and `{patience_expiry}` has expired with no vehicle."
-                    f"`simulation time: {sim.elapsed_sim_time}`"
+                    + f"`Condition `{entry_tactic.condition}` has expired with no vehicle."
                 )
                 used_actors.append(actor_id)
                 sim.agent_manager.teardown_ego_agents({agent_id})
+                continue
+            if not condition_result:
                 continue
             vehicle: Optional[Vehicle] = self._take_existing_vehicle(
                 sim,
@@ -96,18 +107,27 @@ class IdActorCaptureManager(ActorCaptureManager):
         for agent_id, mission in missions.items():
             if mission is None:
                 continue
-            if not isinstance(mission.entry_tactic, IdEntryTactic):
+            entry_tactic = mission.entry_tactic
+            if not isinstance(entry_tactic, IdEntryTactic):
                 continue
-            patience_expiry = mission.start_time + mission.entry_tactic.patience
-            if sim.elapsed_sim_time > patience_expiry:
-                self._log.error(
-                    f"ID actor capture entry tactic failed for `{agent_id}` scheduled to start between "
-                    + f"`{mission.start_time}` and `{patience_expiry}` because simulation skipped to "
+            vehicle = sim.vehicle_index.vehicle_by_id(entry_tactic.actor_id, None)
+            condition_kwargs = ActorCaptureManager._gen_all_condition_kwargs(
+                agent_id,
+                mission,
+                sim,
+                vehicle.state if vehicle is not None else None,
+                entry_tactic.condition.requires,
+            )
+            condition_result = entry_tactic.condition.evaluate(**condition_kwargs)
+            if condition_result == ConditionState.EXPIRED:
+                self._log.warning(
+                    f"Actor aquisition skipped for `{agent_id}` scheduled to start with"
+                    + f"`Condition:{entry_tactic.condition}` because simulation skipped to "
                     f"`simulation time: {sim.elapsed_sim_time}`"
                 )
                 cancelled_agents.add(agent_id)
                 continue
-            self._actor_for_agent[mission.entry_tactic.actor_id] = (agent_id, mission)
+            self._actor_for_agent[entry_tactic.actor_id] = (agent_id, mission)
         if len(cancelled_agents) > 0:
             sim.agent_manager.teardown_ego_agents(cancelled_agents)
 

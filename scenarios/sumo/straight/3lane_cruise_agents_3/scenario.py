@@ -23,7 +23,15 @@ from itertools import combinations
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Flow, Mission, Route, Scenario, Traffic, TrafficActor
+from smarts.sstudio.types import (
+    Flow,
+    Mission,
+    Route,
+    Scenario,
+    Traffic,
+    TrafficActor,
+    TrapEntryTactic,
+)
 
 normal = TrafficActor(
     name="car",
@@ -72,9 +80,18 @@ for name, routes in enumerate(route_comb):
     )
 
 ego_missions = [
-    Mission(Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max")), start_time=19),
-    Mission(Route(begin=("gneE3", 1, 10), end=("gneE3", 1, "max")), start_time=21),
-    Mission(Route(begin=("gneE3", 2, 10), end=("gneE3", 2, "max")), start_time=17),
+    Mission(
+        Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max")),
+        entry_tactic=TrapEntryTactic(start_time=19),
+    ),
+    Mission(
+        Route(begin=("gneE3", 1, 10), end=("gneE3", 1, "max")),
+        entry_tactic=TrapEntryTactic(start_time=21),
+    ),
+    Mission(
+        Route(begin=("gneE3", 2, 10), end=("gneE3", 2, "max")),
+        entry_tactic=TrapEntryTactic(start_time=17),
+    ),
 ]
 
 gen_scenario(

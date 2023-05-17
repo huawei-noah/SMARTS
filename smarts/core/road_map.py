@@ -135,7 +135,7 @@ class RoadMap:
         nearest_lanes = self.nearest_lanes(point, radius, include_junctions)
         return nearest_lanes[0][0] if nearest_lanes else None
 
-    def road_with_point(self, point: Point) -> RoadMap.Road:
+    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
         """Find the road that contains the given point."""
         raise NotImplementedError()
 

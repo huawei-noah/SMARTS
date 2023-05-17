@@ -21,11 +21,15 @@
 # THE SOFTWARE.
 
 
+import warnings
+from collections import namedtuple
 from dataclasses import replace
-from typing import Optional
+from typing import Any, Dict, Optional
 
+from smarts.core.actor import ActorState
 from smarts.core.plan import Plan
 from smarts.core.vehicle import Vehicle
+from smarts.sstudio.types import ConditionRequires
 
 
 class ActorCaptureManager:
@@ -101,7 +105,10 @@ class ActorCaptureManager:
 
         assert isinstance(sim, SMARTS)
         if social:
-            # Not supported
+            # MTA: TODO implement this section of actor capture.
+            warnings.warn(
+                f"Unable to capture for {agent_id} because social agent id capture not yet implemented."
+            )
             return None
         vehicle = sim.switch_control_to_agent(
             vehicle_id, agent_id, mission, recreate=True, is_hijacked=False
@@ -110,3 +117,99 @@ class ActorCaptureManager:
             sim.agent_manager.remove_pending_agent_ids({agent_id})
             sim.create_vehicle_in_providers(vehicle, agent_id, True)
         return vehicle
+
+    @classmethod
+    def _gen_all_condition_kwargs(
+        cls,
+        agent_id: str,
+        mission,
+        sim,
+        actor_state: ActorState,
+        condition_requires: ConditionRequires,
+    ):
+        return {
+            **cls._gen_mission_condition_kwargs(agent_id, mission, condition_requires),
+            **cls._gen_simulation_condition_kwargs(sim, condition_requires),
+            **cls._gen_actor_state_condition_args(
+                sim.road_map, actor_state, condition_requires
+            ),
+        }
+
+    @staticmethod
+    def _gen_mission_condition_kwargs(
+        agent_id: str, mission, condition_requires: ConditionRequires
+    ) -> Dict[str, Any]:
+        out_kwargs = dict()
+
+        if (
+            ConditionRequires.any_mission_state & condition_requires
+        ) == ConditionRequires.none:
+            return out_kwargs
+
+        if condition_requires.agent_id in condition_requires:
+            out_kwargs[ConditionRequires.agent_id.name] = agent_id
+        if ConditionRequires.mission in condition_requires:
+            out_kwargs[ConditionRequires.mission.name] = mission
+        return out_kwargs
+
+    @staticmethod
+    def _gen_simulation_condition_kwargs(
+        sim, condition_requires: ConditionRequires
+    ) -> Dict[str, Any]:
+        out_kwargs = dict()
+
+        if (
+            ConditionRequires.any_simulation_state & condition_requires
+        ) == ConditionRequires.none:
+            return out_kwargs
+
+        from smarts.core.smarts import SMARTS
+
+        sim: SMARTS = sim
+        if ConditionRequires.time in condition_requires:
+            out_kwargs[ConditionRequires.time.name] = sim.elapsed_sim_time
+        if ConditionRequires.actor_ids in condition_requires:
+            out_kwargs[ConditionRequires.actor_ids.name] = sim.vehicle_index.vehicle_ids
+        if ConditionRequires.road_map in condition_requires:
+            out_kwargs[ConditionRequires.road_map.name] = sim.road_map
+        if ConditionRequires.actor_states in condition_requires:
+            out_kwargs[ConditionRequires.actor_states.name] = [
+                v.state for v in sim.vehicle_index.vehicles
+            ]
+        if ConditionRequires.simulation in condition_requires:
+            out_kwargs[ConditionRequires.simulation.name] = sim
+
+        return out_kwargs
+
+    @staticmethod
+    def _gen_actor_state_condition_args(
+        road_map,
+        actor_state: Optional[ActorState],
+        condition_requires: ConditionRequires,
+    ) -> Dict[str, Any]:
+        out_kwargs = dict()
+
+        if (
+            ConditionRequires.any_current_actor_state & condition_requires
+        ) == ConditionRequires.none:
+            return out_kwargs
+
+        from smarts.core.road_map import RoadMap
+
+        assert isinstance(road_map, RoadMap)
+
+        if ConditionRequires.current_actor_state in condition_requires:
+            out_kwargs[ConditionRequires.current_actor_state.name] = actor_state
+        if ConditionRequires.current_actor_road_status in condition_requires:
+            current_actor_road_status = namedtuple(
+                "actor_road_status", ["road", "off_road"], defaults=[None, False]
+            )
+            if hasattr(actor_state, "pose"):
+                road = road_map.road_with_point(actor_state.pose.point)
+                current_actor_road_status.road = road
+                current_actor_road_status.off_road = not road
+            out_kwargs[
+                ConditionRequires.current_actor_road_status.name
+            ] = current_actor_road_status
+
+        return out_kwargs

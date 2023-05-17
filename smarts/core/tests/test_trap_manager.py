@@ -61,6 +61,7 @@ def scenarios(traffic_sim):
             t.Mission(
                 t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
+                    start_time=0.1,
                     wait_to_hijack_limit_s=3,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
@@ -84,6 +85,7 @@ def empty_scenarios():
             t.Mission(
                 t.Route(begin=("west", 1, 10), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
+                    start_time=0.1,
                     wait_to_hijack_limit_s=3,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
@@ -107,13 +109,14 @@ def two_agent_capture_offset_tenth_of_second():
             t.Mission(
                 t.Route(begin=("west", 1, 20), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
-                    wait_to_hijack_limit_s=0,
+                    start_time=0,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
             ),
             t.Mission(
                 t.Route(begin=("west", 2, 10), end=("east", 1, "max")),
                 entry_tactic=t.TrapEntryTactic(
+                    start_time=0,
                     wait_to_hijack_limit_s=0.1,
                     zone=t.MapZone(start=("west", 0, 1), length=100, n_lanes=3),
                 ),
