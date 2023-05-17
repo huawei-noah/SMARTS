@@ -147,7 +147,7 @@ function unpack_traffic(traffic) {
         ),
         actor_type: AGENT_TYPE_MAP[t[Traffic.ACTOR_TYPE]],
         vehicle_type: VEHICLE_TYPE_MAP[t[Traffic.VEHICLE_TYPE]],
-        interest: VEHICLE_TYPE_MAP[t[Traffic.INTEREST]],
+        interest: t[Traffic.INTEREST],
       },
     }))
   );
