@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import gymnasium as gym
 import numpy as np
 
@@ -5,10 +7,11 @@ from smarts.core.colors import SceneColors
 
 
 class Reward(gym.Wrapper):
-    def __init__(self, env):
+    def __init__(self, env: gym.Env, crop: Tuple[int, int, int, int]):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
         self._total_dist = {}
+        self._crop = crop
 
     def reset(self, *, seed=None, options=None):
         self._total_dist = {}
@@ -88,7 +91,7 @@ class Reward(gym.Wrapper):
             if agent_obs["events"]["reached_goal"]:
                 reward[agent_id] += np.float64(30)
 
-            # Reward for distance travelled by driving
+            # Reward for distance travelled in one step
             reward[agent_id] += np.float64(env_reward[agent_id])
 
             # from contrib_policy.helper import plotter3d
