@@ -49,7 +49,7 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           pip install .[dev]
-          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines/marl_benchmark/ ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
+          isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
           black .
           npx prettier --write ./envision/web/src
       - name: Commit format changes
