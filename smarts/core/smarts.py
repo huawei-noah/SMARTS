@@ -128,7 +128,7 @@ class SMARTS(ProviderManager):
         self._scenario: Optional[Scenario] = None
         self._renderer: RendererBase = None
         self._envision: Optional[EnvisionClient] = envision
-        if visdom is not False or visdom is not None:
+        if visdom is not False and visdom is not None:
             warnings.warn(
                 "Using visdom through the arguments is deprecated. Please use engine configuration or SMARTS_VISDOM_ENABLED."
             )

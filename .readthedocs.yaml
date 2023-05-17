@@ -18,6 +18,7 @@ build:
 # Optionally set the version of Python and requirements required to build your docs
 python:
   install:
+    - requirements: docs/requirements.readthedocs.txt
     - method: pip
       path: .
       extra_requirements:
@@ -25,3 +26,7 @@ python:
         - doc
         - train
         - ray
+        - envision
+        - argoverse
+        - opendrive
+        - waymo

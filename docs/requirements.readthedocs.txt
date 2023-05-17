@@ -1,0 +1,2 @@
+setuptools==58.2.0
+wheel==0.38.4

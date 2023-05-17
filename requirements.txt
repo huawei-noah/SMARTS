@@ -31,7 +31,7 @@ google-auth-oauthlib==1.0.0
 google-pasta==0.2.0
 googleapis-common-protos==1.59.0
 gpustat==1.1
-grpcio==1.54.0
+grpcio==1.54.2
 gym==0.19.0
 gymnasium==0.27.0
 gymnasium-notices==0.0.1
@@ -84,7 +84,7 @@ pytest==7.3.1
 pytest-benchmark==4.0.0
 pytest-cov==4.0.0
 pytest-forked==1.6.0
-pytest-xdist==3.2.1
+pytest-xdist==3.3.0
 python-dateutil==2.8.2
 pytz==2023.3
 PyYAML==6.0

@@ -6,6 +6,5 @@ RL Model
 .. toctree::
    :maxdepth: 1
 
-   intersection.md
    racing.md
    platoon.rst
