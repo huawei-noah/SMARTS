@@ -14,6 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
 - Traffic light signals are now visualized in Envision.
+- Interest vehicles now show up in Envision.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.

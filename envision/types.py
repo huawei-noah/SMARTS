@@ -59,6 +59,7 @@ class TrafficActorState(NamedTuple):
     point_cloud: Sequence = []
     mission_route_geometry: Sequence[Sequence[Tuple[float, float]]] = None
     lane_id: Optional[str] = None
+    interest: bool = False
 
 
 class SignalLightState(str, Enum):

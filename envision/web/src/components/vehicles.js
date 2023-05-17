@@ -96,11 +96,11 @@ export default function Vehicles({
         vehicleFilename,
         scene,
         (meshes) => {
-          let rootMesh = meshes[0];
-          rootMesh.isVisible = false;
+          let originalRootMesh = meshes[0];
+          originalRootMesh.isVisible = false;
           let rootMeshMin = new Vector3();
           let rootMeshMax = new Vector3();
-          let childMeshes = rootMesh.getChildMeshes();
+          let childMeshes = originalRootMesh.getChildMeshes();
           for (let i = 0; i < childMeshes.length; i++) {
             let child = childMeshes[i];
             child.isVisible = false;
@@ -110,11 +110,19 @@ export default function Vehicles({
               scene
             );
             material.backFaceCulling = false;
-            material.specularColor = new Color3(0, 0, 0);
+            material.disableLighting = true;
+            material.emissiveColor = Color3.White();
+            // Instance buffers must be used because setting the diffuse color on the instance material
+            // changes the color of all instance meshes because they share the same material reference.
+            // See: https://doc.babylonjs.com/features/featuresDeepDive/mesh/copies/instances#custom-buffers
+            child.registerInstancedBuffer("color", 4);
             if (child.material) {
               // Currently only use flat shading, replace imported pbr material with standard material
               material.id = child.material.id;
-              material.diffuseColor = child.material.albedoColor;
+              child.instancedBuffers.color = Color4.FromColor3(
+                child.material.albedoColor,
+                1
+              );
             }
             child.material = material;
 
@@ -130,9 +138,19 @@ export default function Vehicles({
             }
           }
 
-          rootMesh.setBoundingInfo(new BoundingInfo(rootMeshMin, rootMeshMax));
+          // Note bug: `gltf` sourced root nodes must be replaced, removed, or rescaled in order to instance
+          // the mesh. The issue is vaguely described here:
+          // https://forum.babylonjs.com/t/register-instanced-buffer-turns-mesh-instance-black/8445
+          let newRoot = new Mesh(originalRootMesh.name);
+          newRoot.isVisible = false;
+          newRoot.metadata = originalRootMesh.metadata;
+          for (let i = 0; i < childMeshes.length; i++) {
+            let child = childMeshes[i];
+            child.parent = newRoot;
+          }
 
-          vehicleMeshTemplates[vehicleFilename] = rootMesh;
+          newRoot.setBoundingInfo(new BoundingInfo(rootMeshMin, rootMeshMax));
+          vehicleMeshTemplates[vehicleFilename] = newRoot;
         }
       );
     }
@@ -192,12 +210,18 @@ export default function Vehicles({
       let childMeshes = vehicleMeshTemplates[filename].getChildMeshes();
       for (const child of childMeshes) {
         let instancedSubMesh = child.createInstance(`${child.name}-${meshId}`);
-        if (
+        instancedSubMesh.alwaysSelectAsActiveMesh = true;
+        if (state.interest && instancedSubMesh.material.id == "body") {
+          instancedSubMesh.instancedBuffers.color = new Color4(
+            ...SceneColors.Interest,
+            1
+          );
+        } else if (
           state.actor_type == ActorTypes.SOCIAL_VEHICLE ||
           instancedSubMesh.material.id == "body" || // Change the car body color based on actor type
           childMeshes.length == 1
         ) {
-          instancedSubMesh.material.diffuseColor = new Color3(...color);
+          instancedSubMesh.instancedBuffers.color = new Color4(...color, 1);
         }
         rootMesh.addChild(instancedSubMesh);
       }
