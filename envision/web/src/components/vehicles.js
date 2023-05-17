@@ -222,7 +222,6 @@ export default function Vehicles({
           childMeshes.length == 1
         ) {
           instancedSubMesh.instancedBuffers.color = new Color4(...color, 1);
-          // instancedSubMesh.material.diffuseColor = new Color3(...color);
         }
         rootMesh.addChild(instancedSubMesh);
       }
