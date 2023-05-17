@@ -29,6 +29,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
+- Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.
 ### Security
 
 ## [1.1.0] # 2023-04-28
