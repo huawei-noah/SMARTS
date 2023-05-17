@@ -25,11 +25,5 @@ register(
     entry_point="smarts.env.hiway_env:HiWayEnv",
 )
 
-register(
-    id="intersection-v0",
-    entry_point="smarts.env.intersection_env:intersection_v0_env",
-)
-
-
 # Do NOT remove.
 import smarts.env.gymnasium

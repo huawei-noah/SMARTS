@@ -46,8 +46,6 @@ Several agent control policies and agent [action types](smarts/core/controllers/
    + ActionSpaceType: LaneWithContinuousSpeed
 
 ### RL Model
-1. [Intersection](examples/rl/intersection) using PPO from [Stable Baselines3](https://github.com/DLR-RM/stable-baselines3).
-    <img src="examples/rl/intersection/docs/_static/intersection.gif" height="450" width="600"/>
 1. [Racing](examples/rl/racing) using world model based RL.
     <img src="examples/rl/racing/docs/_static/racing.gif" height="350" width="600"/>
 
