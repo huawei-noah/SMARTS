@@ -15,8 +15,14 @@ build:
   tools:
     python: "3.8"
   jobs:
+    post_system_dependencies:
+      - python -m pip install wheel==0.38.4 setuptools==57.1.0
     post_create_environment:
-      - python -m pip install wheel==0.38.4
+      - python -m pip install wheel==0.38.4 setuptools==57.1.0
+    post_install:
+      - python -m pip install wheel==0.38.4 setuptools==57.1.0
+    post_build:
+      - python -m pip install wheel==0.38.4 setuptools==57.1.0
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
