@@ -3,7 +3,7 @@
 Control Theory
 ==============
 
-Several agent control policies and agent :class:`~smarts.core.controllers.ActionSpaceType` are demonstrated. Run these examples as follows.
+Several agent control policies and agent :class:`~smarts.core.controllers.action_space_type.ActionSpaceType` are demonstrated. Run these examples as follows.
 
 .. code-block:: bash
 
@@ -19,26 +19,26 @@ Several agent control policies and agent :class:`~smarts.core.controllers.Action
 
     + script: :examples:`control/chase_via_points.py`
     + Multi agent
-    + ActionSpaceType: :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed`
+    + ActionSpaceType: :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.LaneWithContinuousSpeed`
 
 #. Trajectory Tracking
 
     + script: :examples:`control/trajectory_tracking.py`
-    + ActionSpaceType: :attr:`~smarts.core.controllers.ActionSpaceType.Trajectory`
+    + ActionSpaceType: :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Trajectory`
 
 #. OpEn Adaptive Control
 
     + script: :examples:`control/ego_open_agent.py`
-    + ActionSpaceType: :attr:`~smarts.core.controllers.ActionSpaceType.MPC`
+    + ActionSpaceType: :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.MPC`
 
 #. Laner
    
     + script: :examples:`control/laner.py`
     + Multi agent
-    + ActionSpaceType: :attr:`~smarts.core.controllers.ActionSpaceType.Lane`
+    + ActionSpaceType: :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Lane`
 
 #. Parallel Environments
 
     + script: :examples:`control/parallel_environment.py`
     + Multiple SMARTS environments in parallel
-    + ActionSpaceType: :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed`
+    + ActionSpaceType: :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.LaneWithContinuousSpeed`
