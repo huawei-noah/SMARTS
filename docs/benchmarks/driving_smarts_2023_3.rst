@@ -204,7 +204,7 @@ Train
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
     $ pip install wheel==0.38.4
-    $ pip install -e ./../../../.[camera_obs,argoverse]
+    $ pip install -e ./../../../.[camera_obs,argoverse,envision]
     $ pip install -e ./inference/
 
 + Train locally without visualization
@@ -221,7 +221,6 @@ Train
     # In a different terminal-B
     $ cd <path>/SMARTS/examples/rl/platoon
     $ source ./.venv/bin/activate
-    $ pip install -e ./../../../.[envision]
     $ scl envision start
     # Open http://localhost:8081/
 

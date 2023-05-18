@@ -128,8 +128,6 @@ def _dist_to_destination(
                 road_map=road_map, 
                 point_a=cur_pos, 
                 point_b=end_pos, 
-                point_a_road_id=obs.ego_vehicle_state.road_id,
-                point_a_lane_index = obs.ego_vehicle_state.lane_index,
             )
             dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)

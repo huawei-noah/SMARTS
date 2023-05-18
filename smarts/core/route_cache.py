@@ -64,7 +64,7 @@ class RouteWithCache(RoadMap.Route):
 
     @cached_property
     def road_ids(self) -> List[str]:
-        """Retruns a list of the road_ids for the Roads in this Route."""
+        """Returns a list of the road_ids for the Roads in this Route."""
         return [road.road_id for road in self.roads]
 
     @classmethod
@@ -110,7 +110,7 @@ class RouteWithCache(RoadMap.Route):
 
     # TAI: could pre-cache curvatures here too (like waypoints) ?
     def add_to_cache(self):
-        """Add informationa about this Route to the cache if not already there."""
+        """Add information about this Route to the cache if not already there."""
         if self.is_cached:
             return
 
