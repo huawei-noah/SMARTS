@@ -51,6 +51,8 @@ class RouteWithCache(RoadMap.Route):
     def __init__(self, road_map: RoadMap):
         self._map = road_map
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._start_lane: Optional[RoadMap.Lane] = None
+        self._end_lane: Optional[RoadMap.Lane] = None
 
     def __hash__(self) -> int:
         key: int = self._cache_key  # pytype: disable=annotation-type-mismatch
@@ -62,9 +64,29 @@ class RouteWithCache(RoadMap.Route):
     def _add_road(self, road: RoadMap.Road):
         raise NotImplementedError()
 
+    @property
+    def start_lane(self) -> Optional[RoadMap.Lane]:
+        "Route's start lane."
+        return self._start_lane
+
+    @start_lane.setter
+    def start_lane(self,value:RoadMap.Lane):
+        "Route's start lane."
+        self._start_lane=value
+
+    @property
+    def end_lane(self) -> Optional[RoadMap.Lane]:
+        "Route's end lane."
+        return self._end_lane
+
+    @end_lane.setter
+    def end_lane(self,value:RoadMap.Lane):
+        "Route's end lane."
+        self._end_lane = value
+
     @cached_property
     def road_ids(self) -> List[str]:
-        """Retruns a list of the road_ids for the Roads in this Route."""
+        """Returns a list of the road_ids for the Roads in this Route."""
         return [road.road_id for road in self.roads]
 
     @classmethod
@@ -110,7 +132,7 @@ class RouteWithCache(RoadMap.Route):
 
     # TAI: could pre-cache curvatures here too (like waypoints) ?
     def add_to_cache(self):
-        """Add informationa about this Route to the cache if not already there."""
+        """Add information about this Route to the cache if not already there."""
         if self.is_cached:
             return
 

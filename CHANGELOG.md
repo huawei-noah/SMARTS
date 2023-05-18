@@ -27,6 +27,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `TrapEntryTactic.wait_to_hijack_limit_s` field now defaults to `0`.
 - `EntryTactic` derived classes now contain `condition` to provide extra filtering of candidate actors.
 - `EntryTactic` derived classes now contain `start_time`.
+- `RoadMap.Route` now optionally stores the start and end lanes of the route.
+- `DistToDestination` metric now adds lane error penalty when agent terminates in different lane but same road as the goal position. 
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
