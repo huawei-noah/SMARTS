@@ -55,7 +55,7 @@ traffic_histories = [
     t.TrafficHistoryDataset(
         name=f"argoverse_{scenario_id}",
         source_type="Argoverse",
-        input_path=scenario_path,
+        input_path=str(scenario_path),
     )
 ]
 
