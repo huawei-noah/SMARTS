@@ -577,7 +577,6 @@ def get_dist(
         # remaining outside the goal capture radius at all times. Default 
         # positional goal radius is 2m.
         dist_tot = abs(dist_tot)
-        input("NEGATIVE DISTANCE ----------------")
 
     # Account for agent ending in a different lane but in the same road as
     # the goal position. 
