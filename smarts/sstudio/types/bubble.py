@@ -32,25 +32,34 @@ from smarts.sstudio.types.actor.social_agent_actor import (
     SocialAgentActor,
 )
 from smarts.sstudio.types.bubble_limits import BubbleLimits
-from smarts.sstudio.types.condition import Condition, LiteralCondition
+from smarts.sstudio.types.condition import (
+    Condition,
+    ConditionRequires,
+    LiteralCondition,
+)
 from smarts.sstudio.types.zone import MapZone, Zone
 
 
 @dataclass(frozen=True)
 class Bubble:
-    """A descriptor that defines a capture bubble for social agents."""
+    """A descriptor that defines a capture bubble for social agents.
+
+    Bubbles consist of an airlock and hijack zone. The airlock is always the same size
+    or larger than the hijack zone. A vehicle must first pass into the airlock and
+    pass the conditions of the airlock to be considered by the hijack zone.
+    """
 
     zone: Zone
     """The zone which to capture vehicles."""
     actor: SocialAgentActor
     """The actor specification that this bubble works for."""
-    margin: float = 2  # Used for "airlocking"; must be > 0
-    """The exterior buffer area for airlocking. Must be > 0."""
-    # If limit != None it will only allow that specified number of vehicles to be
-    # hijacked. N.B. when actor = BoidAgentActor the lesser of the actor capacity
-    # and bubble limit will be used.
+    margin: float = 2
+    """The exterior buffer area that extends the airlocking zone area. Must be >= 0."""
     limit: Optional[BubbleLimits] = None
-    """The maximum number of actors that could be captured."""
+    """The maximum number of actors that could be captured. If limit != None it will 
+    only allow that specified number of vehicles to be hijacked.
+    N.B. when actor = BoidAgentActor the lesser of the actor capacity and bubble limit will be used.
+    """
     exclusion_prefixes: Tuple[str, ...] = field(default_factory=tuple)
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
@@ -73,7 +82,11 @@ class Bubble:
     which means it moves to follow the `follow_vehicle_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
-    condition: Condition = LiteralCondition(ConditionState.TRUE)
+    active_condition: Condition = LiteralCondition(ConditionState.TRUE)
+    """Conditions that determine if the bubble is enabled."""
+    airlock_condition: Condition = LiteralCondition(ConditionState.TRUE)
+    """This condition is used to determine if an actor is allowed into the bubble airlock.
+    """
 
     def __post_init__(self):
         if self.margin < 0:
@@ -110,6 +123,12 @@ class Bubble:
                     if follow_id
                     else f"The zone polygon of {type(self.zone).__name__} of fixed position {self.id} is not a valid closed loop"
                 )
+        if (
+            ConditionRequires.any_current_actor_state & self.active_condition.requires
+        ) != ConditionRequires.none:
+            raise ValueError(
+                "Actor state conditions not allowed in broadphase inclusion."
+            )
 
     @staticmethod
     def to_actor_id(actor, mission_group):

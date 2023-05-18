@@ -44,7 +44,7 @@ def num_vehicles():
 
 
 @pytest.fixture
-def bubbles():
+def active_bubbles():
     actor = t.SocialAgentActor(
         name="keep-lane-agent",
         agent_locator="zoo.policies:keep-lane-agent-v0",
