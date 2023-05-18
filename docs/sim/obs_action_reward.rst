@@ -78,23 +78,23 @@ Action
 Prior to a simulation, an agent's action type and its policy to provide compliant actions, can be configured via its agent specification instance of :class:`~smarts.zoo.agent_spec.AgentSpec`. 
 Refer to :ref:`agent` for details.
 
-An agent can be configured to emit any one of the following action types from :class:`~smarts.core.controllers.ActionSpaceType`.
+An agent can be configured to emit any one of the following action types from :class:`~smarts.core.controllers.action_space_type.ActionSpaceType`.
 
-+ :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.Lane`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.Trajectory`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.MultiTargetPose`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.MPC`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.TrajectoryWithTime`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.Direct`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.Empty`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Lane`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.ActuatorDynamic`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.LaneWithContinuousSpeed`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TargetPose`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Trajectory`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.MultiTargetPose`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.MPC`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TrajectoryWithTime`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Direct`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Empty`
 
 .. tip::
 
-    Depending on the agent's policy, :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic` action type might 
-    allow the agent to learn faster than :attr:`~smarts.core.controllers.ActionSpaceType.Continous` action type because 
+    Depending on the agent's policy, :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.ActuatorDynamic` action type might 
+    allow the agent to learn faster than :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continous` action type because 
     learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. 
