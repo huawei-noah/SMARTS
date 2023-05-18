@@ -64,8 +64,8 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-The action space for an ego agent can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. The user should choose
+The action space for an ego agent can be either :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`. The user should choose
 one of the action spaces and specify the chosen action space through the ego agent's interface.
 
 Code structure
@@ -199,7 +199,7 @@ Example
 An example training and inference code is provided for this benchmark. 
 See the :examples:`rl/drive` example. The example uses PPO algorithm from 
 `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library.
-It uses :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose` action space.
+It uses :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose` action space.
 Instructions for training and evaluating the example is as follows.
 
 Train
