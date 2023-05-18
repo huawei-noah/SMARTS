@@ -651,6 +651,26 @@ class RoadMap:
             raise NotImplementedError()
 
         @property
+        def start_lane(self) -> Optional[RoadMap.Lane]:
+            "Route's start lane."
+            return None
+
+        @start_lane.setter
+        def start_lane(self,value:RoadMap.Lane):
+            "Route's start lane."
+            raise NotImplementedError()
+        
+        @property
+        def end_lane(self) -> Optional[RoadMap.Lane]:
+            "Route's end lane."
+            return None
+
+        @end_lane.setter
+        def end_lane(self,value:RoadMap.Lane):
+            "Route's end lane."
+            raise NotImplementedError()
+
+        @property
         def roads(self) -> List[RoadMap.Road]:
             """A possibly-unordered list of roads that this route covers"""
             return []

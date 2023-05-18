@@ -534,8 +534,6 @@ def get_dist(
     road_map: RoadMap, 
     point_a: Point, 
     point_b: Point,
-    point_a_road_id: str,
-    point_a_lane_index: int
 ) -> float:
     """
     Computes the shortest route distance from point_a to point_b in the road
@@ -552,25 +550,22 @@ def get_dist(
         float: Shortest road distance between two points in the road map.
     """
 
-    start = point_a
-    end = point_b
-
-    
     mission = Mission(
         start=Start(
-            position=start.as_np_array,
+            position=point_a.as_np_array,
             heading=Heading(0),
             from_front_bumper=False,
         ),
         goal=PositionalGoal(
-            position=end,
+            position=point_b,
             radius=2,
         ),
     )
     plan = Plan(road_map=road_map, mission=mission, find_route=False)
     plan.create_route(mission=mission, radius=20)
-    from_route_point = RoadMap.Route.RoutePoint(pt=start)
-    to_route_point = RoadMap.Route.RoutePoint(pt=end)
+    assert isinstance(plan.route, RoadMap.Route)
+    from_route_point = RoadMap.Route.RoutePoint(pt=point_a)
+    to_route_point = RoadMap.Route.RoutePoint(pt=point_b)
 
     dist_tot = plan.route.distance_between(
         start=from_route_point, end=to_route_point
@@ -586,16 +581,14 @@ def get_dist(
 
     # Account for agent ending in a different lane but in the same road as
     # the goal position. 
-    if plan.route.road_length == 1:
-        start_lane = road_map.nearest_lanes(mission.start.point, 20)
-        end_lane = plan.route.find_along(to_route_point, 2).lane
-        if start_lane.road == end_lane.road and start_lane != end_lane:
-            lane_error = start_lane.wi
-
-        end_lane = self._road_map.nearest_lane(
-            self._mission.goal.position,
-            include_junctions=False,
-        )
-        start_lane.offset_along_lane(start.pt)
+    start_lane = plan.route.start_lane
+    end_lane = plan.route.end_lane
+    lane_error = abs(start_lane.index-end_lane.index)
+    if len(plan.route.roads) == 1 and lane_error > 0:
+        assert start_lane.road == end_lane.road      
+        end_offset = end_lane.offset_along_lane(world_point=point_b)
+        lane_width, _ = end_lane.width_at_offset(end_offset)
+        lane_error_dist = lane_error*lane_width
+        dist_tot += lane_error_dist
 
     return dist_tot

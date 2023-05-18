@@ -375,6 +375,8 @@ class Plan:
                 start_lane.road, end_lane.road, via_roads, 1
             )[0]
             if self._route.road_length > 0:
+                self._route.start_lane = start_lane
+                self._route.end_lane = end_lane
                 break
 
         if len(self._route.roads) == 0:

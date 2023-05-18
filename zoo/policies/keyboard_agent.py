@@ -17,6 +17,8 @@ class KeyboardAgent(Agent):
         while True:
             with keyboard.Events() as events:
                 event = events.get()
+                if type(event) is not keyboard.Events.Press:
+                    continue
                 key = event.key
                 if key == keyboard.Key.down:
                     action = 0
