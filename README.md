@@ -14,10 +14,6 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 # Documentation
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/) . :bell: :rotating_light:
 
-# Setup and Quickstart
-1. [Set up SMARTS](https://smarts.readthedocs.io/en/latest/setup.html).
-2. [Run a simple experiment](https://smarts.readthedocs.io/en/latest/quickstart.html).
-
 # Examples 
 ### Egoless
 Simulate a SMARTS environment without any ego agents, but with only background traffic.

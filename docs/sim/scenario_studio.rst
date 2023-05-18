@@ -9,7 +9,7 @@ Scenario Studio
 
 The Scenario Studio ``sstudio`` of SMARTS is a stand alone package :mod:`~smarts.sstudio` that supports flexible and expressive scenario specification. The ``sstudio`` domain specific language (DSL) has a simple ontology defined by :mod:`~smarts.sstudio.types` to help express your scenario needs in SMARTS.
 
-A scenario is formed by combining several inputs, such as (i) road map, (ii) traffic, (iii) social agents, (iv) ego agents, (v) bubbles, (vi) friction patches, and (vii) traffic histories. Refer to :class:`~smarts.sstudio.types.Scenario`.
+A scenario is formed by combining several inputs, such as (i) road map, (ii) traffic, (iii) social agents, (iv) ego agents, (v) bubbles, (vi) friction patches, and (vii) traffic histories. Refer to :class:`~smarts.sstudio.types.scenario.Scenario`.
 
 SMARTS interacts with road maps abstractly (polymorphically) through the :class:`~smarts.core.road_map.RoadMap` interface in order to support multiple map formats and allow for extending to support new map formats.
 
@@ -21,10 +21,10 @@ A typical scenario creation workflow is as follows.
 2. Design the map.
 
    * For a SUMO road network, create the map using `netedit <https://sumo.dlr.de/docs/NETEDIT.html>`_ and save it in the new scenario folder.
-   * For other road networks, define and instantiate a :class:`~smarts.sstudio.types.MapSpec` object in ``scenario.py``. Pass the ``MapSpec`` object to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
+   * For other road networks, define and instantiate a :class:`~smarts.sstudio.types.map_spec.MapSpec` object in ``scenario.py``. Pass the ``MapSpec`` object to :class:`~smarts.sstudio.types.scenario.Scenario` in ``scenario.py``.
 
-3. Add traffic, social agents, ego agents, friction patches, map spec, etc, to :class:`~smarts.sstudio.types.Scenario` in ``scenario.py``.
-4. Feed the created :class:`~smarts.sstudio.types.Scenario` object to :func:`~smarts.sstudio.genscenario.gen_scenario` in ``scenario.py`` to generate the scenario. 
+3. Add traffic, social agents, ego agents, friction patches, map spec, etc, to :class:`~smarts.sstudio.types.scenario.Scenario` in ``scenario.py``.
+4. Feed the created :class:`~smarts.sstudio.types.scenario.Scenario` object to :func:`~smarts.sstudio.genscenario.gen_scenario` in ``scenario.py`` to generate the scenario. 
 
    .. code:: python
 
@@ -143,7 +143,7 @@ Scenario Studio also allows generation of *missions* for ego agents to complete.
 Friction patches
 ----------------
 
-The Scenario Studio of SMARTS also allows the generation of *friction patches* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`~smarts.sstudio.types.PositionalZone` as in the case of bubbles. When we run :func:`~smarts.sstudio.genscenario.gen_scenario` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
+The Scenario Studio of SMARTS also allows the generation of *friction patches* which consists of a list of *surface patches* for ego agents and social agents. These surface patches uses :class:`~smarts.sstudio.types.zone.PositionalZone` as in the case of bubbles. When we run :func:`~smarts.sstudio.genscenario.gen_scenario` passing in ``friction_maps``, a "friction_map.pkl" file will be created under the output dir.
 
 .. code-block:: python
 
