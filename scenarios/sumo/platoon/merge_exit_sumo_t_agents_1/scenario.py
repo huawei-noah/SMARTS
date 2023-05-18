@@ -10,6 +10,7 @@ from smarts.sstudio.types import (
     Flow,
     JunctionModel,
     MapSpec,
+    Mission,
     Route,
     Scenario,
     ScenarioMetadata,
@@ -23,6 +24,7 @@ normal = TrafficActor(
     name="car",
     speed=Distribution(sigma=0, mean=1.0),
 )
+
 leader = TrafficActor(
     name="Leader-007",
     depart_speed=0,
@@ -108,10 +110,7 @@ gen_scenario(
         map_spec=MapSpec(
             source=Path(__file__).resolve().parents[0], lanepoint_spacing=1.0
         ),
-        scenario_metadata=ScenarioMetadata(
-            actor_of_interest_re_filter="Leader-007",
-            actor_of_interest_color=Colors.Blue,
-        ),
+        scenario_metadata=ScenarioMetadata("Leader-007", Colors.Blue),
     ),
     output_dir=Path(__file__).parent,
 )
