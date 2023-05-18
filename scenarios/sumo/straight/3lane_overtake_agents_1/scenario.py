@@ -31,6 +31,7 @@ from smarts.sstudio.types import (
     Scenario,
     Traffic,
     TrafficActor,
+    TrapEntryTactic,
 )
 
 normal = TrafficActor(
@@ -83,7 +84,9 @@ route = Route(begin=("gneE3", 0, 10), end=("gneE3", 0, "max"))
 ego_missions = [
     Mission(
         route=route,
-        start_time=17,  # Delayed start, to ensure road has prior traffic.
+        entry_tactic=TrapEntryTactic(
+            start_time=17
+        ),  # Delayed start, to ensure road has prior traffic.
     )
 ]
 

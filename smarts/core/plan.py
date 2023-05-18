@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import math
 import random
+import sys
+import warnings
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
@@ -32,6 +34,8 @@ from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoi
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
+
+MISSING = sys.maxsize
 
 
 class PlanningError(Exception):
@@ -166,6 +170,7 @@ class TraverseGoal(Goal):
 def default_entry_tactic(default_entry_speed: Optional[float] = None) -> EntryTactic:
     """The default tactic the simulation will use to acquire an actor for an agent."""
     return TrapEntryTactic(
+        start_time=MISSING,
         wait_to_hijack_limit_s=0,
         exclusion_prefixes=tuple(),
         zone=None,
@@ -208,7 +213,7 @@ class Mission:
     # An optional list of road IDs between the start and end goal that we want to
     # ensure the mission includes
     route_vias: Tuple[str, ...] = field(default_factory=tuple)
-    start_time: float = 0.1
+    start_time: float = MISSING
     entry_tactic: Optional[EntryTactic] = None
     via: Tuple[Via, ...] = ()
     # if specified, will use vehicle_spec to build the vehicle (for histories)
@@ -256,6 +261,12 @@ class Mission:
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
         return Mission.endless_mission(start_pose=target_pose)
+
+    def __post_init__(self):
+        if self.entry_tactic is not None and self.entry_tactic.start_time != MISSING:
+            object.__setattr__(self, "start_time", self.entry_tactic.start_time)
+        elif self.start_time == MISSING:
+            object.__setattr__(self, "start_time", 0.1)
 
 
 @dataclass(frozen=True)

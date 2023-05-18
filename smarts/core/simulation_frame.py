@@ -75,7 +75,7 @@ class SimulationFrame:
         """Get actor states paired by their ids."""
         return {a_s.actor_id: a_s for a_s in self.actor_states}
 
-    @lru_cache(1)
+    @lru_cache(28)
     def interest_actors(
         self, extension: Optional[re.Pattern] = None
     ) -> Dict[str, ActorState]:

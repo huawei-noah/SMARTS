@@ -83,7 +83,7 @@ def large_observation():
                 route_vias=(),
                 start_time=0.1,
                 entry_tactic=t.TrapEntryTactic(
-                    wait_to_hijack_limit_s=0,
+                    start_time=0,
                     zone=None,
                     exclusion_prefixes=(),
                     default_entry_speed=None,

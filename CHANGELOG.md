@@ -12,7 +12,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
+- Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
 - Traffic light signals are now visualized in Envision.
+- Interest vehicles now show up in Envision.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
@@ -21,8 +23,13 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `SumoTrafficSimulator` now uses the last vehicle subscription update to back `route_for_vehicle()`. This means that the routes of vehicles can still be determined even if `SumoTrafficSimulation` disconnects.
 - Reward function in platoon RL example retrieves actor-of-interest from marked neighborhood vehicles.
 - `dist_to_destination` metric cost function computes the route distance and end point for vehicle of interest contained in social agents, SMARTS traffic provider, SUMO traffic provider, and traffic history provider.
+- `sstudio` generated scenario vehicle traffic IDs are now shortened.
+- `TrapEntryTactic.wait_to_hijack_limit_s` field now defaults to `0`.
+- `EntryTactic` derived classes now contain `condition` to provide extra filtering of candidate actors.
+- `EntryTactic` derived classes now contain `start_time`.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
+- Deprecated `start_time` on missions.
 ### Fixed
 - Fixed implementations of `RoadMap.waypoint_paths()` to ensure that the result is never empty.
 - The routes of `SumoTrafficSimulation` traffic vehicles are now preserved to be passed over to other traffic simulators when the `SumoTrafficSimulation` disconnects.
@@ -86,6 +93,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Driving SMARTS 2023.3 benchmark and the metrics module now uses `actor_of_interest_re_filter` from scenario metadata to identify the lead vehicle.
 - Included `RelativeTargetPose` action space to the set of allowed action spaces in `platoon-v0` env.
 - `Collision.collidee_id` now gives the vehicle id rather than the name of the owner of the vehicle (usually the agent id.) `Collision.collidee_owner_id` now provides the id of the controlling `agent` (or other controlling entity in the future.) This is because 1) `collidee_id` should refer to the body and 2) in most cases the owner name would be `None`.
+- Entry tactics now use conditions to determine when they should capture an actor.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.

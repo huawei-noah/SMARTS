@@ -288,6 +288,7 @@ def _format_traffic_actor(obj, data_formatter: EnvisionDataFormatter):
     data_formatter.add(obj.actor_type)
     assert type(obj.vehicle_type) is VehicleType
     data_formatter.add(obj.vehicle_type)
+    data_formatter.add(obj.interest)
 
 
 def _format_state(obj: State, data_formatter: EnvisionDataFormatter):

@@ -22,9 +22,7 @@
 import gym
 import pytest
 
-from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.episodes import episodes
 from smarts.env.hiway_env import HiWayEnv
 
 AGENT_ID = "Agent-007"

@@ -1,4 +1,5 @@
 import random
+import sys
 from pathlib import Path
 
 from smarts.core import seed
@@ -77,7 +78,11 @@ gen_scenario(
                 [
                     t.Mission(
                         route=t.RandomRoute(),
-                        entry_tactic=t.IdEntryTactic("other_interest", patience=10),
+                        entry_tactic=t.IdEntryTactic(
+                            start_time=0.1,
+                            actor_id="other_interest",
+                            condition=t.TimeWindowCondition(0.1, 20.0),
+                        ),
                     )
                 ],
             )

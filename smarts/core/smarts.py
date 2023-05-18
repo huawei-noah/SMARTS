@@ -1627,6 +1627,7 @@ class SMARTS(ProviderManager):
                     driven_path=driven_path,
                     mission_route_geometry=mission_route_geometry,
                     lane_id=lane_ids.get(agent_id),
+                    interest=self.cached_frame.actor_is_interest(v.actor_id),
                 )
             elif v.actor_id in self._vehicle_index.social_vehicle_ids():
                 # this is a social vehicle
@@ -1644,6 +1645,7 @@ class SMARTS(ProviderManager):
                         position=tuple(v.pose.position),
                         heading=float(v.pose.heading),
                         speed=v.speed,
+                        interest=self.cached_frame.actor_is_interest(v.actor_id),
                     )
 
         bubble_geometry = []
