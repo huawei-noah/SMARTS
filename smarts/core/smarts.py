@@ -1513,9 +1513,7 @@ class SMARTS(ProviderManager):
             )
             self._setup_pybullet_ground_plane(self._bullet_client)
 
-    def _try_emit_envision_state(self, provider_state: ProviderState, obs, scores):
-        if not self._envision:
-            return
+    def _gen_envision_state(self, provider_state: ProviderState, obs, scores):
 
         filter = self._envision.envision_state_filter
 
@@ -1671,6 +1669,12 @@ class SMARTS(ProviderManager):
             ego_agent_ids=list(self._agent_manager.ego_agent_ids),
             frame_time=self._rounder(self._elapsed_sim_time + self._total_sim_time),
         )
+        return state
+
+    def _try_emit_envision_state(self, provider_state: ProviderState, obs, scores):
+        if not self._envision:
+            return
+        state = self._gen_envision_state(provider_state, obs, scores)
         self._envision.send(state)
 
     def _try_emit_visdom_obs(self, obs):
