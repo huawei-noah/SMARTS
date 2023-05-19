@@ -48,7 +48,7 @@ Following sections below explain how to handle and edit (i) traffic, (ii) social
 Traffic
 -------
 
-A minimal ``scenario.py`` instantiating a :class:`~smarts.sstudio.types.Traffic` object.
+A minimal ``scenario.py`` instantiating a :class:`~smarts.sstudio.types.traffic.Traffic` object.
 
 .. literalinclude:: ./minimal_scenario_studio.py
    :language: python
@@ -61,17 +61,17 @@ Simply run the ``scenario.py`` file as a regular Python script to generate the s
 
 Traffic vehicles are controlled by either ``SUMO`` or ``SMARTS`` engine. Defaults to ``engine="SUMO"``. ``engine="SUMO"`` can only be used on SUMO road networks. For other map types use ``engine="SMARTS"``.
 
-:class:`~smarts.sstudio.types.Flow` is used to generate repeated vehicle runs on the same route. Vehicle route, departure rate, and behaviour, can be configured here.
+:class:`~smarts.sstudio.types.traffic.Flow` is used to generate repeated vehicle runs on the same route. Vehicle route, departure rate, and behaviour, can be configured here.
 
 The example above simply uses a random route ``route=RandomRoute()``. A more specific route may be used such as :python:`Route(begin=("gneE72", 0, "random"), end=("edge2", 1, "max"))` which defines the edge id, lane id, and offset into the lane, to designate the start and end vehicle positions.
 
-:class:`~smarts.sstudio.types.TrafficActor` is used to specify a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
+:class:`~smarts.sstudio.types.actor.traffic_actor.TrafficActor` is used to specify a spec for traffic actors (e.g. Vehicles, Pedestrians, etc). The defaults provided are for a car.
 Acceleration, deceleration, speed distribution, imperfection distribution, and other configurations, can be specified for the traffic.
 
 When :func:`~smarts.sstudio.genscenario.gen_scenario` is executed, a dir named "traffic" will be created under ``output_dir`` which contains background vehicle and route definitions.
 
 .. important::
-    If you want to train a policy on one scenario, remember to set the ``end`` time of :class:`~smarts.sstudio.types.Flow` larger or equal to your expected training time, since SMARTS will continue the flow after each ``reset`` call. 
+    If you want to train a policy on one scenario, remember to set the ``end`` time of :class:`~smarts.sstudio.types.traffic.Flow` larger or equal to your expected training time, since SMARTS will continue the flow after each ``reset`` call. 
     
     However, if there are multiple scenarios to train for one worker, you can relax this restriction since after the scenario change, the flow will also be reset to the beginning time.
 

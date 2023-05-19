@@ -38,6 +38,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.
 - Removed `intersection-v0` env and `examples/rl/intersection` as they are superseded by `driving-smarts-v2023` env and `examples/rl/drive`, respectively.
+- Removed `examples/rl/racing` as base repository `danijar/dreamerv2` is not updated anymore and this example will be superseded by `examples/rl/drive`.
+- Removed `FrameStack` environment wrapper.
 ### Security
 
 ## [1.1.0] # 2023-04-28
