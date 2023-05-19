@@ -9,7 +9,7 @@ Base environments
 SMARTS environment module is defined in :mod:`~smarts.env` package. Currently SMARTS provides two kinds of training 
 environments, namely:
 
-+ ``HiWayEnv`` utilising ``gym.env`` style interface 
++ ``HiWayEnv`` utilizing ``gym.env`` style interface 
 + ``RLlibHiwayEnv`` customized for `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_ training
 
 .. image:: ../_static/env.png
@@ -91,7 +91,7 @@ This can be done with :class:`~smarts.env.gymnasium.wrappers.api_reversion.Api02
 RLlibHiwayEnv
 ^^^^^^^^^^^^^
 
-``RLlibHiwayEnv`` inherits class ``MultiAgentEnv``, which is defined in RLlib. It also supports common env APIs like ``reset``, 
+``RLlibHiwayEnv`` inherits class ``MultiAgentEnv``, which is defined in `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_. It also supports common env APIs like ``reset``, 
 ``step``, ``close``. An usage example is shown below. Refer to :class:`~smarts.env.rllib_hiway_env.RLlibHiWayEnv` for more details.
 
 .. code-block:: python
@@ -133,11 +133,11 @@ SMARTS environments support the following types of vehicles:
 
 Refer to :ref:`scenario_studio` for designing scenarios, traffic vehicles, social agents, ego agents, and maps.
 
-Multiagent Scenario
-^^^^^^^^^^^^^^^^^^^
+Multi-agent Scenario
+^^^^^^^^^^^^^^^^^^^^
 
-In multiagent scenarios, the agents may start and end at different time points
-in the simulation. Consider the following multiagent scenario with 3 agents, 
+In multi-agent scenarios, the agents may start and end at different time points
+in the simulation. Consider the following multi-agent scenario with 3 agents, 
 namely ``Agent_0``, ``Agent_1``, and ``Agent_2``.
 
 .. list-table::
@@ -186,7 +186,7 @@ Moreover, if there are **n** routes file in ``scenario1/build/traffic`` dir, the
         ...
     }
 
-In contrast to the above case, we can also use multiple maps for *different workers* in RLlib as follows.
+In contrast to the above case, we can also use multiple maps for *different workers* in `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_ as follows.
 
 .. code-block:: python
 

@@ -1,13 +1,13 @@
 # Racing
 This example illustrates the training of an ego agent to drive, as fast and as far as possible, in traffic using the [DreamerV2](https://github.com/danijar/dreamerv2) reinforcement-learning algorithm.
 
-The ego agent earns reward for the distance travelled per-step and is penalised for colliding with other vehicles and for going off-road.
+The ego agent earns reward for the distance travelled per-step and is penalized for colliding with other vehicles and for going off-road.
 
 ## Trained agent racing in traffic
 ![](./docs/_static/racing.gif)
 
 ## Observation space
-+ Topdown RGB image 
++ Top-down RGB image 
     + size (width x height): 64 pixels x 64 pixels
     + resolution: 1 meter/pixel
 ```

@@ -49,7 +49,7 @@ class SumoRoadNetwork(RoadMap):
 
     DEFAULT_LANE_WIDTH = 3.2
     """3.2 is the default Sumo road network lane width if it's not specified
-     explicitly in Sumo's NetEdit or the map.net.xml file.
+     explicitly in Sumo's NetEdit or the `map.net.xml` file.
     This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
      in North America (although US highway lanes are wider at ~3.7m)."""
 
@@ -188,7 +188,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """This is the net.xml file that corresponds with our possibly-offset coordinates."""
+        """This is the `.net.xml` file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
     @staticmethod

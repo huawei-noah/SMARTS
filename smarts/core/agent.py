@@ -52,7 +52,7 @@ class Agent:
     def act(self, obs: Observation, **configs):
         """The agent action. See documentation on observations, `AgentSpec`, and `AgentInterface`.
 
-        Expects an adapted observation and returns an unadapted action.
+        Expects an adapted observation and returns a raw action.
         """
 
         raise NotImplementedError

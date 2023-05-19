@@ -38,7 +38,7 @@ laner_actor = t.SocialAgentActor(
     agent_locator="zoo.policies:keep-lane-agent-v0",
 )
 
-travelling_bubbles = [
+traveling_bubbles = [
     t.Bubble(
         zone=t.PositionalZone(pos=(50, 0), size=(10, 50)),
         margin=5,
@@ -69,7 +69,7 @@ gen_scenario(
         social_agent_missions={
             "all": ([laner_actor], [t.Mission(route=t.RandomRoute())])
         },
-        bubbles=[*travelling_bubbles, *static_bubbles],
+        bubbles=[*traveling_bubbles, *static_bubbles],
     ),
     output_dir=Path(__file__).parent,
 )

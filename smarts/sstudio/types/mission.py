@@ -83,7 +83,7 @@ class EndlessMission:
     lane_index:
         The lane index from the rightmost lane.
     offset:
-        The offset in metres into the lane. Also acceptable\\: 'max', 'random'
+        The offset in meters into the lane. Also acceptable\\: 'max', 'random'
     """
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""

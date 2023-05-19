@@ -14,16 +14,16 @@ Refer to :func:`~smarts.env.gymnasium.driving_smarts_2022_env.driving_smarts_202
 
 In each driving scenario, the ego-agents must drive towards their respective mission goal locations. Each agent's mission goal is given in the observation returned by the environment at each time step. 
 The mission goal could be accessed as ``observation.ego_vehicle_state.mission.goal.position`` which gives an ``(x, y, z)`` map coordinate of the goal location.
-Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models, predictive models, etc, may be used to develop the policy.
+Any method such as reinforcement learning, offline reinforcement learning, behavior cloning, generative models, predictive models, etc, may be used to develop the policy.
 
 The scenario names and their missions are as follows. The desired task execution is illustrated by a trained baseline agent, which uses PPO algorithm from `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library.
 
 + 1_to_2lane_left_turn_c
-    A single ego agent must make a left turn at an uprotected cross-junction.
+    A single ego agent must make a left turn at an unprotected cross-junction.
 
     .. image:: /_static/driving_smarts_2022/intersection-c.gif
 + 1_to_2lane_left_turn_t 
-    A single ego agent must make a left turn at an uprotected T-junction.
+    A single ego agent must make a left turn at an unprotected T-junction.
   
     .. image:: /_static/driving_smarts_2022/intersection-t.gif
 + 3lane_merge_multi_agent

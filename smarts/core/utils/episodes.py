@@ -119,12 +119,12 @@ class EpisodeLog:
 
     @property
     def sim_time(self):
-        """An estimation of the total fixed-timestep simulation performed."""
+        """An estimation of the total fixed-time-step simulation performed."""
         return self.fixed_timestep_sec * self.steps
 
     @property
     def sim2wall_ratio(self):
-        """The ration of sim time to wall time. Above 1 is hyper-realtime."""
+        """The ration of sim time to wall time. Above 1 is hyper-real-time."""
         return self.sim_time / self.wall_time
 
     @property

@@ -1,5 +1,9 @@
 .. _obs_action_reward:
 
+.. spelling:word-list::
+    
+    rgb
+
 Observation, Action, and Reward
 ===============================
 
@@ -41,7 +45,7 @@ The complete set of possible :class:`~smarts.core.observations.Observation` retu
 +------------------------------+------------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | road_waypoints               | Optional[:class:`~smarts.core.observations.RoadWaypoints`]             | Per-road waypoints information.                                                    |
 +------------------------------+------------------------------------------------------------------------+------------------------------------------------------------------------------------+
-| via_data                     | :class:`~smarts.core.observations.Vias`                                | Listing of nearby collectable ViaPoints and ViaPoints collected in the last step.  |
+| via_data                     | :class:`~smarts.core.observations.Vias`                                | Listing of nearby collectible ViaPoints and ViaPoints collected in the last step.  |
 +------------------------------+------------------------------------------------------------------------+------------------------------------------------------------------------------------+
 | signals                      | Optional[List[:class:`~smarts.core.observations.SignalObservation`]]   | List of nearby traffic signal (light) states on this timestep.                     |
 +------------------------------+------------------------------------------------------------------------+------------------------------------------------------------------------------------+

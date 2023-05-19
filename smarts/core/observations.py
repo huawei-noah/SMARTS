@@ -63,7 +63,7 @@ class EgoVehicleObservation(NamedTuple):
     id: str
     """Vehicle identifier."""
     position: np.ndarray
-    """Center coordinate of the vehicle bounding box's bottom plane. shape=(3,). dtype=np.float64."""
+    """Center coordinate of the vehicle bounding box's bottom plane. `shape=(3,)`. `dtype=np.float64`."""
     bounding_box: Dimensions
     """Bounding box describing the length, width, and height, of the vehicle."""
     heading: Heading
@@ -151,20 +151,20 @@ class DrivableAreaGridMap(NamedTuple):
 
 
 class ViaPoint(NamedTuple):
-    """'Collectables' that can be placed within the simulation."""
+    """'Collectibles' that can be placed within the simulation."""
 
     position: Tuple[float, float]
-    """Location (x,y) of this collectable."""
+    """Location (x,y) of this collectible."""
     lane_index: float
-    """Lane index on the road this collectable is associated with."""
+    """Lane index on the road this collectible is associated with."""
     road_id: str
-    """Road id this collectable is associated with."""
+    """Road id this collectible is associated with."""
     required_speed: float
-    """Approximate speed required to collect this collectable."""
+    """Approximate speed required to collect this collectible."""
 
 
 class Vias(NamedTuple):
-    """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
+    """Listing of nearby collectible ViaPoints and ViaPoints collected in the last step."""
 
     near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit."""
@@ -173,7 +173,7 @@ class Vias(NamedTuple):
 
 
 class SignalObservation(NamedTuple):
-    """Describes an observation of a traffic signal (light) on this timestep."""
+    """Describes an observation of a traffic signal (light) on this time-step."""
 
     state: SignalLightState
     """The state of the traffic signal."""
@@ -205,7 +205,7 @@ class Observation(NamedTuple):
     under_this_agent_control: bool
     """Whether this agent currently has control of the vehicle."""
     neighborhood_vehicle_states: Optional[List[VehicleObservation]]
-    """List of neighbourhood vehicle states."""
+    """List of neighborhood vehicle states."""
     waypoint_paths: Optional[List[List[Waypoint]]]
     """Dynamic evenly-spaced points on the road ahead of the vehicle, showing potential routes ahead."""
     distance_travelled: float
@@ -213,7 +213,7 @@ class Observation(NamedTuple):
     road_waypoints: Optional[RoadWaypoints]
     """Per-road waypoints information."""
     via_data: Vias
-    """Listing of nearby collectable ViaPoints and ViaPoints collected in the last step."""
+    """Listing of nearby collectible ViaPoints and ViaPoints collected in the last step."""
     # TODO: Convert to `NamedTuple` or only return point cloud.
     lidar_point_cloud: Optional[
         Tuple[List[np.ndarray], List[bool], List[Tuple[np.ndarray, np.ndarray]]]
@@ -227,4 +227,4 @@ class Observation(NamedTuple):
     top_down_rgb: Optional[TopDownRGB] = None
     """RGB camera observation."""
     signals: Optional[List[SignalObservation]] = None
-    """List of nearby traffic signal (light) states on this timestep."""
+    """List of nearby traffic signal (light) states on this time-step."""

@@ -61,7 +61,7 @@ class TrafficHistory:
 
     def connect_for_multiple_queries(self):
         """Optional optimization to avoid the overhead of parsing
-        the sqlite file header multiple times for clients that
+        the `sqlite` file header multiple times for clients that
         will be performing multiple queries.  If used, then
         disconnect() should be called when finished."""
         if not self._db_cnxn:

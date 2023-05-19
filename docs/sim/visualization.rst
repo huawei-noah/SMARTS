@@ -25,7 +25,7 @@ An example is shown below to run SMARTS with Envision.
     # Run the chase_via_points.py example with the loop scenario
     $ scl run --envision examples/control/chase_via_points.py scenarios/sumo/loop
 
-``--envision`` flag is added to ``scl run`` to enable the Envision server. Visit `http://localhost:8081/ <http://localhost:8081/>`_ in your browser to see the environment visualization. Select the simulator instance in the top left dropdown. If you are using SMARTS on a remote machine you will need to forward port 8081.
+``--envision`` flag is added to ``scl run`` to enable the Envision server. Visit `http://localhost:8081/ <http://localhost:8081/>`_ in your browser to see the environment visualization. Select the simulator instance in the top left drop-down. If you are using SMARTS on a remote machine you will need to forward port 8081.
 
 Data Recording and Replay
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -87,10 +87,10 @@ Save an updated distribution if any changes were made to the Envision web applic
     # Saves to envision/web/dist
     $ npm run build
 
-Visdom
-------
+``Visdom``
+----------
 
-Use the `Visdom <https://github.com/facebookresearch/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
+Use the `visdom <https://github.com/facebookresearch/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
 Start the visdom server before running the scenario and open the server URL in your browser `http://localhost:8097 <http://localhost:8097>`_.
 
 .. code-block:: bash
@@ -98,7 +98,7 @@ Start the visdom server before running the scenario and open the server URL in y
     # Install visdom
     $ pip install smarts[visdom]
 
-Enable Visdom in the SMARTS environment by setting ``SMARTS_VISDOM_ENABLED``. For example:
+Enable ``visdom`` in the SMARTS environment by setting ``SMARTS_VISDOM_ENABLED``. For example:
 
 .. code-block:: ini
     

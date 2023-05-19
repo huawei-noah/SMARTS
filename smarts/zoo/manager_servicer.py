@@ -36,7 +36,7 @@ log = logging.getLogger(f"manager_servicer.py - pid({os.getpid()})")
 
 
 class ManagerServicer(manager_pb2_grpc.ManagerServicer):
-    """Provides methods that implement functionality of Manager Servicer."""
+    """Provides methods that implement functionality of ``ManagerServicer``."""
 
     def __init__(self):
         self._workers = {}

@@ -39,12 +39,12 @@ from gym import logger
 from gym.wrappers.monitoring import video_recorder
 
 
-def capped_cubic_video_schedule(episode_id):
-    """Util"""
-    if episode_id < 1000:
+def capped_cubic_video_schedule(episode_id, cap=1000):
+    """A utility to schedule frequency fall-off."""
+    if episode_id < cap:
         return int(round(episode_id ** (1.0 / 3))) ** 3 == episode_id
     else:
-        return episode_id % 1000 == 0
+        return episode_id % cap == 0
 
 
 class RecordVideo(gym.Wrapper):

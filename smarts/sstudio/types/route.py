@@ -66,7 +66,7 @@ class Route:
     lane_index:
         The lane index from the rightmost lane.
     offset:
-        The offset in metres into the lane. Also acceptable\\: "max", "random"
+        The offset in meters into the lane. Also acceptable\\: "max", "random"
     """
     ## road, lane index, offset
     end: Tuple[str, int, Any]
@@ -77,7 +77,7 @@ class Route:
     lane_index:
         The lane index from the rightmost lane.
     offset:
-        The offset in metres into the lane. Also acceptable\\: "max", "random"
+        The offset in meters into the lane. Also acceptable\\: "max", "random"
     """
 
     # Roads we want to make sure this route includes
@@ -111,7 +111,7 @@ class Route:
 
 @dataclass(frozen=True)
 class RandomRoute:
-    """An alternative to types.Route which specifies to sstudio to generate a random
+    """An alternative to types.Route which specifies to ``sstudio`` to generate a random
     route.
     """
 

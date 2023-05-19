@@ -960,7 +960,7 @@ class WaymoMap(RoadMapWithCaches):
         return 1.0  # TODO
 
     def to_glb(self, glb_dir):
-        """Build a glb file for camera rendering and envision."""
+        """Build a `.glb` file for camera rendering and envision."""
         polygons = []
         for lane_id, lane in self._lanes.items():
             metadata = {

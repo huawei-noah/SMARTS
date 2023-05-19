@@ -41,7 +41,7 @@ from smarts.sstudio import gen_scenario
 
 HEADING_CONSTANT = Heading(-math.pi / 2)
 
-# TODO: Add test for travelling bubbles
+# TODO: Add test for traveling bubbles
 
 
 @pytest.fixture

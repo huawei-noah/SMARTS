@@ -223,7 +223,7 @@ class HiWayEnv(gym.Env):
         Returns:
             Dict[str, Union[float,str]]: A dictionary with the following keys.
 
-                + fixed_timestep_sec: Simulation timestep.
+                + fixed_timestep_sec: Simulation time-step.
                 + scenario_map: Name of the current scenario.
                 + scenario_traffic: Traffic spec(s) used.
                 + mission_hash: Hash identifier for the current scenario.
@@ -270,7 +270,7 @@ class HiWayEnv(gym.Env):
 
         Returns:
             Tuple[ Dict[str, Observation], Dict[str, float], Dict[str, bool], Dict[str, Any] ]:
-                Observations, rewards, dones, and infos for active agents.
+                Observations, rewards, dones, and :spelling:ignore:`infos` for active agents.
         """
         assert isinstance(agent_actions, dict) and all(
             isinstance(key, str) for key in agent_actions.keys()

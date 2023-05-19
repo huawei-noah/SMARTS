@@ -42,7 +42,7 @@ from pathlib import Path
 
 class GifRecorder:
     """
-    Use images(rgb_array) to create a gif file.
+    Uses images (such as from gym's ``"rgb_array"``) to create a gif file.
     """
 
     def __init__(self, video_name_folder: str, env: gym.Env):
@@ -63,7 +63,7 @@ class GifRecorder:
 
     def capture_frame(self, step_num: int, image: np.ndarray):
         """
-        Create image according to the rgb_array and store it with step number in the destinated folder
+        Create image according to the ``"rgb_array"`` and store it with step number in the destination folder
         """
         with ImageClip(image) as image_clip:
             image_clip.save_frame(

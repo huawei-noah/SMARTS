@@ -28,12 +28,12 @@ import gym
 
 
 class FrameStack(gym.Wrapper):
-    """Wrapper stacks num_stack (default=3) consecutive frames, in a moving-window
-    fashion, and returns the stacked_frames.
+    """This wrapper stacks `num_stack` (default=3) consecutive frames, in a moving-window
+    fashion, and returns the `stacked_frames`.
 
     Note:
-        Wrapper returns a deepcopy of the stacked frames, which may be expensive
-        for large frames and large num_stack values.
+        This wrapper returns a deep-copy of the stacked frames, which may be expensive
+        for large frames and large `num_stack` values.
     """
 
     def __init__(self, env: gym.Env, num_stack: int = 3):

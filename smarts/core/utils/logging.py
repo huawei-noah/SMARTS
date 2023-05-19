@@ -50,7 +50,7 @@ def timeit(name: str, log):
 
 
 def isnotebook():
-    """Determines if executing in ipython (Jupyter Notebook)"""
+    """Determines if executing in ipython (`Jupyter` Notebook)"""
     try:
         shell = get_ipython().__class__.__name__  # pytype: disable=name-error
         if shell == "ZMQInteractiveShell" or "google.colab" in sys.modules:
@@ -72,7 +72,7 @@ except:
 
 
 def try_fsync(fd):
-    """Attempts to see if fsync will work. Workaround for error on Github Actions."""
+    """Attempts to see if `fsync` will work. Workaround for error on GitHub Actions."""
     try:
         os.fsync(fd)
     except OSError:
@@ -83,9 +83,15 @@ def try_fsync(fd):
 @contextmanager
 def suppress_output(stderr=True, stdout=True):
     """Attempts to suppress console print statements.
+
+    .. spelling:word-list::
+
+        stderr
+        stdout
+
     Args:
-        stderr: Suppress stderr.
-        stdout: Suppress stdout.
+        stderr: Suppress `stderr`.
+        stdout: Suppress `stdout`.
     """
     cleanup_stderr = None
     cleanup_stdout = None
@@ -169,8 +175,8 @@ def suppress_websocket():
 
 
 def diff_unpackable(obj, other_obj):
-    """Do an asserted comparision of an object that is able to be unpacked. This works with nested collections:
-    dictionaries, namedtuples, tuples, lists, numpy arrays, and dataclasses.
+    """Do an asserted comparison of an object that is able to be unpacked. This works with nested collections:
+    dictionaries, named-tuples, tuples, lists, numpy arrays, and dataclasses.
 
     Raises:
         AssertionError: if objects do not match.

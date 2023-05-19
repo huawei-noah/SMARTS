@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 
 
-from typing import Any, Dict, NamedTuple, Sequence
+from typing import Any, Dict
 
 import gym
 import numpy as np
@@ -35,7 +35,7 @@ class RGBImage(gym.ObservationWrapper):
 
     If the base env's observation space is frame stacked using the FrameStack
     wrapper, then the returned observation will be a numpy array of stacked
-    images with shape (image_width, image_height, 3*num_stack). Here, num_stack
+    images with shape (`image_width`, `image_height`, 3* `num_stack`). Here, `num_stack`
     refers to the number of frames stacked in the base env's observation.
     """
 
@@ -43,8 +43,8 @@ class RGBImage(gym.ObservationWrapper):
         """
         Args:
             env (gym.Env): SMARTS environment to be wrapped.
-            num_stack (int): Use 1 if base env's observation space is not stacked,
-                else use the number of stacked frames in base env's observation.
+            num_stack (int): Use 1 if base environment's observation space is not stacked,
+                else use the number of stacked frames in base environment's observation.
         """
         super().__init__(env)
         agent_interfaces = env.agent_interfaces

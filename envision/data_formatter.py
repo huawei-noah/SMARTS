@@ -63,7 +63,10 @@ class Operation(IntEnum):
     REDUCE = 1
     """Send value only if it has changed."""
     FLATTEN = 4
-    """Convert value from list or dataclass to higher hierachy."""
+    """Convert value from a sequential container or `dataclass` to a flat hierarchy.
+    
+    e.g. [(1, 2), (13,)] -> [1, 2, 13]
+    """
 
 
 _formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
@@ -94,7 +97,7 @@ class ReductionContext:
 
     @property
     def enabled(self):
-        """If this reduction context is enabled(else it is passthrough.)"""
+        """If this reduction context is enabled(else it is pass-through.)"""
         return self._enabled
 
     @property

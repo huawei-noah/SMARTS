@@ -188,7 +188,13 @@ class BoundingBox:
         return Dimensions(length=self.length, width=self.width, height=self.height)
 
     def contains(self, pt: Point) -> bool:
-        """returnx True iff pt is fully within the bounding box.  If any bbox coordinates are None, it's considered unbounded on that dimension/axis."""
+        """Determines if the given point is within this bounding box. If any bounding box
+        coordinates are None, it is considered unbounded on that dimension/axis.
+
+        Args:
+            pt (Point): The point to test against.
+        Returns:
+            True if pt is fully within the bounding box."""
         return (
             self.min_pt is None
             or (self.min_pt.x is None or self.min_pt.x < pt.x)
@@ -344,7 +350,7 @@ class Pose:
         """Convert from front bumper location to a Pose with center of vehicle.
 
         Args:
-            front_bumper_position: The (x, y) position of the centre front of the front bumper
+            front_bumper_position: The (x, y) position of the center front of the front bumper
             heading: The heading of the pose
             length: The length dimension of the object's physical bounds
         """
@@ -362,7 +368,7 @@ class Pose:
 
     @classmethod
     def from_center(cls, base_position, heading: Heading):
-        """Convert from centred location
+        """Convert from centered location
 
         Args:
             base_position: The center of the object's bounds
@@ -382,7 +388,7 @@ class Pose:
     @classmethod
     def from_explicit_offset(
         cls,
-        offset_from_centre,
+        offset_from_center,
         base_position: np.ndarray,
         heading: Heading,
         local_heading: Heading,
@@ -390,7 +396,7 @@ class Pose:
         """Convert from an explicit offset
 
         Args:
-            offset_from_centre: The offset away from the centre of the object's bounds
+            offset_from_center: The offset away from the center of the object's bounds
             heading: The heading of the pose
             base_position: The base position without offset
             local_heading: An additional orientation that re-faces the center offset
@@ -403,11 +409,11 @@ class Pose:
         # Calculate rotation on xy-plane only, given that fast_quaternion_from_angle is also on xy-plane
         vprime = np.array(
             [
-                offset_from_centre[0] * np.cos(oprime)
-                - offset_from_centre[1] * np.sin(oprime),
-                offset_from_centre[0] * np.sin(oprime)
-                + offset_from_centre[1] * np.cos(oprime),
-                offset_from_centre[2],
+                offset_from_center[0] * np.cos(oprime)
+                - offset_from_center[1] * np.sin(oprime),
+                offset_from_center[0] * np.sin(oprime)
+                + offset_from_center[1] * np.cos(oprime),
+                offset_from_center[2],
             ]
         )
         position = base_position + vprime
@@ -451,7 +457,7 @@ class Pose:
         return self.position[:2]
 
     def as_panda3d(self):
-        """Convert to panda3D (object bounds centre position, heading)"""
+        """Convert to panda3D (object bounds center position, heading)"""
         return (self.position, self.heading.as_panda3d)
 
     @classmethod

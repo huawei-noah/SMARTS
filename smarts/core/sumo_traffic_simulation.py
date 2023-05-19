@@ -68,12 +68,12 @@ class SumoTrafficSimulation(TrafficProvider):
             The port that sumo will attempt to run on.
         auto_start:
             False to pause simulation when SMARTS runs, and wait for user to click
-            start on sumo-gui.
+            start on `sumo-gui`.
         allow_reload:
             Reset SUMO instead of restarting SUMO when the current map is the same as the previous.
         remove_agents_only_mode:
             Remove only agent vehicles used by SMARTS and not delete other SUMO
-            vehicles when the traffic simulation calls teardown
+            vehicles when the traffic simulation calls to tear-down
     """
 
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -656,7 +656,7 @@ class SumoTrafficSimulation(TrafficProvider):
 
         Any sumo-special roads (e.g., junction) are removed from the new
         route before setting it because Sumo doesn't allow specifying these
-        in the call to its setRoute() and will raise an exception otherwise."""
+        in the call to its `vehicle.setRoute()` and will raise an exception otherwise."""
         if not self.connected:
             return
         old_route = self._route_for_vehicle(vehicle_id)

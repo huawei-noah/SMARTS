@@ -29,7 +29,7 @@ class Collisions:
     """Parameters for collisions cost function."""
 
     active: bool = False
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -39,7 +39,7 @@ class Comfort:
     """Parameters for comfort cost function."""
 
     active: bool = False
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -49,7 +49,7 @@ class DistToDestination:
     """Parameters for distance to destination cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -59,11 +59,11 @@ class DistToObstacles:
     """Parameters for distance to obstacles cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
     ignore: List[str] = field(default_factory=list)
-    """Vehicle id of neighbours to be excluded from being considered as an
+    """Vehicle id of neighbors to be excluded from being considered as an
     obstacle.
     """
 
@@ -73,7 +73,7 @@ class JerkLinear:
     """Parameters for jerk linear cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -83,7 +83,7 @@ class LaneCenterOffset:
     """Parameters for lane center offset cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -93,7 +93,7 @@ class OffRoad:
     """Parameters for off road cost function."""
 
     active: bool = False
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -103,7 +103,7 @@ class SpeedLimit:
     """Parameters for speed limit cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -113,7 +113,7 @@ class Steps:
     """Parameters for steps cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
@@ -123,7 +123,7 @@ class VehicleGap:
     """Parameters for gap between vehicles cost function."""
 
     active: bool = False
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
     actor: str = ""
@@ -135,7 +135,7 @@ class WrongWay:
     """Parameters for wrong way cost function."""
 
     active: bool = True
-    """If True, enables computation of coresponding cost function. Else, 
+    """If True, enables computation of corresponding cost function. Else, 
     disabled.
     """
 
