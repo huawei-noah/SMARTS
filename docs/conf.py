@@ -43,6 +43,7 @@ extensions = [
     "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx_click",  # extract documentation from a `click` application
     "sphinxcontrib.apidoc",
+    "sphinxcontrib.spelling",
 ]
 
 extlinks = {
@@ -106,6 +107,12 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# -- Options for spelling ----------------------------------------------------
+spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]
+spelling_ignore_pypi_package_names = True
+spelling_show_suggestions = True
+spelling_suggestion_limit = 2
+spelling_word_list_filename = ["spelling_wordlist.txt"]
 
 # -- Options for HTML output -------------------------------------------------
 
