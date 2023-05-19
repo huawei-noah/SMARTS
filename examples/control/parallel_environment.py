@@ -59,11 +59,11 @@ def main(
     # Unique `sim_name` is required by each HiWayEnv in order to be displayed
     # in Envision.
     env_constructor = lambda sim_name: HiWayEnv(
-            scenarios=scenarios,
-            agent_specs=agent_specs,
-            sim_name=sim_name,
-            headless=headless,
-        )
+        scenarios=scenarios,
+        agent_specs=agent_specs,
+        sim_name=sim_name,
+        headless=headless,
+    )
 
     # A list of env constructors of type `Callable[[], gym.Env]`
     env_constructors = [
