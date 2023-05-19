@@ -59,8 +59,8 @@ Action space
 
 This benchmark allows ego agents to use any one of the following action spaces.
 
-+ :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
-+ :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TargetPose`
++ :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`
 
 Zoo agents
 ----------

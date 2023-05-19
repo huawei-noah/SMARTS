@@ -64,8 +64,8 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-The action space for an ego agent can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. The user should choose
+The action space for an ego agent can be either :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`. The user should choose
 one of the action spaces and specify the chosen action space through the ego agent's interface.
 
 Code structure
@@ -199,7 +199,7 @@ Example
 An example training and inference code is provided for this benchmark. 
 See the :examples:`rl/drive` example. The example uses PPO algorithm from 
 `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library.
-It uses :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose` action space.
+It uses :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose` action space.
 Instructions for training and evaluating the example is as follows.
 
 Train
@@ -213,7 +213,8 @@ Train
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e ./../../../.[camera_obs,argoverse]
+    $ pip install wheel==0.38.4
+    $ pip install -e ./../../../.[camera_obs,argoverse,envision]
     $ pip install -e ./inference/
 
 + Train locally without visualization
@@ -263,7 +264,7 @@ Evaluate
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e .[camera_obs,argoverse]
+    $ pip install -e .[camera_obs,argoverse,envision]
     $ scl zoo install examples/rl/drive/inference
     # For Driving SMARTS 2023.1
     $ scl benchmark run driving_smarts_2023_1 examples.rl.drive.inference:contrib-agent-v0 --auto-install
