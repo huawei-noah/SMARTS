@@ -501,7 +501,7 @@ class Renderer(RendererBase):
         width: int,
         height: int,
         resolution: float,
-    ) -> P3dOffscreenCamera:
+    ) -> str:
         """Generates a new off-screen camera."""
         # setup buffer
         win_props = WindowProperties.size(width, height)

@@ -171,6 +171,6 @@ class RendererBase:
         width: int,
         height: int,
         resolution: float,
-    ) -> OffscreenCamera:
+    ) -> str:
         """Generates a new off-screen camera."""
         raise NotImplementedError

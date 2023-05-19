@@ -305,12 +305,14 @@ class ProcessWorker:
     def run(self):
         """Start the worker seeded with the given data."""
         kwargs = dict(serialize_results=self._serialize_results)
+        # pytype: disable=wrong-arg-types
         self._proc = mp.Process(
             target=self._run,
             args=(self._child_connection,),
             kwargs=kwargs,
             daemon=True,
         )
+        # pytype: enable=wrong-arg-types
         self._proc.start()
         return self._parent_connection
 
