@@ -19,12 +19,11 @@
 # THE SOFTWARE.
 from typing import Any, Dict, Iterator, Tuple
 
-import gym
+import gymnasium as gym
 
 from smarts.core.utils.episodes import EpisodeLog, EpisodeLogs
 
 Action = Any
-Operation = Any
 
 
 class EpisodeLogger(gym.Wrapper):
@@ -36,20 +35,19 @@ class EpisodeLogger(gym.Wrapper):
         self._closed = False
         self._log_iter = self._episode_logs(col_width)
 
-    def step(self, action: Action) -> Tuple[Operation, float, bool, Dict[str, Any]]:
+    def step(self, action: Action):
         """Mark a step for logging."""
-
         step_vals = super().step(action)
         self._current_episode.record_step(*step_vals)
         return step_vals
 
-    def reset(self) -> Any:
+    def reset(self) -> Tuple[Any, Dict[str, Any]]:
         """Mark an episode reset for logging."""
 
-        obs = super().reset()
+        out = super().reset()
         self._current_episode: EpisodeLog = next(self._log_iter)
         self._current_episode.record_scenario(self.scenario_log)
-        return obs
+        return out
 
     def close(self):
         """Cap off the episode logging."""

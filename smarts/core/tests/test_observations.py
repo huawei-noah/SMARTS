@@ -23,7 +23,7 @@ import logging
 import math
 from typing import Dict
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pytest
 from panda3d.core import OrthographicLens, Point2, Point3
@@ -53,6 +53,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalLightState
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)
@@ -93,19 +94,20 @@ def agent_interface():
 def agent_spec(agent_interface):
     return AgentSpec(
         interface=agent_interface,
-        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: 0),
     )
 
 
 @pytest.fixture
 def env(agent_spec: AgentSpec):
     _env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/figure_eight"],
         agent_interfaces={AGENT_ID: agent_spec.interface},
         headless=True,
         fixed_timestep_sec=0.1,
         seed=42,
+        observation_options=ObservationOptions.unformatted,
     )
 
     yield _env
@@ -184,13 +186,13 @@ def sample_vehicle_pos(
 
 def test_observations(env, agent_spec):
     agent = agent_spec.build_agent()
-    observations: Dict[str, Observation] = env.reset()
+    observations: Dict[str, Observation] = env.reset()[0]
 
     # Let the agent step for a while
     for _ in range(NUM_STEPS):
         agent_obs = observations[AGENT_ID]
         agent_action = agent.act(agent_obs)
-        observations, _, _, _ = env.step({AGENT_ID: agent_action})
+        observations, _, _, _, _ = env.step({AGENT_ID: agent_action})
 
     # RGB
     rgb = observations[AGENT_ID].top_down_rgb

@@ -5,12 +5,13 @@ import stat
 import sys
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 
 sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
 from tools.argument_parser import default_argument_parser
 
 from smarts.core.utils.episodes import episodes
+from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.zoo.registry import make as zoo_make
 
 logging.basicConfig(level=logging.INFO)
@@ -72,38 +73,40 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
     copy_scenarios(save_dir, scenarios)
 
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces={AGENT_ID: agent_spec.interface},
         sim_name=sim_name,
         headless=headless,
         timestep_sec=0.1,
-        sumo_headless=True,
         seed=seed,
+        observation_options=ObservationOptions.unformatted,
     )
 
     # Carry out the experiment
     episode = next(episodes(n=1))
     agent = agent_spec.build_agent()
-    observations = env.reset()
+    observations, _ = env.reset()
 
-    dones = {"__all__": False}
+    terminateds = {"__all__": False}
     MAX_STEPS = 2550
     i = 0
     try:
-        while not dones["__all__"] and i < max_steps:
+        while not terminateds["__all__"] and i < max_steps:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {AGENT_ID: agent_action}
+            )
             i += 1
             if i % 10 == 0:
                 print("Step: ", i)
-            episode.record_step(observations, rewards, dones, infos)
+            episode.record_step(observations, rewards, terminateds, truncateds, infos)
     except KeyboardInterrupt:
         # discard result
         i = MAX_STEPS
     finally:
-        if dones["__all__"]:
+        if terminateds["__all__"]:
             i = MAX_STEPS
         try:
             episode.record_scenario(env.scenario_log)

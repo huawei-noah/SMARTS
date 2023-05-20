@@ -28,7 +28,7 @@ from time import time
 from typing import Any, Callable, Dict, Sequence
 
 import cpuinfo
-import gym
+import gymnasium as gym
 import matplotlib.pyplot as plt
 import psutil
 from mdutils.mdutils import MdUtils
@@ -36,6 +36,7 @@ from mdutils.mdutils import MdUtils
 import smarts
 from smarts.core.scenario import Scenario
 from smarts.core.utils.math import welford
+from smarts.env.gymnasium.hiway_env_v1 import ScenarioOrder
 from smarts.sstudio.scenario_construction import build_scenarios
 
 _SEED = 42
@@ -49,13 +50,12 @@ logger.setLevel(logging.INFO)
 def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_STEPS):
     build_scenarios(scenarios=scenario_dir, seed=_SEED)
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenario_dir,
-        shuffle_scenarios=False,
+        scenarios_order=ScenarioOrder.Sequential,
         sim_name="Diagnostic",
-        agent_specs={},
+        agent_interfaces={},
         headless=True,
-        sumo_headless=True,
         seed=_SEED,
     )
     scenarios = Scenario.get_scenario_list(scenario_dir)

@@ -20,7 +20,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from smarts.core.coordinates import Heading
