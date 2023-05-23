@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
 - Traffic light signals are now visualized in Envision.
 - Interest vehicles now show up in Envision.
+- Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
@@ -27,6 +28,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `TrapEntryTactic.wait_to_hijack_limit_s` field now defaults to `0`.
 - `EntryTactic` derived classes now contain `condition` to provide extra filtering of candidate actors.
 - `EntryTactic` derived classes now contain `start_time`.
+- `info` returned by `hiway-v1` in `reset()` and `step()` methods are unified.
+- Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.

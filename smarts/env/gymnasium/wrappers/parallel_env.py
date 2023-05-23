@@ -28,12 +28,12 @@ from enum import Enum
 from typing import Any, Callable, Dict, Sequence, Tuple
 
 import cloudpickle
-import gym
+import gymnasium as gym
 
 __all__ = ["ParallelEnv"]
 
 
-EnvConstructor = Callable[[], gym.Env]
+EnvConstructor = Callable[[int], gym.Env]
 
 
 class _Message(Enum):
@@ -86,7 +86,7 @@ class ParallelEnv(object):
         if any([not callable(ctor) for ctor in env_constructors]):
             raise TypeError(
                 f"Found non-callable `env_constructors`. Expected `env_constructors` of type "
-                f"`Sequence[Callable[[], gym.Env]]`, but got {env_constructors})."
+                f"`Sequence[Callable[[int], gym.Env]]`, but got {env_constructors})."
             )
 
         self._num_envs = len(env_constructors)
@@ -101,12 +101,14 @@ class ParallelEnv(object):
         self._parent_pipes = []
         self._processes = []
         for idx, env_constructor in enumerate(env_constructors):
+            cur_seed = seed + idx
             parent_pipe, child_pipe = mp_ctx.Pipe()
             process = mp_ctx.Process(
                 target=_worker,
                 name=f"Worker-<{type(self).__name__}>-<{idx}>",
                 args=(
                     cloudpickle.dumps(env_constructor),
+                    cur_seed,
                     auto_reset,
                     child_pipe,
                     self._polling_period,
@@ -122,7 +124,6 @@ class ParallelEnv(object):
             child_pipe.close()
 
         self._wait_start()
-        self.seed(seed)
         self._single_observation_space, self._single_action_space = self._get_spaces()
 
     @property
@@ -187,35 +188,32 @@ class ParallelEnv(object):
 
         return observation_space, action_space
 
-    def seed(self, seed: int) -> Sequence[int]:
-        """Sets unique seed for each environment.
-
-        Args:
-            seed (int): Seed number.
+    def seed(self) -> Sequence[int]:
+        """Retrieves the seed used in each environment.
 
         Returns:
             Sequence[int]: Seed of each environment.
         """
-        seeds = [seed + i for i in range(self._num_envs)]
-
-        seeds = self._call(_Message.SEED, seeds)
+        seeds = self._call(_Message.SEED, [None] * self._num_envs)
         return seeds
 
-    def reset(self) -> Sequence[Dict[str, Any]]:
+    def reset(self) -> Tuple[Sequence[Dict[str, Any]], Sequence[Dict[str, Any]]]:
         """Reset all environments.
 
         Returns:
-            Sequence[Dict[str, Any]]: A batch of observations from the vectorized environment.
+            Tuple[Sequence[Dict[str, Any]], Sequence[Dict[str, Any]]]: A batch of
+                observations and infos from the vectorized environment.
         """
 
-        observations = self._call(_Message.RESET, [None] * self._num_envs)
-        return observations
+        observations, infos = self._call(_Message.RESET, [None] * self._num_envs)
+        return observations, infos
 
     def step(
         self, actions: Sequence[Dict[str, Any]]
     ) -> Tuple[
         Sequence[Dict[str, Any]],
         Sequence[Dict[str, float]],
+        Sequence[Dict[str, bool]],
         Sequence[Dict[str, bool]],
         Sequence[Dict[str, Any]],
     ]:
@@ -225,12 +223,12 @@ class ParallelEnv(object):
             actions (Sequence[Dict[str,Any]]): Actions for each environment.
 
         Returns:
-            Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]:
-                A batch of (observations, rewards, dones, infos) from the vectorized environment.
+            Tuple[ Sequence[Dict[str, Any]], Sequence[Dict[str, float]], Sequence[Dict[str, bool]], Sequence[Dict[str, bool]], Sequence[Dict[str, Any]] ]:
+                A batch of (observations, rewards, terminateds, truncateds, infos) from the vectorized environment.
         """
         result = self._call(_Message.STEP, actions)
-        observations, rewards, dones, infos = zip(*result)
-        return (observations, rewards, dones, infos)
+        observations, rewards, terminateds, truncateds, infos = zip(*result)
+        return (observations, rewards, terminateds, truncateds, infos)
 
     def close(self, terminate=False):
         """Sends a close message to all external processes.
@@ -266,6 +264,7 @@ class ParallelEnv(object):
 
 def _worker(
     env_constructor: bytes,
+    seed: int,
     auto_reset: bool,
     pipe: mp.connection.Connection,
     polling_period: float = 0.1,
@@ -276,6 +275,7 @@ def _worker(
 
     Args:
         env_constructor (bytes): Cloudpickled callable which constructs the environment.
+        seed (int): Seed for the environment.
         auto_reset (bool): If True, auto resets environment when episode ends.
         pipe (mp.connection.Connection): Child's end of the pipe.
         polling_period (float, optional): Time to wait for keyboard interrupts. Defaults to 0.1.
@@ -283,7 +283,7 @@ def _worker(
     Raises:
         KeyError: If unknown message type is received.
     """
-    env = cloudpickle.loads(env_constructor)()
+    env = cloudpickle.loads(env_constructor)(seed=seed)
     pipe.send((_Message.RESULT, None))
 
     try:
@@ -292,21 +292,26 @@ def _worker(
                 continue
             message, payload = pipe.recv()
             if message == _Message.SEED:
-                env_seed = env.seed(payload)
+                env_seed = env.seed
                 pipe.send((_Message.RESULT, env_seed))
             elif message == _Message.ACCESS:
                 result = getattr(env, payload, None)
                 pipe.send((_Message.RESULT, result))
             elif message == _Message.RESET:
-                observation = env.reset()
-                pipe.send((_Message.RESULT, observation))
+                observation, info = env.reset()
+                pipe.send((_Message.RESULT, (observation, info)))
             elif message == _Message.STEP:
-                observation, reward, done, info = env.step(payload)
-                if done["__all__"] and auto_reset:
+                observation, reward, terminated, truncated, info = env.step(payload)
+                if terminated["__all__"] and auto_reset:
                     # Final observation can be obtained from `info` as follows:
                     # `final_obs = info[agent_id]["env_obs"]`
-                    observation = env.reset()
-                pipe.send((_Message.RESULT, (observation, reward, done, info)))
+                    observation, _ = env.reset()
+                pipe.send(
+                    (
+                        _Message.RESULT,
+                        (observation, reward, terminated, truncated, info),
+                    )
+                )
             elif message == _Message.CLOSE:
                 break
             else:

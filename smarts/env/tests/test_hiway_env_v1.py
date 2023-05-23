@@ -76,9 +76,9 @@ def test_hiway_env_v1_unformatted(env: HiWayEnvV1):
         observations = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        terminated = {"__all__": False}
-        while not terminated["__all__"]:
-            observations, rewards, terminated, truncated, infos = env.step(
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
+            observations, rewards, terminateds, truncateds, infos = env.step(
                 {AGENT_ID: "keep_lane"}
             )
 
@@ -91,7 +91,7 @@ def test_hiway_env_v1_unformatted(env: HiWayEnvV1):
                 [-3 < reward < 3 for reward in rewards.values()]
             ), f"Expected bounded reward per timestep, but got {rewards}."
 
-            episode.record_step(observations, rewards, terminated, infos)
+            episode.record_step(observations, rewards, terminateds, truncateds, infos)
 
     assert episode is not None and episode.index == (
         MAX_EPISODES - 1

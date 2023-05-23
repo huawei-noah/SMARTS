@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 import logging
 import os
-import warnings
 from enum import IntEnum
 from functools import partial
 from pathlib import Path
@@ -47,6 +46,7 @@ from gymnasium.envs.registration import EnvSpec
 from envision import types as envision_types
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
+from smarts.core import current_seed
 from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
@@ -269,12 +269,13 @@ class HiWayEnvV1(gym.Env):
 
         info = {
             agent_id: {
-                "score": value,
+                "score": agent_score,
                 "env_obs": observations[agent_id],
                 "done": dones[agent_id],
                 "reward": rewards[agent_id],
+                "map_source": self._smarts.scenario.road_map.source,
             }
-            for agent_id, value in extras["scores"].items()
+            for agent_id, agent_score in extras["scores"].items()
         }
 
         if self._env_renderer is not None:
@@ -348,7 +349,16 @@ class HiWayEnvV1(gym.Env):
         observations = self._smarts.reset(
             scenario, start_time=options.get("start_time", 0)
         )
-        info = {"map_source": self._smarts.scenario.road_map.source}
+        info = {
+            agent_id: {
+                "score": 0,
+                "env_obs": agent_obs,
+                "done": False,
+                "reward": 0,
+                "map_source": self._smarts.scenario.road_map.source,
+            }
+            for agent_id, agent_obs in observations.items()
+        }
 
         if self._env_renderer is not None:
             self._env_renderer.reset(observations)
@@ -494,3 +504,12 @@ class HiWayEnvV1(gym.Env):
             smarts.core.smarts.SMARTS: The smarts simulator instance.
         """
         return self._smarts
+
+    @property
+    def seed(self):
+        """Returns the environment seed.
+
+        Returns:
+            int: Environment seed.
+        """
+        return current_seed()

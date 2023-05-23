@@ -5,7 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pandas as pd
 
