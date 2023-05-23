@@ -14,17 +14,14 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.observations import Observation
 from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.frame_stack import FrameStack
 from smarts.env.wrappers.parallel_env import ParallelEnv
 from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.zoo.agent_spec import AgentSpec
 
 
-class ChaseViaPointsAgent(Agent):
-    def act(self, obs: Sequence[Observation]) -> Tuple[float, int]:
-        # Here, we only utilise the newest frame from the stacked observations.
-        newest_obs = obs[-1]
-        speed_limit = newest_obs.waypoint_paths[0][0].speed_limit
+class LaneAgent(Agent):
+    def act(self, obs: Observation) -> Tuple[float, int]:
+        speed_limit = obs.waypoint_paths[0][0].speed_limit
         return (speed_limit, 0)
 
 
@@ -54,28 +51,20 @@ def main(
                 action=ActionSpaceType.LaneWithContinuousSpeed,
                 max_episode_steps=max_episode_steps,
             ),
-            agent_builder=ChaseViaPointsAgent,
+            agent_builder=LaneAgent,
         )
         for agent_id in agent_ids
     }
 
-    # Create a callable env constructor. Here, for illustration purposes, each
-    # environment is wrapped with a FrameStack wrapper which returns stacked
-    # observations for each environment.
-    env_frame_stack = lambda env: FrameStack(
-        env=env,
-        num_stack=num_stack,
-    )
     # Unique `sim_name` is required by each HiWayEnv in order to be displayed
     # in Envision.
-    env_constructor = lambda sim_name: env_frame_stack(
-        HiWayEnv(
-            scenarios=scenarios,
-            agent_specs=agent_specs,
-            sim_name=sim_name,
-            headless=headless,
-        )
+    env_constructor = lambda sim_name: HiWayEnv(
+        scenarios=scenarios,
+        agent_specs=agent_specs,
+        sim_name=sim_name,
+        headless=headless,
     )
+
     # A list of env constructors of type `Callable[[], gym.Env]`
     env_constructors = [
         partial(env_constructor, sim_name=f"{sim_name}_{ind}") for ind in range(num_env)

@@ -42,8 +42,8 @@ Several agent control policies and agent [action types](smarts/core/controllers/
    + ActionSpaceType: LaneWithContinuousSpeed
 
 ### RL Model
-1. [Racing](examples/rl/racing) using world model based RL.
-    <img src="examples/rl/racing/docs/_static/racing.gif" height="350" width="600"/>
+1. [Drive](examples/rl/drive). See [Driving SMARTS 2023.1 & 2023.2](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_1.html) for more info.
+1. [VehicleFollowing](examples/rl/platoon). See [Driving SMARTS 2023.3](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_3.html) for more info.
 
 ### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
