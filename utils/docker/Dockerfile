@@ -20,7 +20,7 @@ RUN apt-get update --fix-missing && \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
-        libenchant-2-2 \
+        libenchant-dev \
         xorg && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*

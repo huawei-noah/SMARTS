@@ -662,7 +662,7 @@ class AgentManager:
     def teardown_ego_agents(self, filter_ids: Optional[Set] = None):
         """Tears down all given ego agents passed through the filter.
         Args:
-            filter_ids (Optional[Set[str]], optional): The whitelist of agent ids. If `None`, all ids are whitelisted.
+            filter_ids (Optional[Set[str]], optional): The whitelist of agent ids. If `None`, all ids are white-listed.
         """
         ids_ = self._teardown_agents_by_ids(self._ego_agent_ids, filter_ids)
         self._ego_agent_ids -= ids_
@@ -671,7 +671,7 @@ class AgentManager:
     def teardown_social_agents(self, filter_ids: Optional[Set] = None):
         """Tears down all given social agents passed through the filter.
         Args:
-            filter_ids (Optional[Set[str]], optional): The whitelist of agent ids. If `None`, all ids are whitelisted.
+            filter_ids (Optional[Set[str]], optional): The whitelist of agent ids. If `None`, all ids are white-listed.
         """
         ids_ = self._teardown_agents_by_ids(self._social_agent_ids, filter_ids)
 

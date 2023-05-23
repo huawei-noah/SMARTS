@@ -917,7 +917,7 @@ class LanePoints:
             lookahead (int):
                 The maximum lane-points in a branch.
             filter_edge_ids (Tuple[str]):
-                Whitelisted edge ids.
+                White-listed edge ids.
         Returns:
             All branches(as lists) stemming from the input lane-point.
         """
