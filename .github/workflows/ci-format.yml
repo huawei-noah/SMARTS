@@ -90,6 +90,7 @@ jobs:
           fetch-depth: 0
       - name: Install Enchant
         run: |
+          apt-get update --fix-missing
           apt-get install -y libenchant-2-2
       - name: Build Sphinx documentation
         run: |
