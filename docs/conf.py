@@ -112,6 +112,7 @@ spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]
 spelling_ignore_pypi_package_names = True
 spelling_show_suggestions = True
 spelling_suggestion_limit = 2
+spelling_ignore_contributor_names=False
 spelling_word_list_filename = ["spelling_wordlist.txt"]
 
 # -- Options for HTML output -------------------------------------------------
