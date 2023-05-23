@@ -88,6 +88,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+      - name: Install Enchant
+        run: |
+          apt-get install -y libenchant-2-2
       - name: Build Sphinx documentation
         run: |
           python3.8 -m venv ${{env.venv_dir}}
@@ -96,7 +99,7 @@ jobs:
           pip install wheel==0.38.4
           pip install .[camera_obs,doc,train,ray,envision,argoverse,opendrive,waymo]
           cd ${GITHUB_WORKSPACE}/docs
-          make html SPHINXOPTS="-W -T -E --keep-going"
+          make html SPHINXOPTS="-W -T -E --keep-going -b spelling"
       - name: Check build output
         run: |
           cd $GITHUB_WORKSPACE

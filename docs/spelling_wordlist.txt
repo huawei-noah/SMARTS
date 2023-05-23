@@ -7,6 +7,7 @@ accelerometer
 Ackermann
 acyclic
 acyclical
+Apptainer
 Argoverse
 args
 bezier
@@ -54,6 +55,7 @@ rebase
 renderer
 renderers
 repurposes
+RLlib
 rtype
 scalable
 scalability
@@ -71,6 +73,7 @@ unmanaged
 untriggered
 Vandenberghe
 vectorized
+Visdom
 waypoint
 waypoints
 Waymo
