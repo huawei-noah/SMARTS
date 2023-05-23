@@ -921,6 +921,18 @@ class LanePoints:
         Returns:
             All branches(as lists) stemming from the lanepoint.
         """
+        # Early exit if there are no valid paths ahead in the route for this lane
+        lp_lane = lanepoint.lp.lane
+        if (
+            filter_edge_ids
+            and lp_lane.road.road_id != filter_edge_ids[-1]
+            and all(
+                out_lane.road.road_id not in filter_edge_ids
+                for out_lane in lp_lane.outgoing_lanes
+            )
+        ):
+            return []
+
         lanepoint_paths = [[lanepoint]]
         for _ in range(lookahead):
             next_lanepoint_paths = []
