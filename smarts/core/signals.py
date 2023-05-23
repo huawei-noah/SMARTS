@@ -28,7 +28,7 @@ from .road_map import RoadMap
 
 class SignalLightState(IntFlag):
     """States that a traffic signal light may take;
-    note that these may be combined into a bitmask."""
+    note that these may be combined into a bit-mask."""
 
     UNKNOWN = 0
     OFF = 0

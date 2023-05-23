@@ -72,7 +72,7 @@ class LanePoints:
     def __init__(self, shape_lps: List[LinkedLanePoint], spacing: float):
         # XXX: for a big map, may not want to cache ALL of the potential LanePoints
         #      nor waste time here finding all of them.
-        #      Lanepoints might be generated on demand based upon edges and lookahead.
+        #      Lanepoints might be generated on demand based upon edges and look-ahead.
         self._linked_lanepoints = LanePoints._interpolate_shape_lanepoints(
             shape_lps, spacing
         )
@@ -101,9 +101,9 @@ class LanePoints:
         sumo_road_network,
         spacing,
     ):
-        """Computes the lane shape (start/shape/end) lanepoints for all lanes in
+        """Computes the lane shape (start/shape/end) lane-points for all lanes in
         the network, the result of this function can be used to interpolate
-        lanepoints along lanes to the desired granularity.
+        lane-points along lanes to the desired granularity.
         """
         from smarts.core.utils.sumo import sumolib  # isort:skip
         from sumolib.net.edge import Edge  # isort:skip
@@ -174,7 +174,7 @@ class LanePoints:
                     curr_lanepoint.nexts.append(linked_lanepoint)
                     curr_lanepoint = linked_lanepoint
 
-                # Add a lanepoint for the last point of the current lane
+                # Add a lane-point for the last point of the current lane
                 lane_width, _ = curr_lanepoint.lp.lane.width_at_offset(0)
                 last_linked_lanepoint = LinkedLanePoint(
                     lp=LanePoint(
@@ -226,9 +226,9 @@ class LanePoints:
         od_road_network,
         spacing,
     ):
-        """Computes the lane shape (start/shape/end) lanepoints for all lanes in
+        """Computes the lane shape (start/shape/end) lane-points for all lanes in
         the network, the result of this function can be used to interpolate
-        lanepoints along lanes to the desired granularity.
+        lane-points along lanes to the desired granularity.
         """
         from .opendrive_road_network import OpenDriveRoadNetwork
 
@@ -305,7 +305,7 @@ class LanePoints:
                     curr_lanepoint.nexts.append(linked_lanepoint)
                     curr_lanepoint = linked_lanepoint
 
-                # Add a lanepoint for the last point of the current lane
+                # Add a lane-point for the last point of the current lane
                 last_lane_coord = curr_lanepoint.lp.lane.to_lane_coord(
                     Point(x=lane_shape[-1][0], y=lane_shape[-1][1], z=0.0)
                 )
@@ -352,9 +352,9 @@ class LanePoints:
 
         for road_id in roads:
             road = roads[road_id]
-            # go ahead and add lanepoints for composite lanes,
+            # go ahead and add lane-points for composite lanes,
             # even though we don't on other map formats,
-            # and then filter these out on lanepoint queries.
+            # and then filter these out on lane-point queries.
             # (not an issue right now for OpenDrive since we don't
             # find composite lanes, but it may be in the future.)
             for lane in road.lanes:
@@ -373,9 +373,9 @@ class LanePoints:
         waymo_road_network,
         spacing,
     ):
-        """Computes the lane shape (start/shape/end) lanepoints for all lanes in
+        """Computes the lane shape (start/shape/end) lane-points for all lanes in
         the network, the result of this function can be used to interpolate
-        lanepoints along lanes to the desired granularity.
+        lane-points along lanes to the desired granularity.
         """
         from .waymo_map import WaymoMap
 
@@ -478,9 +478,9 @@ class LanePoints:
 
         for road_id in roads:
             road = roads[road_id]
-            # go ahead and add lanepoints for composite lanes,
+            # go ahead and add lane-points for composite lanes,
             # even though we don't on other map formats,
-            # and then filter these out on lanepoint queries.
+            # and then filter these out on lane-point queries.
             for lane in road.lanes:
                 # Ignore non drivable lanes in Waymo
                 if lane.is_drivable:
@@ -497,9 +497,9 @@ class LanePoints:
         argoverse_map,
         spacing,
     ):
-        """Computes the lane shape (start/shape/end) lanepoints for all lanes in
+        """Computes the lane shape (start/shape/end) lane-points for all lanes in
         the network, the result of this function can be used to interpolate
-        lanepoints along lanes to the desired granularity.
+        lane-points along lanes to the desired granularity.
         """
         from .argoverse_map import ArgoverseMap
 
@@ -621,7 +621,7 @@ class LanePoints:
     def _interpolate_shape_lanepoints(
         shape_lanepoints: Sequence[LinkedLanePoint], spacing: float
     ) -> List[LinkedLanePoint]:
-        # memoize interpolated lanepoints on the shape lanepoint at start of
+        # memoize interpolated lane-points on the shape lane-point at start of
         # the line we are interpolating
         interp_memo = {}
 
@@ -652,7 +652,7 @@ class LanePoints:
                 continue
 
             first_linked_lanepoint = LinkedLanePoint(
-                lp=shape_lp.lp,  # lanepoints are frozen, so no need to copy lp here
+                lp=shape_lp.lp,  # lane-points are frozen, so no need to copy lp here
                 nexts=[],
                 is_inferred=False,
             )
@@ -702,19 +702,19 @@ class LanePoints:
         lane_seg_len = np.linalg.norm(lane_seg_vec)
 
         # We set the initial distance into the lane at `spacing` because
-        # we already have a lanepoint along this segment (curr_lanepoint)
+        # we already have a lane-point along this segment (curr_lanepoint)
         dist_into_lane_seg = spacing
         while dist_into_lane_seg < lane_seg_len:
             p = dist_into_lane_seg / lane_seg_len
             pos = shape_lp.lp.pose.as_position2d() + lane_seg_vec * p
 
-            # The thresholds for calculating last lanepoint. If the
-            # midpoint between the current lanepoint and the next shape
-            # lanepoint is less than the minimum distance then the last
-            # lanepoint position will be that midpoint. If the midpoint
+            # The thresholds for calculating last lane-point. If the
+            # midpoint between the current lane-point and the next shape
+            # lane-point is less than the minimum distance then the last
+            # lane-point position will be that midpoint. If the midpoint
             # is closer than last spacing threshold to the next shape
-            # lanepoint, then the last lanepoint will be the current
-            # lanepoint.
+            # lane-point, then the last lane-point will be the current
+            # lane-point.
             # XXX: the map scale should be taken into account here.
             last_spacing_threshold_dist = 0.8 * spacing
             minimum_dist_next_shape_lp = 1.4
@@ -781,7 +781,7 @@ class LanePoints:
             ]
             if result:
                 return result
-        # if filtering, only return lanepoints in composite lanes if we didn't hit any in simple lanes...
+        # if filtering, only return lane-points in composite lanes if we didn't hit any in simple lanes...
         return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
 
     @staticmethod
@@ -862,14 +862,14 @@ class LanePoints:
         within_radius: float = 10,
         maximum_count: int = 10,
     ) -> List[LanePoint]:
-        """Get the lanepoints closest to the given pose.
+        """Get the lane-points closest to the given pose.
         Args:
             pose:
-                The pose to look around for lanepoints.
+                The pose to look around for lane-points.
             within_radius:
-                The radius which lanepoints can be found from the given pose.
+                The radius which lane-points can be found from the given pose.
             maximum_count:
-                The maximum lanepoints found.
+                The maximum number of lane-points that should be found.
         """
         lanepoints = self._linked_lanepoints
         kd_tree = self._lanepoints_kd_tree
@@ -884,13 +884,13 @@ class LanePoints:
         return [l_lps.lp for l_lps in linked_lanepoints[0]]
 
     def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
-        """Returns the closest lanepoint on the given lane to the given world coordinate."""
+        """Returns the closest lane-point on the given lane to the given world coordinate."""
         return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
 
     def closest_linked_lanepoint_on_lane_to_point(
         self, point: Point, lane_id: str
     ) -> LinkedLanePoint:
-        """Returns the closest linked lanepoint on the given lane."""
+        """Returns the closest linked lane-point on the given lane."""
         lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
@@ -899,7 +899,7 @@ class LanePoints:
     def closest_linked_lanepoint_on_road(
         self, point: Point, road_id: str
     ) -> LinkedLanePoint:
-        """Returns the closest linked lanepoint on the given road."""
+        """Returns the closest linked lane-point on the given road."""
         return LanePoints._closest_linked_lp_in_kd_tree_batched(
             [point],
             self._lanepoints_by_edge_id[road_id],
@@ -910,16 +910,16 @@ class LanePoints:
     def paths_starting_at_lanepoint(
         self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple
     ) -> List[List[LinkedLanePoint]]:
-        """Returns all full branches from the given lanepoint up to the length of the lookahead.
+        """Returns all full branches from the given lane-point up to the length of the look-ahead.
         Args:
-            lanepoint:
-                The starting lanepoint.
-            lookahead:
-                The maximum lanepoints in a branch.
-            filter_edge_ids:
-                Whitelisted edge ids.
+            lanepoint (LinkedLanePoint):
+                The starting lane-point.
+            lookahead (int):
+                The maximum lane-points in a branch.
+            filter_edge_ids (Tuple[str]):
+                White-listed edge ids.
         Returns:
-            All branches(as lists) stemming from the lanepoint.
+            All branches(as lists) stemming from the input lane-point.
         """
         lanepoint_paths = [[lanepoint]]
         for _ in range(lookahead):

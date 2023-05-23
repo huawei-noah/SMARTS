@@ -642,7 +642,7 @@ class LanePositionSensor(Sensor):
 
 
 class ViaSensor(Sensor):
-    """Tracks collection of ViaPoint collectables"""
+    """Tracks collection of ViaPoint collectibles"""
 
     def __init__(self, lane_acquisition_range, speed_accuracy):
         self._consumed_via_points = set()

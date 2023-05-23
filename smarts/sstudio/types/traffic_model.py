@@ -96,7 +96,7 @@ class SmartsLaneChangingModel(LaneChangingModel):
 
     Args:
         cutin_prob (float, optional): Float value [0, 1] that
-            determines the probabilty this vehicle will "arbitrarily" cut in
+            determines the probability this vehicle will "arbitrarily" cut in
             front of an adjacent agent vehicle when it has a chance, even if
             there would otherwise be no reason to change lanes at that point.
             Higher values risk a situation where this vehicle ends up in a lane
@@ -108,7 +108,7 @@ class SmartsLaneChangingModel(LaneChangingModel):
             Attempts to match the semantics of the attribute in SUMO's default
             lane-changing model, see: ``https://sumo.dlr.de/docs/Definition_of_Vehicles%2C_Vehicle_Types%2C_and_Routes.html#lane-changing_models``.
             Range: positive reals. Defaults to 1.0.
-        dogmatic (bool, optional): If True, will cutin when a suitable
+        dogmatic (bool, optional): If True, will cut-in when a suitable
             opportunity presents itself based on the above parameters, even if
             it means the risk of not not completing the assigned route;
             otherwise, will forego the chance. Defaults to True.
@@ -119,7 +119,7 @@ class SmartsLaneChangingModel(LaneChangingModel):
         slow_down_after (float, optional): Target speed during the hold_period
             will be scaled by this value. Must be non-negative. Defaults to 1.0.
         multi_lane_cutin (bool, optional): If True, this vehicle will consider
-            changing across multiple lanes at once in order to cutin upon an
+            changing across multiple lanes at once in order to cut-in upon an
             agent vehicle when there's an opportunity. Defaults to False.
     """
 

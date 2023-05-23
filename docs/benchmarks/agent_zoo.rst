@@ -3,7 +3,7 @@
 Agent Zoo
 =========
 
-Numerous prebuilt and trained agents are hosted at `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_ . 
+Numerous pre-built and trained agents are hosted at `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_ . 
 These agents should be installed prior to being used in SMARTS environments or benchmarks.
 
 .. code-block:: bash
@@ -31,7 +31,7 @@ Contribute agents
 First, add the new agent to `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_. It should contain 
 
 * package setup file,
-* inference code with prebuilt model, and
+* inference code with pre-built model, and
 * algorithm explanation.
 
 Then, register the newly added zoo agent in `zoo/policies/__init__.py <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/__init__.py>`_.
@@ -44,7 +44,7 @@ Available zoo agents
    :header-rows: 1
 
    * - Agent locator and path
-     - Benchmark or Env
+     - Benchmark or Environment
      - Action space
      - Source
      - Remarks

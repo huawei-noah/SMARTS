@@ -10,7 +10,7 @@ class FrameStack:
     fashion, and returns the stacked_frames.
 
     Note:
-        Wrapper returns a deepcopy of the stacked frames, which may be expensive
+        Wrapper returns a deep-copy of the stacked frames, which may be expensive
         for large frames and large num_stack values.
     """
 

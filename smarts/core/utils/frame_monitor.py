@@ -31,12 +31,12 @@ class FramerateException(Exception):
 
     @classmethod
     def below_threshold(cls, desired_fps, delta):
-        """Generate a framerate exception.
+        """Generate a frame-rate exception.
         Args:
             desired_fps: The intended fps.
             delta: The frame time taken.
         Returns:
-            A new framerate exception.
+            A new frame-rate exception.
         """
         return cls(
             f"The frame rate decreased, lower than the desired threshold, \

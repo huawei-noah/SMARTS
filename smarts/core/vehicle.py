@@ -220,7 +220,7 @@ class Vehicle:
         """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
         # XXX: this doesn't return a smarts.core.coordinates.BoundingBox!
         self._assert_initialized()
-        # Assuming the position is the centre,
+        # Assuming the position is the center,
         # calculate the corner coordinates of the bounding_box
         origin = self.position[:2]
         dimensions = np.array([self.width, self.length])

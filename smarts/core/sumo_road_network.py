@@ -49,7 +49,7 @@ class SumoRoadNetwork(RoadMap):
 
     DEFAULT_LANE_WIDTH = 3.2
     """3.2 is the default Sumo road network lane width if it's not specified
-     explicitly in Sumo's NetEdit or the map.net.xml file.
+     explicitly in Sumo's NetEdit or the `map.net.xml` file.
     This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
      in North America (although US highway lanes are wider at ~3.7m)."""
 
@@ -188,7 +188,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """This is the net.xml file that corresponds with our possibly-offset coordinates."""
+        """This is the `.net.xml` file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
     @staticmethod
@@ -207,32 +207,44 @@ class SumoRoadNetwork(RoadMap):
         return map_spec.source
 
     def is_same_map(self, map_or_spec: Union[MapSpec, RoadMap]) -> bool:
+        if self is map_or_spec:
+            return True
+
+        self_map_spec = self.map_spec
+        if self_map_spec is None:
+            return False
+
         if isinstance(map_or_spec, SumoRoadNetwork):
             map_spec = map_or_spec._map_spec
         elif isinstance(map_or_spec, MapSpec):
             map_spec = map_or_spec
         else:
             return False
+        if map_spec is None:
+            return False
+
+        # pytype: disable=attribute-error
         return (
             (
-                map_spec.source == self._map_spec.source
+                map_spec.source == self_map_spec.source
                 or SumoRoadNetwork._map_path(map_spec)
-                == SumoRoadNetwork._map_path(self._map_spec)
+                == SumoRoadNetwork._map_path(self_map_spec)
             )
-            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and map_spec.lanepoint_spacing == self_map_spec.lanepoint_spacing
             and (
-                map_spec.default_lane_width == self._map_spec.default_lane_width
+                map_spec.default_lane_width == self_map_spec.default_lane_width
                 or SumoRoadNetwork._spec_lane_width(map_spec)
-                == SumoRoadNetwork._spec_lane_width(self._map_spec)
+                == SumoRoadNetwork._spec_lane_width(self_map_spec)
             )
             and (
-                map_spec.shift_to_origin == self._map_spec.shift_to_origin
+                map_spec.shift_to_origin == self_map_spec.shift_to_origin
                 or (
                     not map_spec.shift_to_origin
                     and not getattr(self._graph, "_shifted_by_smarts", False)
                 )
             )
         )
+        # pytype: enable=attribute-error
 
     @cached_property
     def bounding_box(self) -> BoundingBox:

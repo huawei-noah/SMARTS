@@ -17,6 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+"""
+.. spelling:word-list::
+
+    shadower
+    shadowers
+"""
 import logging
 from copy import copy, deepcopy
 from io import StringIO
@@ -227,7 +233,7 @@ class VehicleIndex:
 
     @cache
     def shadower_id_from_vehicle_id(self, vehicle_id) -> Optional[str]:
-        """Find the first shadower watching a vehicle."""
+        """Find the first shadowing entity watching a vehicle."""
         vehicle_id = _2id(vehicle_id)
 
         shadower_ids = self._controlled_by[
@@ -241,7 +247,7 @@ class VehicleIndex:
 
     @cache
     def shadower_ids(self) -> Set[str]:
-        """Get all current shadowers."""
+        """Get all current shadowing entity IDs."""
         return set(
             self._2id_to_id[sa_id]
             for sa_id in self._controlled_by["shadower_id"]

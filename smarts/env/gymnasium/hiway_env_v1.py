@@ -63,7 +63,7 @@ class ScenarioOrder(IntEnum):
     """Determines the order in which scenarios are served over successive resets."""
 
     Sequential = 0
-    """Scenarios are served in order intially provided."""
+    """Scenarios are served in order initially provided."""
     Scrambled = 1
     """Scenarios are served in random order."""
 
@@ -114,7 +114,7 @@ class HiWayEnvV1(gym.Env):
         visualization_client_builder: A method that must must construct an
             object that follows the Envision interface. Allows tapping into a
             direct data stream from the simulation.
-        zoo_addrs (str, optional): List of (ip, port) tuples of
+        zoo_addrs (str, optional): List of (`ip`, `port`) tuples of
             zoo server, used to instantiate remote social agents. Defaults
             to None.
         observation_options (ObservationOptions, string): Defines the options
@@ -235,7 +235,7 @@ class HiWayEnvV1(gym.Env):
             Dict[str, Any],
         ],
     ]:
-        """Run one timestep of the environment's dynamics using the agent actions.
+        """Run one time-step of the environment's dynamics using the agent actions.
 
         When the end of an episode is reached (``terminated or truncated``), it is necessary to call :meth:`reset` to
         reset this environment's state for the next episode.
@@ -246,14 +246,14 @@ class HiWayEnvV1(gym.Env):
         Returns:
             observation (dict): An element of the environment's :attr:`observation_space` as the
                 next observation due to the agent actions. This observation will change based on
-                the provided :attr:`agent_interfaces`. Check :attr:` observation_space after
+                the provided :attr:`agent_interfaces`. Check :attr:`observation_space` after
                 initialization.
             reward (SupportsFloat): The reward as a result of taking the
                 action.
             terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
                 which can be positive or negative. An example is reaching the goal state. If true, the user needs to call :meth:`reset`.
             truncated (bool): Whether the truncation condition outside the scope of the MDP is satisfied.
-                Typically, this is a timelimit, but could also be used to indicate an agent physically going out of bounds.
+                Typically, this is a time-limit, but could also be used to indicate an agent physically going out of bounds.
                 Can be used to end the episode prematurely before a terminal state is reached.
                 If true, the user needs to call :meth:`reset`.
             info (dict): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
@@ -324,13 +324,13 @@ class HiWayEnvV1(gym.Env):
         Args:
             seed (optional int): The seed that is used to initialize the environment's PRNG (`np_random`).
                 If the environment does not already have a PRNG and ``seed=None`` (the default option) is passed,
-                a seed will be chosen from some source of entropy (e.g. timestamp or /dev/urandom).
+                a seed will be chosen from some source of entropy (e.g. timestamp or `/dev/urandom`).
                 However, if the environment already has a PRNG and ``seed=None`` is passed, the PRNG will *not* be reset.
                 If you pass an integer, the PRNG will be reset even if it already exists.
                 Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
             options (optional dict): Additional information to specify how the environment is reset (optional,
                 depending on the specific environment). Forwards to :meth:`~smarts.core.smarts.SMARTS.reset`.
-                - "scenario" (smarts.sstudio.Scenario): An explicit scenario to reset to. The default is a scenario from the scenario iter.
+                - "scenario" (:class:`~smarts.sstudio.types.scenario.Scenario`): An explicit scenario to reset to. The default is a scenario from the scenario iter.
                 - "start_time" (float): Forwards the start time of the current scenario. The default is 0.
 
         Returns:
@@ -377,20 +377,20 @@ class HiWayEnvV1(gym.Env):
 
         Note:
             As the :attr:`render_mode` is known during ``__init__``, the objects used to render the environment state
-            should be initialised in ``__init__``.
+            should be initialized in ``__init__``.
 
         By convention, if the :attr:`render_mode` is:
             - None (default): no render is computed.
-            - "human": The environment is continuously rendered in the current display or terminal,
+            - `human`: The environment is continuously rendered in the current display or terminal,
                 usually for human consumption. This rendering should occur during :meth:`step` and
                 :meth:`render` doesn't need to be called. Returns ``None``.
-            - "rgb_array": Return a single frame representing the current state of the environment.
+            - `rgb_array`: Return a single frame representing the current state of the environment.
                 A frame is a ``np.ndarray`` with shape ``(x, y, 3)`` representing RGB values for
                 an x-by-y pixel image.
-            - "ansi": Return a strings (``str``) or ``StringIO.StringIO`` containing a
+            - `ansi`: Return a strings (``str``) or ``StringIO.StringIO`` containing a
                 terminal-style text representation for each time step. The text can include
                 newlines and ANSI escape sequences (e.g. for colors).
-            - "rgb_array_list" and "ansi_list": List based version of render modes are possible
+            - `rgb_array_list` and `ansi_list`: List based version of render modes are possible
                 (except Human) through the wrapper, :py:class:`gymnasium.wrappers.RenderCollection`
                 that is automatically applied during ``gymnasium.make(..., render_mode="rgb_array_list")``.
                 The frames collected are popped after :meth:`render` is called or :meth:`reset`.
@@ -418,13 +418,13 @@ class HiWayEnvV1(gym.Env):
         """Returns the base non-wrapped environment.
 
         Returns:
-            Env: The base non-wrapped :class:`gymnasium.Env` instance
+            gym.Env: The base non-wrapped :class:`gymnasium.Env` instance
         """
         return self
 
     @property
     def np_random(self) -> np.random.Generator:
-        """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
+        """Returns the environment's internal :attr:`_np_random` that if not set will initialize with a random seed.
 
         Returns:
             Instances of `np.random.Generator`.
@@ -482,10 +482,10 @@ class HiWayEnvV1(gym.Env):
 
         Returns:
             (Dict[str, Union[float,str]]): A dictionary with the following keys.
-                fixed_timestep_sec - Simulation timestep.
-                scenario_map - Name of the current scenario.
-                scenario_traffic - Traffic spec(s) used.
-                mission_hash - Hash identifier for the current scenario.
+                `fixed_timestep_sec` - Simulation time-step.
+                `scenario_map` - Name of the current scenario.
+                `scenario_traffic` - Traffic spec(s) used.
+                `mission_hash` - Hash identifier for the current scenario.
         """
 
         scenario = self._smarts.scenario
