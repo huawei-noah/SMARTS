@@ -1,8 +1,8 @@
 .. _rllib:
 
 
-``RLlib``
-======================
+RLlib
+=====
 
 **RLlib** is an open-source library for reinforcement learning that offers both high scalability and a unified API for a variety
 of applications. ``RLlib`` natively supports ``TensorFlow``, ``TensorFlow Eager``, and ``PyTorch``. Most of its internals are agnostic to such

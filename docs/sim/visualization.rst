@@ -87,8 +87,8 @@ Save an updated distribution if any changes were made to the Envision web applic
     # Saves to envision/web/dist
     $ npm run build
 
-``Visdom``
-----------
+Visdom
+------
 
 Use the `visdom <https://github.com/facebookresearch/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
 Start the visdom server before running the scenario and open the server URL in your browser `http://localhost:8097 <http://localhost:8097>`_.
