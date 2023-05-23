@@ -91,7 +91,7 @@ jobs:
       - name: Install Enchant
         run: |
           apt-get update --fix-missing
-          apt-get install -y libenchant-2-2
+          apt-get install -y libenchant-dev
       - name: Build Sphinx documentation
         run: |
           python3.8 -m venv ${{env.venv_dir}}
