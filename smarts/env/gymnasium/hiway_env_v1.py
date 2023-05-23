@@ -139,9 +139,6 @@ class HiWayEnvV1(gym.Env):
     action_space: spaces.Space
     observation_space: spaces.Space
 
-    # Created
-    _np_random: Optional[np.random.Generator] = None
-
     def __init__(
         self,
         scenarios: Sequence[str],
@@ -404,26 +401,15 @@ class HiWayEnvV1(gym.Env):
             self._smarts.destroy()
 
     @property
-    def unwrapped(self) -> gym.Env[ObsType, ActType]:
-        """Returns the base non-wrapped environment.
-
-        Returns:
-            Env: The base non-wrapped :class:`gymnasium.Env` instance
-        """
-        return self
-
-    @property
     def np_random(self) -> np.random.Generator:
-        """Returns the environment's internal :attr:`_np_random` that if not set will initialise with a random seed.
-
-        Returns:
-            Instances of `np.random.Generator`.
-        """
         return super().np_random
 
     @np_random.setter
     def np_random(self, value: np.random.Generator):
-        self._np_random = value
+        warnings.warn(
+            "The generator in `np_random` is not used. This method will have no effect on the environment."
+        )
+        super()._np_random = value
 
     def __str__(self):
         """Returns a string of the environment with :attr:`spec` id's if :attr:`spec`.
