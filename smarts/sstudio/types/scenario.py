@@ -46,7 +46,7 @@ class ScenarioMetadata:
 
 @dataclass(frozen=True)
 class Scenario:
-    """The sstudio scenario representation."""
+    """The Scenario Studio (`sstudio`) scenario representation."""
 
     map_spec: Optional[MapSpec] = None
     """Specifies the road map."""

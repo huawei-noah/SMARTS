@@ -96,11 +96,11 @@ class SensorManager:
                 The current state from the simulation.
             sim_local_constants (SimulationLocalConstants):
                 The values that should stay the same for a simulation over a reset.
-            agent_ids ({str, ...}):
+            agent_ids (Set[str]):
                 The agent ids to process.
-            renderer_ref (Optional[RendererBase]):
+            renderer_ref (RendererBase):
                 The renderer (if any) that should be used.
-            physics_ref (bc.BulletClient):
+            physics_ref:
                 The physics client.
         """
         observations, dones, updated_sensors = self._sensor_resolver.observe(

@@ -282,7 +282,7 @@ Here, ``max_episode_steps`` controls the max steps allowed for the agent in an e
 
 .. note:: 
 
-    While using RLlib, the ``max_episode_steps`` control authority may be ceded to RLlib through their config option ``horizon``, but doing so 
+    While using ``RLlib``, the ``max_episode_steps`` control authority may be ceded to ``RLlib`` through their config option ``horizon``, but doing so 
     removes the ability to customize different max episode steps for each agent.
 
 A pre-configured `interface` can be extended by supplying extra `kwargs`. For example the following extends `AgentType.Standard` pre-configured interface to include lidar observation.
@@ -344,7 +344,7 @@ Spaces
 Spaces provide samples for variation. For reference on spaces, see `gymnasium <https://gymnasium.farama.org/api/spaces/>`_ .
 SMARTS environments contains (i) ``observation_space`` and (ii) ``action_space`` attributes, which are dictionaries mapping agent ids to their corresponding observation or action spaces, respectively.
 
-Consider a SMARTS env with an agent named `Agent_001`. If `Agent_001`'s `interface` is customised, then the agent's corresponding observation space (i.e., ``env.observation_space["Agent_001"]``) and action space (i.e., ``env.action_space["Agent_001"]``) from the environment would be changed accordingly. 
+Consider a SMARTS env with an agent named `Agent_001`. If `Agent_001`'s `interface` is customized, then the agent's corresponding observation space (i.e., ``env.observation_space["Agent_001"]``) and action space (i.e., ``env.action_space["Agent_001"]``) from the environment would be changed accordingly. 
 
 Policy
 ------

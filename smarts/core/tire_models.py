@@ -172,7 +172,7 @@ class TireForces:
 
 
 class LinearTireForces(TireForces):
-    """A linear forces implemention of a tire model."""
+    """A linear forces implementation of a tire model."""
 
     def _calculate_tire_forces(self, chassis, client, action):
 

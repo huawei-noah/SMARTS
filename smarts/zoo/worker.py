@@ -30,12 +30,12 @@ To protect and isolate Agents from any pollution of global state in the main SMA
 This script is called from within SMARTS to instantiate a remote agent.
 The protocol is as follows:
 
-1. SMARTS calls: worker.py --port 5467 # sets a unique port per agent
-2. worker.py will begin listening on port 5467.
+1. SMARTS calls: ``worker.py`` --port 5467 # sets a unique port per agent
+2. ``worker.py`` will begin listening on port 5467.
 3. SMARTS connects to (ip, 5467) as a client.
 4. SMARTS calls `build()` rpc with `AgentSpec` as input.
-5. worker.py receives the `AgentSpec` instances and builds the Agent.
-6. SMARTS calls `act()` rpc with observation as input and receives the actions as response from worker.py.
+5. ``worker.py`` receives the `AgentSpec` instances and builds the Agent.
+6. SMARTS calls `act()` rpc with observation as input and receives the actions as response from ``worker.py``.
 """
 
 import argparse

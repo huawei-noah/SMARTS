@@ -41,7 +41,7 @@ def benchmark_cli():
     "--debug-log",
     is_flag=True,
     default=False,
-    help="Log the benchmark in stdout.",
+    help="Log the benchmark in ``stdout``.",
 )
 @click.option(
     "--benchmark-listing",

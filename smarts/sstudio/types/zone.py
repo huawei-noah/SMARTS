@@ -63,7 +63,7 @@ class MapZone(Zone):
     lane_index:
         The lane index from the rightmost lane.
     offset:
-        The offset in metres into the lane. Also acceptable\\: 'max', 'random'
+        The offset in meters into the lane. Also acceptable\\: 'max', 'random'
     """
     length: float
     """The length of the geometry along the center of the lane. Also acceptable\\: 'max'"""

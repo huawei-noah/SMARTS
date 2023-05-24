@@ -210,7 +210,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--positional_radius",
         "-r",
-        help="The maximum radial distance (in metres) from the end position for which the PositionalGoal mission will end.",
+        help="The maximum radial distance (in meters) from the end position for which the PositionalGoal mission will end.",
         type=int,
         default=3,
     )

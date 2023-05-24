@@ -21,12 +21,13 @@
 # THE SOFTWARE.
 from unittest import mock
 
-import gym
+import gymnasium as gym
 import pytest
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.smarts import SMARTSNotSetupError
+from smarts.env.utils.action_conversion import ActionOptions
 from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "AGENT-007"
@@ -34,13 +35,13 @@ AGENT_ID = "AGENT-007"
 
 def build_env(agent_spec):
     return gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         # TODO: Switch to a test scenario that has routes, and missions
         scenarios=["scenarios/sumo/loop"],
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces={AGENT_ID: agent_spec.interface},
         headless=True,
         seed=2008,
-        fixed_timestep_sec=0.01,
+        action_options=ActionOptions.unformatted,
     )
 
 
@@ -52,9 +53,9 @@ def test_graceful_shutdown():
     )
     env = build_env(agent_spec)
     agent = agent_spec.build_agent()
-    obs = env.reset()
+    obs, _ = env.reset()
     for _ in range(10):
-        obs = env.step({AGENT_ID: agent.act(obs)})
+        obs, _, _, _, _ = env.step({AGENT_ID: agent.act(obs)})
 
     env.close()
 
@@ -70,7 +71,7 @@ def test_graceful_interrupt(monkeypatch):
     env = build_env(agent_spec)
 
     with pytest.raises(KeyboardInterrupt):
-        obs = env.reset()
+        obs, _ = env.reset()
 
         episode = 0
         # To simulate a user interrupting the sim (e.g. ctrl-c). We just need to
@@ -80,7 +81,7 @@ def test_graceful_interrupt(monkeypatch):
             side_effect=KeyboardInterrupt,
         ):
             for episode in range(10):
-                obs, _, _, _ = env.step({AGENT_ID: agent.act(obs)})
+                obs, _, _, _, _ = env.step({AGENT_ID: agent.act(obs)})
 
         assert episode == 0, "SMARTS should have been interrupted, ending early"
 

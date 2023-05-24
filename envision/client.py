@@ -50,7 +50,7 @@ class JSONEncodingState:
 
 class CustomJSONEncoder(json.JSONEncoder):
     """This custom encoder is to support serializing more complex data from SMARTS
-    including numpy arrays, NaNs, and Infinity which don't have standarized handling
+    including numpy arrays, NaNs, and Infinity which don't have standardized handling
     according to the JSON spec.
     """
 
@@ -191,7 +191,7 @@ class Client:
         fixed_timestep_sec: float = 0.1,
         wait_between_retries: float = 0.5,
     ):
-        """Send a pre-recorded envision simulation to the envision server."""
+        """Send recorded envision simulation data to the envision server."""
 
         client = Client(
             endpoint=endpoint,

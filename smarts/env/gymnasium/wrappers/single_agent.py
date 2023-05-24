@@ -22,7 +22,7 @@
 
 from typing import Any, Tuple
 
-import gym
+import gymnasium as gym
 
 
 class SingleAgent(gym.Wrapper):
@@ -48,28 +48,32 @@ class SingleAgent(gym.Wrapper):
         if self.action_space:
             self.action_space = self.action_space[self._agent_id]
 
-    def step(self, action: Any) -> Tuple[Any, float, bool, Any]:
+    def step(self, action: Any) -> Tuple[Any, float, bool, bool, Any]:
         """Steps a single-agent SMARTS environment.
 
         Args:
             action (Any): Agent's action
 
         Returns:
-            Tuple[Any, float, bool, Any]: Agent's observation, reward, done, and info
+            Tuple[Any, float, bool, bool, Any]: Agent's observation, reward,
+                terminated, truncated, and info
         """
-        obs, reward, done, info = self.env.step({self._agent_id: action})
+        obs, reward, terminated, truncated, info = self.env.step(
+            {self._agent_id: action}
+        )
         return (
             obs[self._agent_id],
             reward[self._agent_id],
-            done[self._agent_id],
+            terminated[self._agent_id],
+            truncated[self._agent_id],
             info[self._agent_id],
         )
 
-    def reset(self) -> Any:
+    def reset(self) -> Tuple[Any, Any]:
         """Resets a single-agent SMARTS environment.
 
         Returns:
-            Any: Agent's observation
+            Tuple[Any, Any]: Agent's observation and info
         """
-        obs = self.env.reset()
-        return obs[self._agent_id]
+        obs, info = self.env.reset()
+        return obs[self._agent_id], info[self._agent_id]

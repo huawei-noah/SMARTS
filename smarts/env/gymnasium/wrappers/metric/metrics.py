@@ -54,7 +54,7 @@ from smarts.env.gymnasium.wrappers.metric.utils import (
 
 
 class MetricsError(Exception):
-    """Raised when Metrics env wrapper fails."""
+    """Raised when the Metrics environment wrapper fails."""
 
     pass
 
@@ -100,7 +100,7 @@ class MetricsBase(gym.Wrapper):
         dones = {}
         if isinstance(terminated, dict):
             # Caters to environments which use (i) ObservationOptions.multi_agent,
-            # (ii) ObservationOptions.unformated, and (iii) ObservationOptions.default .
+            # (ii) ObservationOptions.unformatted, and (iii) ObservationOptions.default .
             dones = {k: v or truncated[k] for k, v in terminated.items()}
         elif isinstance(terminated, bool):
             # Caters to environments which use (i) ObservationOptions.full .
@@ -117,7 +117,7 @@ class MetricsBase(gym.Wrapper):
                 agent_id for agent_id, agent_obs in obs.items() if agent_obs["active"]
             ]
         else:
-            # Caters to environments which uses (i) ObservationOptions.unformated .
+            # Caters to environments which uses (i) ObservationOptions.unformatted .
             active_agents = list(obs.keys())
 
         for agent_name in active_agents:
@@ -429,14 +429,14 @@ class Metrics(gym.Wrapper):
     security of the metrics computed.
 
     Args:
-        env (gym.Env): A gym.Env to be wrapped.
+        env (gym.Env): The gym environment to be wrapped.
 
     Raises:
         AttributeError: Upon accessing (i) a protected attribute or (ii) an
         attribute beginning with an underscore.
 
     Returns:
-        gym.Env: A wrapped gym.Env which computes agents' performance metrics.
+        gym.Env: A wrapped gym environment which computes agents' performance metrics.
     """
 
     def __init__(self, env: gym.Env, formula_path: Optional[Path] = None):

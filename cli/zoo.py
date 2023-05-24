@@ -77,7 +77,7 @@ def manager(port):
 
 @zoo_cli.command(
     name="install",
-    help="Attempt to install the specified agents from the given paths/url",
+    help="Attempt to install the specified agents from the given URI path.",
 )
 @click.argument(
     "agent_paths",

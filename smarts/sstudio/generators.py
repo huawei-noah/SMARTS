@@ -17,6 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+"""
+.. spelling:word-list::
+
+    idx
+
+"""
 import logging
 import os
 import random
@@ -394,11 +400,13 @@ class TrafficGenerator:
         )
 
     def resolve_route(self, route, fill_in_gaps: bool) -> types.Route:
-        """Attempts to fill in the route between the begining and end specified in the initial
-         route.
+        """Attempts to fill in the route between the beginning and end specified in the initial
+        route.
 
-        :param route: An incomplete route.
-        :return: A complete route listing all road segments it passes through.
+        Args:
+            route: An incomplete route.
+        Returns:
+            types.Route: A complete route listing all road segments it passes through.
         """
         if not isinstance(route, types.RandomRoute):
             return self._fill_in_gaps(route) if fill_in_gaps else route

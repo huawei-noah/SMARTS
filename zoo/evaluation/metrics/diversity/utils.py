@@ -259,7 +259,7 @@ def count_intersection_segment(pos_list1, pos_list2):
 
 def generate_curve(A, B, C, D):
     """
-    if Seg(A1, B1) and Seg(A2, B2) intersects at P,
+    if Segment(A1, B1) and Segment(A2, B2) intersects at P,
     then C is the closest point to A in the trajectory1 opposite to the direction of B,
     and D is the closest point to B opposite to the direction of A
 

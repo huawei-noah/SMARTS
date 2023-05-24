@@ -20,7 +20,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from smarts.core.coordinates import Heading
@@ -159,7 +159,7 @@ def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
         + angle_error: Ego heading relative to the closest waypoint. Shape=(1,).
         + speed: Ego speed. Shape=(1,).
         + steering: Ego steering. Shape=(1,).
-        + ego_ttc: Time to collision in each lane. Shape=(3,).
+        + :spelling:ignore:`ego_ttc`: Time to collision in each lane. Shape=(3,).
         + ego_lane_dist: Closest cars’ distance to ego in each lane. Shape=(3,).
     """
     ego = obs.ego_vehicle_state

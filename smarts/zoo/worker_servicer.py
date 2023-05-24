@@ -19,7 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
 import logging
 import os
 import time
@@ -34,7 +33,7 @@ log = logging.getLogger(f"worker_servicer.py - pid({os.getpid()})")
 
 
 class WorkerServicer(worker_pb2_grpc.WorkerServicer):
-    """Provides methods that implement functionality of Worker Servicer."""
+    """Provides methods that implement functionality of ``WorkerServicer``."""
 
     def __init__(self):
         self._agent = None

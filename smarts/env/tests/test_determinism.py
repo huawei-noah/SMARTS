@@ -19,9 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import gym
-import numpy as np
-import pytest
+import gymnasium as gym
 
 # Reference: https://stackoverflow.com/a/53978543/2783780
 try:
@@ -50,37 +48,41 @@ def agent_spec(max_steps_per_episode):
             neighborhood_vehicle_states=True,
             action=ActionSpaceType.Lane,
         ),
-        agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
+        agent_builder=lambda: Agent.from_function(lambda _: 0),
     )
 
 
 def run(agent_spec, callback, scenarios, episode_count, capture_step):
     AGENT_ID = "Agent-007"
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=[scenarios],
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces={AGENT_ID: agent_spec.interface},
         headless=True,
-        fixed_timestep_sec=0.01,
+        fixed_timestep_sec=0.1,
         seed=42,
     )
     i = 0
     for episode in episodes(n=episode_count):
         agent = agent_spec.build_agent()
-        observations = env.reset()
+        observations, _ = env.reset()
 
         episode.record_scenario(env.scenario_log)
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {AGENT_ID: agent_action}
+            )
 
-            episode.record_step(observations, rewards, dones, infos)
+            episode.record_step(observations, rewards, terminateds, truncateds, infos)
 
             if i % capture_step == 0:
-                callback(rewards, agent_obs, dones, int(i / capture_step))
+                callback(
+                    rewards, agent_obs, terminateds, truncateds, int(i / capture_step)
+                )
             i += 1
 
     env.close()
@@ -97,23 +99,28 @@ def vehicle_state_check(vs_now, vs_prev):
 
 def determinism(agent_spec, scenarios, episode_count, capture_step):
     rewards_capture = []
-    dones_capture = []
+    terminateds_capture = []
+    truncateds_capture = []
     observations_capture = []
 
-    def capture_callback(rewards, agent_obs, dones, index):
+    def capture_callback(rewards, agent_obs, terminateds, truncateds, index):
         rewards_capture.append(rewards)
-        dones_capture.append(dones)
+        terminateds_capture.append(terminateds)
+        truncateds_capture.append(truncateds)
         observations_capture.append(agent_obs)
 
-    def check_callback(rewards, agent_obs, dones, index):
+    def check_callback(rewards, agent_obs, terminateds, truncateds, index):
         assert len(rewards_capture) > index - 1
         orig_agent_obs = observations_capture[index]
 
         assert rewards_capture[index] == rewards
 
-        assert len(dones) == len(dones_capture[index])
-        assert all([ds == ds2 for (ds, ds2) in zip(dones, dones_capture[index])])
-
+        # fmt: off
+        assert len(terminateds) == len(terminateds_capture[index])
+        assert len(truncateds) == len(truncateds_capture[index])
+        assert all([ds == ds2 for (ds, ds2) in zip(terminateds, terminateds_capture[index])])
+        assert all([ds == ds2 for (ds, ds2) in zip(truncateds, truncateds_capture[index])])
+        # fmt: on
         assert diff_unpackable(agent_obs, orig_agent_obs) == ""
 
     run(agent_spec, capture_callback, scenarios, episode_count, capture_step)
