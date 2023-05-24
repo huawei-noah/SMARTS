@@ -908,19 +908,33 @@ class LanePoints:
 
     @lru_cache(maxsize=32)
     def paths_starting_at_lanepoint(
-        self, lanepoint: LinkedLanePoint, lookahead: int, filter_edge_ids: tuple
+        self, lanepoint: LinkedLanePoint, lookahead: int, route_edge_ids: tuple
     ) -> List[List[LinkedLanePoint]]:
         """Returns all full branches from the given lane-point up to the length of the look-ahead.
+        Branches will be filtered at the lane level if they or their outgoing lanes do not belong
+        to a road in the route edge list.
         Args:
             lanepoint (LinkedLanePoint):
                 The starting lane-point.
             lookahead (int):
                 The maximum lane-points in a branch.
-            filter_edge_ids (Tuple[str]):
-                White-listed edge ids.
+            route_edge_ids (Tuple[str]):
+                White-listed edge ids for a route.
         Returns:
-            All branches(as lists) stemming from the input lane-point.
+            All branches (as lists) stemming from the input lane-point.
         """
+        # Early exit if there are no valid paths ahead in the route for this lane
+        lp_lane = lanepoint.lp.lane
+        if (
+            route_edge_ids
+            and lp_lane.road.road_id != route_edge_ids[-1]
+            and all(
+                out_lane.road.road_id not in route_edge_ids
+                for out_lane in lp_lane.outgoing_lanes
+            )
+        ):
+            return []
+
         lanepoint_paths = [[lanepoint]]
         for _ in range(lookahead):
             next_lanepoint_paths = []
@@ -931,13 +945,13 @@ class LanePoints:
                     # Filter only the edges we're interested in
                     next_lane = next_lp.lp.lane
                     edge_id = next_lane.road.road_id
-                    if filter_edge_ids and edge_id not in filter_edge_ids:
+                    if route_edge_ids and edge_id not in route_edge_ids:
                         continue
                     if (
-                        filter_edge_ids
-                        and edge_id != filter_edge_ids[-1]
+                        route_edge_ids
+                        and edge_id != route_edge_ids[-1]
                         and all(
-                            out_lane.road.road_id not in filter_edge_ids
+                            out_lane.road.road_id not in route_edge_ids
                             for out_lane in next_lane.outgoing_lanes
                         )
                     ):
