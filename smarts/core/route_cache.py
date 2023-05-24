@@ -79,10 +79,9 @@ class RouteWithCache(RoadMap.Route):
     @cached_property
     def road_ids(self) -> List[str]:
         """Get the road IDs for this route.
-        
+
         Returns:
-            (List[str]): A list of the road IDs for the Roads in this Route.
-        """
+            (List[str]): A list of the road IDs for the Roads in this Route."""
         return [road.road_id for road in self.roads]
 
     @staticmethod
