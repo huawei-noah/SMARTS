@@ -64,9 +64,11 @@ serializes
 serialized
 serializable
 str
+terminateds
 timestep
 Todo
 travelled
+truncateds
 unassociated
 unformatted
 unmanaged
