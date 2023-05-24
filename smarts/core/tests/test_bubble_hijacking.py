@@ -117,7 +117,7 @@ class ZoneSteps:
 
 # TODO: Consider a higher-level DSL syntax to fulfill these tests
 @pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
-def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim):
+def test_bubble_hijacking(smarts, scenarios, active_bubbles, num_vehicles, traffic_sim):
     """Ensures bubble airlocking, hijacking, and relinquishing are functional.
     Additionally, we test with multiple bubbles and vehicles to ensure operation is
     correct in these conditions as well.
@@ -126,16 +126,16 @@ def test_bubble_hijacking(smarts, scenarios, bubbles, num_vehicles, traffic_sim)
     smarts.reset(scenario)
 
     index = smarts.vehicle_index
-    geometries = [bubble_geometry(b, smarts.road_map) for b in bubbles]
+    geometries = [bubble_geometry(b, smarts.road_map) for b in active_bubbles]
 
     # bubble: vehicle: steps per zone
-    steps_driven_in_zones = {b.id: defaultdict(ZoneSteps) for b in bubbles}
-    vehicles_made_to_through_bubble = {b.id: [] for b in bubbles}
+    steps_driven_in_zones = {b.id: defaultdict(ZoneSteps) for b in active_bubbles}
+    vehicles_made_to_through_bubble = {b.id: [] for b in active_bubbles}
     for _ in range(300):
         smarts.step({})
         for vehicle in index.vehicles:
             position = Point(vehicle.position)
-            for bubble, geometry in zip(bubbles, geometries):
+            for bubble, geometry in zip(active_bubbles, geometries):
                 in_bubble = position.within(geometry.bubble)
                 is_shadowing = index.shadower_id_from_vehicle_id(vehicle.id) is not None
                 is_agent_controlled = vehicle.id in index.agent_vehicle_ids()
