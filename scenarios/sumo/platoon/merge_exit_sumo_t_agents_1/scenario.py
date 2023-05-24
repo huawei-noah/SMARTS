@@ -10,15 +10,14 @@ from smarts.sstudio.types import (
     Flow,
     JunctionModel,
     MapSpec,
-    Mission,
     Route,
     Scenario,
-    ScenarioMetadata,
     Traffic,
     TrafficActor,
     TrapEntryTactic,
     Trip,
 )
+from smarts.sstudio.types.scenario import StandardMetadata
 
 normal = TrafficActor(
     name="car",
@@ -110,7 +109,10 @@ gen_scenario(
         map_spec=MapSpec(
             source=Path(__file__).resolve().parents[0], lanepoint_spacing=1.0
         ),
-        scenario_metadata=ScenarioMetadata("Leader-007", Colors.Blue),
+        scenario_metadata=StandardMetadata(
+            actor_of_interest_re_filter="Leader-007",
+            actor_of_interest_color=Colors.Blue,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

@@ -28,7 +28,7 @@ import logging
 import os
 import pickle
 import sqlite3
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -690,14 +690,14 @@ def gen_traffic_histories(
         genhistories.import_dataset(hdsr, output_dir, map_bbox)
 
 
-def gen_metadata(scenario: str, scenario_metadata: types.ScenarioMetadata):
+def gen_metadata(scenario: str, scenario_metadata: types.StandardMetadata):
     """Generate the metadata for the scenario
 
     Args:
         scenario (str):The scenario directory
-        scenario_metadata (types.ScenarioMetadata): _description_
+        scenario_metadata (types.StandardMetadata): Scenario metadata information.
     """
     _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "scenario_metadata.pkl")
     with open(output_path, "wb") as f:
-        pickle.dump(asdict(scenario_metadata), f)
+        pickle.dump(scenario_metadata._dict_metadata, f)
