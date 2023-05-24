@@ -19,14 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import gym
+import gymnasium as gym
 import pytest
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.env.hiway_env import HiWayEnv
+from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
+from smarts.env.utils.action_conversion import ActionOptions
+from smarts.env.utils.observation_conversion import ObservationOptions
 
 AGENT_ID = "Agent-007"
-SOCIAL_AGENT_ID = "Alec Trevelyan"
+SOCIAL_AGENT_ID_PREFIX = "zoo"
 
 MAX_EPISODES = 1
 
@@ -41,39 +43,45 @@ def agent_interface():
 @pytest.fixture
 def env(agent_interface: AgentInterface):
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/zoo_intersection"],
         agent_interfaces={AGENT_ID: agent_interface},
         headless=True,
-        fixed_timestep_sec=0.01,
+        observation_options=ObservationOptions.unformatted,
+        action_options=ActionOptions.unformatted,
     )
 
     yield env
     env.close()
 
 
-def test_social_agents_not_in_env_obs_keys(env: HiWayEnv):
+def test_social_agents_not_in_env_obs_keys(env: HiWayEnvV1):
     for _ in range(MAX_EPISODES):
         observations = env.reset()
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
-            observations, rewards, dones, infos = env.step({AGENT_ID: "keep_lane"})
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {AGENT_ID: "keep_lane"}
+            )
+            # fmt: off
+            assert len([key for key in observations.keys() if SOCIAL_AGENT_ID_PREFIX in key])==0
+            assert isinstance(terminateds,dict) and isinstance(truncateds,dict)
+            assert len([key for key in terminateds.keys() if SOCIAL_AGENT_ID_PREFIX in key])==0
+            assert len([key for key in truncateds.keys() if SOCIAL_AGENT_ID_PREFIX in key])==0
+            # fmt: on
 
-            assert SOCIAL_AGENT_ID not in observations
-            assert SOCIAL_AGENT_ID not in dones
 
-
-def test_social_agents_in_env_neighborhood_vehicle_obs(
-    env: HiWayEnv, agent_interface: AgentInterface
-):
+def test_social_agents_in_env_neighborhood_vehicle_obs(env: HiWayEnvV1):
     first_seen_vehicles = {}
     for _ in range(MAX_EPISODES):
-        observations = env.reset()
+        observations, _ = env.reset()
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
-            observations, rewards, dones, infos = env.step({AGENT_ID: "keep_lane"})
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
+            observations, rewards, terminateds, _, infos = env.step(
+                {AGENT_ID: "keep_lane"}
+            )
 
             new_nvs_ids = [
                 nvs.id
@@ -89,4 +97,4 @@ def test_social_agents_in_env_neighborhood_vehicle_obs(
         (v_id for v_id in seen_zoo_social_vehicles if "zoo-car1" in v_id), None
     )
     assert late_entry is not None, seen_zoo_social_vehicles
-    assert first_seen_vehicles[late_entry] == 70
+    assert first_seen_vehicles[late_entry] == 7

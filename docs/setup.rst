@@ -6,8 +6,8 @@ Setup
 Prerequisites
 -------------
 
-+ python3 (3.8 or 3.9)
-+ ubuntu (>=16.04)
++ ``python3 (3.8 or 3.9)``
++ ``ubuntu (>=16.04)``
 
 Installation
 ------------

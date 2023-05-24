@@ -689,7 +689,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
     @property
     def source(self) -> str:
-        """This is the .xodr file of the OpenDRIVE map."""
+        """This is the `.xodr` file of the OpenDRIVE map."""
         return self._xodr_file
 
     def is_same_map(self, map_spec: MapSpec) -> bool:
@@ -1473,10 +1473,16 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
     class Route(RouteWithCache):
         """Describes a route between two OpenDRIVE roads."""
 
-        def __init__(self, road_map):
-            super().__init__(road_map)
-            self._roads = []
-            self._length = 0
+        def __init__(
+            self,
+            road_map: RoadMap,
+            roads: List[RoadMap.Road] = [],
+            start_lane: Optional[RoadMap.Lane] = None,
+            end_lane: Optional[RoadMap.Lane] = None,
+        ):
+            super().__init__(road_map, start_lane, end_lane)
+            self._roads = roads
+            self._length = sum([road.length for road in roads])
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -1485,10 +1491,6 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         @property
         def road_length(self) -> float:
             return self._length
-
-        def _add_road(self, road: RoadMap.Road):
-            self._length += road.length
-            self._roads.append(road)
 
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
@@ -1529,18 +1531,18 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
         path.reverse()
         return path
 
-    def generate_routes(
+    def _generate_routes(
         self,
         start_road: RoadMap.Road,
+        start_lane: RoadMap.Lane,
         end_road: RoadMap.Road,
-        via: Optional[Sequence[RoadMap.Road]] = None,
-        max_to_gen: int = 1,
+        end_lane: RoadMap.Lane,
+        via: Optional[Sequence[RoadMap.Road]],
+        max_to_gen: int,
     ) -> List[RoadMap.Route]:
         assert (
             max_to_gen == 1
         ), "multiple route generation not yet supported for OpenDRIVE"
-        newroute = OpenDriveRoadNetwork.Route(self)
-        result = [newroute]
 
         roads = [start_road]
         if via:
@@ -1558,14 +1560,19 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                 self._log.warning(
                     f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
                 )
-                return result
+                return [OpenDriveRoadNetwork.Route(road_map=self)]
             # The sub route includes the boundary roads (cur_road, next_road).
             # We clip the latter to prevent duplicates
             route_roads.extend(sub_route[:-1])
 
-        for road in route_roads:
-            newroute._add_road(road)
-        return result
+        return [
+            OpenDriveRoadNetwork.Route(
+                road_map=self,
+                roads=route_roads,
+                start_lane=start_lane,
+                end_lane=end_lane,
+            )
+        ]
 
     def random_route(
         self,
@@ -1575,15 +1582,15 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
     ) -> RoadMap.Route:
         """ """
         assert not starting_road or not only_drivable or starting_road.is_drivable
-        route = OpenDriveRoadNetwork.Route(self)
         next_roads = [starting_road] if starting_road else list(self._roads.values())
         if only_drivable:
             next_roads = [r for r in next_roads if r.is_drivable]
-        while next_roads and len(route.roads) < max_route_len:
+        route_roads = []
+        while next_roads and len(route_roads) < max_route_len:
             cur_road = random.choice(next_roads)
-            route._add_road(cur_road)
+            route_roads.append(cur_road)
             next_roads = list(cur_road.outgoing_roads)
-        return route
+        return OpenDriveRoadNetwork.Route(road_map=self,roads=route_roads)
 
     def empty_route(self) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route(self)

@@ -42,7 +42,7 @@ below.
 
     Here, egos are in red colour, and background traffic is in silver colour.
 
-Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
+Any method such as reinforcement learning, offline reinforcement learning, behavior cloning, generative models,
 predictive models, etc, may be used to develop the policy.
 
 Several scenarios are provided for training. Their names and tasks are as follows. 
@@ -50,7 +50,7 @@ The desired task execution is illustrated in a gif by a trained baseline agent.
 
 .. todo::
     
-    Provide sample training scenarios and corresponding gifs showing a baseline model traversing the map.
+    Provide sample training scenarios and corresponding ``.gif`` images showing a baseline model traversing the map.
 
 Observation space
 -----------------
@@ -92,14 +92,14 @@ the user.
     ├── setup.cfg                
     └── setup.py                
 
-1. inference/contrib_policy/__init__.py
+1. ``inference/contrib_policy/__init__.py``
     + Keep this file unchanged.
     + It is an empty file.
 
-2. inference/contrib_policy/policy.py
+2. ``inference/contrib_policy/policy.py``
     + Must contain a ``class Policy(Agent)`` class which inherits from :class:`~smarts.core.agent.Agent`.
 
-3. inference/__init__.py
+3. ``inference/__init__.py``
     + Must contain the following template code. 
     + The template code registers the user's policy in SMARTS agent zoo.
     
@@ -147,10 +147,10 @@ the user.
       + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and 
       + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`. 
 
-4. inference/MANIFEST.in 
+4. ``inference/MANIFEST.in``
     + Contains any file paths to be included in the package.
 
-5. inference/setup.cfg
+5. ``inference/setup.cfg``
     + Must contain the following template code. 
     + The template code helps build the user policy into a Python package.
     
@@ -182,7 +182,7 @@ the user.
     + Do **not** add SMARTS package as a dependency in the ``install_requires`` section.
     + Dependencies in the ``install_requires`` section **must** have an exact package version specified using ``==``.
 
-6. inference/setup.py
+6. ``inference/setup.py``
     + Keep this file and its default contents unchanged.
     + Its default contents are shown below.
 

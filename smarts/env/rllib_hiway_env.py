@@ -51,13 +51,13 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
             headless: True|False envision disabled|enabled. Defaults to True.
 
-            num_external_sumo_clients: Number of SUMO clients beyond SMARTS. Defaults to 0.
+            :spelling:ignore:`num_external_sumo_clients`: Number of SUMO clients beyond SMARTS. Defaults to 0.
 
             seed: Random number generation seed. Defaults to 42.
 
             sumo_auto_start: True|False sumo will start automatically. Defaults to False.
 
-            sumo_headless: True|False for sumo|sumo-gui. Defaults to False.
+            sumo_headless: True|False for `sumo`|`sumo-gui`. Defaults to False.
 
             sumo_port: Specifies sumo port. Defaults to None.
 

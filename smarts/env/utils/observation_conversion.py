@@ -297,7 +297,7 @@ class BaseSpaceFormat:
 
     @property
     def name(self):
-        """The name that should represent this observation space in heirachy."""
+        """The name that should represent this observation space in hierarchy."""
         raise NotImplementedError()
 
     @property
@@ -335,7 +335,7 @@ class StandardSpaceFormat(BaseSpaceFormat):
 
     @property
     def name(self):
-        """The name that should represent this observation space in heirachy."""
+        """The name that should represent this observation space in hierarchy."""
         return self._name
 
     @property
@@ -375,7 +375,7 @@ class StandardConfigurableSpaceFormat(BaseSpaceFormat):
 
     @property
     def name(self):
-        """The name that should represent this observation space in heirachy."""
+        """The name that should represent this observation space in hierarchy."""
         return self._name
 
     @property
@@ -421,7 +421,7 @@ class StandardCompoundSpaceFormat(BaseSpaceFormat):
 
     @property
     def name(self):
-        """The name that should represent this observation space in heirachy."""
+        """The name that should represent this observation space in hierarchy."""
         return self._name
 
     @property

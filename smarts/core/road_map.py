@@ -26,7 +26,7 @@ from bisect import bisect
 from dataclasses import dataclass
 from enum import IntEnum
 from functools import cached_property, lru_cache
-from typing import Any, List, Optional, Sequence, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 from shapely.geometry import LineString
@@ -85,7 +85,7 @@ class RoadMap:
         raise NotImplementedError
 
     def to_glb(self, glb_dir: str):
-        """Build a glb file for camera rendering and envision"""
+        """Build a `.glb` file for camera rendering and envision"""
         raise NotImplementedError()
 
     def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
@@ -141,25 +141,56 @@ class RoadMap:
 
     def generate_routes(
         self,
-        start_road: RoadMap.Road,
-        end_road: RoadMap.Road,
+        start: Union["RoadMap.Road", "RoadMap.Lane"],
+        end: Union["RoadMap.Road", "RoadMap.Lane"],
         via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         """Generates routes between two roads.
         Args:
-            start_road:
-                The beginning road of the generated routes.
-            end_road:
-                The end road of the generated routes.
+            start:
+                The beginning road or lane of the generated routes.
+            end:
+                The end road or lane of the generated routes.
             via:
                 All edges that the generated routes must pass through.
             max_to_gen:
                 The maximum number of routes to generate.
         Returns:
             A list of generated routes that satisfy the given restrictions. Routes will be
-             returned in order of increasing length.
+            returned in order of increasing length.
         """
+        if isinstance(start, RoadMap.Lane):
+            start_lane = start
+            start_road = start.road
+        else:
+            start_lane = None
+            start_road = start
+        if isinstance(end, RoadMap.Lane):
+            end_lane = end
+            end_road = end.road
+        else:
+            end_lane = None
+            end_road = end
+
+        return self._generate_routes(
+            start_road=start_road,
+            start_lane=start_lane,
+            end_road=end_road,
+            end_lane=end_lane,
+            via=via,
+            max_to_gen=max_to_gen,
+        )
+
+    def _generate_routes(
+        self,
+        start_road: RoadMap.Road,
+        start_lane: RoadMap.Lane,
+        end_road: RoadMap.Road,
+        end_lane: RoadMap.Lane,
+        via: Optional[Sequence[RoadMap.Road]],
+        max_to_gen: int,
+    ) -> List[RoadMap.Route]:
         raise NotImplementedError()
 
     def random_route(
@@ -172,8 +203,8 @@ class RoadMap:
 
         :param max_route_len: The total number of roads in the route.
         :param starting_road: If specified, the route will start with this road.
-        :param only_drivable: If True, will restrict the route to only driveable roads;
-            otherwise can incl. non-drivable roads (such as bikelanes) too.
+        :param only_drivable: If True, will restrict the route to only drive-able roads;
+            otherwise can incl. non-drivable roads (such as bike lanes) too.
         :return: A randomly generated route.
         """
         raise NotImplementedError()
@@ -205,7 +236,7 @@ class RoadMap:
         route: RoadMap.Route = None,
     ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, starting on the Road containing
+        up to `lookahead` waypoints ahead, starting on the Road containing
         the nearest Lane aligned with the vehicle's pose within within_radius meters.
         Constrains paths to the supplied route if specified."""
         raise NotImplementedError()
@@ -372,7 +403,7 @@ class RoadMap:
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             """Computes equally-spaced Waypoints for all lane paths
-            up to lookahead waypoints ahead, starting in this lane at pose.
+            up to `lookahead` waypoints ahead, starting in this lane at pose.
             Constrains paths to the supplied route if specified."""
             raise NotImplementedError()
 
@@ -380,7 +411,7 @@ class RoadMap:
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             """Computes equally-spaced Waypoints for all lane paths
-            up to lookahead waypoints ahead, starting offset into this lane.
+            up to `lookahead` waypoints ahead, starting offset into this lane.
             Constrains paths to the supplied route if specified."""
             raise NotImplementedError()
 
@@ -467,7 +498,7 @@ class RoadMap:
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5
         ) -> float:
-            """lookahead (in meters) is the size of the window to use
+            """`lookahead` (in meters) is the size of the window to use
             to compute the curvature, which must be at least 1 to make sense.
             This may return math.inf if the lane is straight."""
             assert lookahead > 0
@@ -621,7 +652,7 @@ class RoadMap:
 
         @property
         def is_dynamic(self) -> bool:
-            """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
+            """True if this feature has dynamic state (such as a traffic light); False otherwise."""
             # this may be overridden in the case of custom feature types
             return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
 
@@ -631,7 +662,7 @@ class RoadMap:
             return None
 
         def min_dist_from(self, point: Point) -> float:
-            """Returns the euclidian (as-the-crow-flies) distance
+            """Returns the euclidean (as-the-crow-flies) distance
             between point and the nearest part of this feature."""
             raise NotImplementedError()
 
@@ -647,28 +678,15 @@ class RoadMap:
             """Required for set usage; derived classes may override this."""
             return self.__class__ == other.__class__ and hash(self) == hash(other)
 
-        def _add_road(self, road: RoadMap.Road):
-            raise NotImplementedError()
-
         @property
         def start_lane(self) -> Optional[RoadMap.Lane]:
             "Route's start lane."
             return None
 
-        @start_lane.setter
-        def start_lane(self,value:RoadMap.Lane):
-            "Route's start lane."
-            raise NotImplementedError()
-        
         @property
         def end_lane(self) -> Optional[RoadMap.Lane]:
             "Route's end lane."
             return None
-
-        @end_lane.setter
-        def end_lane(self,value:RoadMap.Lane):
-            "Route's end lane."
-            raise NotImplementedError()
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -765,7 +783,7 @@ class Waypoint:
     lane_index: int
     """Index of the lane under this waypoint. Right most lane has index 0 and index increases to the left."""
     lane_offset: float
-    """Longitudinal distance along lane centerline of this waypoint."""
+    """Longitudinal distance along lane center-line of this waypoint."""
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
@@ -842,11 +860,11 @@ class RoadMapWithCaches(RoadMap):
 
         @property
         def center_polyline(self) -> List[Point]:
-            """Should return a list of the points along the centerline
+            """Should return a list of the points along the center-line
             of the lane, in the order they will be encountered in the
             direction of travel.
 
-            Note: not all instantiations will be able to implement this method,
+            Note: not all map types will be able to implement this method,
             so use with care.  This was added to support those that wish
             to make use of the SegmentCache class below."""
             raise NotImplementedError()

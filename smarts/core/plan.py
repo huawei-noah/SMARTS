@@ -180,7 +180,7 @@ def default_entry_tactic(default_entry_speed: Optional[float] = None) -> EntryTa
 
 @dataclass(frozen=True)
 class Via:
-    """Describes a collectable item that can be used to shape rewards."""
+    """Describes a collectible item that can be used to shape rewards."""
 
     lane_id: str
     road_id: str
@@ -383,11 +383,9 @@ class Plan:
         # all nearby starting lane options are exhausted.
         for start_lane, _ in start_lanes:
             self._route = self._road_map.generate_routes(
-                start_lane.road, end_lane.road, via_roads, 1
+                start_lane, end_lane, via_roads, 1
             )[0]
             if self._route.road_length > 0:
-                self._route.start_lane = start_lane
-                self._route.end_lane = end_lane
                 break
 
         if len(self._route.roads) == 0:

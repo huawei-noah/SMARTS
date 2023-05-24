@@ -15,7 +15,7 @@ click==8.1.3
 cloudpickle==1.6.0
 colorama==0.4.6
 constantly==15.1.0
-coverage==7.2.5
+coverage==7.2.6
 dm-tree==0.1.8
 eclipse-sumo==1.17.0
 exceptiongroup==1.1.1
@@ -31,7 +31,7 @@ google-auth-oauthlib==1.0.0
 google-pasta==0.2.0
 googleapis-common-protos==1.59.0
 gpustat==1.1
-grpcio==1.55.0
+grpcio==1.54.2
 gym==0.19.0
 gymnasium==0.27.0
 gymnasium-notices==0.0.1
@@ -78,7 +78,7 @@ py-spy==0.3.14
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
 pybullet==3.2.5
-pydantic==1.10.7
+pydantic==1.10.8
 pyrsistent==0.19.3
 pytest==7.3.1
 pytest-benchmark==4.0.0
@@ -112,7 +112,7 @@ torch==1.4.0
 torchvision==0.5.0
 trimesh==3.9.29
 Twisted==22.10.0
-typing_extensions==4.6.0
+typing_extensions==4.6.1
 tzdata==2023.3
 urllib3==1.26.16
 wcwidth==0.2.6

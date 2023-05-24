@@ -126,7 +126,7 @@ def test_conversion_bullet(original_pose):
         offset_to_center = np.array(offset_to_center)
         base_position = np.sum([position_offset, original_pose.position], axis=0)
         p_from_explicit_offset = Pose.from_explicit_offset(
-            offset_from_centre=offset_to_center,
+            offset_from_center=offset_to_center,
             base_position=base_position,
             heading=heading,
             local_heading=Heading(0),

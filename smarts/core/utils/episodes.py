@@ -119,12 +119,12 @@ class EpisodeLog:
 
     @property
     def sim_time(self):
-        """An estimation of the total fixed-timestep simulation performed."""
+        """An estimation of the total fixed-time-step simulation performed."""
         return self.fixed_timestep_sec * self.steps
 
     @property
     def sim2wall_ratio(self):
-        """The ration of sim time to wall time. Above 1 is hyper-realtime."""
+        """The ration of sim time to wall time. Above 1 is hyper-real-time."""
         return self.sim_time / self.wall_time
 
     @property
@@ -141,25 +141,32 @@ class EpisodeLog:
         )
         self.mission_hash = scenario_log["mission_hash"]
 
-    def record_step(self, observations=None, rewards=None, dones=None, infos=None):
+    def record_step(self, observations, rewards, terminateds, truncateds, infos):
         """Record a step end."""
         self.steps += 1
 
-        if not isinstance(dones, dict):
-            observations, rewards, dones, infos = self._convert_to_dict(
-                observations, rewards, dones, infos
+        if not isinstance(terminateds, dict):
+            (
+                observations,
+                rewards,
+                terminateds,
+                truncateds,
+                infos,
+            ) = self._convert_to_dict(
+                observations, rewards, terminateds, truncateds, infos
             )
 
-        if dones.get("__all__", False) and infos is not None:
+        if terminateds.get("__all__", False) and infos is not None:
             for agent, score in infos.items():
                 self.scores[agent] = score["score"]
 
-    def _convert_to_dict(self, observations, rewards, dones, infos):
+    def _convert_to_dict(self, observations, rewards, terminateds, truncateds, infos):
         observations, rewards, infos = [
             {"SingleAgent": obj} for obj in [observations, rewards, infos]
         ]
-        dones = {"SingleAgent": dones, "__all__": dones}
-        return observations, rewards, dones, infos
+        terminateds = {"SingleAgent": terminateds, "__all__": terminateds}
+        truncateds = {"SingleAgent": truncateds, "__all__": truncateds}
+        return observations, rewards, terminateds, truncateds, infos
 
 
 def episodes(n):

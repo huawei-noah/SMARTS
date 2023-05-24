@@ -95,6 +95,10 @@ class Condition:
     def negation(self) -> "NegatedCondition":
         """Negates this condition giving the opposite result on evaluation.
 
+        .. spelling:word-list::
+
+            ConditionState
+
         >>> condition_true = LiteralCondition(ConditionState.TRUE)
         >>> condition_true.evaluate()
         <ConditionState.TRUE: 4>
@@ -116,10 +120,10 @@ class Condition:
         """Resolve conditions as A AND B.
 
         The bit AND operator has been overloaded to call this method.
-        >>> dependee_condition = DependeeActorCondition("leader")
-        >>> dependee_condition.evaluate(actor_ids={"leader"})
+        >>> condition = DependeeActorCondition("leader")
+        >>> condition.evaluate(actor_ids={"leader"})
         <ConditionState.TRUE: 4>
-        >>> conjunction = dependee_condition & LiteralCondition(ConditionState.FALSE)
+        >>> conjunction = condition & LiteralCondition(ConditionState.FALSE)
         >>> conjunction.evaluate(actor_ids={"leader"})
         <ConditionState.FALSE: 0>
 
@@ -157,7 +161,7 @@ class Condition:
         return CompoundCondition(self, other, operator=ConditionOperator.IMPLICATION)
 
     def trigger(
-        self, delay_seconds: float, persistant: bool = False
+        self, delay_seconds: float, persistent: bool = False
     ) -> "ConditionTrigger":
         """Converts the condition to a trigger which becomes permanently TRUE after the first time the inner condition becomes TRUE.
 
@@ -184,13 +188,13 @@ class Condition:
 
         Args:
             delay_seconds (float): Applies the trigger after the delay has passed since the inner condition first TRUE. Defaults to False.
-            persistant (bool, optional): Mixes the inner result with the trigger result using an AND operation.
+            persistent (bool, optional): Mixes the inner result with the trigger result using an AND operation.
 
         Returns:
             ConditionTrigger: A resulting condition.
         """
         return ConditionTrigger(
-            self, delay_seconds=delay_seconds, persistant=persistant
+            self, delay_seconds=delay_seconds, persistent=persistent
         )
 
     def expire(
@@ -384,7 +388,7 @@ class ExpireTrigger(Condition):
 @dataclass(frozen=True)
 class ConditionTrigger(Condition):
     """This condition is a trigger that assumes an untriggered constant state and then turns to the other state permanently
-    on the inner condition becoming TRUE. There is also an option to delay repsonse to the the inner condition by a number
+    on the inner condition becoming TRUE. There is also an option to delay response to the the inner condition by a number
     of seconds. This will convey an EXPIRED value immediately because that state means the inner value will never be TRUE.
 
     This can be used to wait for some time after the inner condition has become TRUE to trigger.
@@ -405,8 +409,8 @@ class ConditionTrigger(Condition):
     triggered_state: ConditionState = ConditionState.TRUE
     """The state after the inner trigger condition and delay is resolved."""
 
-    persistant: bool = False
-    """If the inner condition state is used in conjuction with the triggered state. (inner_condition_state & triggered_state)"""
+    persistent: bool = False
+    """If the inner condition state is used in conjunction with the triggered state. (inner_condition_state & triggered_state)"""
 
     def evaluate(self, **kwargs) -> ConditionState:
         time = kwargs[ConditionRequires.time.name]
@@ -423,7 +427,7 @@ class ConditionTrigger(Condition):
             time -= met_time
         if time >= self.delay_seconds:
             result = self.triggered_state
-            if self.persistant:
+            if self.persistent:
                 result &= self.inner_condition.evaluate(**kwargs)
             return result
 
@@ -572,8 +576,8 @@ class CompoundCondition(Condition):
             return ConditionState.TRUE
 
         elif self.operator == ConditionOperator.CONJUNCTION:
-            conjuction = first_eval & second_eval
-            if ConditionState.TRUE in conjuction:
+            conjunction = first_eval & second_eval
+            if ConditionState.TRUE in conjunction:
                 return ConditionState.TRUE
 
             # To priority of temporal versions of FALSE

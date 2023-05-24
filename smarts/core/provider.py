@@ -83,7 +83,7 @@ class ProviderState:
                 continue
 
     def intersects(self, actor_ids: Set[str]) -> bool:
-        """Returns True iff any of the actor_ids are contained in this ProviderState .
+        """Returns True if any of the actor_ids are contained in this ProviderState .
         Returns False for empty-set containment."""
         provider_actor_ids = {a.actor_id for a in self.actors}
         intersection = actor_ids & provider_actor_ids
@@ -151,7 +151,7 @@ class Provider:
         raise NotImplementedError
 
     def set_manager(self, manager: ProviderManager):
-        """Indicate the manager that this provider should inform of all actor handoffs."""
+        """Indicate the manager that this provider should inform of all actor hand-offs."""
         raise NotImplementedError
 
     @property
@@ -167,8 +167,8 @@ class Provider:
         """Progress the provider to generate new actor state.
         Args:
             actions: one or more valid actions from the supported action_spaces of this provider
-            dt: time (in seconds) to simulate during this simulation step
-            elapsed_sim_time: amount of time (in seconds) that's elapsed so far in the simulation
+            dt (float): time (in seconds) to simulate during this simulation step
+            elapsed_sim_time (float): amount of time (in seconds) that's elapsed so far in the simulation
         Returns:
             ProviderState representing the state of all actors this manages.
         """
@@ -243,7 +243,7 @@ class Provider:
         raise NotImplementedError
 
     def manages_actor(self, actor_id: str) -> bool:
-        """Returns True iff the actor referenced by actor_id is managed by this Provider."""
+        """Returns True if the actor referenced by actor_id is managed by this Provider."""
         raise NotImplementedError
 
     def stop_managing(self, actor_id: str):

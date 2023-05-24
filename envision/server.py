@@ -64,13 +64,13 @@ MAPS = {}
 
 
 class AllowCORSMixin:
-    """A mixin that adds CORS headers to the page."""
+    """A mix-in that adds CORS headers to the page."""
 
     _HAS_DYNAMIC_ATTRIBUTES = True
 
     def set_default_headers(self):
         """Setup the default headers.
-        In this case they are the minimum required CORS releated headers.
+        In this case they are the minimum required CORS related headers.
         """
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
@@ -117,7 +117,7 @@ class Frame:
 class Frames:
     """A managed collection of simulation frames.
     This collection uses a random discard of simulation frames to stay under capacity.
-    Random discard favours preserving newer frames over time.
+    Random discard favors preserving newer frames over time.
     """
 
     def __init__(self, max_capacity_mb=500):
@@ -206,7 +206,7 @@ class WebClientRunLoop:
         self._thread: Optional[threading.Thread] = None
 
     def seek(self, offset_seconds):
-        """Indicate to the webclient that it should progress to the nearest frame to the given time."""
+        """Indicate to the web-client that it should progress to the nearest frame to the given time."""
         self._seek = offset_seconds
 
     def stop(self):
@@ -298,7 +298,7 @@ class WebClientRunLoop:
 class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
     """This websocket receives the SMARTS state (the other end of the open websocket
     is held by the Envision Client (SMARTS)) and broadcasts it to all web clients
-    that have open websockets via the `StateWebSocket` handler.
+    that have open web-sockets via the `StateWebSocket` handler.
     """
 
     def initialize(self, max_capacity_mb):
@@ -347,7 +347,7 @@ class BroadcastWebSocket(tornado.websocket.WebSocketHandler):
 
 class StateWebSocket(tornado.websocket.WebSocketHandler):
     """This websocket sits on the other side of the web client. It handles playback and playback
-    control messages from the webclient.
+    control messages from the web-client.
     """
 
     def initialize(self):
@@ -363,7 +363,7 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
         return {"compression_level": 6, "mem_level": 5}
 
     async def open(self, simulation_id):
-        """Open this socket to listen for webclient playback requests."""
+        """Open this socket to listen for web-client playback requests."""
         if simulation_id not in WEB_CLIENT_RUN_LOOPS:
             raise tornado.web.HTTPError(404, f"Simulation `{simulation_id}` not found.")
 
@@ -391,14 +391,14 @@ class StateWebSocket(tornado.websocket.WebSocketHandler):
                 run_loop.remove(self._run_loop)
 
     async def on_message(self, message):
-        """Asynchonously handle playback requests."""
+        """Asynchronously handle playback requests."""
         message = json.loads(message)
         if "seek" in message:
             self._run_loop.seek(message["seek"])
 
 
 class FileHandler(AllowCORSMixin, tornado.web.RequestHandler):
-    """This handler serves files to the given requestee."""
+    """This handler serves files to the given requester."""
 
     def initialize(self, path_map: Dict[str, Union[str, Path]] = {}):
         """FileHandler that serves file for a given ID."""
@@ -560,7 +560,7 @@ def run(
 
 
 def main():
-    """Main function for when using this file as an entrypoint."""
+    """Main function for when using this file as an entry-point."""
     parser = argparse.ArgumentParser(
         prog="Envision Server",
         description="The Envision server broadcasts SMARTS state to Envision web "

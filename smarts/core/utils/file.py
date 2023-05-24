@@ -68,7 +68,7 @@ def replace(obj: Any, **kwargs):
 
 
 def isdataclass(x):
-    """Check if an object is a dataclass."""
+    """Check if an object is a `dataclass`."""
     return dataclasses.is_dataclass(x)
 
 

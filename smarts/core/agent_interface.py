@@ -44,8 +44,8 @@ class DrivableAreaGridMap:
 @dataclass
 class OGM:
     """The width and height are in "pixels" and the resolution is the "size of a
-    pixel". E.g. if you wanted 100m x 100m OGM but a 64x64 image representation
-    you would do OGM(width=64, height=64, resolution=100/64)
+    pixel". E.g. if you wanted 100m x 100m `OGM` but a 64x64 image representation
+    you would do `OGM(width=64, height=64, resolution=100/64)`
     """
 
     width: int = 256
@@ -56,8 +56,8 @@ class OGM:
 @dataclass
 class RGB:
     """The width and height are in "pixels" and the resolution is the "size of a
-    pixel". E.g. if you wanted 100m x 100m RGB but a 256x256 image representation
-    you would do RGB(width=256, height=256, resolution=100/256)
+    pixel". E.g. if you wanted 100m x 100m `RGB` but a 256x256 image representation
+    you would do `RGB(width=256, height=256, resolution=100/256)`
     """
 
     width: int = 256
@@ -125,7 +125,7 @@ class Signals:
 
 
 class AgentType(IntEnum):
-    """Used to select preconfigured agent interfaces."""
+    """Used to select a standard configured agent interface."""
 
     Buddha = 0
     """Agent sees nothing and does nothing."""
@@ -228,7 +228,7 @@ class EventConfiguration:
 
 @dataclass(frozen=True)
 class DoneCriteria:
-    """Toggleable conditions on which cause removal of an agent from the current episode."""
+    """Toggle conditions on which cause removal of an agent from the current episode."""
 
     collision: bool = True
     """End the episode when the agent collides with another vehicle."""
@@ -299,13 +299,13 @@ class AgentInterface:
 
     occupancy_grid_map: Union[OGM, bool] = False
     """
-    Enable the OGM (Occupancy Grid Map) sensor, a grid is provided where each cell signals whether
+    Enable the `OGM` (Occupancy Grid Map) sensor, a grid is provided where each cell signals whether
     that area in space is occupied.
     """
 
     top_down_rgb: Union[RGB, bool] = False
     """
-    Enable the RGB camera sensor, a top down color image is provided.
+    Enable the `RGB` camera sensor, a top down color image is provided.
     """
 
     lidar_point_cloud: Union[Lidar, bool] = False
@@ -373,7 +373,7 @@ class AgentInterface:
 
         Args:
             requested_type:
-                Select a premade AgentInterface from an AgentType
+                Select a prefabricated AgentInterface from an AgentType
             max_episode_steps:
                 The total number of steps this interface will observe before expiring
         """

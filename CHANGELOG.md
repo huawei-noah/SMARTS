@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
 - Traffic light signals are now visualized in Envision.
 - Interest vehicles now show up in Envision.
+- Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
@@ -27,6 +28,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `TrapEntryTactic.wait_to_hijack_limit_s` field now defaults to `0`.
 - `EntryTactic` derived classes now contain `condition` to provide extra filtering of candidate actors.
 - `EntryTactic` derived classes now contain `start_time`.
+- `info` returned by `hiway-v1` in `reset()` and `step()` methods are unified.
+- Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
 - `DistToDestination` metric now adds lane error penalty when agent terminates in different lane but same road as the goal position. 
 ### Deprecated
@@ -37,6 +40,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The routes of `SumoTrafficSimulation` traffic vehicles are now preserved to be passed over to other traffic simulators when the `SumoTrafficSimulation` disconnects.
 - `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
 - Fixed waypoints so that they will always be the length of the `lookahead` parameter, even in junctions.
+- Fixed an issue where a single waypoint would appear in off-route lanes for missions with a goal.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.

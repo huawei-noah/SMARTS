@@ -17,10 +17,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import os
 from typing import Any
 
-import gym
+import gymnasium as gym
 import numpy as np
 
 from smarts.core.sensors import Observation

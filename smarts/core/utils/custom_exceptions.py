@@ -44,7 +44,7 @@ class RayException(Exception):
 
 
 class OpenDriveException(Exception):
-    """An exception raised if opendrive utilities are required but not available."""
+    """An exception raised if `opendrive` utilities are required but not available."""
 
     @classmethod
     def required_to(cls, thing):

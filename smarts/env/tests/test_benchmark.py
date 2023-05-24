@@ -19,12 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import gym
+import gymnasium as gym
 import pytest
 
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
-from smarts.zoo.agent_spec import AgentSpec
 
 
 @pytest.fixture(params=[5, 10])
@@ -43,19 +42,19 @@ def agent_interface(request):
 
 
 @pytest.fixture
-def agent_specs(agent_ids, agent_interface):
-    return {id_: AgentSpec(interface=agent_interface) for id_ in agent_ids}
+def agent_interfaces(agent_ids, agent_interface):
+    return {id_: agent_interface for id_ in agent_ids}
 
 
 @pytest.fixture
 def env(agent_specs):
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/loop"],
-        agent_specs=agent_specs,
+        agent_interfaces=agent_interfaces,
         headless=True,
         seed=2008,
-        fixed_timestep_sec=0.01,
+        fixed_timestep_sec=0.1,
     )
     env.reset()
     yield env

@@ -18,7 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 """This script provides a Python interface to generate scenario artifacts. This includes
-route files (sumo \\*.rou.xml), missions, and bubbles.
+route files `sumo `\\*.rou.xml`), missions, and bubbles.
 """
 
 import collections
@@ -492,7 +492,7 @@ def gen_group_laps(
     num_laps: int = 3,
     map_spec: Optional[types.MapSpec] = None,
 ):
-    """Generates missions that start with a grid offset at the startline and do a number
+    """Generates missions that start with a grid offset at the start-line and do a number
     of laps until finishing.
 
     Args:
