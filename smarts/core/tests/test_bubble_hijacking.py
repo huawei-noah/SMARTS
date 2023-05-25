@@ -70,7 +70,7 @@ def traffic_sim(request):
 
 
 @pytest.fixture
-def scenarios(bubbles, num_vehicles, traffic_sim):
+def scenarios(active_bubbles, num_vehicles, traffic_sim):
     with temp_scenario(name="6lane", map="maps/6lane.net.xml") as scenario_root:
         traffic = t.Traffic(
             engine=traffic_sim,
@@ -88,7 +88,7 @@ def scenarios(bubbles, num_vehicles, traffic_sim):
         )
 
         gen_scenario(
-            t.Scenario(traffic={"all": traffic}, bubbles=bubbles),
+            t.Scenario(traffic={"all": traffic}, bubbles=active_bubbles),
             output_dir=scenario_root,
         )
 
