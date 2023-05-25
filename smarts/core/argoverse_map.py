@@ -771,10 +771,16 @@ class ArgoverseMap(RoadMapWithCaches):
     class Route(RouteWithCache):
         """Describes a route between `Argoverse` roads."""
 
-        def __init__(self, road_map):
-            super().__init__(road_map)
-            self._roads = []
-            self._length = 0
+        def __init__(
+            self,
+            road_map: RoadMap,
+            roads: List[RoadMap.Road] = [],
+            start_lane: Optional[RoadMap.Lane] = None,
+            end_lane: Optional[RoadMap.Lane] = None,
+        ):
+            super().__init__(road_map, start_lane, end_lane)
+            self._roads = roads
+            self._length = sum([road.length for road in roads])
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -783,11 +789,6 @@ class ArgoverseMap(RoadMapWithCaches):
         @property
         def road_length(self) -> float:
             return self._length
-
-        def _add_road(self, road: RoadMap.Road):
-            """Add a road to this route."""
-            self._length += road.length
-            self._roads.append(road)
 
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
@@ -829,18 +830,18 @@ class ArgoverseMap(RoadMapWithCaches):
         path.reverse()
         return path
 
-    def generate_routes(
+    def _generate_routes(
         self,
         start_road: RoadMap.Road,
+        start_lane: RoadMap.Lane,
         end_road: RoadMap.Road,
-        via: Optional[Sequence[RoadMap.Road]] = None,
-        max_to_gen: int = 1,
+        end_lane: RoadMap.Lane,
+        via: Optional[Sequence[RoadMap.Road]],
+        max_to_gen: int,
     ) -> List[RoadMap.Route]:
         assert (
             max_to_gen == 1
         ), "multiple route generation not yet supported for Argoverse"
-        new_route = ArgoverseMap.Route(self)
-        result = [new_route]
 
         roads = [start_road]
         if via:
@@ -858,14 +859,19 @@ class ArgoverseMap(RoadMapWithCaches):
                 self._log.warning(
                     f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
                 )
-                return result
+                return [ArgoverseMap.Route(road_map=self)]
             # The sub route includes the boundary roads (cur_road, next_road).
             # We clip the latter to prevent duplicates
             route_roads.extend(sub_route[:-1])
 
-        for road in route_roads:
-            new_route._add_road(road)
-        return result
+        return [
+            ArgoverseMap.Route(
+                road_map=self,
+                roads=route_roads,
+                start_lane=start_lane,
+                end_lane=end_lane,
+            )
+        ]
 
     def random_route(
         self,

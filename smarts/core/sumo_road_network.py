@@ -824,16 +824,16 @@ class SumoRoadNetwork(RoadMap):
                 return nl.road
         return None
 
-    def generate_routes(
+    def _generate_routes(
         self,
         start_road: "SumoRoadNetwork.Road",
+        start_lane: "SumoRoadNetwork.Lane",
         end_road: "SumoRoadNetwork.Road",
-        via: Optional[Sequence["SumoRoadNetwork.Road"]] = None,
-        max_to_gen: int = 1,
+        end_lane: "SumoRoadNetwork.Lane",
+        via: Optional[Sequence["SumoRoadNetwork.Road"]],
+        max_to_gen: int,
     ) -> List[RoadMap.Route]:
         assert max_to_gen == 1, "multiple route generation not yet supported for Sumo"
-        newroute = SumoRoadNetwork.Route(self)
-        result = [newroute]
 
         roads = [start_road]
         if via:
@@ -856,15 +856,21 @@ class SumoRoadNetwork(RoadMap):
                 self._log.warning(
                     f"Unable to find valid path between {(cur_road.road_id, next_road.road_id)}."
                 )
-                return result
+                return [SumoRoadNetwork.Route(road_map=self)]
             # The sub route includes the boundary roads (cur_road, next_road).
             # We clip the latter to prevent duplicates
             edges.extend(sub_route[:-1])
 
         if len(edges) == 1:
             # route is within a single road
-            newroute._add_road(self.road_by_id(edges[0].getID()))
-            return result
+            return [
+                SumoRoadNetwork.Route(
+                    road_map=self,
+                    roads=[self.road_by_id(edges[0].getID())],
+                    start_lane=start_lane,
+                    end_lane=end_lane,
+                )
+            ]
 
         used_edges = []
         edge_ids = []
@@ -875,10 +881,18 @@ class SumoRoadNetwork(RoadMap):
                 used_edges.extend(internal_route)
                 edge_ids.extend([edge.getID() for edge in internal_route])
         _, indices = np.unique(edge_ids, return_index=True)
+        route_roads = []
         for idx in sorted(indices):
-            newroute._add_road(self.road_by_id(used_edges[idx].getID()))
+            route_roads.append(self.road_by_id(used_edges[idx].getID()))
 
-        return result
+        return [
+            SumoRoadNetwork.Route(
+                road_map=self,
+                roads=route_roads,
+                start_lane=start_lane,
+                end_lane=end_lane,
+            )
+        ]
 
     def _internal_routes_between(
         self, start_edge: Edge, end_edge: Edge
@@ -926,12 +940,12 @@ class SumoRoadNetwork(RoadMap):
     ) -> RoadMap.Route:
         """Generate a random route."""
         assert not starting_road or not only_drivable or starting_road.is_drivable
-        route = SumoRoadNetwork.Route(self)
         next_edges = (
             [starting_road._sumo_edge] if starting_road else self._graph.getEdges(False)
         )
+        route_roads=[]
         cur_edge = None
-        while next_edges and len(route.roads) < max_route_len:
+        while next_edges and len(route_roads) < max_route_len:
             choice = random.choice(next_edges)
             if cur_edge:
                 # include internal connection edges as well (TAI:  don't count these towards max_route_len?)
@@ -941,14 +955,14 @@ class SumoRoadNetwork(RoadMap):
                     if via_lane_id:
                         via_road = self.lane_by_id(via_lane_id).road
                         if via_road not in connection_roads:
-                            route._add_road(via_road)
+                            route_roads.append(via_road)
                             connection_roads.add(via_road)
             cur_edge = choice
             rroad = self.road_by_id(cur_edge.getID())
             assert rroad.is_drivable
-            route._add_road(rroad)
+            route_roads.append(rroad)
             next_edges = list(cur_edge.getOutgoing().keys())
-        return route
+        return SumoRoadNetwork.Route(road_map=self, roads=route_roads)
 
     def empty_route(self) -> RoadMap.Route:
         return SumoRoadNetwork.Route(self)
@@ -1147,10 +1161,16 @@ class SumoRoadNetwork(RoadMap):
     class Route(RouteWithCache):
         """Describes a route between two Sumo roads."""
 
-        def __init__(self, road_map):
-            super().__init__(road_map)
-            self._roads = []
-            self._length = 0
+        def __init__(
+            self,
+            road_map: RoadMap,
+            roads: List[RoadMap.Road] = [],
+            start_lane: Optional[RoadMap.Lane] = None,
+            end_lane: Optional[RoadMap.Lane] = None,
+        ):
+            super().__init__(road_map, start_lane, end_lane)
+            self._roads = roads
+            self._length = sum([road.length for road in roads])
 
         @property
         def roads(self) -> List[RoadMap.Road]:
@@ -1159,11 +1179,6 @@ class SumoRoadNetwork(RoadMap):
         @property
         def road_length(self) -> float:
             return self._length
-
-        def _add_road(self, road: RoadMap.Road):
-            """Add a road to this route."""
-            self._length += road.length
-            self._roads.append(road)
 
         @cached_property
         def geometry(self) -> Sequence[Sequence[Tuple[float, float]]]:
@@ -1397,7 +1412,7 @@ class SumoRoadNetwork(RoadMap):
         end_lane = end_edge.getLane(end_lane_index)
         connection = start_lane.getConnection(end_lane)
 
-        # If there is no connection beween try and do the best
+        # If there is no connection between, try and do the best
         if connection is None:
             # The first id is good enough since we just need to determine the junction edge id
             connection = start_edge.getConnections(end_edge)[0]

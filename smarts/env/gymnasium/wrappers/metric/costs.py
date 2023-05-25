@@ -20,7 +20,7 @@
 
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Dict, List, NewType
+from typing import Callable, Dict, List, NewType, Tuple
 
 import numpy as np
 
@@ -106,29 +106,37 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point, dist_tot: float
+    end_pos: Point, dist_tot: float, route: RoadMap.Route
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
+    route = route
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot
+        nonlocal mean, step, end_pos, dist_tot, route
 
         if not done:
+            for r in route.road_ids:
+                print(r)
+            
+            # last_on_route_pos = 
+
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            dist_remainder = get_dist(
-                road_map=road_map, 
-                point_a=cur_pos, 
-                point_b=end_pos, 
+            dist_remainder, route = get_dist(
+                road_map=road_map, point_a=cur_pos, point_b=end_pos, tolerate=True
             )
+            # Note: `dist_remainder` can be negative when agent overshoots the goal position while
+            # remaining outside the goal capture radius at all times.
+            dist_remainder = abs(dist_remainder)
+            dist_remainder += _get_lane_error(route=route, goal_pos=end_pos)
             dist_remainder_capped = min(dist_remainder, dist_tot)
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
@@ -530,11 +538,7 @@ class CostError(Exception):
     pass
 
 
-def get_dist(
-    road_map: RoadMap, 
-    point_a: Point, 
-    point_b: Point,
-) -> float:
+def get_dist(road_map: RoadMap, point_a: Point, point_b: Point, tolerate:bool=False) -> Tuple[float, RoadMap.Route]:
     """
     Computes the shortest route distance from point_a to point_b in the road
     map. Both points should lie on a road in the road map. Key assumption about
@@ -545,9 +549,13 @@ def get_dist(
         road_map: Scenario road map.
         point_a: A point, in world-map coordinates, which lies on a road.
         point_b: A point, in world-map coordinates, which lies on a road.
+        tolerate: If False, raises an error when distance is negative due to 
+            route being computed in reverse direction from point_b to point_a.
+            Defaults to False.
 
     Returns:
         float: Shortest road distance between two points in the road map.
+        RoadMap.Route: Planned route between point_a and point_b.
     """
 
     mission = Mission(
@@ -562,32 +570,42 @@ def get_dist(
         ),
     )
     plan = Plan(road_map=road_map, mission=mission, find_route=False)
-    plan.create_route(mission=mission, radius=20)
+    plan.create_route(mission=mission, radius=5)
     assert isinstance(plan.route, RoadMap.Route)
     from_route_point = RoadMap.Route.RoutePoint(pt=point_a)
     to_route_point = RoadMap.Route.RoutePoint(pt=point_b)
 
-    dist_tot = plan.route.distance_between(
-        start=from_route_point, end=to_route_point
-    )
+    dist_tot = plan.route.distance_between(start=from_route_point, end=to_route_point)
     if dist_tot == None:
         raise CostError("Unable to find road on route near given points.")
-    elif dist_tot < 0:
-        # This happens when agent overshoots the goal position while 
-        # remaining outside the goal capture radius at all times. Default 
-        # positional goal radius is 2m.
-        dist_tot = abs(dist_tot)
+    elif dist_tot < 0 and not tolerate:
+        raise CostError("Route computed in reverse direction from point_b to "
+            f"point_a resulting in negative distance: {dist_tot}.")
 
-    # Account for agent ending in a different lane but in the same road as
-    # the goal position. 
-    start_lane = plan.route.start_lane
-    end_lane = plan.route.end_lane
-    lane_error = abs(start_lane.index-end_lane.index)
-    if len(plan.route.roads) == 1 and lane_error > 0:
-        assert start_lane.road == end_lane.road      
-        end_offset = end_lane.offset_along_lane(world_point=point_b)
+    return dist_tot, plan.route
+
+
+def _get_lane_error(route: RoadMap.Route, goal_pos: Point) -> float:
+    """
+    Computes the lane error distance for an agent in a different lane but in 
+    the same road as the goal position. 
+    
+    Args:
+        route: Route from agent position to goal position.
+        goal_pos: Goal position, in world-map coordinates.
+
+    Returns:
+        float: Lane error distance. Lane error distance is zero if agent and 
+            goal lie in different roads.
+    """
+    start_lane = route.start_lane
+    end_lane = route.end_lane
+    lane_error = abs(start_lane.index - end_lane.index)
+    if len(route.roads) == 1 and lane_error > 0:
+        assert start_lane.road == end_lane.road
+        end_offset = end_lane.offset_along_lane(world_point=goal_pos)
         lane_width, _ = end_lane.width_at_offset(end_offset)
-        lane_error_dist = lane_error*lane_width
-        dist_tot += lane_error_dist
+        lane_error_dist = lane_error * lane_width
+        return lane_error_dist
 
-    return dist_tot
+    return 0

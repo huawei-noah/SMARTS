@@ -210,7 +210,7 @@ class MetricsBase(gym.Wrapper):
                 ].done_criteria.interest
                 if interest_criteria == None:
                     end_pos = self._scen.missions[agent_name].goal.position
-                    dist_tot = get_dist(
+                    dist_tot, route = get_dist(
                         road_map=self._road_map,
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_pos,
@@ -218,7 +218,7 @@ class MetricsBase(gym.Wrapper):
                 elif isinstance(interest_criteria, InterestDoneCriteria) and (
                     interest_actor is not None
                 ):
-                    end_pos, dist_tot = _get_end_and_dist(
+                    end_pos, dist_tot, route = _get_end_and_dist(
                         interest_actor=interest_actor,
                         vehicle_index=self._vehicle_index,
                         traffic_sims=self.env.smarts.traffic_sims,
@@ -238,7 +238,7 @@ class MetricsBase(gym.Wrapper):
                         "Unsupported configuration for distance-to-destination cost function."
                     )
                 cost_funcs_kwargs.update(
-                    {"dist_to_destination": {"end_pos": end_pos, "dist_tot": dist_tot}}
+                    {"dist_to_destination": {"end_pos": end_pos, "dist_tot": dist_tot, "route": route}}
                 )
 
             cost_funcs_kwargs.update(
@@ -324,7 +324,7 @@ def _get_end_and_dist(
     traffic_sims: List[TrafficProvider],
     scenario: Scenario,
     road_map: RoadMap,
-) -> Tuple[Point, float]:
+) -> Tuple[Point, float, RoadMap.Route]:
     """Computes the end point and route distance for a given vehicle of interest.
 
     Args:
@@ -335,7 +335,7 @@ def _get_end_and_dist(
         road_map (RoadMap): Underlying road map.
 
     Returns:
-        Tuple[Point, float]: End point and route distance.
+        Tuple[Point, float, RoadMap.Route]: End point, route distance, and planned route.
     """
     # Check if the interest vehicle is a social agent.
     interest_social_missions = [
@@ -358,21 +358,21 @@ def _get_end_and_dist(
         goal = interest_social_mission.goal
         assert isinstance(goal, PositionalGoal)
         end_pos = goal.position
-        dist_tot = get_dist(
+        dist_tot, route = get_dist(
             road_map=road_map,
             point_a=Point(*interest_social_mission.start.position),
             point_b=end_pos,
         )
     else:
         interest_traffic_sim = interest_traffic_sims[0]
-        end_pos, dist_tot = _get_traffic_end_and_dist(
+        end_pos, dist_tot, route = _get_traffic_end_and_dist(
             vehicle_name=interest_actor,
             vehicle_index=vehicle_index,
             traffic_sim=interest_traffic_sim,
             road_map=road_map,
         )
 
-    return end_pos, dist_tot
+    return end_pos, dist_tot, route
 
 
 def _get_traffic_end_and_dist(
@@ -380,7 +380,7 @@ def _get_traffic_end_and_dist(
     vehicle_index: VehicleIndex,
     traffic_sim: TrafficProvider,
     road_map: RoadMap,
-) -> Tuple[Point, float]:
+) -> Tuple[Point, float, RoadMap.Route]:
     """Computes the end point and route distance of a (i) SUMO traffic,
     (ii) SMARTS traffic, or (iii) history traffic vehicle
     specified by `vehicle_name`.
@@ -392,7 +392,7 @@ def _get_traffic_end_and_dist(
         road_map (RoadMap): Underlying road map.
 
     Returns:
-        Tuple[Point, float]: End point and route distance.
+        Tuple[Point, float, RoadMap.Route]: End point, route distance, and planned route.
     """
 
     if isinstance(traffic_sim, (SumoTrafficSimulation, LocalTrafficProvider)):
@@ -403,8 +403,8 @@ def _get_traffic_end_and_dist(
             .lane_at_index(0)
             .from_lane_coord(RefLinePoint(s=np.inf))
         )
-        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-        return end_pos, dist_tot
+        dist_tot, route = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        return end_pos, dist_tot, route
     elif isinstance(traffic_sim, TrafficHistoryProvider):
         history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         start_pos = Point(x=history.start_position_x, y=history.start_position_y)
@@ -414,8 +414,8 @@ def _get_traffic_end_and_dist(
         # roads traversed by the history vehicle in complex maps. Ideally we
         # should use the actual road ids traversed by the history vehicle to
         # compute the distance.
-        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-        return end_pos, dist_tot
+        dist_tot, route = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        return end_pos, dist_tot, route
     else:
         raise MetricsError(f"Unsupported traffic provider {traffic_sim.source_str}.")
 

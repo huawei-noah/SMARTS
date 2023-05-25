@@ -383,7 +383,7 @@ class Plan:
         # all nearby starting lane options are exhausted.
         for start_lane, _ in start_lanes:
             self._route = self._road_map.generate_routes(
-                start_lane.road, end_lane.road, via_roads, 1
+                start_lane, end_lane, via_roads, 1
             )[0]
             if self._route.road_length > 0:
                 self._route.start_lane = start_lane
