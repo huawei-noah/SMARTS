@@ -106,19 +106,25 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point, dist_tot: float
+    end_pos: Point, dist_tot: float, route: RoadMap.Route
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
+    route = route
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot
+        nonlocal mean, step, end_pos, dist_tot, route
 
         if not done:
+            for r in route.road_ids:
+                print(r)
+            
+            # last_on_route_pos = 
+
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
@@ -586,7 +592,7 @@ def _get_lane_error(route: RoadMap.Route, goal_pos: Point) -> float:
     
     Args:
         route: Route from agent position to goal position.
-        point_a: Goal position, in world-map coordinates.
+        goal_pos: Goal position, in world-map coordinates.
 
     Returns:
         float: Lane error distance. Lane error distance is zero if agent and 
