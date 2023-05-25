@@ -14,7 +14,7 @@ env:
 jobs:
   test_memory:
     runs-on: ubuntu-20.04
-    container: huaweinoah/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2

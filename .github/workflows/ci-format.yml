@@ -9,7 +9,7 @@ jobs:
   test-header:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
   test-docstring:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -41,7 +41,7 @@ jobs:
   test-types:
     runs-on: ubuntu-20.04
     if: (github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository) && (github.ref != 'refs/heads/master')
-    container: huaweinoah/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Install packages
         run: |
@@ -80,7 +80,7 @@ jobs:
   test-docs:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -114,7 +114,7 @@ jobs:
   test-package-conflicts:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: huaweinoah/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Install packages
         run: |
