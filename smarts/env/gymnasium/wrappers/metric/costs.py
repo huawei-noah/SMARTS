@@ -113,18 +113,27 @@ def _dist_to_destination(
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
-    route = route
+    route_roads = route.roads
+    last_on_route_pos = None
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot, route
+        nonlocal mean, step, end_pos, dist_tot, route, last_on_route_pos, last_dist
 
         if not done:
+
+            if x,y,z := on_route(pos = obs.ego_vehicle_state.position, radius=5):
+            last_dist = obs.distance_travelled
+            offset_along_lane(self, world_point: Point) -> float:
+            """Get the offset of the given point imposed on this lane."""
+            road_map.nearest_lanes()
+
+
             for r in route.road_ids:
                 print(r)
             
-            # last_on_route_pos = 
+            last_on_route_pos = 
 
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:

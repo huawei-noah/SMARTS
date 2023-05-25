@@ -346,12 +346,12 @@ class Plan:
                 A mission the agent should follow. Defaults to endless if `None`.
             start_lane_radius (Optional[float]):
                 Radius (meter) to find the nearest starting lane for the given
-                mission. Defaults to `_default_lane_width` of the underlying
-                road_map.
+                mission. Defaults to a function of `_default_lane_width` of the
+                underlying road_map.
             end_lane_radius (Optional[float]):
                 Radius (meter) to find the nearest ending lane for the given
-                mission. Defaults to `_default_lane_width` of the underlying
-                road_map.
+                mission. Defaults to a function of `_default_lane_width` of the
+                underlying road_map.
         """
         assert not self._route or not len(
             self._route.road_ids
