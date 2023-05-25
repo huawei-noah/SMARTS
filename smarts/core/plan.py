@@ -338,14 +338,18 @@ class Plan:
         """The road map this plan is relative to."""
         return self._road_map
 
-    def create_route(self, mission: Mission, radius: Optional[float] = None):
+    def create_route(self, mission: Mission, start_lane_radius: Optional[float] = None, end_lane_radius: Optional[float] = None):
         """Generates a route that conforms to a mission.
 
         Args:
             mission (Mission):
                 A mission the agent should follow. Defaults to endless if `None`.
-            radius (Optional[float]):
+            start_lane_radius (Optional[float]):
                 Radius (meter) to find the nearest starting lane for the given
+                mission. Defaults to `_default_lane_width` of the underlying
+                road_map.
+            end_lane_radius (Optional[float]):
+                Radius (meter) to find the nearest ending lane for the given
                 mission. Defaults to `_default_lane_width` of the underlying
                 road_map.
         """
@@ -363,7 +367,7 @@ class Plan:
         start_lanes = self._road_map.nearest_lanes(
             self._mission.start.point,
             include_junctions=True,
-            radius=radius,
+            radius=start_lane_radius,
         )
         if not start_lanes:
             self._mission = Mission.endless_mission(Pose.origin())
@@ -371,23 +375,25 @@ class Plan:
 
         via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
 
-        end_lane = self._road_map.nearest_lane(
+        end_lanes = self._road_map.nearest_lanes(
             self._mission.goal.position,
             include_junctions=False,
+            radius=end_lane_radius,
         )
-        assert end_lane is not None, "route must end in a lane"
+        assert end_lanes is not None, "No end lane found. Route must end in a lane."
 
         # When an agent is in an intersection, the `nearest_lanes` method might
         # not return the correct road as the first choice. Hence, nearest
         # starting lanes are tried in sequence until a route is found or until
         # all nearby starting lane options are exhausted.
-        for start_lane, _ in start_lanes:
-            self._route = self._road_map.generate_routes(
-                start_lane, end_lane, via_roads, 1
-            )[0]
+        for end_lane, _ in end_lanes:
+            for start_lane, _ in start_lanes:
+                self._route = self._road_map.generate_routes(
+                    start_lane, end_lane, via_roads, 1
+                )[0]
+                if self._route.road_length > 0:
+                    break
             if self._route.road_length > 0:
-                self._route.start_lane = start_lane
-                self._route.end_lane = end_lane
                 break
 
         if len(self._route.roads) == 0:
