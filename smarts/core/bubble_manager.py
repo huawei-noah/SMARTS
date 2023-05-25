@@ -470,7 +470,7 @@ class BubbleManager(ActorCaptureManager):
             if not bubble.condition_passes(active_condition_requirements):
                 return False
 
-            if not bubble.is_travelling:
+            if not bubble.is_traveling:
                 return True
 
             vehicle = None
