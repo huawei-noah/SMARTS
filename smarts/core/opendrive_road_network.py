@@ -1590,7 +1590,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
             cur_road = random.choice(next_roads)
             route_roads.append(cur_road)
             next_roads = list(cur_road.outgoing_roads)
-        return OpenDriveRoadNetwork.Route(road_map=self,roads=route_roads)
+        return OpenDriveRoadNetwork.Route(road_map=self, roads=route_roads)
 
     def empty_route(self) -> RoadMap.Route:
         return OpenDriveRoadNetwork.Route(self)

@@ -109,7 +109,7 @@ class RouteWithCache(RoadMap.Route):
             road = road_map.road_by_id(road_id)
             assert road, f"cannot add unknown road {road_id} to route"
             route_roads.append(road)
-        
+
         return road_map.Route(road_map=road_map, roads=route_roads)
 
     @cached_property

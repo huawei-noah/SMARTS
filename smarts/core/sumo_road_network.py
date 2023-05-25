@@ -943,7 +943,7 @@ class SumoRoadNetwork(RoadMap):
         next_edges = (
             [starting_road._sumo_edge] if starting_road else self._graph.getEdges(False)
         )
-        route_roads=[]
+        route_roads = []
         cur_edge = None
         while next_edges and len(route_roads) < max_route_len:
             choice = random.choice(next_edges)

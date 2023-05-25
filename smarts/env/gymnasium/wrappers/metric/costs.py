@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import warnings
 from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Dict, List, NewType, Tuple
@@ -418,10 +419,11 @@ def _vehicle_gap(
 
         # Truncate all paths to be of the same length.
         min_len = min(map(len, obs.waypoint_paths))
-        assert min_len >= min_waypoints_length, (
-            f"Expected waypoints length >= {min_waypoints_length}, but got "
-            f"waypoints length = {min_len}."
-        )
+        if min_len >= min_waypoints_length:
+            warnings.warn(
+                f"Expected waypoints length >= {min_waypoints_length}, but got "
+                + f"waypoints length = {min_len}."
+            )
         trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
         waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
         waypoints = np.array(waypoints, dtype=np.float64)
