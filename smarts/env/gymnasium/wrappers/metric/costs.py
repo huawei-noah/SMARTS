@@ -129,6 +129,8 @@ def _dist_to_destination(
             """Get the offset of the given point imposed on this lane."""
             road_map.nearest_lanes()
 
+            offset = self.offset_along_lane(point)
+            return self.from_lane_coord(RefLinePoint(s=offset))
 
             for r in route.road_ids:
                 print(r)
