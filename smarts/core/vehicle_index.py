@@ -309,7 +309,7 @@ class VehicleIndex:
     @clear_cache
     def teardown_vehicles_by_vehicle_ids(self, vehicle_ids, renderer: Optional[object]):
         """Terminate and remove a vehicle from the index using its id."""
-        self._log.debug(f"Tearing down vehicle ids: {vehicle_ids}")
+        self._log.debug("Tearing down vehicle ids: %s", vehicle_ids)
 
         vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
         if len(vehicle_ids) == 0:

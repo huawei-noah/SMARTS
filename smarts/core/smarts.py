@@ -1653,7 +1653,7 @@ class SMARTS(ProviderManager):
         if filter.simulation_data_filter["bubble_geometry"].enabled:
             bubble_geometry = [
                 list(bubble.geometry.exterior.coords)
-                for bubble in self._bubble_manager.bubbles
+                for bubble in self._bubble_manager.active_bubbles
             ]
 
         scenario_folder_path = self.scenario._root

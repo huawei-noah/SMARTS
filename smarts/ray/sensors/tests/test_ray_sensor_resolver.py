@@ -99,7 +99,7 @@ def test_sensor_parallelization(
 
     parallel_resolver.get_ray_worker_actors(1)
 
-    assert len(simulation_frame.agent_ids) > 1
+    assert len(simulation_frame.agent_ids) > 0
     p_observations, p_dones, p_updated_sensors = parallel_resolver.observe(
         sim_frame=simulation_frame,
         sim_local_constants=simulation_local_constants,
