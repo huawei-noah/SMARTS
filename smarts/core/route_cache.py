@@ -76,26 +76,6 @@ class RouteWithCache(RoadMap.Route):
         "Route's end lane."
         return self._end_lane
 
-    @property
-    def start_lane(self) -> Optional[RoadMap.Lane]:
-        "Route's start lane."
-        return self._start_lane
-
-    @start_lane.setter
-    def start_lane(self,value:RoadMap.Lane):
-        "Route's start lane."
-        self._start_lane=value
-
-    @property
-    def end_lane(self) -> Optional[RoadMap.Lane]:
-        "Route's end lane."
-        return self._end_lane
-
-    @end_lane.setter
-    def end_lane(self,value:RoadMap.Lane):
-        "Route's end lane."
-        self._end_lane = value
-
     @cached_property
     def road_ids(self) -> List[str]:
         """Get the road IDs for this route.
