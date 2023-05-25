@@ -570,7 +570,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point, tolerate:bool=Fa
         ),
     )
     plan = Plan(road_map=road_map, mission=mission, find_route=False)
-    plan.create_route(mission=mission, radius=5)
+    plan.create_route(mission=mission, start_lane_radius=5, end_lane_radius=0.5)
     assert isinstance(plan.route, RoadMap.Route)
     from_route_point = RoadMap.Route.RoutePoint(pt=point_a)
     to_route_point = RoadMap.Route.RoutePoint(pt=point_b)
