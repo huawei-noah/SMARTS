@@ -316,7 +316,7 @@ class TrapManager(ActorCaptureManager):
                     sim,
                     agent_id,
                     mission,
-                    trap.default_entry_speed,
+                    capture.trap.default_entry_speed,
                     social=agent_id in sim.agent_manager.pending_social_agent_ids,
                 )
             else:

@@ -98,7 +98,7 @@ Interface
 The :class:`~smarts.core.agent_interface.AgentInterface` regulates information flow between the agent and SMARTS environment. 
 
 + It specifies the observation from the environment to the agent, by selecting the sensors to enable in the vehicle. 
-+ It specifies the action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.ActionSpaceType`.
++ It specifies the action from the agent to the environment. Attribute :attr:`~smarts.core.agent_interface.AgentInterface.action` controls the action type used. There are multiple action types to choose from :class:`~smarts.core.controllers.action_space_type.ActionSpaceType`.
 
 Pre-configured interface
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -117,37 +117,172 @@ SMARTS provides several pre-configured `interfaces` for ease of use. Namely,
 
 The attributes enabled for each pre-configured `interface` is shown in the table below.
 
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **Interface**              | :attr:`~smarts.core.agent_interface.AgentType.Full`         | :attr:`~smarts.core.agent_interface.AgentType.StandardWithAbsoluteSteering` | :attr:`~smarts.core.agent_interface.AgentType.Standard`          | :attr:`~smarts.core.agent_interface.AgentType.Laner`  | :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed`            | :attr:`~smarts.core.agent_interface.AgentType.Tracker`      | :attr:`~smarts.core.agent_interface.AgentType.TrajectoryInterpolator` | :attr:`~smarts.core.agent_interface.AgentType.MPCTracker` | :attr:`~smarts.core.agent_interface.AgentType.Boid`              | :attr:`~smarts.core.agent_interface.AgentType.Loner`        | :attr:`~smarts.core.agent_interface.AgentType.Tagger`       | :attr:`~smarts.core.agent_interface.AgentType.Direct`   |
-+============================+=============================================================+=============================================================================+==================================================================+=======================================================+==========================================================================+=============================================================+=======================================================================+===========================================================+==================================================================+=============================================================+=============================================================+=========================================================+
-| **action**                 | :attr:`~smarts.core.controllers.ActionSpaceType.Continuous` | :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`                 | :attr:`~smarts.core.controllers.ActionSpaceType.ActuatorDynamic` | :attr:`~smarts.core.controllers.ActionSpaceType.Lane` | :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` | :attr:`~smarts.core.controllers.ActionSpaceType.Trajectory` | :attr:`~smarts.core.controllers.ActionSpaceType.TrajectoryWithTime`   | :attr:`~smarts.core.controllers.ActionSpaceType.MPC`      | :attr:`~smarts.core.controllers.ActionSpaceType.MultiTargetPose` | :attr:`~smarts.core.controllers.ActionSpaceType.Continuous` | :attr:`~smarts.core.controllers.ActionSpaceType.Continuous` | :attr:`~smarts.core.controllers.ActionSpaceType.Direct` |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **max_episode_steps**      | ✓                                                           | ✓                                                                           | ✓                                                                | ✓                                                     | ✓                                                                        | ✓                                                           | ✓                                                                     | ✓                                                         | ✓                                                                | ✓                                                           | ✓                                                           | ✓                                                       |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **neighborhood_vehicles**  | ✓                                                           | ✓                                                                           | ✓                                                                |                                                       |                                                                          |                                                             |                                                                       |                                                           | ✓                                                                |                                                             | ✓                                                           | ✓                                                       |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **waypoint_paths**         | ✓                                                           | ✓                                                                           | ✓                                                                | ✓                                                     | ✓                                                                        | ✓                                                           |                                                                       | ✓                                                         | ✓                                                                | ✓                                                           | ✓                                                           |                                                         |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **drivable_area_grid_map** | ✓                                                           |                                                                             |                                                                  |                                                       |                                                                          |                                                             |                                                                       |                                                           |                                                                  |                                                             |                                                             |                                                         |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **occupancy_grid_map**     | ✓                                                           |                                                                             |                                                                  |                                                       |                                                                          |                                                             |                                                                       |                                                           |                                                                  |                                                             |                                                             |                                                         |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **top_down_rgb**           | ✓                                                           |                                                                             |                                                                  |                                                       |                                                                          |                                                             |                                                                       |                                                           |                                                                  |                                                             |                                                             |                                                         |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **lidar_point_cloud**      | ✓                                                           |                                                                             |                                                                  |                                                       |                                                                          |                                                             |                                                                       |                                                           |                                                                  |                                                             |                                                             |                                                         |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **accelerometer**          | ✓                                                           | ✓                                                                           | ✓                                                                | ✓                                                     | ✓                                                                        | ✓                                                           | ✓                                                                     | ✓                                                         | ✓                                                                | ✓                                                           | ✓                                                           | ✓                                                       |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **signals**                | ✓                                                           |                                                                             |                                                                  |                                                       |                                                                          |                                                             |                                                                       |                                                           |                                                                  |                                                             |                                                             | ✓                                                       |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
-| **debug**                  | ✓                                                           | ✓                                                                           | ✓                                                                | ✓                                                     | ✓                                                                        | ✓                                                           | ✓                                                                     | ✓                                                         | ✓                                                                | ✓                                                           | ✓                                                           | ✓                                                       |
-+----------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------+--------------------------------------------------------------------------+-------------------------------------------------------------+-----------------------------------------------------------------------+-----------------------------------------------------------+------------------------------------------------------------------+-------------------------------------------------------------+-------------------------------------------------------------+---------------------------------------------------------+
+
+.. list-table::
+   :header-rows: 1
+
+   * - **Interface**
+     - :attr:`~smarts.core.agent_interface.AgentType.Full`
+     - :attr:`~smarts.core.agent_interface.AgentType.StandardWithAbsoluteSteering`
+     - :attr:`~smarts.core.agent_interface.AgentType.Standard`
+     - :attr:`~smarts.core.agent_interface.AgentType.Laner`
+     - :attr:`~smarts.core.agent_interface.AgentType.LanerWithSpeed`
+     - :attr:`~smarts.core.agent_interface.AgentType.Tracker`
+     - :attr:`~smarts.core.agent_interface.AgentType.TrajectoryInterpolator`
+     - :attr:`~smarts.core.agent_interface.AgentType.MPCTracker`
+     - :attr:`~smarts.core.agent_interface.AgentType.Boid`
+     - :attr:`~smarts.core.agent_interface.AgentType.Loner`
+     - :attr:`~smarts.core.agent_interface.AgentType.Tagger`
+     - :attr:`~smarts.core.agent_interface.AgentType.Direct`
+   * - **action**
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.ActuatorDynamic`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Lane`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.LaneWithContinuousSpeed`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Trajectory`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TrajectoryWithTime`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.MPC`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.MultiTargetPose`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Direct`
+   * - **max_episode_steps**
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓  
+   * - **neighborhood_vehicles**
+     - ✓
+     - ✓
+     - ✓
+     - 
+     -
+     -
+     -
+     -
+     - ✓
+     -
+     - ✓
+     - ✓
+   * - **waypoint_paths** 
+     - ✓ 
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     -
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     -                                                         
+   * - **drivable_area_grid_map** 
+     - ✓
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -                                                         
+   * - **occupancy_grid_map**
+     - ✓
+     -
+     - 
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -                                                         
+   * - **top_down_rgb**           
+     - ✓
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -                                                         
+   * - **lidar_point_cloud**
+     - ✓
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -                        
+     -
+     -
+     -                                                         
+   * - **accelerometer**
+     - ✓ 
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓                                            
+   * - **signals**
+     - ✓
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     - ✓                                           
+   * - **debug** 
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓
+     - ✓                                            
 
 Here, ``max_episode_steps`` controls the max steps allowed for the agent in an episode. Defaults to ``None``, implies agent has no step limit.
 
 .. note:: 
 
-    While using RLlib, the ``max_episode_steps`` control authority may be ceded to RLlib through their config option ``horizon``, but doing so 
+    While using ``RLlib``, the ``max_episode_steps`` control authority may be ceded to ``RLlib`` through their config option ``horizon``, but doing so 
     removes the ability to customize different max episode steps for each agent.
 
 A pre-configured `interface` can be extended by supplying extra `kwargs`. For example the following extends `AgentType.Standard` pre-configured interface to include lidar observation.
@@ -209,7 +344,7 @@ Spaces
 Spaces provide samples for variation. For reference on spaces, see `gymnasium <https://gymnasium.farama.org/api/spaces/>`_ .
 SMARTS environments contains (i) ``observation_space`` and (ii) ``action_space`` attributes, which are dictionaries mapping agent ids to their corresponding observation or action spaces, respectively.
 
-Consider a SMARTS env with an agent named `Agent_001`. If `Agent_001`'s `interface` is customised, then the agent's corresponding observation space (i.e., ``env.observation_space["Agent_001"]``) and action space (i.e., ``env.action_space["Agent_001"]``) from the environment would be changed accordingly. 
+Consider a SMARTS env with an agent named `Agent_001`. If `Agent_001`'s `interface` is customized, then the agent's corresponding observation space (i.e., ``env.observation_space["Agent_001"]``) and action space (i.e., ``env.action_space["Agent_001"]``) from the environment would be changed accordingly. 
 
 Policy
 ------
@@ -221,4 +356,4 @@ All `policies` must inherit the base class of :class:`~~smarts.core.agent.Agent`
 The received ``obs`` argument in ``def act(self, obs)`` is controlled by the selected agent `interface`.
 
 The ``act()`` method should return an action complying to the agent's chosen action type in its agent `interface`. 
-For example, if action type :attr:`~smarts.core.controllers.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed, lane_change)`` with type ``(float, int)``. See the :ref:`example <minimal_agent>` above.
+For example, if action type :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed, lane_change)`` with type ``(float, int)``. See the :ref:`example <minimal_agent>` above.

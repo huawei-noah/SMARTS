@@ -42,7 +42,7 @@ below.
 
     Here, egos are in red colour, and background traffic is in silver colour.
 
-Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
+Any method such as reinforcement learning, offline reinforcement learning, behavior cloning, generative models,
 predictive models, etc, may be used to develop the policy.
 
 Several scenarios are provided for training. Their names and tasks are as follows. 
@@ -50,7 +50,7 @@ The desired task execution is illustrated in a gif by a trained baseline agent.
 
 .. todo::
     
-    Provide sample training scenarios and corresponding gifs showing a baseline model traversing the map.
+    Provide sample training scenarios and corresponding ``.gif`` images showing a baseline model traversing the map.
 
 Observation space
 -----------------
@@ -64,8 +64,8 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-The action space for an ego agent can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. The user should choose
+The action space for an ego agent can be either :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`. The user should choose
 one of the action spaces and specify the chosen action space through the ego agent's interface.
 
 Code structure
@@ -92,14 +92,14 @@ the user.
     ├── setup.cfg                
     └── setup.py                
 
-1. inference/contrib_policy/__init__.py
+1. ``inference/contrib_policy/__init__.py``
     + Keep this file unchanged.
     + It is an empty file.
 
-2. inference/contrib_policy/policy.py
+2. ``inference/contrib_policy/policy.py``
     + Must contain a ``class Policy(Agent)`` class which inherits from :class:`~smarts.core.agent.Agent`.
 
-3. inference/__init__.py
+3. ``inference/__init__.py``
     + Must contain the following template code. 
     + The template code registers the user's policy in SMARTS agent zoo.
     
@@ -147,10 +147,10 @@ the user.
       + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and 
       + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`. 
 
-4. inference/MANIFEST.in 
+4. ``inference/MANIFEST.in``
     + Contains any file paths to be included in the package.
 
-5. inference/setup.cfg
+5. ``inference/setup.cfg``
     + Must contain the following template code. 
     + The template code helps build the user policy into a Python package.
     
@@ -182,7 +182,7 @@ the user.
     + Do **not** add SMARTS package as a dependency in the ``install_requires`` section.
     + Dependencies in the ``install_requires`` section **must** have an exact package version specified using ``==``.
 
-6. inference/setup.py
+6. ``inference/setup.py``
     + Keep this file and its default contents unchanged.
     + Its default contents are shown below.
 
@@ -199,7 +199,7 @@ Example
 An example training and inference code is provided for this benchmark. 
 See the :examples:`rl/drive` example. The example uses PPO algorithm from 
 `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library.
-It uses :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose` action space.
+It uses :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose` action space.
 Instructions for training and evaluating the example is as follows.
 
 Train
@@ -213,7 +213,8 @@ Train
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e ./../../../.[camera_obs,argoverse]
+    $ pip install wheel==0.38.4
+    $ pip install -e ./../../../.[camera_obs,argoverse,envision]
     $ pip install -e ./inference/
 
 + Train locally without visualization
@@ -263,7 +264,7 @@ Evaluate
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e .[camera_obs,argoverse]
+    $ pip install -e .[camera_obs,argoverse,envision]
     $ scl zoo install examples/rl/drive/inference
     # For Driving SMARTS 2023.1
     $ scl benchmark run driving_smarts_2023_1 examples.rl.drive.inference:contrib-agent-v0 --auto-install

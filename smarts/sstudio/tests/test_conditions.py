@@ -204,12 +204,12 @@ def test_condition_trigger():
     long_delay = 10
     first_time_window_true = 5
     window_condition = TimeWindowCondition(4, 10)
-    delayed_condition = window_condition.trigger(long_delay, persistant=False)
+    delayed_condition = window_condition.trigger(long_delay, persistent=False)
 
     assert delayed_condition == ConditionTrigger(
         inner_condition=window_condition,
         delay_seconds=long_delay,
-        persistant=False,
+        persistent=False,
     )
 
     # before
@@ -241,8 +241,8 @@ def test_condition_trigger():
     time = first_time_window_true + long_delay - 1
     assert not delayed_condition.evaluate(time=time)
 
-    # Test persistant true
-    delayed_condition = window_condition.trigger(short_delay, persistant=True)
+    # Test persistent true
+    delayed_condition = window_condition.trigger(short_delay, persistent=True)
     time = first_time_window_true
     assert not delayed_condition.evaluate(time=time)
     time = first_time_window_true + short_delay

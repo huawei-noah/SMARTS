@@ -111,7 +111,7 @@ def driving_smarts_2022_env(
             Envision. Defaults to False.
         seed (int, optional): Random number generator seed. Defaults to 42.
         visdom (bool, optional): If True, enables visualization of observed
-            RGB images in Visdom. Defaults to False.
+            RGB images in `visdom`. Defaults to False.
         sumo_headless (bool, optional): If True, disables visualization in
             SUMO GUI. Defaults to True.
         envision_record_data_replay_path (Optional[str], optional):

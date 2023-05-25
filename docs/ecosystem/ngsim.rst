@@ -3,7 +3,7 @@
 NGSIM
 =====
 
-**NGSIM** is the Next Generation Simulation dataset, a free to use dataset created
+``NGSIM`` is the Next Generation Simulation dataset, a free to use dataset created
 by the US Department of Transportation (DOT) and described
 `here <https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm>`__.
 
@@ -19,7 +19,7 @@ Its import scripts were tested on and work with the data downloaded from `here <
 which is the same as was used by this `PPUU project <https://github.com/Atcold/pytorch-PPUU>`_.
 
 After the dataset has been downloaded, you will need to update each ``scenario.py``
-in the ngsim scenario directories (e.g., :scenarios:`NGSIM/i80/scenario.py`, :scenarios:`NGSIM/us101/scenario.py`, and/or :scenarios:`NGSIM/peachtree/scenario.py`) to point the `input_path` field
+in the ``NGSIM`` scenario directories (e.g., :scenarios:`NGSIM/i80/scenario.py`, :scenarios:`NGSIM/us101/scenario.py`, and/or :scenarios:`NGSIM/peachtree/scenario.py`) to point the `input_path` field
 to the dataset location on your filesystem.
 
 Once that is done, you should be able to build your scenarios in the normal way, for example: ``scl scenario build-all --clean scenarios/NGSIM``

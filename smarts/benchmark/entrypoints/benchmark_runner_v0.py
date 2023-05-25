@@ -137,8 +137,8 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     """Runs the benchmark using the following:
     Args:
         benchmark_args(dict): Arguments configuring the benchmark.
-        agent_loctor(str): Locator string for the registered agent.
-        debug_log(bool): Whether the benchmark should log to stdout.
+        agent_locator(str): Locator string for the registered agent.
+        debug_log(bool): Whether the benchmark should log to `stdout`.
     """
     print(f"\n\n<-- Starting `{benchmark_args['name']}` benchmark -->\n")
     message = benchmark_args.get("message")
@@ -214,7 +214,7 @@ def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
     Args:
         benchmark_config(file path): The file path to the benchmark configuration.
         agent_locator(str): Locator string for the registered agent.
-        debug_log(bool): Whether the benchmark should log to stdout.
+        debug_log(bool): Whether the benchmark should log to `stdout`.
     """
     benchmark_args = load_config(benchmark_config)
 

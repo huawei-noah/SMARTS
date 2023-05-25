@@ -139,7 +139,7 @@ class VehicleState(ActorState):
         Tuple[float, float],
     ]:
         """The minimum fitting heading aligned bounding box. Four 2D points representing the minimum fitting box."""
-        # Assuming the position is the centre,
+        # Assuming the position is the center,
         # calculate the corner coordinates of the bounding_box
         origin = self.pose.position[:2]
         dimensions = np.array([self.dimensions.width, self.dimensions.length])

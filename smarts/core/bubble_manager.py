@@ -176,7 +176,7 @@ class Bubble:
         """Fast inclusions for the bubble."""
         return self._active_condition
 
-    # XXX: In the case of travelling bubbles, the geometry and zone are moving
+    # XXX: In the case of traveling bubbles, the geometry and zone are moving
     #      according to the follow vehicle.
     @property
     def geometry(self) -> Polygon:
@@ -205,7 +205,7 @@ class Bubble:
         running_cursors: Set["Cursor"],
     ):
         """The vehicle_id we are querying for and the `other_vehicle_ids` _presently in
-        this `sstudio.types.Bubble`.
+        this :class:`~smarts.sstudio.types.bubble.Bubble`.
         """
         for prefix in self.exclusion_prefixes:
             if vehicle_id.startswith(prefix):
@@ -262,7 +262,7 @@ class Bubble:
         return in_bubble, in_airlock and not in_bubble
 
     @property
-    def is_travelling(self):
+    def is_traveling(self):
         """If the bubble is following an actor."""
         return (
             self._bubble.follow_actor_id is not None
@@ -305,7 +305,7 @@ class Bubble:
     def __repr__(self):
         return f"""Bubble(
   id={self.id},
-  travelling={self.is_travelling},
+  traveling={self.is_traveling},
   actor={self.actor},
   follow_actor_id={self.follow_actor_id},
   limit={self.limit},
@@ -363,7 +363,7 @@ class Cursor:
 
     @staticmethod
     def from_pos(
-        pos: Point,
+        position: Point,
         vehicle_id: str,
         bubble: Bubble,
         index: VehicleIndex,
@@ -374,7 +374,7 @@ class Cursor:
     ) -> "Cursor":
         """Generate a cursor.
         Args:
-            pos (Point):
+            position (Point):
                 The shapely position of the vehicle.
             vehicle (Vehicle):
                 The vehicle that is to be tracked.
@@ -387,12 +387,12 @@ class Cursor:
             running_cursors (Set["Cursor"]):
                 A set of existing cursors.
         """
-        in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(pos)
+        in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(position)
         is_social = vehicle_id in index.social_vehicle_ids()
         is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle_id)
         was_in_this_bubble = vehicle_id in vehicle_ids_per_bubble[bubble]
 
-        # XXX: When a travelling bubble disappears and an agent is airlocked or
+        # XXX: When a traveling bubble disappears and an agent is airlocked or
         #      hijacked. It remains in that state.
         # TODO: Depending on step size, we could potentially skip transitions (e.g.
         #       go straight to relinquish w/o hijacking first). This may be solved by
@@ -457,7 +457,7 @@ class BubbleManager(ActorCaptureManager):
 
     @cache
     def _bubble_groups(self, sim) -> Tuple[List[Bubble], List[Bubble]]:
-        # Filter out travelling bubbles that are missing their follow vehicle
+        # Filter out traveling bubbles that are missing their follow vehicle
         def is_active(bubble: Bubble) -> bool:
             active_condition_requirements = {
                 **self._gen_simulation_condition_kwargs(
@@ -532,7 +532,7 @@ class BubbleManager(ActorCaptureManager):
     def step(self, sim):
         """Update the associations between bubbles, actors, and agents"""
         self._active_bubbles, _ = self._bubble_groups(sim)
-        self._move_travelling_bubbles(sim)
+        self._move_traveling_bubbles(sim)
         self._cursors = self._sync_cursors(
             self._last_vehicle_index, sim.vehicle_index, sim
         )
@@ -630,7 +630,7 @@ class BubbleManager(ActorCaptureManager):
                         )
                     )
                     cursor = Cursor.from_pos(
-                        pos=point.as_shapely,
+                        position=point.as_shapely,
                         vehicle_id=vehicle.id,
                         bubble=bubble,
                         index=persisted_vehicle_index,
@@ -665,10 +665,10 @@ class BubbleManager(ActorCaptureManager):
                 agent_id = BubbleManager._get_agent_id_from_cursor(cursor)
                 sim.vehicle_exited_bubble(cursor.vehicle_id, agent_id, teardown)
 
-    def _move_travelling_bubbles(self, sim):
+    def _move_traveling_bubbles(self, sim):
         active_bubbles, inactive_bubbles = self._bubble_groups(sim)
         for bubble in [*active_bubbles, *inactive_bubbles]:
-            if not bubble.is_travelling:
+            if not bubble.is_traveling:
                 continue
 
             vehicles = []
@@ -686,7 +686,7 @@ class BubbleManager(ActorCaptureManager):
                     vehicles += [vehicle]
             assert (
                 len(vehicles) <= 1
-            ), "Travelling bubbles only support pinning to a single vehicle"
+            ), "Traveling bubbles only support pinning to a single vehicle"
 
             if len(vehicles) == 1:
                 bubble.move_to_follow_vehicle(vehicles[0])

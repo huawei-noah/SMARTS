@@ -98,7 +98,7 @@ class TrajectoryInterpolationController:
         """Move vehicle by trajectory interpolation.
 
         If you want vehicle stop at a specific pose,
-        trajectory[TrajectoryField.TIME_INDEX][0] should be set as numpy.inf.
+        trajectory[:attr:`TrajectoryField.TIME_INDEX`][0] should be set as `numpy.inf`.
 
         Args:
             dt (float): the amount of time that is expected to pass between actions

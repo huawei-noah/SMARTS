@@ -54,7 +54,7 @@ except:
 
 
 class ArgoverseMap(RoadMapWithCaches):
-    """A road map for an Argoverse 2 scenario."""
+    """A road map for an `Argoverse 2` scenario."""
 
     DEFAULT_LANE_SPEED = 16.67  # m/s
 
@@ -186,9 +186,9 @@ class ArgoverseMap(RoadMapWithCaches):
         all_ids = set(self._avm.get_scenario_lane_segment_ids())
         processed_ids = set()
         for lane_seg in self._avm.get_scenario_lane_segments():
-            # If this is a rightmost lane, create a road with its neighbours
+            # If this is a rightmost lane, create a road with its neighbors
             if lane_seg.right_neighbor_id is None:
-                neighbours: List[int] = []
+                neighbors: List[int] = []
                 cur_seg = lane_seg
                 while True:
                     left_mark = cur_seg.left_lane_marking.mark_type
@@ -201,19 +201,19 @@ class ArgoverseMap(RoadMapWithCaches):
                         # There is a valid lane to the left, so add it and continue
                         left_seg = self._avm.vector_lane_segments[left_id]
 
-                        # Edge case: sometimes there can be a cycle (2 lanes can have each other as their left neighbour)
+                        # Edge case: sometimes there can be a cycle (2 lanes can have each other as their left neighbor)
                         if left_seg.left_neighbor_id == cur_seg.id:
                             break
 
                         cur_seg = left_seg
-                        neighbours.append(left_id)
+                        neighbors.append(left_id)
                     else:
                         break  # This is the leftmost lane in the road, so stop
 
                 # Create the lane objects
                 road_id = "road"
                 lanes = []
-                for index, seg_id in enumerate([lane_seg.id] + neighbours):
+                for index, seg_id in enumerate([lane_seg.id] + neighbors):
                     road_id += f"-{seg_id}"
                     lane_id = f"lane-{seg_id}"
                     seg = self._avm.vector_lane_segments[seg_id]
@@ -357,7 +357,7 @@ class ArgoverseMap(RoadMapWithCaches):
         lane_lines_glb.write_glb(Path(glb_dir) / "lane_lines.glb")
 
     class Surface(RoadMapWithCaches.Surface):
-        """Surface representation for Argoverse maps."""
+        """Surface representation for `Argoverse` maps."""
 
         def __init__(self, surface_id: str, road_map):
             self._surface_id = surface_id
@@ -374,7 +374,7 @@ class ArgoverseMap(RoadMapWithCaches):
         return self._surfaces.get(surface_id)
 
     class Lane(RoadMapWithCaches.Lane, Surface):
-        """Lane representation for Argoverse maps."""
+        """Lane representation for `Argoverse` maps."""
 
         def __init__(
             self, map: "ArgoverseMap", lane_id: str, lane_seg: LaneSegment, index: int
@@ -644,7 +644,7 @@ class ArgoverseMap(RoadMapWithCaches):
         return None
 
     class Road(RoadMapWithCaches.Road, Surface):
-        """Road representation for Argoverse maps."""
+        """Road representation for `Argoverse` maps."""
 
         def __init__(self, road_id: str, lanes: List[RoadMap.Lane]):
             super().__init__(road_id, None)
@@ -763,11 +763,13 @@ class ArgoverseMap(RoadMapWithCaches):
 
     def road_by_id(self, road_id: str) -> RoadMap.Road:
         road = self._roads.get(road_id)
-        assert road, f"ArgoverseMap got request for unknown road_id: '{road_id}'"
+        assert (
+            road
+        ), f"{ArgoverseMap.__name__} got request for unknown road_id: '{road_id}'"
         return road
 
     class Route(RouteWithCache):
-        """Describes a route between Argoverse roads."""
+        """Describes a route between `Argoverse` roads."""
 
         def __init__(self, road_map):
             super().__init__(road_map)
@@ -922,7 +924,7 @@ class ArgoverseMap(RoadMapWithCaches):
                 self.point = point
                 self.filter_road_ids = filter_road_ids
                 self._starts = {}
-            self._starts[llp.lp.lane.index] = paths
+            self._starts[llp.lp.lane.lane_id] = paths
 
         def query(
             self,
@@ -933,7 +935,7 @@ class ArgoverseMap(RoadMapWithCaches):
         ) -> Optional[List[List[Waypoint]]]:
             """Attempt to find previously cached waypoints"""
             if self._match(lookahead, point, filter_road_ids):
-                hit = self._starts.get(llp.lp.lane.index, None)
+                hit = self._starts.get(llp.lp.lane.lane_id, None)
                 if hit:
                     # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]
@@ -944,20 +946,17 @@ class ArgoverseMap(RoadMapWithCaches):
         assert self._map_spec.lanepoint_spacing > 0
         return LanePoints.from_argoverse(self, spacing=self._map_spec.lanepoint_spacing)
 
-    def _resolve_in_junction(self, junction_lane: RoadMap.Lane) -> List[List[str]]:
+    def _resolve_in_junction(self, junction_lane: RoadMap.Lane) -> List[RoadMap.Lane]:
         # There are no paths we can trace back through the junction, so return
         if len(junction_lane.road.incoming_roads) == 0:
             return []
 
         # Trace back to the road that leads into the junction
         inc_road: RoadMap.Road = junction_lane.road.incoming_roads[0]
-        paths = []
+        lanes = []
         for out_road in inc_road.outgoing_roads:
-            road_ids = [out_road.road_id] + [
-                road.road_id for road in out_road.outgoing_roads
-            ]
-            paths.append(road_ids)
-        return paths
+            lanes.extend([lane for lane in out_road.lanes])
+        return lanes
 
     def waypoint_paths(
         self,
@@ -975,36 +974,36 @@ class ArgoverseMap(RoadMapWithCaches):
         # No route provided, so generate paths based on the closest lanepoints
         waypoint_paths = []
         closest_lps: List[LanePoint] = self._lanepoints.closest_lanepoints(
-            pose, within_radius=within_radius
+            pose, within_radius=within_radius, maximum_count=15
         )
         closest_lane: RoadMap.Lane = closest_lps[0].lane
 
         # First, see if we are in a junction and need to do something special
         if closest_lane.in_junction:
-            junction_lanes: Set[RoadMap.Lane] = set([closest_lane])
+            # Get the set of all nearby junction lanes with similar heading
+            junction_lanes: Set[RoadMap.Lane] = set()
             for lp in closest_lps:
                 rel_heading = lp.pose.heading.relative_to(pose.heading)
-                if (
-                    lp.lane.in_junction
-                    and abs(rel_heading) < np.pi / 2
-                    and lp.lane.contains_point(pose.point)
-                ):
+                if lp.lane.in_junction and abs(rel_heading) < np.pi / 2:
                     junction_lanes.add(lp.lane)
 
-            paths = set()
+            # Get set of all lanes leading through the junction
+            wp_lanes = set()
             for junction_lane in junction_lanes:
-                paths_for_lane = self._resolve_in_junction(junction_lane)
-                for path in paths_for_lane:
-                    paths.add(tuple(path))
+                wp_lanes = wp_lanes.union(set(self._resolve_in_junction(junction_lane)))
 
-            for road_ids in paths:
-                new_paths = self._waypoint_paths_along_route(
-                    pose.point, lookahead, road_ids
-                )
+            # Generate waypoints for each junction lane
+            for wp_lane in wp_lanes:
+                new_paths = [
+                    path
+                    for path in wp_lane._waypoint_paths_at(pose.point, lookahead)
+                    if path[0].lane_id == wp_lane.lane_id
+                ]
                 for path in new_paths:
                     if (
                         len(path) > 0
-                        and np.linalg.norm(path[0].pos - pose.position[:2]) < 5
+                        and np.linalg.norm(path[0].pos - pose.position[:2]) < 8
+                        and abs(path[0].heading.relative_to(pose.heading)) < np.pi / 3
                     ):
                         waypoint_paths.append(path)
 

@@ -146,7 +146,7 @@ def get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
     standard to SMARTS accepted observations.
 
     Returns:
-        Dict[ActionSpaceType, _FormattingGroup]: The currently available formatting groups.
+        Dict[ActionSpaceType, Any]: The currently available formatting groups.
     """
     return {
         ActionSpaceType.ActuatorDynamic: _FormattingGroup(

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 from tools.argument_parser import default_argument_parser
 
 from smarts.core.utils.episodes import episodes
@@ -9,11 +9,10 @@ from smarts.sstudio.scenario_construction import build_scenarios
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs={},
+        agent_interfaces={},
         headless=headless,
-        sumo_headless=True,
     )
 
     if max_episode_steps is None:
@@ -25,7 +24,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
         for _ in range(max_episode_steps):
             env.step({})
-            episode.record_step({}, {}, {}, {})
+            episode.record_step({}, {}, {}, {}, {})
 
     env.close()
 

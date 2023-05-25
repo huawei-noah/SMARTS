@@ -709,22 +709,22 @@ class _TrafficActor:
 
     @property
     def finished_route(self) -> bool:
-        """Returns True iff this vehicle has reached the end of its route."""
+        """Returns True if this vehicle has reached the end of its route."""
         return self._done_with_route
 
     @property
     def off_route(self) -> bool:
-        """Returns True iff this vehicle has left its route before it got to the end."""
+        """Returns True if this vehicle has left its route before it got to the end."""
         return self._off_route
 
     @property
     def wrong_way(self) -> bool:
-        """Returns True iff this vehicle is currently going the wrong way in its lane."""
+        """Returns True if this vehicle is currently going the wrong way in its lane."""
         return self._wrong_way
 
     @property
     def teleporting(self) -> bool:
-        """Returns True iff this vehicle is teleporting back to the beginning of its route on this step."""
+        """Returns True if this vehicle is teleporting back to the beginning of its route on this step."""
         return self._teleporting
 
     @property
@@ -1146,10 +1146,10 @@ class _TrafficActor:
                 if not can_cross:
                     continue
             min_time_cush = float(self._vtype.get("tau", 1.0))
-            neighbour_lane_bias = (
+            neighbor_lane_bias = (
                 0.1 * change_time * (1 if abs(self._lane.index - idx) == 1 else 0)
             )
-            will_rearend = lw.ttc + neighbour_lane_bias < min_time_cush
+            will_rearend = lw.ttc + neighbor_lane_bias < min_time_cush
             # if my route destination is available, prefer that
             if (
                 lw.lane == self._dest_lane

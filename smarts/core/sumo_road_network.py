@@ -49,7 +49,7 @@ class SumoRoadNetwork(RoadMap):
 
     DEFAULT_LANE_WIDTH = 3.2
     """3.2 is the default Sumo road network lane width if it's not specified
-     explicitly in Sumo's NetEdit or the map.net.xml file.
+     explicitly in Sumo's NetEdit or the `map.net.xml` file.
     This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
      in North America (although US highway lanes are wider at ~3.7m)."""
 
@@ -188,7 +188,7 @@ class SumoRoadNetwork(RoadMap):
 
     @property
     def source(self) -> str:
-        """This is the net.xml file that corresponds with our possibly-offset coordinates."""
+        """This is the `.net.xml` file that corresponds with our possibly-offset coordinates."""
         return self._net_file
 
     @staticmethod
@@ -207,32 +207,44 @@ class SumoRoadNetwork(RoadMap):
         return map_spec.source
 
     def is_same_map(self, map_or_spec: Union[MapSpec, RoadMap]) -> bool:
+        if self is map_or_spec:
+            return True
+
+        self_map_spec = self.map_spec
+        if self_map_spec is None:
+            return False
+
         if isinstance(map_or_spec, SumoRoadNetwork):
             map_spec = map_or_spec._map_spec
         elif isinstance(map_or_spec, MapSpec):
             map_spec = map_or_spec
         else:
             return False
+        if map_spec is None:
+            return False
+
+        # pytype: disable=attribute-error
         return (
             (
-                map_spec.source == self._map_spec.source
+                map_spec.source == self_map_spec.source
                 or SumoRoadNetwork._map_path(map_spec)
-                == SumoRoadNetwork._map_path(self._map_spec)
+                == SumoRoadNetwork._map_path(self_map_spec)
             )
-            and map_spec.lanepoint_spacing == self._map_spec.lanepoint_spacing
+            and map_spec.lanepoint_spacing == self_map_spec.lanepoint_spacing
             and (
-                map_spec.default_lane_width == self._map_spec.default_lane_width
+                map_spec.default_lane_width == self_map_spec.default_lane_width
                 or SumoRoadNetwork._spec_lane_width(map_spec)
-                == SumoRoadNetwork._spec_lane_width(self._map_spec)
+                == SumoRoadNetwork._spec_lane_width(self_map_spec)
             )
             and (
-                map_spec.shift_to_origin == self._map_spec.shift_to_origin
+                map_spec.shift_to_origin == self_map_spec.shift_to_origin
                 or (
                     not map_spec.shift_to_origin
                     and not getattr(self._graph, "_shifted_by_smarts", False)
                 )
             )
         )
+        # pytype: enable=attribute-error
 
     @cached_property
     def bounding_box(self) -> BoundingBox:
@@ -980,9 +992,7 @@ class SumoRoadNetwork(RoadMap):
             for lanes in junction_paths:
                 road_ids = [lane.road.road_id for lane in lanes]
                 start_lane = lanes[0]
-                new_paths = start_lane._waypoint_paths_at(
-                    pose.point, lookahead, road_ids
-                )
+                new_paths = start_lane._waypoint_paths_at(pose.point, lookahead)
                 for path in new_paths:
 
                     def _angle_between(pose, wp):
@@ -1026,6 +1036,8 @@ class SumoRoadNetwork(RoadMap):
         # We take the 10 closest lanepoints then filter down to that which has
         # the closest heading. This way we get the lanepoint on our lane instead of
         # a potentially closer lane that is on a different junction connection.
+        if not closest_lps[0].lane.in_junction:
+            return []
         lps = closest_lps.copy()
         lps.sort(key=lambda lp: abs(pose.heading - lp.pose.heading))
         lane: RoadMap.Lane = lps[0].lane
@@ -1427,7 +1439,7 @@ class SumoRoadNetwork(RoadMap):
                 self.point = point
                 self.filter_road_ids = filter_road_ids
                 self._starts = {}
-            self._starts[llp.lp.lane.index] = paths
+            self._starts[llp.lp.lane.lane_id] = paths
 
         def query(
             self,
@@ -1438,7 +1450,7 @@ class SumoRoadNetwork(RoadMap):
         ) -> Optional[List[List[Waypoint]]]:
             """Attempt to find previously cached waypoints"""
             if self._match(lookahead, point, filter_road_ids):
-                hit = self._starts.get(llp.lp.lane.index, None)
+                hit = self._starts.get(llp.lp.lane.lane_id, None)
                 if hit:
                     # consider just returning all of them (not slicing)?
                     return [path[: (lookahead + 1)] for path in hit]

@@ -44,13 +44,13 @@ def social_spin_on_bumper_cw(step, front_bumper_position, length):
     )
 
 
-def social_spin_on_centre_ccw(step, position):
+def social_spin_on_center_ccw(step, position):
     return Pose.from_center(np.array(position), Heading.from_panda3d(step))
 
 
-def social_spin_on_axle_cw(step, base_position, offset_from_centre):
+def social_spin_on_axle_cw(step, base_position, offset_from_center):
     return Pose.from_explicit_offset(
-        offset_from_centre,
+        offset_from_center,
         np.array(base_position),
         Heading.from_sumo(step),
         local_heading=Heading(0),
@@ -83,7 +83,7 @@ def run(
 
         injected_poses = [
             social_spin_on_bumper_cw(step * 0.1, [8, 6, 0], passenger_dimen.length),
-            # social_spin_on_centre_ccw(step * 0.1, [8, 0, passenger_dimen[2] / 2]),
+            # social_spin_on_center_ccw(step * 0.1, [8, 0, passenger_dimen[2] / 2]),
             # social_spin_on_axle_cw(
             #     step * 0.1, [0, 0, 0], [2 * passenger_dimen[0], 0, 0]
             # ),

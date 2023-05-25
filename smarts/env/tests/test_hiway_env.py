@@ -85,7 +85,7 @@ def test_hiway_env(env: HiWayEnv, agent_spec: AgentSpec):
                 [-3 < reward < 3 for reward in rewards.values()]
             ), f"Expected bounded reward per timestep, but got {rewards}."
 
-            episode.record_step(observations, rewards, dones, infos)
+            episode.record_step(observations, rewards, dones, dones, infos)
 
     assert episode is not None and episode.index == (
         MAX_EPISODES - 1

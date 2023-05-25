@@ -3,7 +3,7 @@
 Agent Zoo
 =========
 
-Numerous prebuilt and trained agents are hosted at `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_ . 
+Numerous pre-built and trained agents are hosted at `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_ . 
 These agents should be installed prior to being used in SMARTS environments or benchmarks.
 
 .. code-block:: bash
@@ -31,7 +31,7 @@ Contribute agents
 First, add the new agent to `zoo/policies <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies>`_. It should contain 
 
 * package setup file,
-* inference code with prebuilt model, and
+* inference code with pre-built model, and
 * algorithm explanation.
 
 Then, register the newly added zoo agent in `zoo/policies/__init__.py <https://github.com/huawei-noah/SMARTS/tree/master/zoo/policies/__init__.py>`_.
@@ -44,25 +44,25 @@ Available zoo agents
    :header-rows: 1
 
    * - Agent locator and path
-     - Benchmark or Env
+     - Benchmark or Environment
      - Action space
      - Source
      - Remarks
    * - | zoo.policies:interaction-aware-motion-prediction-agent-v0
        | zoo/policies/interaction_aware_motion_prediction
      - driving_smarts_2022==0.0
-     - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TargetPose`
      - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/interaction_aware_motion_prediction>`__
      - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.
    * - | zoo.policies:control-and-supervised-learning-agent-v0
        | zoo/policies/control_and_supervised_learning
      - driving_smarts_2022==0.0
-     - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TargetPose`
      - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/control_and_supervised_learning>`__
      - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.
    * - | zoo.policies:discrete-soft-actor-critic-agent-v0
        | zoo/policies/discrete_soft_actor_critic
      - driving_smarts_2022==0.0
-     - :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
+     - :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TargetPose`
      - `code <https://github.com/smarts-project/smarts-project.rl/tree/master/discrete_soft_actor_critic>`__
      - Contributed as part of `NeurIPS 2022 Driving SMARTS <https://smarts-project.github.io/archive/2022_nips_driving_smarts/>`__ competition.

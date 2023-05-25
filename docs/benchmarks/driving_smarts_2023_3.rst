@@ -31,7 +31,7 @@ The episode ends when the leader reaches its destination. Ego agents do not have
 destination. Additionally, the ego terminates whenever it collides, drives off road, or exceeds maximum number 
 of steps per episode.
 
-Any method such as reinforcement learning, offline reinforcement learning, behaviour cloning, generative models,
+Any method such as reinforcement learning, offline reinforcement learning, behavior cloning, generative models,
 predictive models, etc, may be used to develop the policy.
 
 Several scenarios are provided for training. Their names and tasks are as follows. 
@@ -54,8 +54,8 @@ a sample formatted observation data structure.
 Action space
 ------------
 
-Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
+Action space for an ego can be either :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+or :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`. User should choose
 one of the action spaces and specify the chosen action space through the ego's agent interface.
 
 Code structure
@@ -82,14 +82,14 @@ the user.
     ├── setup.cfg                
     └── setup.py                
 
-1. inference/contrib_policy/__init__.py
+1. ``inference/contrib_policy/__init__.py``
     + Keep this file unchanged.
     + It is an empty file.
 
-2. inference/contrib_policy/policy.py
+2. ``inference/contrib_policy/policy.py``
     + Must contain a ``class Policy(Agent)`` class which inherits from :class:`~smarts.core.agent.Agent`.
 
-3. inference/__init__.py
+3. ``inference/__init__.py``
     + Must contain the following template code. 
     + The template code registers the user's policy in SMARTS agent zoo.
     
@@ -137,10 +137,10 @@ the user.
       + :attr:`~smarts.core.agent_interface.AgentInterface.neighborhood_vehicle_states`, and 
       + :attr:`~smarts.core.agent_interface.AgentInterface.waypoint_paths`. 
 
-4. inference/MANIFEST.in 
+4. ``inference/MANIFEST.in``
     + Contains any file paths to be included in the package.
 
-5. inference/setup.cfg
+5. ``inference/setup.cfg``
     + Must contain the following template code. 
     + The template code helps build the user policy into a Python package.
     
@@ -172,7 +172,7 @@ the user.
     + Do **not** add SMARTS package as a dependency in the ``install_requires`` section.
     + Dependencies in the ``install_requires`` section **must** have an exact package version specified using ``==``.
 
-6. inference/setup.py
+6. ``inference/setup.py``
     + Keep this file and its default contents unchanged.
     + Its default contents are shown below.
 
@@ -189,7 +189,7 @@ Example
 An example training and inference code is provided for this benchmark. 
 See the :examples:`rl/platoon` example. The example uses PPO algorithm from 
 `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library. 
-It uses :attr:`~smarts.core.controllers.ActionSpaceType.Continuous` action space.
+It uses :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous` action space.
 Instructions for training and evaluating the example is as follows.
 
 Train
@@ -203,7 +203,8 @@ Train
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e ./../../../.[camera_obs,argoverse]
+    $ pip install wheel==0.38.4
+    $ pip install -e ./../../../.[camera_obs,argoverse,envision]
     $ pip install -e ./inference/
 
 + Train locally without visualization
@@ -253,7 +254,7 @@ Evaluate
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
-    $ pip install -e .[camera_obs,argoverse]
+    $ pip install -e .[camera_obs,argoverse,envision]
     $ scl zoo install examples/rl/platoon/inference
     $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
 

@@ -3,6 +3,6 @@
 TODO List
 =========
 
-A list of current documentation TODO.
+A list of current documentation TODOs.
 
 .. todolist_::

@@ -23,7 +23,7 @@ import logging
 import os
 import tempfile
 
-import gym
+import gymnasium as gym
 import importlib_resources
 import pytest
 import pytest_notebook.nb_regression as nb
@@ -61,27 +61,28 @@ def run_scenario(
     )
 
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs={AGENT_ID: agent_spec},
+        agent_specs={AGENT_ID: agent_spec.interface},
         sim_name=sim_name,
         headless=headless,
         fixed_timestep_sec=0.1,
-        sumo_headless=True,
         seed=seed,
     )
 
     for episode in episodes(n=num_episodes):
         agent = agent_spec.build_agent()
-        observations = env.reset()
+        observations, _ = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
-            episode.record_step(observations, rewards, dones, infos)
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {AGENT_ID: agent_action}
+            )
+            episode.record_step(observations, rewards, terminateds, truncateds, infos)
 
     env.close()
 

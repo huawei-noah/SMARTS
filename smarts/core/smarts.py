@@ -102,7 +102,7 @@ class SMARTS(ProviderManager):
         visdom (Union[bool, Any], optional): Deprecated. Use SMARTS_VISDOM_ENABLED. A visdom client for connecting to a visdom visualization server.
         fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
         reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
-        zoo_addrs (Optional[Tuple[str, int]], optional): The (ip:port) values of remote agent workers for externally hosted agents. Defaults to None.
+        zoo_addrs (Optional[Tuple[str, int]], optional): The `{ip:port}` values of remote agent workers for externally hosted agents. Defaults to None.
         external_provider (bool, optional): Creates a special provider `SMARTS.external_provider` that allows for inserting state. Defaults to False.
     """
 
@@ -243,7 +243,7 @@ class SMARTS(ProviderManager):
                 Overrides the simulation step length. Progress simulation time by the given amount.
                 Note the time_delta_since_last_step param is in (nominal) seconds.
         Returns:
-            observations, rewards, dones, infos
+            Tuple[observations, rewards, dones, infos]: The simulation step return.
         """
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
@@ -1092,7 +1092,7 @@ class SMARTS(ProviderManager):
         return VERSION
 
     def teardown_social_agents(self, agent_ids: Iterable[str]):
-        """Teardown agents in the given sequence.
+        """Tear-down agents in the given sequence.
 
         Args:
             agent_ids: A sequence of agent ids to terminate and release.
@@ -1106,7 +1106,7 @@ class SMARTS(ProviderManager):
         self.agent_manager.teardown_social_agents(filter_ids=agents_to_teardown)
 
     def teardown_social_agents_without_actors(self, agent_ids: Iterable[str]):
-        """Teardown agents in the given list that have no actors registered as
+        """Tear-down agents in the given list that have no actors registered as
         controlled-by or shadowed-by (for each given agent.)
 
         Args:
@@ -1400,7 +1400,7 @@ class SMARTS(ProviderManager):
 
     @property
     def fixed_timestep_sec(self) -> float:
-        """The simulation fixed timestep."""
+        """The simulation fixed time-step."""
         # May be None if time deltas are externally driven
         return self._fixed_timestep_sec
 

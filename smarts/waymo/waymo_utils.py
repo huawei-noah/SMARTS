@@ -353,7 +353,7 @@ def plot_scenario(
 
 
 def gen_smarts_scenario_code(dataset_path: str, scenario_id: str) -> str:
-    """Generate source code for the scenario.py of a SMARTS scenario for a Waymo scenario."""
+    """Generate source code for the ``scenario.py`` of a SMARTS scenario for a Waymo scenario."""
     return f"""from pathlib import Path
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t

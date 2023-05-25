@@ -22,7 +22,7 @@
 import gc
 import logging
 
-import gym
+import gymnasium as gym
 import pytest
 from pympler import muppy, summary, tracker
 
@@ -98,12 +98,11 @@ def env_and_spec(
         agent_builder=Policy,
     )
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs={agent_id: agent_spec},
+        agent_interfaces={agent_id: agent_spec.interface},
         headless=True,
         fixed_timestep_sec=TIMESTEP_SEC,
-        sumo_headless=True,
         seed=seed,
     )
 
@@ -125,17 +124,24 @@ def _every_nth_episode(agent_id, episode_count, env_and_spec, steps_per_yield):
 
     for episode_index in range(episode_count):
         agent = agent_spec.build_agent()
-        observations = env.reset()
+        observations, _ = env.reset()
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
             agent_obs = observations[agent_id]
             agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({agent_id: agent_action})
-            # episode.record_step(observations, rewards, dones, infos)
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {agent_id: agent_action}
+            )
         agent_obs = None
         agent_action = None
-        observations, rewards, dones, infos = None, None, None, None
+        observations, rewards, terminateds, truncateds, infos = (
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
         if episode_index % steps_per_yield == 0:
             yield episode_index
 
@@ -149,13 +155,15 @@ def _memory_buildup(
 
     for _ in range(episode_count):
         agent = agent_spec.build_agent()
-        observations = env.reset()
+        observations, _ = env.reset()
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
             agent_obs = observations[agent_id]
             agent_action = agent.act(agent_obs)
-            observations, _, dones, _ = env.step({agent_id: agent_action})
+            observations, _, terminateds, truncateds, _ = env.step(
+                {agent_id: agent_action}
+            )
 
     env.close()
 

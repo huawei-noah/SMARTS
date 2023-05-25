@@ -22,69 +22,53 @@
 
 from typing import Dict
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pytest
 
-from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB, AgentInterface
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.wrappers.single_agent import SingleAgent
-from smarts.zoo.agent_spec import AgentSpec
+from smarts.env.gymnasium.wrappers.single_agent import SingleAgent
+from smarts.env.utils.action_conversion import ActionOptions
 
 
-def _make_agent_specs(num_agent):
-    agent_specs: Dict[str, AgentSpec] = {
+def _make_agent_interfaces(num_agent):
+    agent_interfaces: Dict[str, AgentInterface] = {
         "AGENT_"
-        + str(agent_id): AgentSpec(
-            interface=AgentInterface(
-                top_down_rgb=RGB(),
-                action=ActionSpaceType.Lane,
-            ),
-            agent_builder=lambda: Agent.from_function(lambda _: "keep_lane"),
+        + str(agent_id): AgentInterface(
+            top_down_rgb=RGB(),
+            action=ActionSpaceType.Lane,
         )
         for agent_id in range(num_agent)
     }
 
-    return agent_specs
+    return agent_interfaces
 
 
 class ObservationWrapper(gym.ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
-        obs_space = {}
-        for agent_id, agent_spec in self.env.agent_specs.items():
-            rgb: RGB = (
-                agent_spec.interface.rgb
-            )  # pytype: disable=annotation-type-mismatch
-            obs_space[agent_id] = gym.spaces.Box(
-                low=0,
-                high=255,
-                shape=(
-                    rgb.width,
-                    rgb.height,
-                    3,
-                ),
-                dtype=np.uint8,
-            )
-        self.observation_space = gym.spaces.Dict(obs_space)
+        self.observation_space = {
+            agent_id: agent_space["top_down_rgb"]
+            for agent_id, agent_space in self.env.observation_space.items()
+        }
 
     def observation(self, obs):
         return {
-            agent_name: agent_obs.top_down_rgb.data
+            agent_name: agent_obs["top_down_rgb"]
             for agent_name, agent_obs in obs.items()
         }
 
 
 @pytest.fixture
 def base_env(request):
-    agent_specs = _make_agent_specs(request.param)
+    agent_interfaces = _make_agent_interfaces(request.param)
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/figure_eight"],
-        agent_specs=agent_specs,
+        agent_interfaces=agent_interfaces,
         headless=True,
-        fixed_timestep_sec=0.01,
+        action_options=ActionOptions.unformatted,
     )
     env = ObservationWrapper(env)
 
@@ -95,11 +79,11 @@ def base_env(request):
 @pytest.mark.parametrize("base_env", [1, 2], indirect=True)
 def test_init(base_env):
     # Compute multiagent specs and space, i.e., ma_*
-    ma_agent_specs = base_env.agent_specs
+    ma_agent_interfaces = base_env.agent_interfaces
     ma_obs_space = base_env.observation_space
 
     # Test wrapping an env containing one and more than one agent
-    if len(ma_agent_specs) > 1:
+    if len(ma_agent_interfaces) > 1:
         with pytest.raises(AssertionError):
             env = SingleAgent(base_env)
             env.close()
@@ -108,7 +92,7 @@ def test_init(base_env):
         env = SingleAgent(base_env)
 
     # Test env observation space
-    agent_id = next(iter(ma_agent_specs.keys()))
+    agent_id = next(iter(ma_agent_interfaces.keys()))
     assert env.observation_space == ma_obs_space[agent_id]
 
     env.close()
@@ -116,22 +100,32 @@ def test_init(base_env):
 
 @pytest.mark.parametrize("base_env", [1], indirect=True)
 def test_reset_and_step(base_env):
-    ma_agent_specs = base_env.agent_specs
-    ma_obs_space = base_env.observation_space
+    ma_agent_interfaces = base_env.agent_interfaces
+    ma_obs, ma_info = base_env.reset()
+
     env = SingleAgent(base_env)
+    single_obs, single_info = env.reset()
 
     # Test resetting the env
-    obs = env.reset()
-    assert isinstance(obs, np.ndarray)
-    agent_id = next(iter(ma_agent_specs.keys()))
-    assert obs.shape == ma_obs_space[agent_id].shape
+    assert isinstance(single_obs, np.ndarray)
+    agent_id = next(iter(ma_agent_interfaces.keys()))
+    assert single_obs.shape == ma_obs[agent_id].shape
+    assert set(single_info.keys()) == set(ma_info[agent_id].keys())
 
     # Test stepping the env
-    obs, reward, done, info = env.step("keep_lane")
-    assert isinstance(obs, np.ndarray)
-    assert obs.shape == ma_obs_space[agent_id].shape
-    assert isinstance(reward, float)
-    assert type(done) is bool
-    assert set(info.keys()) == set(["score", "env_obs", "done"])
+    ma_obs, _, _, _, ma_info = base_env.step({agent_id: "keep_lane"})
+    (
+        single_obs,
+        single_reward,
+        single_terminated,
+        single_truncated,
+        single_info,
+    ) = env.step("keep_lane")
+    assert isinstance(single_obs, np.ndarray)
+    assert single_obs.shape == ma_obs[agent_id].shape
+    assert isinstance(single_reward, float)
+    assert type(single_terminated) is bool
+    assert type(single_truncated) is bool
+    assert set(single_info.keys()) == set(ma_info[agent_id].keys())
 
     env.close()

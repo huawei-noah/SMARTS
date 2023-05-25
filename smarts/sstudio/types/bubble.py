@@ -54,7 +54,7 @@ class Bubble:
     actor: SocialAgentActor
     """The actor specification that this bubble works for."""
     margin: float = 2
-    """The exterior buffer area that extends the airlocking zone area. Must be >= 0."""
+    """The exterior buffer area that extends the air-locking zone area. Must be >= 0."""
     limit: Optional[BubbleLimits] = None
     """The maximum number of actors that could be captured. If limit != None it will 
     only allow that specified number of vehicles to be hijacked.
@@ -64,12 +64,12 @@ class Bubble:
     """Used to exclude social actors from capture."""
     id: str = field(default_factory=lambda: f"bubble-{gen_id()}")
     follow_actor_id: Optional[str] = None
-    """Actor ID of agent we want to pin to. Doing so makes this a "travelling bubble"
+    """Actor ID of agent we want to pin to. Doing so makes this a "traveling bubble"
     which means it moves to follow the `follow_actor_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
     follow_offset: Optional[Tuple[float, float]] = None
-    """Maintained offset to place the travelling bubble relative to the follow
+    """Maintained offset to place the traveling bubble relative to the follow
     vehicle if it were facing north.
     """
     keep_alive: bool = False
@@ -78,7 +78,7 @@ class Bubble:
     is over.
     """
     follow_vehicle_id: Optional[str] = None
-    """Vehicle ID of a vehicle we want to pin to. Doing so makes this a "travelling bubble"
+    """Vehicle ID of a vehicle we want to pin to. Doing so makes this a "traveling bubble"
     which means it moves to follow the `follow_vehicle_id`'s vehicle. Offset is from the
     vehicle's center position to the bubble's center position.
     """
@@ -101,7 +101,7 @@ class Bubble:
             self.follow_actor_id is not None or self.follow_vehicle_id is not None
         ) and self.follow_offset is None:
             raise ValueError(
-                "A follow offset must be set if this is a travelling bubble"
+                "A follow offset must be set if this is a traveling bubble"
             )
 
         if self.keep_alive and not self.is_boid:

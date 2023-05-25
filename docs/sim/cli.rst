@@ -1,5 +1,9 @@
 .. _cli: 
 
+.. spelling:word-list::
+
+   scl
+
 Command Line Interface
 ======================
 
