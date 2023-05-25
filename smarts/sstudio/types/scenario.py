@@ -111,7 +111,7 @@ class StandardMetadata(collections.Mapping):
             __default (Any, optional): The default if the key does not exist. Defaults to None.
 
         Returns:
-            Optional[Any]: The value or default
+            Optional[Any]: The value or default.
         """
         if isinstance(__key, MetadataFields):
             __key = __key.name
