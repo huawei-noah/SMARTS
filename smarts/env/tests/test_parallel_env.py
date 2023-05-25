@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import gym
+import gymnasium as gym
 
 gym.logger.set_level(40)
 import pytest
@@ -28,9 +28,11 @@ import pytest
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import RGB, AgentInterface
 from smarts.core.controllers import ActionSpaceType
-from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.parallel_env import ParallelEnv
+from smarts.env.gymnasium.wrappers.parallel_env import ParallelEnv
+from smarts.env.utils.action_conversion import ActionOptions
 from smarts.zoo.agent_spec import AgentSpec
+
+DEFAULT_SEED = 42
 
 
 @pytest.fixture(scope="module")
@@ -56,26 +58,32 @@ def single_env_actions(agent_specs):
 
 @pytest.fixture(scope="module")
 def env_constructor(agent_specs):
-    env_constructor = lambda: HiWayEnv(
+    env_constructor = lambda seed: gym.make(
+        "smarts.env:hiway-v1",
         scenarios=["scenarios/sumo/figure_eight"],
-        agent_specs=agent_specs,
+        agent_interfaces={
+            agent_id: agent_spec.interface
+            for agent_id, agent_spec in agent_specs.items()
+        },
         sim_name="Test_env",
         headless=True,
+        action_options=ActionOptions.unformatted,
+        seed=seed,
     )
     return env_constructor
 
 
 def test_non_callable_env_constructors(env_constructor):
     env_constructed = [
-        env_constructor(),
-        env_constructor(),
+        env_constructor(seed=DEFAULT_SEED),
+        env_constructor(seed=DEFAULT_SEED + 1),
     ]
     with pytest.raises(TypeError):
         env = ParallelEnv(env_constructors=env_constructed, auto_reset=True)
         env.close()
 
 
-def _make_parallel_env(env_constructor, num_env, auto_reset=True, seed=42):
+def _make_parallel_env(env_constructor, num_env, auto_reset=True, seed=DEFAULT_SEED):
     env_constructors = [env_constructor] * num_env
     return ParallelEnv(
         env_constructors=env_constructors,
@@ -86,7 +94,7 @@ def _make_parallel_env(env_constructor, num_env, auto_reset=True, seed=42):
 
 @pytest.mark.parametrize("num_env", [2])
 def test_spaces(env_constructor, num_env):
-    single_env = env_constructor()
+    single_env = env_constructor(seed=DEFAULT_SEED)
     env = _make_parallel_env(env_constructor, num_env)
 
     assert env.batch_size == num_env
@@ -99,10 +107,10 @@ def test_spaces(env_constructor, num_env):
 
 @pytest.mark.parametrize("num_env", [2])
 def test_seed(env_constructor, num_env):
-    env = _make_parallel_env(env_constructor, num_env)
+    first_seed = DEFAULT_SEED
+    env = _make_parallel_env(env_constructor, num_env, seed=first_seed)
 
-    first_seed = 7
-    seeds = env.seed(first_seed)
+    seeds = env.seed()
     assert len(seeds) == num_env
     for index, seed in enumerate(seeds):
         assert seed == first_seed + index
@@ -113,45 +121,65 @@ def test_seed(env_constructor, num_env):
 def _compare_outputs(num_env, batched_outputs, single_outputs):
     assert len(batched_outputs) == num_env
     for outputs in batched_outputs:
-        outputs.pop("__all__", None)
-        assert outputs.keys() == outputs.keys()
+        assert outputs.keys() == single_outputs.keys()
         for agent_id, out in outputs.items():
             assert type(out) is type(single_outputs[agent_id])
 
 
 @pytest.mark.parametrize("num_env", [2])
 def test_reset(env_constructor, num_env):
-    single_env = env_constructor()
-    single_observations = single_env.reset()
+    single_env = env_constructor(seed=DEFAULT_SEED)
+    single_observations, single_infos = single_env.reset()
     single_env.close()
 
     env = _make_parallel_env(env_constructor, num_env)
-    batched_observations = env.reset()
+    batched_observations, batched_infos = env.reset()
     env.close()
 
     _compare_outputs(num_env, batched_observations, single_observations)
+    _compare_outputs(num_env, batched_infos, single_infos)
 
 
 @pytest.mark.parametrize("num_env", [2])
 @pytest.mark.parametrize("auto_reset", [True])
 def test_step(env_constructor, single_env_actions, num_env, auto_reset):
-    single_env = env_constructor()
+    single_env = env_constructor(seed=DEFAULT_SEED)
     single_env.reset()
-    single_observations, single_rewards, single_dones, single_infos = single_env.step(
-        single_env_actions
-    )
+    (
+        single_observations,
+        single_rewards,
+        single_terminateds,
+        single_truncateds,
+        single_infos,
+    ) = single_env.step(single_env_actions)
     single_env.close()
 
     env = _make_parallel_env(env_constructor, num_env, auto_reset=auto_reset)
     env.reset()
-    batched_observations, batched_rewards, batched_dones, batched_infos = env.step(
-        [single_env_actions] * num_env
-    )
+    (
+        batched_observations,
+        batched_rewards,
+        batched_terminateds,
+        batched_truncateds,
+        batched_infos,
+    ) = env.step([single_env_actions] * num_env)
     env.close()
 
     for batched_outputs, single_outputs in zip(
-        [batched_observations, batched_rewards, batched_dones, batched_infos],
-        [single_observations, single_rewards, single_dones, single_infos],
+        [
+            batched_observations,
+            batched_rewards,
+            batched_terminateds,
+            batched_truncateds,
+            batched_infos,
+        ],
+        [
+            single_observations,
+            single_rewards,
+            single_terminateds,
+            single_truncateds,
+            single_infos,
+        ],
     ):
         _compare_outputs(num_env, batched_outputs, single_outputs)
 
@@ -165,19 +193,29 @@ def test_sync_async_episodes(env_constructor, single_env_actions, auto_reset):
         # Step 1
         env.reset()
         # Step 2
-        _, _, batched_dones, _ = env.step(batched_actions)
-        assert all(dones["__all__"] == False for dones in batched_dones)
+        _, _, batched_terminateds, _, _ = env.step(batched_actions)
+        assert all(
+            terminateds["__all__"] == False for terminateds in batched_terminateds
+        )
         # Step 3
-        _, _, batched_dones, _ = env.step(batched_actions)
-        assert all(dones["__all__"] == True for dones in batched_dones)
+        _, _, batched_terminateds, _, _ = env.step(batched_actions)
+        assert all(
+            terminateds["__all__"] == True for terminateds in batched_terminateds
+        )
         # Step 4
-        _, _, batched_dones, _ = env.step(batched_actions)
+        _, _, batched_terminateds, _, _ = env.step(batched_actions)
         if auto_reset:
-            assert all(dones["__all__"] == False for dones in batched_dones)
+            assert all(
+                terminateds["__all__"] == False for terminateds in batched_terminateds
+            )
         else:
-            assert all(dones["__all__"] == True for dones in batched_dones)
+            assert all(
+                terminateds["__all__"] == True for terminateds in batched_terminateds
+            )
         # Step 5
-        _, _, batched_dones, _ = env.step(batched_actions)
-        assert all(dones["__all__"] == True for dones in batched_dones)
+        _, _, batched_terminateds, _, _ = env.step(batched_actions)
+        assert all(
+            terminateds["__all__"] == True for terminateds in batched_terminateds
+        )
     finally:
         env.close()

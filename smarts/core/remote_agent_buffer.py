@@ -117,7 +117,7 @@ class RemoteAgentBuffer(AgentBuffer):
         sys.exit(0)
 
     def destroy(self):
-        """Teardown any remaining remote agents and the local zoo manager (if it exists.)"""
+        """Tear-down any remaining remote agents and the local zoo manager (if it exists.)"""
         for remote_agent_future in self._agent_buffer:
             try:
                 remote_agent = remote_agent_future.result()
@@ -245,18 +245,22 @@ def spawn_local_zoo_manager(port):
 
 
 def get_manager_channel_stub(addr: Tuple[str, int], timeout: float = 10):
-    """Connects to the gRPC server at `addr` and returns the channel and stub.
+    """Connects to the `gRPC` server at `addr` and returns the channel and stub.
+
+    .. spelling:word-list::
+
+        grpc
 
     Args:
-        addr (Tuple[str,int]): gRPC server address.
-        timeout (float, optional): Time to wait for the gRPC server to be ready. Defaults to 10.
+        addr (Tuple[str,int]): `gRPC` server address.
+        timeout (float, optional): Time to wait for the `gRPC` server to be ready. Defaults to 10.
 
     Raises:
-        RemoteAgentException: If timeout occurs while connecting to the gRPC server.
+        RemoteAgentException: If timeout occurs while connecting to the `gRPC` server.
 
     Returns:
-        grpc.Channel: Channel to the gRPC server.
-        manager_pb2_grpc.ManagerStub : gRPC stub.
+        grpc.Channel: Channel to the `gRPC` server.
+        :spelling:ignore:`manager_pb2_grpc.ManagerStub`: `gRPC` stub.
     """
     channel = grpc.insecure_channel(f"{addr[0]}:{addr[1]}")
     try:

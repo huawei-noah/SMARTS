@@ -15,7 +15,7 @@ def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
     from train.reward import Reward
 
     from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
-    from smarts.env.wrappers.single_agent import SingleAgent
+    from smarts.env.gymnasium.wrappers.single_agent import SingleAgent
 
     env = gym.make(
         env_id,
@@ -26,8 +26,8 @@ def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
         headless=not config.head,  # If False, enables Envision display.
     )
     env = Reward(env=env, crop=agent_spec.agent_params["crop"])
-    env = Api021Reversion(env=env)
     env = SingleAgent(env=env)
+    env = Api021Reversion(env=env)
     env = Preprocess(env=env, agent_spec=agent_spec)
     env = Monitor(env)
 

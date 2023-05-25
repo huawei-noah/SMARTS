@@ -23,7 +23,7 @@ import math
 
 def time_to_cover(dist: float, speed: float, acc: float = 0.0) -> float:
     """
-    Returns the time for a moving object travelling at
+    Returns the time for a moving object traveling at
     speed and accelerating at acc to cover distance dist.
     Assumes that all units are consistent (for example,
     if distance is in meters, speed is in m/s).
@@ -55,7 +55,7 @@ def time_to_cover(dist: float, speed: float, acc: float = 0.0) -> float:
 def distance_covered(time: float, speed: float, acc: float = 0.0) -> float:
     """
     Returns the amount of distance covered by an object
-    moving at speed and acceerating with acc.
+    moving at speed and accelerating with acc.
     Assumes that all units are consistent (for example,
     if distance is in meters, speed is in m/s).
     """

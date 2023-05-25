@@ -14,7 +14,7 @@ agent_index = 0
 
 class ReplayAgent(Agent):
     """A helper agent that wraps another agent to allow replay of the agent inputs and actions
-    Checkout examples/replay/README.md on how to use it"""
+    Look at `examples/replay/README.md` on how to use this agent."""
 
     def __init__(self, save_directory, id, read: bool, internal_spec: AgentSpec):
         import smarts.core

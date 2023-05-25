@@ -84,7 +84,7 @@ def run_benchmark(
         agent_locator(str): Locator string for the registered agent.
         benchmark_listing(Path): A configuration file that lists benchmark metadata and must list
             the target benchmark.
-        debug_log: Debug to stdout.
+        debug_log: Debug to `stdout`.
     """
     from smarts.core.utils.resources import load_yaml_config_with_substitution
 

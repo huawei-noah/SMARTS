@@ -29,7 +29,7 @@ from smarts.core.utils.pybullet import bullet_client as bc
 
 
 class BulletClient:
-    """This wrapper class is a hack for macOS where running PyBullet in GUI mode,
+    """This wrapper class is a hack for `macOS` where running PyBullet in GUI mode,
     alongside Panda3D segfaults. It seems due to running two OpenGL applications
     in the same process. Here we spawn a process to run PyBullet and forward all
     calls to it over unix pipes.

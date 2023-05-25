@@ -86,7 +86,11 @@ class RouteWithCache(RoadMap.Route):
 
     @cached_property
     def road_ids(self) -> List[str]:
-        """Returns a list of the road_ids for the Roads in this Route."""
+        """Get the road IDs for this route.
+
+        Returns:
+            (List[str]): A list of the road IDs for the Roads in this Route.
+        """
         return [road.road_id for road in self.roads]
 
     @classmethod
@@ -126,7 +130,7 @@ class RouteWithCache(RoadMap.Route):
         return self._cache_key in _route_sub_lengths
 
     def remove_from_cache(self):
-        """Remove informationa about this Route from the cache."""
+        """Remove information about this Route from the cache."""
         if self.is_cached:
             del _route_sub_lengths[self._cache_key]
 

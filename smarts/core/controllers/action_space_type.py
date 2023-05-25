@@ -67,13 +67,13 @@ class ActionSpaceType(Enum):
     """
     TargetPose = 4
     """
-    Action=(x_coord, y_coord, heading, time_delta). Type= ``Sequence[float,
+    Action=`(x_coord, y_coord, heading, time_delta)`. Type= ``Sequence[float,
     float, float, float]``. Continuous action space of vehicle's next x 
     coordinate, y coordinate, heading, and time delta to reach the given pose. 
     """
     Trajectory = 5
     """
-    Action=([x_coord],[y_coord],[heading],[speed]). Type= ``(Sequence[float],
+    Action=`(x_coords, y_coords, headings, speeds)`. Type= ``(Sequence[float],
     Sequence[float], Sequence[float], Sequence[float])``. Continuous action 
     space using trajectory comprising of x coordinates, y coordinates, headings,
     and speeds, to directly move a vehicle.
@@ -85,7 +85,7 @@ class ActionSpaceType(Enum):
     """
     MPC = 7
     """
-    Action=([x_coord],[y_coord],[heading],[speed]). Type= ``(Sequence[float], 
+    Action=`(x_coords, y_coords, headings, speeds)`. Type= ``(Sequence[float], 
     Sequence[float], Sequence[float], Sequence[float])``. Adaptive control 
     performed on the vehicle model to match the given trajectory comprising 
     of vehicle's x coordinates, y coordinates, headings, and speeds.

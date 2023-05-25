@@ -689,7 +689,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
 
     @property
     def source(self) -> str:
-        """This is the .xodr file of the OpenDRIVE map."""
+        """This is the `.xodr` file of the OpenDRIVE map."""
         return self._xodr_file
 
     def is_same_map(self, map_spec: MapSpec) -> bool:

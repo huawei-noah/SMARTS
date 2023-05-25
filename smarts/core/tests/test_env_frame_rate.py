@@ -23,7 +23,7 @@
 import logging
 import time
 
-import gym
+import gymnasium as gym
 import pytest
 
 from smarts.core.agent import Agent
@@ -61,13 +61,12 @@ def env_and_spec(scenarios, seed, headless=True, max_episode_steps=None):
     )
 
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces={AGENT_ID: agent_spec.interface},
         sim_name=None,
         headless=headless,
         timestep_sec=0.1,
-        sumo_headless=True,
         seed=seed,
     )
     return env, agent_spec
@@ -79,21 +78,23 @@ def test_env_frame_test(scenarios, seed):
     for episode in episodes(n=10):
         episode_counter += 1
         agent = agent_spec.build_agent()
-        observations = env.reset()
+        observations, _ = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        dones = {"__all__": False}
+        terminateds = {"__all__": False}
 
         maximum_frame_rate = 0
         minimum_frame_rate = float("inf")
         step_counter = 0
         fps_sum = 0
 
-        while not dones["__all__"]:
+        while not terminateds["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
             step_start_time = int(time.time() * 1000)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {AGENT_ID: agent_action}
+            )
             step_end_time = int(time.time() * 1000)
             delta = step_end_time - step_start_time
             step_fps = round(1000 / delta, 2)
@@ -104,7 +105,7 @@ def test_env_frame_test(scenarios, seed):
                 f"The time delta at episode {episode_counter}, step {step_counter+1} is {delta} milliseconds which is {step_fps} fps."
             )
 
-            episode.record_step(observations, rewards, dones, infos)
+            episode.record_step(observations, rewards, terminateds, truncateds, infos)
             step_counter += 1
         avg_frame_rate = fps_sum / (step_counter or 1)
         test_logger.info(

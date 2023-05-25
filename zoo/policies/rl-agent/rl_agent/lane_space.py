@@ -148,7 +148,7 @@ def get_observation_adapter(
 
         goal_info = np.array([goal_is_nearby, goal_relative_lane_index])
 
-        # return if no neighbour vehicle or off the routes(no waypoint paths)
+        # return if no neighbor vehicle or off the routes(no waypoint paths)
         if not neighborhood_vehicle_states or not wp_paths_num:
             return (
                 lane_ttc,
@@ -161,7 +161,7 @@ def get_observation_adapter(
                 goal_info,
             )
 
-        # compute neighbour vehicle closest wp
+        # compute neighbor vehicle closest wp
         nv_poses = np.array([nv.position for nv in neighborhood_vehicle_states])
         nv_wp_distance = np.linalg.norm(
             nv_poses[:, :2][:, np.newaxis] - wp_poses, axis=2
@@ -209,12 +209,12 @@ def get_observation_adapter(
                 wps_with_lane_dist_list += wps_with_lane_dist.tolist()
             wps_with_lane_dist_list = np.array(wps_with_lane_dist_list)
 
-            # get neighbour vehicle closest waypoints index
+            # get neighbor vehicle closest waypoints index
             nv_closest_wp_index = nv_closest_wp_index[close_nv_index]
-            # ego car and neighbour car distance, not very accurate since use the closest wp
+            # ego car and neighbor car distance, not very accurate since use the closest wp
             ego_nv_distance = wps_with_lane_dist_list[nv_closest_wp_index]
 
-            # get neighbour vehicle lane index
+            # get neighbor vehicle lane index
             nv_lane_index = np.array(
                 [merge_waypoint_paths[i].lane_index for i in nv_closest_wp_index]
             )

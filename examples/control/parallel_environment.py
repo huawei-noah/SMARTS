@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 
 gym.logger.set_level(40)
 
@@ -13,10 +13,9 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.observations import Observation
-from smarts.env.hiway_env import HiWayEnv
-from smarts.env.wrappers.parallel_env import ParallelEnv
+from smarts.env.gymnasium.wrappers.parallel_env import ParallelEnv
+from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.scenario_construction import build_scenarios
-from smarts.zoo.agent_spec import AgentSpec
 
 
 class LaneAgent(Agent):
@@ -43,38 +42,34 @@ def main(
     agent_ids = [f"Agent_{i}" for i in range(num_agents)]
 
     # Define agent specification
-    agent_specs = {
-        agent_id: AgentSpec(
-            interface=AgentInterface(
-                top_down_rgb=True,
-                waypoint_paths=True,
-                action=ActionSpaceType.LaneWithContinuousSpeed,
-                max_episode_steps=max_episode_steps,
-            ),
-            agent_builder=LaneAgent,
+    agent_interfaces = {
+        agent_id: AgentInterface(
+            top_down_rgb=True,
+            waypoint_paths=True,
+            action=ActionSpaceType.LaneWithContinuousSpeed,
+            max_episode_steps=max_episode_steps,
         )
         for agent_id in agent_ids
     }
 
-    # Unique `sim_name` is required by each HiWayEnv in order to be displayed
+    # Unique `sim_name` is required by each HiWayEnvV1 in order to be displayed
     # in Envision.
-    env_constructor = lambda sim_name: HiWayEnv(
+    env_constructor = lambda sim_name, seed: gym.make(
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs=agent_specs,
+        agent_interfaces=agent_interfaces,
         sim_name=sim_name,
         headless=headless,
+        observation_options=ObservationOptions.unformatted,
+        seed=seed,
     )
-
-    # A list of env constructors of type `Callable[[], gym.Env]`
+    # A list of env constructors of type `Callable[[int], gym.Env]`
     env_constructors = [
         partial(env_constructor, sim_name=f"{sim_name}_{ind}") for ind in range(num_env)
     ]
 
     # Build multiple agents
-    agents = {
-        agent_id: agent_spec.build_agent()
-        for agent_id, agent_spec in agent_specs.items()
-    }
+    agents = {agent_id: LaneAgent() for agent_id in agent_interfaces.keys()}
 
     # Create parallel environments
     env = ParallelEnv(
@@ -103,27 +98,37 @@ def parallel_env_async(
         num_steps (int): Number of steps to step the environment.
     """
 
-    batched_dones = [{"__all__": False} for _ in range(num_env)]
-    batched_observations = env.reset()
+    batched_terminateds = [{"__all__": False} for _ in range(num_env)]
+    batched_truncateds = [{"__all__": False} for _ in range(num_env)]
+    batched_observations, _ = env.reset()
 
     for _ in range(num_steps):
         # Compute actions for all active(i.e., not done) agents
         batched_actions = []
-        for observations, dones in zip(batched_observations, batched_dones):
+        for observations, terminateds, truncateds in zip(
+            batched_observations, batched_terminateds, batched_truncateds
+        ):
             actions = {
                 agent_id: agents[agent_id].act(agent_obs)
                 for agent_id, agent_obs in observations.items()
-                if not dones.get(agent_id, False)
-                or dones[
+                if (
+                    not terminateds.get(agent_id, False)
+                    and not truncateds.get(agent_id, False)
+                )
+                or terminateds[
                     "__all__"
-                ]  # `dones[__all__]==True` implies the env was auto-reset in previous iteration
+                ]  # `terminateds[__all__]==True` implies the env was auto-reset in previous iteration
             }
             batched_actions.append(actions)
 
         # Step all environments in parallel
-        batched_observations, batched_rewards, batched_dones, batched_infos = env.step(
-            batched_actions
-        )
+        (
+            batched_observations,
+            batched_rewards,
+            batched_terminateds,
+            batched_truncateds,
+            batched_infos,
+        ) = env.step(batched_actions)
 
     env.close()
 
@@ -144,18 +149,22 @@ def parallel_env_sync(
     """
 
     for _ in range(num_episodes):
-        batched_dones = [{"__all__": False} for _ in range(num_env)]
-        batched_observations = env.reset()
+        batched_terminateds = [{"__all__": False} for _ in range(num_env)]
+        batched_truncateds = [{"__all__": False} for _ in range(num_env)]
+        batched_observations, _ = env.reset()
 
         # Iterate until all environments complete an episode each.
-        while not all(dones["__all__"] for dones in batched_dones):
+        while not all(terminateds["__all__"] for terminateds in batched_terminateds):
             # Compute actions for all active(i.e., not done) agents
             batched_actions = []
-            for observations, dones in zip(batched_observations, batched_dones):
+            for observations, terminateds, truncateds in zip(
+                batched_observations, batched_terminateds, batched_truncateds
+            ):
                 actions = {
                     agent_id: agents[agent_id].act(agent_obs)
                     for agent_id, agent_obs in observations.items()
-                    if not dones.get(agent_id, False)
+                    if not terminateds.get(agent_id, False)
+                    and not truncateds.get(agent_id, False)
                 }
                 batched_actions.append(actions)
 
@@ -163,7 +172,8 @@ def parallel_env_sync(
             (
                 batched_observations,
                 batched_rewards,
-                batched_dones,
+                batched_terminateds,
+                batched_truncateds,
                 batched_infos,
             ) = env.step(batched_actions)
 

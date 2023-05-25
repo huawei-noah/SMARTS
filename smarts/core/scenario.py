@@ -88,16 +88,16 @@ class Scenario:
 
     Args:
         scenario_root:
-            The scenario asset folder ie. './scenarios/trigger'.
+            The scenario asset folder (i.e. './scenarios/trigger'.)
         traffic_specs:
             The social vehicle traffic specs.
         missions:
             agent_id to mission mapping.
         map_spec:
-            If specified, allows specifying a MapSpec at run-time
+            If specified, allows specifying a :class:`~smarts.sstudio.types.map_spec.MapSpec` at run-time
             to override any spec that may have been pre-specified
             in the scenario folder (or the default if none were).
-            Also see comments around the sstudio.types.MapSpec definition.
+            Also see comments around the :class:`~smarts.sstudio.types.map_spec.MapSpec` definition.
     """
 
     def __init__(
@@ -180,7 +180,7 @@ class Scenario:
         """Generate a cycle of scenario configurations.
 
         Args:
-            scenarios_or_scenarios_dirs:
+            scenarios_or_scenarios_dirs (Sequence[str]):
                 A sequence of either the scenario to run (see scenarios/ for some samples you
                 can use) OR a directory of scenarios to sample from.
             agents_to_be_briefed:
@@ -482,9 +482,9 @@ class Scenario:
             scenarios_root:
                 A specific scenario to run (e.g. scenarios/sumo/loop)
             lanepoint_spacing:
-                The distance between lanepoints that represent a lane's geometry.
+                The distance between lane-points that represent a lane's geometry.
             default_lane_width:
-                The default width of a lane from its centre if it does not have a specific width.
+                The default width of a lane from its center if it does not have a specific width.
             shift_to_origin:
                 Shifts the map location to near the simulation origin so that the map contains (0, 0).
         Returns:
@@ -620,11 +620,11 @@ class Scenario:
         return vehicle_missions
 
     def create_dynamic_traffic_history_mission(
-        self, veh_id: str, trigger_time: float, positional_radius: int
+        self, vehicle_id: str, trigger_time: float, positional_radius: int
     ) -> Tuple[Mission, Mission]:
         """Builds missions out of the given vehicle information.
         Args:
-            veh_id:
+            vehicle_id:
                 The id of a vehicle in the traffic history dataset.
             trigger_time:
                 The time that this mission should become active.
@@ -635,8 +635,8 @@ class Scenario:
              original vehicle's travel as well as a traverse style mission which is done when the
              vehicle leaves the map.
         """
-        start, speed = self.get_vehicle_start_at_time(veh_id, trigger_time)
-        veh_goal = self.get_vehicle_goal(veh_id)
+        start, speed = self.get_vehicle_start_at_time(vehicle_id, trigger_time)
+        veh_goal = self.get_vehicle_goal(vehicle_id)
         entry_tactic = default_entry_tactic(speed)
         # create a positional mission and a traverse mission
         positional_mission = Mission(
@@ -919,7 +919,7 @@ class Scenario:
 
     @property
     def vehicle_filepath(self) -> Optional[str]:
-        """The filepath of the vehicle's physics model."""
+        """The file-path of the vehicle's physics model."""
         if not os.path.isdir(self._root):
             return None
         for fname in os.listdir(self._root):
@@ -967,7 +967,7 @@ class Scenario:
 
     @property
     def route_filepath(self):
-        """The filepath to the traffic route file."""
+        """The file-path to the traffic route file."""
         warnings.warn(
             "Scenario route_filepath property has been deprecated in favor of traffic_specs.  Please update your code.",
             category=DeprecationWarning,
@@ -977,12 +977,12 @@ class Scenario:
 
     @property
     def map_glb_filepath(self):
-        """The map geometry filepath."""
+        """The map geometry file-path."""
         return os.path.join(self._root, "build", "map", "map.glb")
 
     @property
     def map_glb_metadata(self):
-        """The metadata for the current map glb file."""
+        """The metadata for the current map `.glb` file."""
         metadata = self.map_glb_meta_for_file(self.map_glb_filepath)
         return metadata
 

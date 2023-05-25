@@ -67,7 +67,7 @@ class ParallelSensorResolver(SensorResolver):
                 The agent ids to process.
             renderer (Optional[Renderer]):
                 The renderer (if any) that should be used.
-            bullet_client (bc.BulletClient):
+            bullet_client:
                 The physics client.
         """
         observations, dones, updated_sensors = {}, {}, defaultdict(dict)
@@ -241,7 +241,7 @@ class WorkerKwargs:
 
 
 class ProcessWorker:
-    """A utility class that defines a persistant worker which will continue to operate in the background."""
+    """A utility class that defines a persistent worker which will continue to operate in the background."""
 
     class WorkerDone:
         """The done signal for a worker."""
@@ -270,7 +270,7 @@ class ProcessWorker:
     def _on_request(cls, state: Dict, request: Request) -> bool:
         """
         Args:
-            state: The persistant state on the worker
+            state: The persistent state on the worker
             request: A request made to the worker.
 
         Returns:
@@ -305,12 +305,14 @@ class ProcessWorker:
     def run(self):
         """Start the worker seeded with the given data."""
         kwargs = dict(serialize_results=self._serialize_results)
+        # pytype: disable=wrong-arg-types
         self._proc = mp.Process(
             target=self._run,
             args=(self._child_connection,),
             kwargs=kwargs,
             daemon=True,
         )
+        # pytype: enable=wrong-arg-types
         self._proc.start()
         return self._parent_connection
 

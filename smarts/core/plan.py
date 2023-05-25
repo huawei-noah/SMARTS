@@ -180,7 +180,7 @@ def default_entry_tactic(default_entry_speed: Optional[float] = None) -> EntryTa
 
 @dataclass(frozen=True)
 class Via:
-    """Describes a collectable item that can be used to shape rewards."""
+    """Describes a collectible item that can be used to shape rewards."""
 
     lane_id: str
     road_id: str

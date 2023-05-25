@@ -67,8 +67,9 @@ import numpy as np
 def batches(list_, n):
     """Split an indexable container into `n` batches.
 
-    :param list_: The iterable to split into parts
-    :param n: The number of batches
+    Args:
+        list: The iterable to split into parts
+        n: The number of batches
     """
     for i in range(0, len(list_), n):
         yield list_[i : i + n]
@@ -77,9 +78,9 @@ def batches(list_, n):
 def yaw_from_quaternion(quaternion) -> float:
     """Converts a quaternion to the yaw value.
     Args:
-      np.narray: np.array([x, y, z, w])
+      quaternion (np.ndarray): np.array([x, y, z, w])
     Returns:
-      A float angle in radians.
+      float: A angle in radians.
     """
     assert len(quaternion) == 4, f"len({quaternion}) != 4"
     siny_cosp = 2 * (quaternion[0] * quaternion[1] + quaternion[3] * quaternion[2])
@@ -98,7 +99,7 @@ def fast_quaternion_from_angle(angle: float) -> np.ndarray:
     Args:
       angle: An angle in radians.
     Returns:
-      np.ndarray: np.array([x, y, z, w])
+      (np.ndarray): np.array([x, y, z, w])
     """
 
     half_angle = angle * 0.5
@@ -151,7 +152,7 @@ def get_linear_segments_for_range(
 def squared_dist(a, b) -> float:
     """Computes the squared distance between a and b.
     Args:
-      a, b: same dimension numpy.array([..])
+      a, b: same dimensions shaped `numpy` arrays.
     Returns:
       float: dist**2
     """
@@ -290,17 +291,19 @@ def circular_mean(vectors: Sequence[np.ndarray]) -> float:
     )
 
 
-def is_close(a: float, b: float, rel_tol: float = 1e-09, abs_tol: float = 0.0) -> bool:
+def is_close(
+    a: float, b: float, rel_tolerance: float = 1e-09, abs_tolerance: float = 0.0
+) -> bool:
     """Determines if two values are close as defined by the inputs.
     Args:
         a: The first value.
         b: The other value.
-        rel_tol: Difference required to be close relative to the magnitude
-        abs_tol: Absolute different allowed to be close.
+        rel_tolerance: Difference required to be close relative to the magnitude
+        abs_tolerance: Absolute different allowed to be close.
     Returns:
         If the two values are "close".
     """
-    return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+    return abs(a - b) <= max(rel_tolerance * max(abs(a), abs(b)), abs_tolerance)
 
 
 def rotate_cw_around_point(point, radians, origin=(0, 0)) -> np.ndarray:
@@ -518,7 +521,7 @@ def round_param_for_dt(dt: float) -> int:
 
 
 def rounder_for_dt(dt: float) -> Callable[[float], float]:
-    """Return a rounding function appropriate for timestepping."""
+    """Return a rounding function appropriate for time-stepping."""
     rp = round_param_for_dt(dt)
     return lambda f: round(f, rp)
 
@@ -615,7 +618,7 @@ def combination_pairs_with_unique_indices(
     first_group, second_group, second_group_default=None
 ):
     """Generates sets of combinations that use up all of the first group and at least as many of
-    the second group. If len(first_group) > len(second_group) the second group is padded. Groups
+    the second group. If `len(first_group) > len(second_group)` the second group is padded. Groups
     are combined using only unique indices per result. The value at an index in one group is
     matched to the value at an index in from the second group. Duplicate results only appear when
     element values repeat one of the base groups.

@@ -32,14 +32,14 @@ T = TypeVar("T", Costs, Counts)
 
 
 def add_dataclass(first: T, second: T) -> T:
-    """Sums the fields of two dataclass objects.
+    """Sums the fields of two `dataclass` objects.
 
     Args:
-        first (T): First dataclass object.
-        second (T): Second dataclass object.
+        first (T): First `dataclass` object.
+        second (T): Second `dataclass` object.
 
     Returns:
-        T: New summed dataclass object.
+        T: New summed `dataclass` object.
     """
     assert type(first) is type(second)
     new = {}
@@ -55,15 +55,15 @@ def op_dataclass(
     second: Union[int, float],
     op: Callable[[Union[int, float], Union[int, float]], float],
 ) -> T:
-    """Performs operation `op` on the fields of a dataclass object.
+    """Performs operation `op` on the fields of the source `dataclass` object.
 
     Args:
-        first (T): Dataclass object.
+        first (T): The source `dataclass` object.
         second (Union[int, float]): Value input for the operator.
         op (Callable[[Union[int, float], Union[int, float]], float]): Operation to be performed.
 
     Returns:
-        T: New dataclass object with operation performed on all of its fields.
+        T: A new `dataclass` object with operation performed on all of its fields.
     """
     new = {}
     for field in fields(first):

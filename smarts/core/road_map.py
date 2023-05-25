@@ -85,7 +85,7 @@ class RoadMap:
         raise NotImplementedError
 
     def to_glb(self, glb_dir: str):
-        """Build a glb file for camera rendering and envision"""
+        """Build a `.glb` file for camera rendering and envision"""
         raise NotImplementedError()
 
     def surface_by_id(self, surface_id: str) -> Optional[RoadMap.Surface]:
@@ -172,8 +172,8 @@ class RoadMap:
 
         :param max_route_len: The total number of roads in the route.
         :param starting_road: If specified, the route will start with this road.
-        :param only_drivable: If True, will restrict the route to only driveable roads;
-            otherwise can incl. non-drivable roads (such as bikelanes) too.
+        :param only_drivable: If True, will restrict the route to only drive-able roads;
+            otherwise can incl. non-drivable roads (such as bike lanes) too.
         :return: A randomly generated route.
         """
         raise NotImplementedError()
@@ -205,7 +205,7 @@ class RoadMap:
         route: RoadMap.Route = None,
     ) -> List[List[Waypoint]]:
         """Computes equally-spaced Waypoints for all lane paths
-        up to lookahead waypoints ahead, starting on the Road containing
+        up to `lookahead` waypoints ahead, starting on the Road containing
         the nearest Lane aligned with the vehicle's pose within within_radius meters.
         Constrains paths to the supplied route if specified."""
         raise NotImplementedError()
@@ -372,7 +372,7 @@ class RoadMap:
             self, pose: Pose, lookahead: int, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             """Computes equally-spaced Waypoints for all lane paths
-            up to lookahead waypoints ahead, starting in this lane at pose.
+            up to `lookahead` waypoints ahead, starting in this lane at pose.
             Constrains paths to the supplied route if specified."""
             raise NotImplementedError()
 
@@ -380,7 +380,7 @@ class RoadMap:
             self, offset: float, lookahead: int = 30, route: RoadMap.Route = None
         ) -> List[List[Waypoint]]:
             """Computes equally-spaced Waypoints for all lane paths
-            up to lookahead waypoints ahead, starting offset into this lane.
+            up to `lookahead` waypoints ahead, starting offset into this lane.
             Constrains paths to the supplied route if specified."""
             raise NotImplementedError()
 
@@ -467,7 +467,7 @@ class RoadMap:
         def curvature_radius_at_offset(
             self, offset: float, lookahead: int = 5
         ) -> float:
-            """lookahead (in meters) is the size of the window to use
+            """`lookahead` (in meters) is the size of the window to use
             to compute the curvature, which must be at least 1 to make sense.
             This may return math.inf if the lane is straight."""
             assert lookahead > 0
@@ -621,7 +621,7 @@ class RoadMap:
 
         @property
         def is_dynamic(self) -> bool:
-            """True iff this feature has dynamic state (such as a traffic light); False otherwise."""
+            """True if this feature has dynamic state (such as a traffic light); False otherwise."""
             # this may be overridden in the case of custom feature types
             return self.type == RoadMap.FeatureType.FIXED_LOC_SIGNAL
 
@@ -631,7 +631,7 @@ class RoadMap:
             return None
 
         def min_dist_from(self, point: Point) -> float:
-            """Returns the euclidian (as-the-crow-flies) distance
+            """Returns the euclidean (as-the-crow-flies) distance
             between point and the nearest part of this feature."""
             raise NotImplementedError()
 
@@ -765,7 +765,7 @@ class Waypoint:
     lane_index: int
     """Index of the lane under this waypoint. Right most lane has index 0 and index increases to the left."""
     lane_offset: float
-    """Longitudinal distance along lane centerline of this waypoint."""
+    """Longitudinal distance along lane center-line of this waypoint."""
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
@@ -842,11 +842,11 @@ class RoadMapWithCaches(RoadMap):
 
         @property
         def center_polyline(self) -> List[Point]:
-            """Should return a list of the points along the centerline
+            """Should return a list of the points along the center-line
             of the lane, in the order they will be encountered in the
             direction of travel.
 
-            Note: not all instantiations will be able to implement this method,
+            Note: not all map types will be able to implement this method,
             so use with care.  This was added to support those that wish
             to make use of the SegmentCache class below."""
             raise NotImplementedError()

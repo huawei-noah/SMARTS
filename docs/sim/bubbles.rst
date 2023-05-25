@@ -7,8 +7,8 @@ SMARTS provides the concept of a spatial-temporal bubble which allows for focuse
 
 A bubble covers an area and filters traffic vehicles that pass through that zone. A vehicle entering the bubble will first pass into an ``airlock`` buffer area of ``shadowing`` where an agent may begin observing from the vehicle.  The agent may then fully take over control of that vehicle when it enters the bubble proper. SMARTS will replace control of the traffic vehicles with the agents specified by the bubble definition.  The bubble agent will relinquish its control to a suitable traffic provider when its controlled vehicle exits the bubble and airlock regions.
 
-Limtations
-----------
+Limitations
+-----------
 
 If a vehicle whose trajectory is being provided from a traffic history dataset is taken over by an agent within a bubble, the vehicle generally cannot be returned to the trajectory specified in the history dataset upon bubble exit without a "jump" or "glitch" due to the plurality of situations where there is a divergence of vehicle states from the history within the bubble.  So instead, the simple SMARTS traffic provider assumes control of it at this point and will attempt to navigate it to its original destination, avoiding collisions along the way.
 

@@ -682,7 +682,7 @@ class AckermannChassis(Chassis):
 
     def control(self, throttle=0, brake=0, steering=0):
         """Apply throttle [0, 1], brake [0, 1], and steering [-1, 1] values for this
-        timestep.
+        time-step.
         """
         self._last_control = (throttle, brake, steering)
 

@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 

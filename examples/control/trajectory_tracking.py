@@ -1,15 +1,16 @@
 import sys
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 
 sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
 from examples.tools.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
+from smarts.env.utils.action_conversion import ActionOptions
+from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.scenario_construction import build_scenarios
-from smarts.zoo.agent_spec import AgentSpec
 
 AGENT_ID = "Agent-007"
 
@@ -39,32 +40,34 @@ class TrackingAgent(Agent):
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
-    agent_spec = AgentSpec(
-        interface=AgentInterface.from_type(
+    agent_interfaces = {
+        AGENT_ID: AgentInterface.from_type(
             AgentType.Tracker, max_episode_steps=max_episode_steps
         ),
-        agent_builder=TrackingAgent,
-    )
+    }
 
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=scenarios,
-        agent_specs={AGENT_ID: agent_spec},
+        agent_interfaces=agent_interfaces,
         headless=headless,
-        sumo_headless=True,
+        observation_options=ObservationOptions.unformatted,
+        action_options=ActionOptions.unformatted,
     )
 
     for episode in episodes(n=num_episodes):
-        agent = agent_spec.build_agent()
-        observations = env.reset()
+        agent = TrackingAgent()
+        observations, _ = env.reset()
         episode.record_scenario(env.scenario_log)
 
-        dones = {"__all__": False}
-        while not dones["__all__"]:
+        terminateds = {"__all__": False}
+        while not terminateds["__all__"]:
             agent_obs = observations[AGENT_ID]
             agent_action = agent.act(agent_obs)
-            observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
-            episode.record_step(observations, rewards, dones, infos)
+            observations, rewards, terminateds, truncateds, infos = env.step(
+                {AGENT_ID: agent_action}
+            )
+            episode.record_step(observations, rewards, terminateds, truncateds, infos)
 
     env.close()
 

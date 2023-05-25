@@ -32,7 +32,7 @@ The step interface is similar to gym but with a few notable differences mainly d
     )
 
 
-The SMARTS simulator has the explict requirement to call ``destroy()`` before deleting the instance.
+The SMARTS simulator has the explicit requirement to call ``destroy()`` before deleting the instance.
 
 .. code-block:: python
 

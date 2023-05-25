@@ -96,7 +96,7 @@ class State(NamedTuple):
 
 
 class Preamble(NamedTuple):
-    """Information for startup and synchronisation between client and server."""
+    """Information for startup and synchronization between client and server."""
 
     scenarios: Sequence[str]
     """Directories of simulated scenarios."""

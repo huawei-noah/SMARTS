@@ -43,7 +43,7 @@ class SocialAgentActor(Actor):
     agent_locator: str
     """The locator reference to the zoo registration call. Expects a string in the format
     of 'path.to.file:locator-name' where the path to the registration call is in the form
-    {PYTHONPATH}[n]/path/to/file.py
+    `{PYTHONPATH}[n]/path/to/file.py`
     """
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)
     """Additional keyword arguments to be passed to the constructed class overriding the
