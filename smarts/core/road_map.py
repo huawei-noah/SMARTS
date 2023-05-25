@@ -26,7 +26,7 @@ from bisect import bisect
 from dataclasses import dataclass
 from enum import IntEnum
 from functools import cached_property, lru_cache
-from typing import Any, List, Optional, Sequence, Set, Tuple
+from typing import Any, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy as np
 from shapely.geometry import LineString
@@ -141,25 +141,56 @@ class RoadMap:
 
     def generate_routes(
         self,
-        start_road: RoadMap.Road,
-        end_road: RoadMap.Road,
+        start: Union["RoadMap.Road", "RoadMap.Lane"],
+        end: Union["RoadMap.Road", "RoadMap.Lane"],
         via: Optional[Sequence[RoadMap.Road]] = None,
         max_to_gen: int = 1,
     ) -> List[RoadMap.Route]:
         """Generates routes between two roads.
         Args:
-            start_road:
-                The beginning road of the generated routes.
-            end_road:
-                The end road of the generated routes.
+            start:
+                The beginning road or lane of the generated routes.
+            end:
+                The end road or lane of the generated routes.
             via:
                 All edges that the generated routes must pass through.
             max_to_gen:
                 The maximum number of routes to generate.
         Returns:
             A list of generated routes that satisfy the given restrictions. Routes will be
-             returned in order of increasing length.
+            returned in order of increasing length.
         """
+        if isinstance(start, RoadMap.Lane):
+            start_lane = start
+            start_road = start.road
+        else:
+            start_lane = None
+            start_road = start
+        if isinstance(end, RoadMap.Lane):
+            end_lane = end
+            end_road = end.road
+        else:
+            end_lane = None
+            end_road = end
+
+        return self._generate_routes(
+            start_road=start_road,
+            start_lane=start_lane,
+            end_road=end_road,
+            end_lane=end_lane,
+            via=via,
+            max_to_gen=max_to_gen,
+        )
+
+    def _generate_routes(
+        self,
+        start_road: RoadMap.Road,
+        start_lane: RoadMap.Lane,
+        end_road: RoadMap.Road,
+        end_lane: RoadMap.Lane,
+        via: Optional[Sequence[RoadMap.Road]],
+        max_to_gen: int,
+    ) -> List[RoadMap.Route]:
         raise NotImplementedError()
 
     def random_route(
@@ -647,8 +678,15 @@ class RoadMap:
             """Required for set usage; derived classes may override this."""
             return self.__class__ == other.__class__ and hash(self) == hash(other)
 
-        def _add_road(self, road: RoadMap.Road):
-            raise NotImplementedError()
+        @property
+        def start_lane(self) -> Optional[RoadMap.Lane]:
+            "Route's start lane."
+            return None
+
+        @property
+        def end_lane(self) -> Optional[RoadMap.Lane]:
+            "Route's end lane."
+            return None
 
         @property
         def roads(self) -> List[RoadMap.Road]:
