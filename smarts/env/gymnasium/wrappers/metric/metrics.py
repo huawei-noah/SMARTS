@@ -210,7 +210,7 @@ class MetricsBase(gym.Wrapper):
                 ].done_criteria.interest
                 if interest_criteria == None:
                     end_pos = self._scen.missions[agent_name].goal.position
-                    dist_tot = get_dist(
+                    dist_tot, _ = get_dist(
                         road_map=self._road_map,
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_pos,
@@ -358,7 +358,7 @@ def _get_end_and_dist(
         goal = interest_social_mission.goal
         assert isinstance(goal, PositionalGoal)
         end_pos = goal.position
-        dist_tot = get_dist(
+        dist_tot, _ = get_dist(
             road_map=road_map,
             point_a=Point(*interest_social_mission.start.position),
             point_b=end_pos,
@@ -403,7 +403,7 @@ def _get_traffic_end_and_dist(
             .lane_at_index(0)
             .from_lane_coord(RefLinePoint(s=np.inf))
         )
-        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        dist_tot, _ = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
         return end_pos, dist_tot
     elif isinstance(traffic_sim, TrafficHistoryProvider):
         history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
@@ -414,7 +414,7 @@ def _get_traffic_end_and_dist(
         # roads traversed by the history vehicle in complex maps. Ideally we
         # should use the actual road ids traversed by the history vehicle to
         # compute the distance.
-        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        dist_tot, _ = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
         return end_pos, dist_tot
     else:
         raise MetricsError(f"Unsupported traffic provider {traffic_sim.source_str}.")
