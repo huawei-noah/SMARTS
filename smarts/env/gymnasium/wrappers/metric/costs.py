@@ -136,9 +136,10 @@ def _dist_to_destination(
                 road_map=road_map, route=route, pos=cur_pos
             )
 
-            print(
-                f"Cur_pos {cur_pos}, cur_on_route {cur_on_route}, cur_route_lane {cur_route_lane.lane_id}, cur_route_lane_point {cur_route_lane_point}"
-            )
+            print(f"cur_pos {cur_pos}")
+            print(f"cur_on_route {cur_on_route}")
+            print(f"cur_route_lane {cur_route_lane.lane_id}") 
+            print(f"cur_route_lane_point {cur_route_lane_point}")
 
             if prev_on_route ^ cur_on_route and cur_on_route:
                 prev_route_lane = cur_route_lane
@@ -153,6 +154,7 @@ def _dist_to_destination(
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
+            print("END OF EPISODE")
             cur_pos = Point(*obs.ego_vehicle_state.position)
             cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
                 road_map=road_map, route=route, pos=cur_pos
@@ -649,7 +651,7 @@ def get_dist(
 
 def on_route(
     road_map: RoadMap, route: RoadMap.Route, pos: Point, radius: float = 7
-) -> Tuple[bool, Optional[RoadMap.Lane], Optional[Point]]:
+) -> Tuple[bool, Optional[RoadMap.Lane], Optional[Point], Optional[float]]:
     """
     Computes whether point `pos` is within the search `radius` distance from
     any lane in the `route`.
@@ -657,11 +659,11 @@ def on_route(
     Args:
         road_map (RoadMap): Road map.
         route (RoadMap.Route): Route consisting of a set of roads.
-        pos (Point): A world-coordinate point.
+        pos (smarts.core.coordinates.Point): A world-coordinate point.
         radius (float): Search radius.
 
     Returns:
-        Tuple[bool, Optional[RoadMap.Lane], Optional[Point], Optional[float]]:
+        Tuple[bool, Optional[RoadMap.Lane], Optional[smarts.core.coordinates.Point], Optional[float]]:
             True if `pos` is nearby any road in `route`, else False. If true,
             additionally returns the (i) nearest lane in route, (ii) its
             nearest lane center point, and (iii) displacement between
@@ -674,7 +676,7 @@ def on_route(
     )
 
     route_roads = route.roads
-    for lane in lanes:
+    for lane, _ in lanes:
         if lane.road in route_roads:
             offset = lane.offset_along_lane(world_point=pos)
             lane_point = lane.from_lane_coord(RefLinePoint(s=offset))
