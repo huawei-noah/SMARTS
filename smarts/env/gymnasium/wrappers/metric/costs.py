@@ -21,11 +21,11 @@
 import warnings
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Dict, List, NewType, Tuple
+from typing import Callable, Dict, List, NewType, Optional, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import Heading, Point
+from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
@@ -113,29 +113,33 @@ def _dist_to_destination(
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
-    route_roads = route.roads
-    last_on_route_pos = None
+    prev_on_route = True
+    route = route
+    prev_on_route_lane = None
+    prev_on_route_lane_point = None
+    prev_on_route_dist = 0
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot, route, last_on_route_pos, last_dist
+        nonlocal mean, step, end_pos, dist_tot, prev_on_route, route, prev_on_route_lane, prev_on_route_lane_point, prev_on_route_dist
 
         if not done:
+            dist_travelled = obs.distance_travelled
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            cur_on_route, route_lane, route_lane_point = on_route(
+                road_map=road_map, route=route, pos=cur_pos
+            )
 
-            if x,y,z := on_route(pos = obs.ego_vehicle_state.position, radius=5):
-            last_dist = obs.distance_travelled
-            offset_along_lane(self, world_point: Point) -> float:
-            """Get the offset of the given point imposed on this lane."""
-            road_map.nearest_lanes()
+            print(f"Cur_pos {cur_pos}, last_dist_travelled {dist_travelled}")
+            print(
+                f"on_route {cur_on_route}, route_lane {route_lane.lane_id}, route_lane_point {route_lane_point}"
+            )
 
-            offset = self.offset_along_lane(point)
-            return self.from_lane_coord(RefLinePoint(s=offset))
-
-            for r in route.road_ids:
-                print(r)
-            
-            last_on_route_pos = 
+            if prev_on_route ^ cur_on_route and cur_on_route:
+                prev_on_route_lane = route_lane
+                prev_on_route_lane_point = route_lane_point
+                prev_on_route_dist = dist_travelled
 
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
@@ -551,7 +555,9 @@ class CostError(Exception):
     pass
 
 
-def get_dist(road_map: RoadMap, point_a: Point, point_b: Point, tolerate:bool=False) -> Tuple[float, RoadMap.Route]:
+def get_dist(
+    road_map: RoadMap, point_a: Point, point_b: Point, tolerate: bool = False
+) -> Tuple[float, RoadMap.Route]:
     """
     Computes the shortest route distance from point_a to point_b in the road
     map. Both points should lie on a road in the road map. Key assumption about
@@ -562,7 +568,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point, tolerate:bool=Fa
         road_map: Scenario road map.
         point_a: A point, in world-map coordinates, which lies on a road.
         point_b: A point, in world-map coordinates, which lies on a road.
-        tolerate: If False, raises an error when distance is negative due to 
+        tolerate: If False, raises an error when distance is negative due to
             route being computed in reverse direction from point_b to point_a.
             Defaults to False.
 
@@ -592,23 +598,25 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point, tolerate:bool=Fa
     if dist_tot == None:
         raise CostError("Unable to find road on route near given points.")
     elif dist_tot < 0 and not tolerate:
-        raise CostError("Route computed in reverse direction from point_b to "
-            f"point_a resulting in negative distance: {dist_tot}.")
+        raise CostError(
+            "Route computed in reverse direction from point_b to "
+            f"point_a resulting in negative distance: {dist_tot}."
+        )
 
     return dist_tot, plan.route
 
 
 def _get_lane_error(route: RoadMap.Route, goal_pos: Point) -> float:
     """
-    Computes the lane error distance for an agent in a different lane but in 
-    the same road as the goal position. 
-    
+    Computes the lane error distance for an agent in a different lane but in
+    the same road as the goal position.
+
     Args:
         route: Route from agent position to goal position.
         goal_pos: Goal position, in world-map coordinates.
 
     Returns:
-        float: Lane error distance. Lane error distance is zero if agent and 
+        float: Lane error distance. Lane error distance is zero if agent and
             goal lie in different roads.
     """
     start_lane = route.start_lane
@@ -622,3 +630,38 @@ def _get_lane_error(route: RoadMap.Route, goal_pos: Point) -> float:
         return lane_error_dist
 
     return 0
+
+
+def on_route(
+    road_map: RoadMap, route: RoadMap.Route, pos: Point, radius: float = 7
+) -> Tuple[bool, Optional[RoadMap.Lane], Optional[Point]]:
+    """
+    Computes whether point `pos` is within the search `radius` distance from
+    any lane in the `route`.
+
+    Args:
+        road_map (RoadMap): Road map.
+        route (RoadMap.Route): Route consisting of a set of roads.
+        pos (Point): A world-coordinate point.
+        radius (float): Search radius.
+
+    Returns:
+        Tuple[bool, Optional[RoadMap.Lane], Optional[Point]]: Returns True if
+            `pos` is nearby any road in `route`, else False. If true,
+            additionally returns the nearest lane and its nearest lane center
+            point.
+    """
+    lanes = road_map.nearest_lanes(
+        point=pos,
+        radius=radius,
+        include_junctions=True,
+    )
+
+    route_roads = route.roads
+    for lane in lanes:
+        if lane.road in route_roads:
+            offset = lane.offset_along_lane(world_point=pos)
+            lane_point = lane.from_lane_coord(RefLinePoint(s=offset))
+            return True, lane, lane_point
+
+    return False, None, None

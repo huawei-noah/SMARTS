@@ -42,6 +42,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
     Done,
     get_dist,
     make_cost_funcs,
+    on_route,
 )
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
@@ -225,6 +226,15 @@ class MetricsBase(gym.Wrapper):
                         scenario=self._scen,
                         road_map=self._road_map,
                     )
+                    start_pos = (
+                        Point(*self._scen.missions[agent_name].start.position),
+                    )
+                    cur_on_route, _, _ = on_route(
+                        road_map=self._road_map, route=route, pos=start_pos
+                    )
+                    assert (
+                        cur_on_route
+                    ), f"{agent_name} does not start nearby the vehicle of interest's route."
                     cost_funcs_kwargs.update(
                         {
                             "vehicle_gap": {
@@ -238,7 +248,13 @@ class MetricsBase(gym.Wrapper):
                         "Unsupported configuration for distance-to-destination cost function."
                     )
                 cost_funcs_kwargs.update(
-                    {"dist_to_destination": {"end_pos": end_pos, "dist_tot": dist_tot, "route": route}}
+                    {
+                        "dist_to_destination": {
+                            "end_pos": end_pos,
+                            "dist_tot": dist_tot,
+                            "route": route,
+                        }
+                    }
                 )
 
             cost_funcs_kwargs.update(

@@ -338,7 +338,12 @@ class Plan:
         """The road map this plan is relative to."""
         return self._road_map
 
-    def create_route(self, mission: Mission, start_lane_radius: Optional[float] = None, end_lane_radius: Optional[float] = None):
+    def create_route(
+        self,
+        mission: Mission,
+        start_lane_radius: Optional[float] = None,
+        end_lane_radius: Optional[float] = None,
+    ):
         """Generates a route that conforms to a mission.
 
         Args:

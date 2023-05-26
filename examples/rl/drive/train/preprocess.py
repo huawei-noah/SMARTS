@@ -26,7 +26,9 @@ class Preprocess(gym.Wrapper):
         self.observation_space = self._make_dict.observation_space
 
         self._prev_heading: float
-        self._format_action = FormatAction(action_space_type=agent_spec.interface.action)
+        self._format_action = FormatAction(
+            action_space_type=agent_spec.interface.action
+        )
         self.action_space = self._format_action.action_space
 
     def _process(self, obs):
