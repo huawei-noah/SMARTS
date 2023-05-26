@@ -12,12 +12,12 @@ from smarts.sstudio.types import (
     MapSpec,
     Route,
     Scenario,
+    ScenarioMetadata,
     Traffic,
     TrafficActor,
     TrapEntryTactic,
     Trip,
 )
-from smarts.sstudio.types.scenario import ScenarioMetadata
 
 normal = TrafficActor(
     name="car",
