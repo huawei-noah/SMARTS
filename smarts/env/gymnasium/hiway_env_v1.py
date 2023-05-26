@@ -244,7 +244,7 @@ class HiWayEnvV1(gym.Env):
             action (ActType): an action provided by the agent to update the environment state.
 
         Returns:
-            (dict, SupportsFloat, bool, bool, dict): 
+            (dict, SupportsFloat, bool, bool, dict):
                 - observation. An element of the environment's :attr:`observation_space` as the
                     next observation due to the agent actions. This observation will change based on
                     the provided :attr:`agent_interfaces`. Check :attr:`observation_space` after
