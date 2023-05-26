@@ -107,8 +107,8 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point, 
-    dist_tot: float, 
+    end_pos: Point,
+    dist_tot: float,
     route: RoadMap.Route,
     prev_route_lane: RoadMap.Lane,
     prev_route_lane_point: Point,
@@ -160,7 +160,7 @@ def _dist_to_destination(
 
             # Step 1: Compute the last off-route distance driven by the vehicle, if any
             if not cur_on_route:
-                off_route_dist = obs.distance_travelled - prev_dist_travelled 
+                off_route_dist = obs.distance_travelled - prev_dist_travelled
                 assert off_route_dist >= 0
                 off_route_dist += prev_route_displacement
                 last_route_lane = prev_route_lane
@@ -169,11 +169,11 @@ def _dist_to_destination(
                 off_route_dist = cur_route_displacement
                 last_route_lane = cur_route_lane
                 last_route_pos = cur_route_lane_point
-            
+
             # Step 2: Compute the remaining route distance from the last recorded on-route position
             on_route_dist = route.distance_between(
-                start=RoadMap.Route.RoutePoint(pt=last_route_pos), 
-                end=RoadMap.Route.RoutePoint(pt=end_pos)
+                start=RoadMap.Route.RoutePoint(pt=last_route_pos),
+                end=RoadMap.Route.RoutePoint(pt=end_pos),
             )
 
             # Step 3: Remaining `on_route_dist` can become negative when agent overshoots the end position while
@@ -184,7 +184,7 @@ def _dist_to_destination(
             end_lane = route.end_lane
             lane_error_dist = 0
             if last_route_lane.road == end_lane.road:
-                lane_error = abs(last_route_lane.index - end_lane.index)        
+                lane_error = abs(last_route_lane.index - end_lane.index)
                 end_offset = end_lane.offset_along_lane(world_point=end_pos)
                 lane_width, _ = end_lane.width_at_offset(end_offset)
                 lane_error_dist = lane_error * lane_width
@@ -663,8 +663,8 @@ def on_route(
     Returns:
         Tuple[bool, Optional[RoadMap.Lane], Optional[Point], Optional[float]]:
             True if `pos` is nearby any road in `route`, else False. If true,
-            additionally returns the (i) nearest lane in route, (ii) its 
-            nearest lane center point, and (iii) displacement between 
+            additionally returns the (i) nearest lane in route, (ii) its
+            nearest lane center point, and (iii) displacement between
             `pos` and lane center point.
     """
     lanes = road_map.nearest_lanes(
@@ -678,7 +678,7 @@ def on_route(
         if lane.road in route_roads:
             offset = lane.offset_along_lane(world_point=pos)
             lane_point = lane.from_lane_coord(RefLinePoint(s=offset))
-            displacement = np.linalg.norm(lane_point-pos)
+            displacement = np.linalg.norm(lane_point - pos)
             return True, lane, lane_point, displacement
 
     return False, None, None, None
