@@ -28,7 +28,6 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from re import Pattern
 from threading import Lock
 from typing import Optional, Tuple, Union
 
@@ -260,7 +259,7 @@ class Renderer(RendererBase):
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
         self._showbase_instance: _ShowBaseInstance = _ShowBaseInstance()
-        self._interest_filter: Optional[Pattern] = None
+        self._interest_filter: Optional[re.Pattern] = None
         self._interest_color: Optional[Union[Colors, SceneColors]] = None
 
     @property
@@ -426,14 +425,14 @@ class Renderer(RendererBase):
     def __del__(self):
         self.destroy()
 
-    def set_interest(self, interest_filter: Pattern, interest_color: Colors):
+    def set_interest(self, interest_filter: re.Pattern, interest_color: Colors):
         """Sets the color of all vehicles that have ids that match the given pattern.
 
         Args:
-            interest_filter (Pattern): The regular expression pattern to match.
+            interest_filter (re.Pattern): The regular expression pattern to match.
             interest_color (Colors): The color that the vehicle should show as.
         """
-        assert isinstance(interest_filter, Pattern)
+        assert isinstance(interest_filter, re.Pattern)
         self._interest_filter = interest_filter
         self._interest_color = interest_color
 

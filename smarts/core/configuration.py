@@ -23,7 +23,7 @@ import ast
 import configparser
 import functools
 import os
-from pathlib import Path
+import pathlib
 from typing import Any, Callable, Optional, Union
 
 _UNSET = object()
@@ -49,7 +49,7 @@ class Config:
     """A configuration utility that handles configuration from file and environment variable.
 
     Args:
-        config_file (Union[str, Path]): The path to the configuration file.
+        config_file (Union[str, pathlib.Path]): The path to the configuration file.
         environment_prefix (str, optional): The prefix given to the environment variables. Defaults to "".
 
     Raises:
@@ -57,7 +57,7 @@ class Config:
     """
 
     def __init__(
-        self, config_file: Union[str, Path], environment_prefix: str = ""
+        self, config_file: Union[str, pathlib.Path], environment_prefix: str = ""
     ) -> None:
         self._config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()
@@ -66,7 +66,7 @@ class Config:
         self._environment_variable_format_string = self._environment_prefix + "_{}_{}"
 
         if isinstance(config_file, str):
-            config_file = Path(config_file)
+            config_file = pathlib.Path(config_file)
         config_file = config_file.resolve()
         if not config_file.is_file():
             raise FileNotFoundError(f"Configuration file not found at {config_file}")

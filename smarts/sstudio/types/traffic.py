@@ -43,7 +43,7 @@ class Flow:
     end: float = 1 * 60 * 60
     """End time in seconds."""
     actors: Dict[TrafficActor, float] = field(default_factory=dict)
-    """An actor to weight mapping associated as\\: { actor: weight }
+    """An actor to weight mapping associated as { actor -> weight }.
 
     :param actor: The traffic actors that are provided.
     :param weight: The chance of this actor appearing as a ratio over total weight.

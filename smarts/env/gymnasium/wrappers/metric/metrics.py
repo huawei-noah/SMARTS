@@ -432,7 +432,7 @@ class Metrics(gym.Wrapper):
         env (gym.Env): The gym environment to be wrapped.
 
     Raises:
-        AttributeError: Upon accessing (i) a protected attribute or (ii) an
+        AttributeError: Upon accessing (i) a protected attribute or (ii) an \
         attribute beginning with an underscore.
 
     Returns:

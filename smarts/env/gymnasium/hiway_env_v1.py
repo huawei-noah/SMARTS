@@ -108,7 +108,7 @@ class HiWayEnvV1(gym.Env):
             all components of the simulation. May be None if time deltas
             are externally-driven. Defaults to None.
         seed (int, optional): Random number generator seed. Defaults to 42.
-        sumo_options (SumoOptions, Dict[str, any]): The configuration for the
+        sumo_options (SumoOptions, Dict[str, Any]): The configuration for the
             sumo instance. A dictionary with the fields can be used instead.
             See :class:`SumoOptions`.
         visualization_client_builder: A method that must must construct an
@@ -117,14 +117,14 @@ class HiWayEnvV1(gym.Env):
         zoo_addrs (str, optional): List of (`ip`, `port`) tuples of
             zoo server, used to instantiate remote social agents. Defaults
             to None.
-        observation_options (ObservationOptions, string): Defines the options
+        observation_options (ObservationOptions, str): Defines the options
             for how the formatting matches the observation space. String version
-            can be used instead. See :class:`ObservationOptions`. Defaults to
-            :attr:`ObservationOptions.default`.
-        action_options (ActionOptions, string): Defines the options
+            can be used instead. See :class:`~smarts.env.utils.observation_conversion.ObservationOptions`. Defaults to
+            :attr:`~smarts.env.utils.observation_conversion.ObservationOptions.default`.
+        action_options (ActionOptions, str): Defines the options
             for how the formatting matches the action space. String version
-            can be used instead. See :class:`ActionOptions`. Defaults to
-            :attr:`ActionOptions.default`.
+            can be used instead. See :class:`~smarts.env.utils.action_conversion.ActionOptions`. Defaults to
+            :attr:`~smarts.env.utils.action_conversion.ActionOptions.default`.
     """
 
     metadata = {"render_modes": ["human"]}
@@ -244,25 +244,25 @@ class HiWayEnvV1(gym.Env):
             action (ActType): an action provided by the agent to update the environment state.
 
         Returns:
-            observation (dict): An element of the environment's :attr:`observation_space` as the
-                next observation due to the agent actions. This observation will change based on
-                the provided :attr:`agent_interfaces`. Check :attr:`observation_space` after
-                initialization.
-            reward (SupportsFloat): The reward as a result of taking the
-                action.
-            terminated (bool): Whether the agent reaches the terminal state (as defined under the MDP of the task)
-                which can be positive or negative. An example is reaching the goal state. If true, the user needs to call :meth:`reset`.
-            truncated (bool): Whether the truncation condition outside the scope of the MDP is satisfied.
-                Typically, this is a time-limit, but could also be used to indicate an agent physically going out of bounds.
-                Can be used to end the episode prematurely before a terminal state is reached.
-                If true, the user needs to call :meth:`reset`.
-            info (dict): Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
-                This might, for instance, contain: metrics that describe the agent's performance state, variables that are
-                hidden from observations, or individual reward terms that are combined to produce the total reward.
+            (dict, SupportsFloat, bool, bool, dict): 
+                - observation. An element of the environment's :attr:`observation_space` as the
+                    next observation due to the agent actions. This observation will change based on
+                    the provided :attr:`agent_interfaces`. Check :attr:`observation_space` after
+                    initialization.
+                - reward. The reward as a result of taking the action.
+                - terminated. Whether the agent reaches the terminal state (as defined under the MDP of the task)
+                    which can be positive or negative. An example is reaching the goal state. If true, the user needs to call :meth:`reset`.
+                - truncated. Whether the truncation condition outside the scope of the MDP is satisfied.
+                    Typically, this is a time-limit, but could also be used to indicate an agent physically going out of bounds.
+                    Can be used to end the episode prematurely before a terminal state is reached.
+                    If true, the user needs to call :meth:`reset`.
+                - info. Contains auxiliary diagnostic information (helpful for debugging, learning, and logging).
+                    This might, for instance, contain: metrics that describe the agent's performance state, variables that are
+                    hidden from observations, or individual reward terms that are combined to produce the total reward.
         """
         assert isinstance(action, dict) and all(
             isinstance(key, str) for key in action.keys()
-        ), "Expected Dict[str, any]"
+        ), "Expected Dict[str, Any]"
 
         formatted_action = self._action_formatter.format(action)
         observations, rewards, dones, extras = self._smarts.step(formatted_action)
@@ -322,21 +322,21 @@ class HiWayEnvV1(gym.Env):
         Therefore, :meth:`reset` should (in the typical use case) be called with a seed right after initialization and then never again.
 
         Args:
-            seed (optional int): The seed that is used to initialize the environment's PRNG (`np_random`).
+            seed (int, optional): The seed that is used to initialize the environment's PRNG (`np_random`).
                 If the environment does not already have a PRNG and ``seed=None`` (the default option) is passed,
                 a seed will be chosen from some source of entropy (e.g. timestamp or `/dev/urandom`).
                 However, if the environment already has a PRNG and ``seed=None`` is passed, the PRNG will *not* be reset.
                 If you pass an integer, the PRNG will be reset even if it already exists.
                 Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
-            options (optional dict): Additional information to specify how the environment is reset (optional,
+            options (dict, optional): Additional information to specify how the environment is reset (optional,
                 depending on the specific environment). Forwards to :meth:`~smarts.core.smarts.SMARTS.reset`.
                 - "scenario" (:class:`~smarts.sstudio.types.scenario.Scenario`): An explicit scenario to reset to. The default is a scenario from the scenario iter.
                 - "start_time" (float): Forwards the start time of the current scenario. The default is 0.
 
         Returns:
-            observation (dict): Observation of the initial state. This will be an element of :attr:`observation_space`
+            (dict): observation. Observation of the initial state. This will be an element of :attr:`observation_space`
                  and is analogous to the observation returned by :meth:`step`.
-            info (dict):  This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
+            (dict): info. This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
                 the ``info`` returned by :meth:`step`.
         """
         super().reset(seed=seed, options=options)
@@ -424,10 +424,10 @@ class HiWayEnvV1(gym.Env):
 
     @property
     def np_random(self) -> np.random.Generator:
-        """Returns the environment's internal :attr:`_np_random` that if not set will initialize with a random seed.
+        """Returns the environment's internal random number generator that if not set will initialize with a random seed.
 
         Returns:
-            Instances of `np.random.Generator`.
+            The internal instance of :class:`np.random.Generator`.
         """
         return super().np_random
 
