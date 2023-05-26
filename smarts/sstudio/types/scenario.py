@@ -125,22 +125,12 @@ class Scenario:
     """Friction coefficient of patches of road surface."""
     traffic_histories: Optional[Sequence[Union[TrafficHistoryDataset, str]]] = None
     """Traffic vehicles trajectory dataset to be replayed."""
-    scenario_metadata: Optional[StandardMetadata] = StandardMetadata({})
+    scenario_metadata: Optional[ScenarioMetadata] = ScenarioMetadata({})
     """"Scenario data that does not have influence on simulation."""
 
     def __post_init__(self):
         def _get_name(item):
             return item.name
-
-        if isinstance(self.scenario_metadata, ScenarioMetadata):
-            object.__setattr__(
-                self,
-                "scenario_metadata",
-                StandardMetadata(
-                    actor_of_interest_color=self.scenario_metadata.actor_of_interest_color,
-                    actor_of_interest_re_filter=self.scenario_metadata.actor_of_interest_re_filter,
-                ),
-            )
 
         if self.social_agent_missions is not None:
             groups = [k for k in self.social_agent_missions]
