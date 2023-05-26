@@ -9,11 +9,8 @@ from smarts.sstudio import types as t
 # └── scenario_{scenario_id}.parquet
 
 
-PATH = "dataset"
 scenario_id = "0a576bf1-66ae-495a-9c87-236f3fc2aa01"  # e.g. "0000b6ab-e100-4f6b-aee8-b520b57c0530"
-scenario_path = (
-    Path(__file__).resolve().parents[3] / PATH / scenario_id
-)  # e.g. Path("/home/user/argoverse/train/") / scenario_id
+scenario_path = None  # e.g. Path("/home/user/argoverse/train/") / scenario_id
 
 ego_mission = [
     t.Mission(

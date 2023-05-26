@@ -8,11 +8,8 @@ from smarts.sstudio import types as t
 # ├── log_map_archive_{scenario_id}.json
 # └── scenario_{scenario_id}.parquet
 
-PATH = "dataset"
 scenario_id = "00b15e74-04a8-4bd4-9a78-eb24f0c0a980"  # e.g. "0000b6ab-e100-4f6b-aee8-b520b57c0530"
-scenario_path = (
-    Path(__file__).resolve().parents[3] / PATH / scenario_id
-)  # e.g. Path("/home/user/argoverse/train/") / scenario_id
+scenario_path = None  # e.g. Path("/home/user/argoverse/train/") / scenario_id
 
 traffic_histories = [
     t.TrafficHistoryDataset(
