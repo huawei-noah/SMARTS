@@ -48,9 +48,16 @@ _route_sub_lengths: Dict[
 class RouteWithCache(RoadMap.Route):
     """A cache for commonly-needed but expensive-to-compute information about RoadMap.Routes."""
 
-    def __init__(self, road_map: RoadMap):
+    def __init__(
+        self,
+        road_map: RoadMap,
+        start_lane: Optional[RoadMap.Lane] = None,
+        end_lane: Optional[RoadMap.Lane] = None,
+    ):
         self._map = road_map
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._start_lane: Optional[RoadMap.Lane] = start_lane
+        self._end_lane: Optional[RoadMap.Lane] = end_lane
 
     def __hash__(self) -> int:
         key: int = self._cache_key  # pytype: disable=annotation-type-mismatch
@@ -59,46 +66,58 @@ class RouteWithCache(RoadMap.Route):
     def __eq__(self, other) -> bool:
         return self.__class__ == other.__class__ and hash(self) == hash(other)
 
-    def _add_road(self, road: RoadMap.Road):
-        raise NotImplementedError()
+    @property
+    def start_lane(self) -> Optional[RoadMap.Lane]:
+        "Route's start lane."
+        return self._start_lane
+
+    @property
+    def end_lane(self) -> Optional[RoadMap.Lane]:
+        "Route's end lane."
+        return self._end_lane
 
     @cached_property
     def road_ids(self) -> List[str]:
         """Get the road IDs for this route.
+
         Returns:
             (List[str]): A list of the road IDs for the Roads in this Route."""
         return [road.road_id for road in self.roads]
 
-    @classmethod
+    @staticmethod
     def from_road_ids(
-        cls,
-        road_map: RoadMap,
+        road_map,
         road_ids: Sequence[str],
         resolve_intermediaries: bool = False,
-    ) -> "RouteWithCache":
+    ) -> RoadMap.Route:
         """Factory to generate a new RouteWithCache from a sequence of road ids."""
 
         if len(road_ids) > 0 and resolve_intermediaries:
             via_roads = [road_map.road_by_id(r) for r in road_ids[1:-1]]
             routes = road_map.generate_routes(
-                start_road=road_map.road_by_id(road_ids[0]),
-                end_road=road_map.road_by_id(road_ids[-1]),
+                start=road_map.road_by_id(road_ids[0]),
+                end=road_map.road_by_id(road_ids[-1]),
                 via=via_roads,
                 max_to_gen=1,
             )
             if len(routes) > 0:
                 return routes[0]
 
-        route = cls(road_map)
+        route_roads = []
         for road_id in road_ids:
             road = road_map.road_by_id(road_id)
             assert road, f"cannot add unknown road {road_id} to route"
-            route._add_road(road)
-        return route
+            route_roads.append(road)
+
+        return road_map.Route(road_map=road_map, roads=route_roads)
 
     @cached_property
     def _cache_key(self) -> _RouteKey:
-        return hash(tuple(road.road_id for road in self.roads)) ^ hash(self._map)
+        return (
+            hash(tuple(road.road_id for road in self.roads))
+            ^ hash(self._map)
+            ^ hash((self.start_lane, self.end_lane))
+        )
 
     @property
     def is_cached(self) -> bool:

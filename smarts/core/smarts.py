@@ -35,7 +35,7 @@ from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
-from smarts.core.utils.logging import timeit
+from smarts.core.utils.logging import suppress_output, timeit
 
 from . import config, models
 from .actor import ActorRole, ActorState
@@ -201,9 +201,10 @@ class SMARTS(ProviderManager):
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
-        self._bullet_client = bc.BulletClient(
-            pybullet.DIRECT
-        )  # pylint: disable=no-member
+        with suppress_output(stderr=False):
+            self._bullet_client = bc.BulletClient(
+                pybullet.DIRECT
+            )  # pylint: disable=no-member
 
         # Set up indices
         self._sensor_manager = SensorManager()
@@ -1652,7 +1653,7 @@ class SMARTS(ProviderManager):
         if filter.simulation_data_filter["bubble_geometry"].enabled:
             bubble_geometry = [
                 list(bubble.geometry.exterior.coords)
-                for bubble in self._bubble_manager.bubbles
+                for bubble in self._bubble_manager.active_bubbles
             ]
 
         scenario_folder_path = self.scenario._root

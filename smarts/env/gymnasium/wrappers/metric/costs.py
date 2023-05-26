@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+import warnings
 from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Dict, List, NewType
@@ -408,10 +409,11 @@ def _vehicle_gap(
 
         # Truncate all paths to be of the same length.
         min_len = min(map(len, obs.waypoint_paths))
-        assert min_len >= min_waypoints_length, (
-            f"Expected waypoints length >= {min_waypoints_length}, but got "
-            f"waypoints length = {min_len}."
-        )
+        if min_len >= min_waypoints_length:
+            warnings.warn(
+                f"Expected waypoints length >= {min_waypoints_length}, but got "
+                + f"waypoints length = {min_len}."
+            )
         trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
         waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
         waypoints = np.array(waypoints, dtype=np.float64)
@@ -544,33 +546,42 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         float: Shortest road distance between two points in the road map.
     """
 
-    def _get_dist(start: Point, end: Point) -> float:
-        mission = Mission(
-            start=Start(
-                position=start.as_np_array,
-                heading=Heading(0),
-                from_front_bumper=False,
-            ),
-            goal=PositionalGoal(
-                position=end,
-                radius=3,
-            ),
-        )
-        plan = Plan(road_map=road_map, mission=mission, find_route=False)
-        plan.create_route(mission=mission, radius=20)
-        from_route_point = RoadMap.Route.RoutePoint(pt=start)
-        to_route_point = RoadMap.Route.RoutePoint(pt=end)
+    mission = Mission(
+        start=Start(
+            position=point_a.as_np_array,
+            heading=Heading(0),
+            from_front_bumper=False,
+        ),
+        goal=PositionalGoal(
+            position=point_b,
+            radius=2,
+        ),
+    )
+    plan = Plan(road_map=road_map, mission=mission, find_route=False)
+    plan.create_route(mission=mission, radius=20)
+    assert isinstance(plan.route, RoadMap.Route)
+    from_route_point = RoadMap.Route.RoutePoint(pt=point_a)
+    to_route_point = RoadMap.Route.RoutePoint(pt=point_b)
 
-        dist_tot = plan.route.distance_between(
-            start=from_route_point, end=to_route_point
-        )
-        if dist_tot == None:
-            raise CostError("Unable to find road on route near given points.")
-        elif dist_tot < 0:
-            raise CostError(
-                "Path from start point to end point flows in "
-                "the opposite direction of the generated route."
-            )
-        return dist_tot
+    dist_tot = plan.route.distance_between(start=from_route_point, end=to_route_point)
+    if dist_tot == None:
+        raise CostError("Unable to find road on route near given points.")
+    elif dist_tot < 0:
+        # This happens when agent overshoots the goal position while
+        # remaining outside the goal capture radius at all times. Default
+        # positional goal radius is 2m.
+        dist_tot = abs(dist_tot)
 
-    return _get_dist(point_a, point_b)
+    # Account for agent ending in a different lane but in the same road as
+    # the goal position.
+    start_lane = plan.route.start_lane
+    end_lane = plan.route.end_lane
+    lane_error = abs(start_lane.index - end_lane.index)
+    if len(plan.route.roads) == 1 and lane_error > 0:
+        assert start_lane.road == end_lane.road
+        end_offset = end_lane.offset_along_lane(world_point=point_b)
+        lane_width, _ = end_lane.width_at_offset(end_offset)
+        lane_error_dist = lane_error * lane_width
+        dist_tot += lane_error_dist
+
+    return dist_tot

@@ -31,6 +31,7 @@ from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
 
 from smarts.core.actor_capture_manager import ActorCaptureManager
+from smarts.core.condition_state import ConditionState
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
@@ -41,6 +42,7 @@ from smarts.core.plan import (
     Start,
 )
 from smarts.core.road_map import RoadMap
+from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle
@@ -48,6 +50,7 @@ from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
 from smarts.sstudio.types import BubbleLimits, SocialAgentActor
+from smarts.sstudio.types.condition import Condition
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -111,6 +114,8 @@ class Bubble:
         self._limit = bubble_limit
         self._cached_inner_geometry = geometry
         self._exclusion_prefixes = bubble.exclusion_prefixes
+        self._airlock_condition = bubble.airlock_condition
+        self._active_condition = bubble.active_condition
 
         self._cached_airlock_geometry = self._cached_inner_geometry.buffer(
             bubble.margin,
@@ -161,6 +166,16 @@ class Bubble:
         """
         return self._bubble.keep_alive
 
+    @property
+    def airlock_condition(self) -> Condition:
+        """Conditions under which this bubble will accept an agent."""
+        return self._airlock_condition
+
+    @property
+    def active_condition(self) -> Condition:
+        """Fast inclusions for the bubble."""
+        return self._active_condition
+
     # XXX: In the case of traveling bubbles, the geometry and zone are moving
     #      according to the follow vehicle.
     @property
@@ -172,6 +187,15 @@ class Bubble:
     def airlock_geometry(self) -> Polygon:
         """The airlock geometry of the managed bubble."""
         return self._cached_airlock_geometry
+
+    def condition_passes(
+        self,
+        active_condition_requirements,
+    ):
+        """If the broadphase condition allows for this"""
+        return ConditionState.TRUE in self.active_condition.evaluate(
+            **active_condition_requirements
+        )
 
     def admissibility(
         self,
@@ -345,6 +369,8 @@ class Cursor:
         index: VehicleIndex,
         vehicle_ids_per_bubble: Dict[Bubble, Set[str]],
         running_cursors: Set["Cursor"],
+        is_hijack_admissible,
+        is_airlock_admissible,
     ) -> "Cursor":
         """Generate a cursor.
         Args:
@@ -364,9 +390,6 @@ class Cursor:
         in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(position)
         is_social = vehicle_id in index.social_vehicle_ids()
         is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle_id)
-        is_hijack_admissible, is_airlock_admissible = bubble.admissibility(
-            vehicle_id, index, vehicle_ids_per_bubble, running_cursors
-        )
         was_in_this_bubble = vehicle_id in vehicle_ids_per_bubble[bubble]
 
         # XXX: When a traveling bubble disappears and an agent is airlocked or
@@ -425,35 +448,42 @@ class BubbleManager(ActorCaptureManager):
         self._cursors: Set[Cursor] = set()
         self._last_vehicle_index = VehicleIndex.identity()
         self._bubbles = [Bubble(b, road_map) for b in bubbles]
+        self._active_bubbles: Sequence[Bubble] = []
 
     @property
-    def bubbles(self) -> Sequence[Bubble]:
+    def active_bubbles(self) -> Sequence[Bubble]:
         """A sequence of currently active bubbles."""
-        active_bubbles, _ = self._bubble_groups()
-        return active_bubbles
+        return self._active_bubbles
 
-    def _bubble_groups(self) -> Tuple[List[Bubble], List[Bubble]]:
+    @cache
+    def _bubble_groups(self, sim) -> Tuple[List[Bubble], List[Bubble]]:
         # Filter out traveling bubbles that are missing their follow vehicle
-        def is_active(bubble):
+        def is_active(bubble: Bubble) -> bool:
+            active_condition_requirements = {
+                **self._gen_simulation_condition_kwargs(
+                    sim, bubble.active_condition.requires
+                ),
+                **self._gen_mission_condition_kwargs(
+                    bubble.actor.name, None, bubble.active_condition.requires
+                ),
+            }
+            if not bubble.condition_passes(active_condition_requirements):
+                return False
+
             if not bubble.is_traveling:
                 return True
 
-            vehicles = []
+            vehicle = None
             if bubble.follow_actor_id is not None:
-                vehicles += self._last_vehicle_index.vehicles_by_owner_id(
+                vehicles = self._last_vehicle_index.vehicles_by_owner_id(
                     bubble.follow_actor_id
                 )
+                vehicle = vehicles[0] if len(vehicles) else None
             if bubble.follow_vehicle_id is not None:
                 vehicle = self._last_vehicle_index.vehicle_by_id(
                     bubble.follow_vehicle_id, None
                 )
-                if vehicle is not None:
-                    vehicles += [vehicle]
-            if len(vehicles) > 1:
-                logging.error(
-                    f"bubble `{bubble.id} follows multiple vehicles: {[v.id for v in vehicles]}"
-                )
-            return len(vehicles) == 1
+            return vehicle is not None
 
         active_bubbles = []
         inactive_bubbles = []
@@ -498,14 +528,18 @@ class BubbleManager(ActorCaptureManager):
                 agent_ids.add(agent_id)
         return agent_ids
 
+    @clear_cache
     def step(self, sim):
         """Update the associations between bubbles, actors, and agents"""
+        self._active_bubbles, _ = self._bubble_groups(sim)
         self._move_traveling_bubbles(sim)
-        self._cursors = self._sync_cursors(self._last_vehicle_index, sim.vehicle_index)
+        self._cursors = self._sync_cursors(
+            self._last_vehicle_index, sim.vehicle_index, sim
+        )
         self._handle_transitions(sim, self._cursors)
         self._last_vehicle_index = deepcopy(sim.vehicle_index)
 
-    def _sync_cursors(self, last_vehicle_index, vehicle_index):
+    def _sync_cursors(self, last_vehicle_index, vehicle_index, sim):
         # TODO: Not handling newly added vehicles means we require an additional step
         #       before we trigger hijacking.
         # Newly added vehicles
@@ -521,7 +555,10 @@ class BubbleManager(ActorCaptureManager):
         # Calculate latest cursors
         vehicle_ids_per_bubble = self.vehicle_ids_per_bubble()
         cursors = set()
-        active_bubbles, inactive_bubbles = self._bubble_groups()
+        active_bubbles, inactive_bubbles = self._bubble_groups(sim)
+        active_bubbles: Sequence[Bubble]
+        inactive_bubbles: Sequence[Bubble]
+
         inactive_bubbles_to_run = [
             b for b in inactive_bubbles if len(vehicle_ids_per_bubble[b])
         ]
@@ -542,17 +579,30 @@ class BubbleManager(ActorCaptureManager):
         if not active_bubbles:
             return cursors
 
-        for _, vehicle in persisted_vehicle_index.vehicleitems():
-            # XXX: Turns out Shapely Point(...) creation is very expensive (~0.02ms) which
-            #      when inside of a loop x large number of vehicles makes a big
-            #      performance hit.
-            point = vehicle.pose.point
-            v_radius = math.sqrt(
-                vehicle.width * vehicle.width + vehicle.length * vehicle.length
+        # Cut down on duplicate generation of values
+        vehicle_data = [
+            (
+                vehicle,
+                vehicle.pose.point,
+                math.sqrt(
+                    vehicle.width * vehicle.width + vehicle.length * vehicle.length
+                ),
             )
+            for _, vehicle in persisted_vehicle_index.vehicleitems()
+        ]
 
-            for bubble in active_bubbles:
-                was_in_this_bubble = vehicle_ids_per_bubble[bubble]
+        for bubble in active_bubbles:
+            sim_condition_kwargs = self._gen_simulation_condition_kwargs(
+                sim, condition_requires=bubble.airlock_condition.requires
+            )
+            mission_condition_kwargs = self._gen_mission_condition_kwargs(
+                bubble.actor.name,
+                None,
+                condition_requires=bubble.airlock_condition.requires,
+            )
+            was_in_this_bubble = vehicle_ids_per_bubble[bubble]
+
+            for vehicle, point, v_radius in vehicle_data:
                 sq_distance = (point.x - bubble.centroid[0]) * (
                     point.x - bubble.centroid[0]
                 ) + (point.y - bubble.centroid[1]) * (point.y - bubble.centroid[1])
@@ -560,6 +610,25 @@ class BubbleManager(ActorCaptureManager):
                 if vehicle.id in was_in_this_bubble or sq_distance <= pow(
                     v_radius + bubble.radius + bubble._bubble.margin, 2
                 ):
+                    actor_condition_kwargs = self._gen_actor_state_condition_args(
+                        sim.road_map,
+                        vehicle.state,
+                        bubble.airlock_condition.requires,
+                    )
+                    is_hijack_admissible, is_airlock_admissible = bubble.admissibility(
+                        vehicle.id,
+                        persisted_vehicle_index,
+                        vehicle_ids_per_bubble,
+                        cursors,
+                    )
+                    is_airlock_admissible = is_airlock_admissible and (
+                        ConditionState.TRUE
+                        in bubble.airlock_condition.evaluate(
+                            **sim_condition_kwargs,
+                            **mission_condition_kwargs,
+                            **actor_condition_kwargs,
+                        )
+                    )
                     cursor = Cursor.from_pos(
                         position=point.as_shapely,
                         vehicle_id=vehicle.id,
@@ -567,6 +636,8 @@ class BubbleManager(ActorCaptureManager):
                         index=persisted_vehicle_index,
                         vehicle_ids_per_bubble=vehicle_ids_per_bubble,
                         running_cursors=cursors,
+                        is_hijack_admissible=is_hijack_admissible,
+                        is_airlock_admissible=is_airlock_admissible,
                     )
                     cursors.add(cursor)
 
@@ -595,7 +666,7 @@ class BubbleManager(ActorCaptureManager):
                 sim.vehicle_exited_bubble(cursor.vehicle_id, agent_id, teardown)
 
     def _move_traveling_bubbles(self, sim):
-        active_bubbles, inactive_bubbles = self._bubble_groups()
+        active_bubbles, inactive_bubbles = self._bubble_groups(sim)
         for bubble in [*active_bubbles, *inactive_bubbles]:
             if not bubble.is_traveling:
                 continue
