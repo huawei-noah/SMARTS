@@ -27,7 +27,7 @@ from typing import Any, Dict, Iterator, Optional
 
 
 class StandardMetadata(collections.Mapping):
-    """Metadata that does not have direct on simulation."""
+    """Metadata that does not have direct influence on the simulation."""
 
     def __init__(
         self,
