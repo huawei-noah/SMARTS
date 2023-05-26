@@ -21,13 +21,10 @@
 # THE SOFTWARE.
 
 
-import collections
 import enum
-import warnings
 from dataclasses import dataclass
 from enum import IntEnum
-from functools import cached_property
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 from smarts.core.colors import Colors
 from smarts.sstudio.types.actor.social_agent_actor import SocialAgentActor
@@ -35,36 +32,26 @@ from smarts.sstudio.types.bubble import Bubble
 from smarts.sstudio.types.dataset import TrafficHistoryDataset
 from smarts.sstudio.types.map_spec import MapSpec
 from smarts.sstudio.types.mission import EndlessMission, Mission
+from smarts.sstudio.types.standard_metadata import StandardMetadata
 from smarts.sstudio.types.traffic import Traffic
 from smarts.sstudio.types.zone import RoadSurfacePatch
 
 
-class MetadataFields(IntEnum):
+class ScenarioMetadataFields(IntEnum):
+    """This lists the standard metadata fields for the scenario metadata."""
+
     actor_of_interest_color = enum.auto()
     actor_of_interest_re_filter = enum.auto()
     scenario_difficulty = enum.auto()
     scenario_length = enum.auto()
 
 
-@dataclass(frozen=True)
-class ScenarioMetadata:
-    """Deprecated. Scenario data that does not have influence on simulation."""
-
-    actor_of_interest_re_filter: str
-    """Vehicles with names that match this pattern are vehicles of interest."""
-    actor_of_interest_color: Colors
-    """The color that the vehicles of interest should have."""
-
-    def __post_init__(self):
-        warnings.warn(f"Use of {ScenarioMetadata.__name__} is deprecated.")
-
-
-class StandardMetadata(collections.Mapping):
-    """Metadata that does not have direct on simulation."""
+class ScenarioMetadata(StandardMetadata):
+    """Scenario data that does not have influence on simulation."""
 
     def __init__(
         self,
-        metadata: Optional[Dict[Union[str, MetadataFields], Any]] = None,
+        metadata: Optional[Dict[Union[str, ScenarioMetadataFields], Any]] = None,
         actor_of_interest_re_filter: Optional[str] = None,
         actor_of_interest_color: Optional[Colors] = Colors.Blue,
         scenario_difficulty: Optional[int] = None,
@@ -73,15 +60,15 @@ class StandardMetadata(collections.Mapping):
         if metadata is None:
             metadata = {}
         basic_standard_metadata = {
-            MetadataFields.actor_of_interest_color: actor_of_interest_color,
-            MetadataFields.actor_of_interest_re_filter: actor_of_interest_re_filter,
-            MetadataFields.scenario_difficulty: scenario_difficulty,
-            MetadataFields.scenario_length: scenario_length,
+            ScenarioMetadataFields.actor_of_interest_color: actor_of_interest_color,
+            ScenarioMetadataFields.actor_of_interest_re_filter: actor_of_interest_re_filter,
+            ScenarioMetadataFields.scenario_difficulty: scenario_difficulty,
+            ScenarioMetadataFields.scenario_length: scenario_length,
         }
         self._standard_metadata = tuple(
             (
                 setting_key.name
-                if isinstance(setting_key, MetadataFields)
+                if isinstance(setting_key, ScenarioMetadataFields)
                 else setting_key,
                 setting_value,
             )
@@ -92,16 +79,10 @@ class StandardMetadata(collections.Mapping):
             if setting_value is not None
         )
 
-    def __iter__(self) -> Iterator:
-        return iter(self._standard_metadata)
-
-    def __len__(self) -> int:
-        return len(self._standard_metadata)
-
     def __getitem__(self, __key: Any) -> Any:
-        if isinstance(__key, MetadataFields):
+        if isinstance(__key, ScenarioMetadataFields):
             __key = __key.name
-        return self._dict_metadata[__key]
+        return super().__getitem__(__key)
 
     def get(self, __key, __default=None):
         """Retrieve the value or a default.
@@ -113,23 +94,9 @@ class StandardMetadata(collections.Mapping):
         Returns:
             Optional[Any]: The value or default.
         """
-        if isinstance(__key, MetadataFields):
+        if isinstance(__key, ScenarioMetadataFields):
             __key = __key.name
-        return self._dict_metadata.get(__key, __default)
-
-    # def __getattr__(self, __name: str) -> Any:
-    #     return self._dict_metadata.get(__name)
-
-    def __hash__(self) -> int:
-        return self._hash_id
-
-    @cached_property
-    def _hash_id(self) -> int:
-        return hash(frozenset(self._standard_metadata))
-
-    @cached_property
-    def _dict_metadata(self) -> Dict[str, Any]:
-        return dict(self._standard_metadata)
+        return super().get(__key, __default)
 
 
 @dataclass(frozen=True)
