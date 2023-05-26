@@ -206,9 +206,7 @@ class MetricsBase(gym.Wrapper):
         for agent_name in self._cur_agents:
             cost_funcs_kwargs = {}
             if self._params.dist_to_destination.active:
-                interest_criteria = self.env.agent_interfaces[
-                    agent_name
-                ].done_criteria.interest
+                interest_criteria = self.env.agent_interfaces[agent_name].done_criteria.interest
                 if interest_criteria == None:
                     end_pos = self._scen.missions[agent_name].goal.position
                     dist_tot, route = get_dist(
@@ -216,9 +214,7 @@ class MetricsBase(gym.Wrapper):
                         point_a=Point(*self._scen.missions[agent_name].start.position),
                         point_b=end_pos,
                     )
-                elif isinstance(interest_criteria, InterestDoneCriteria) and (
-                    interest_actor is not None
-                ):
+                elif isinstance(interest_criteria, InterestDoneCriteria) and (interest_actor is not None):
                     end_pos, dist_tot, route = _get_end_and_dist(
                         interest_actor=interest_actor,
                         vehicle_index=self._vehicle_index,
@@ -226,15 +222,6 @@ class MetricsBase(gym.Wrapper):
                         scenario=self._scen,
                         road_map=self._road_map,
                     )
-                    start_pos = (
-                        Point(*self._scen.missions[agent_name].start.position),
-                    )
-                    cur_on_route, _, _ = on_route(
-                        road_map=self._road_map, route=route, pos=start_pos
-                    )
-                    assert (
-                        cur_on_route
-                    ), f"{agent_name} does not start nearby the vehicle of interest's route."
                     cost_funcs_kwargs.update(
                         {
                             "vehicle_gap": {
@@ -247,12 +234,20 @@ class MetricsBase(gym.Wrapper):
                     raise MetricsError(
                         "Unsupported configuration for distance-to-destination cost function."
                     )
+                start_pos = Point(*self._scen.missions[agent_name].start.position)
+                cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
+                    road_map=self._road_map, route=route, pos=start_pos
+                )
+                assert cur_on_route, f"{agent_name} does not start nearby the desired route."
                 cost_funcs_kwargs.update(
                     {
                         "dist_to_destination": {
                             "end_pos": end_pos,
                             "dist_tot": dist_tot,
                             "route": route,
+                            "prev_route_lane": cur_route_lane,
+                            "prev_route_lane_point": cur_route_lane_point,
+                            "prev_route_displacement": cur_route_displacement,
                         }
                     }
                 )
