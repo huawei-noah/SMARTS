@@ -22,13 +22,13 @@ from smarts.sstudio.types import (
 
 normal = TrafficActor(
     name="car",
-    speed=Distribution(sigma=0, mean=1.0),
+    speed=Distribution(sigma=0.2, mean=0.7),
 )
 
 leader = TrafficActor(
     name="Leader-007",
     depart_speed=0,
-    speed=Distribution(sigma=0.2, mean=0.8),
+    speed=Distribution(sigma=0, mean=1),
     junction_model=JunctionModel(impatience=1),
 )
 
@@ -69,7 +69,7 @@ for name, (social_path, leader_path) in enumerate(route_comb):
                     end=("E3", r[1], "max"),
                 ),
                 # Random flow rate, between x and y vehicles per minute.
-                rate=60 * random.uniform(1, 3),
+                rate=60 * random.uniform(1, 5),
                 # Random flow start time, between x and y seconds.
                 begin=random.uniform(0, 5),
                 # For an episode with maximum_episode_steps=3000 and step
@@ -99,8 +99,9 @@ for name, (social_path, leader_path) in enumerate(route_comb):
 ego_missions = [
     EndlessMission(
         begin=("E0", 2, 5),
-        start_time=31,
-        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
+        entry_tactic=TrapEntryTactic(
+            start_time=31, wait_to_hijack_limit_s=0, default_entry_speed=0
+        ),
     )  # Delayed start, to ensure road has prior traffic.
 ]
 

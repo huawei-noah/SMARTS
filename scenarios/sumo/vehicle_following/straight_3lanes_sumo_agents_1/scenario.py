@@ -62,8 +62,9 @@ for name, (social_path, leader_path) in enumerate(route_comb):
 ego_missions = [
     EndlessMission(
         begin=("E0", 1, 20),
-        start_time=1,
-        entry_tactic=TrapEntryTactic(wait_to_hijack_limit_s=0, default_entry_speed=0),
+        entry_tactic=TrapEntryTactic(
+            start_time=1, wait_to_hijack_limit_s=0, default_entry_speed=0
+        ),
     )  # Delayed start, to ensure road has prior traffic.
 ]
 

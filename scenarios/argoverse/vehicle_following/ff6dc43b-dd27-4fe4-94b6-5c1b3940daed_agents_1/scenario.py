@@ -5,8 +5,9 @@ from smarts.sstudio import types as t
 from smarts.core.colors import Colors
 
 
+PATH = "dataset"
 scenario_id = "ff6dc43b-dd27-4fe4-94b6-5c1b3940daed"
-scenario_path = None  # example: Path("path/to/dataset") / scenario_id
+scenario_path = Path(__file__).resolve().parents[3] / PATH / scenario_id
 
 traffic_histories = [
     t.TrafficHistoryDataset(

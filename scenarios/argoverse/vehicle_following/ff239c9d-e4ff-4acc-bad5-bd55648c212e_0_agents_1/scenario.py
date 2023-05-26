@@ -17,7 +17,7 @@ traffic_histories = [
     )
 ]
 
-ego_mission = [t.EndlessMission(begin=("road-202833190-202832889-202833142", 0, "max"))]
+ego_mission = [t.EndlessMission(begin=("road-202833190-202832889-202833142", 2, "max"))]
 
 leader_id = "history-vehicle-46408$"
 # runtime = 11
