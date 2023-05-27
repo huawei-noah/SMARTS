@@ -632,7 +632,7 @@ class Scenario:
             positional_radius:
                 The goal radius for the positional goal.
         Returns:
-            (positional_mission, traverse_mission): A positional mission that follows the initial
+            (smarts.core.plan.Mission, smarts.core.plan.Mission): A positional mission that follows the initial
              original vehicle's travel as well as a traverse style mission which is done when the
              vehicle leaves the map.
         """

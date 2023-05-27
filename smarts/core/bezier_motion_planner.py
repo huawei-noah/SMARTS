@@ -38,14 +38,14 @@ class BezierMotionPlanner:
         """Generate a batch of trajectories
 
         Args:
-            current_poses: np.array([[x, y, heading]])
-            target_poses_at_t: np.array([[x, y, heading, seconds_into_future]]
+            current_poses: ``np.array([[x, y, heading]])``
+            target_poses_at_t: ``np.array([[x, y, heading, seconds_into_future]]``
                     pose we would like to have this many seconds into the future
             n: number of trajectory points to return
             dt: time delta between trajectory points
         Returns:
-            Stacked np.array of the form:
-                np.array([[x], [y], [heading], [desired_speed]])
+            A stacked ``np.array`` of the form
+                ``np.array([[x], [y], [heading], [desired_speed]])``
         """
         assert len(current_poses) == len(target_poses_at_t)
         # vectorized cubic bezier computation

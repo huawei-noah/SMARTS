@@ -69,7 +69,7 @@ def driving_smarts_2022_env(
         Action space for each agent is configured through its `AgentInterface`.
         The action space could be either of the following.
 
-        (i) :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`
+        (i) :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`
 
            +------------------------------------+-------------+-------+
            | Action                             | Values      | Units |
@@ -81,7 +81,7 @@ def driving_smarts_2022_env(
            | Δheading                           | [-π, π]     | rad   |
            +------------------------------------+-------------+-------+
 
-        (ii) :attr:`~smarts.core.controllers.ActionSpaceType.TargetPose`
+        (ii) :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.TargetPose`
 
             +------------------------------------+---------------+-------+
             | Action                             | Values        | Units |

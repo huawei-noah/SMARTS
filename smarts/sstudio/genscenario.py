@@ -410,8 +410,8 @@ def gen_social_agent_missions(
             The scenario directory
         missions:
             A sequence of missions for social agents to perform
-        social_agent_actor(s):
-            The actor(s) to use
+        social_agent_actor:
+            The social agent actor(s) this scenario will use.
         name:
             A short name for this grouping of social agents. Is also used as the name
             of the social agent traffic file

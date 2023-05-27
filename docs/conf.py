@@ -107,6 +107,45 @@ templates_path = ["_templates"]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+# -- Options for nit-pick (-n) ----------------------------------------------------
+
+nitpick_ignore = {
+    ("py:class", "optional"),
+    ("py:class", "ellipsis"),
+    ("py:class", "function"),
+    # Most of these dynamic type ignores would go away in python>=3.10
+    # See for more context: https:github.com/sphinx-doc/sphinx/issues/10090
+    ("py:class", "T"),
+    ("py:class", "Score"),
+    ("py:class", "Done"),
+    ("py:class", "CostFuncs"),
+    ("py:class", "ActType"),
+    ("py:class", "ObsType"),
+    ("py:class", "smarts.env.gymnasium.wrappers.metric.utils.T"),
+}
+nitpick_ignore_regex = {
+    (r"py:.*", r"av2\..*"),
+    (r"py:.*", r"google\.protobuf\..*"),
+    (r"py:.*", r"grpc\..*"),
+    (r"py:.*", r"gym\..*"),
+    (r"py:.*", r"gymnasium\..*"),
+    (r"py:.*", r"logging\..*"),
+    (r"py:.*", r"multiprocessing\..*"),
+    (r"py:.*", r"np\..*"),
+    (r"py:.*", r"numpy\..*"),
+    (r"py:.*", r"opendrive2lanelet\..*"),
+    (r"py:.*", r"panda3d\..*"),
+    (r"py:.*", r"pathlib\..*"),
+    (r"py:.*", r"pybullet(_utils)?\..*"),
+    (r"py:.*", r"re\..*"),
+    (r"py:.*", r"shapely\..*"),
+    (r"py:.*", r"sumo(lib)?\..*"),
+    (r"py:.*", r"tornado\..*"),
+    (r"py:.*", r"traci\..*"),
+    (r"py:.*", r"typing(_extensions)?\..*"),
+    (r"py:.*", r"configparser\..*"),
+}
+
 # -- Options for spelling ----------------------------------------------------
 spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]
 spelling_ignore_pypi_package_names = True
