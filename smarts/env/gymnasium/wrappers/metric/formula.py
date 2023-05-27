@@ -58,7 +58,7 @@ class FormulaBase:
         "Overall" on the wrapped environment.
 
         Returns:
-            Contains "Overall" score and other sub-component scores.
+            "Overall" score and other sub-component scores.
         """
         raise NotImplementedError
 
@@ -100,7 +100,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Contains "Overall", "DistToDestination", "Time",
+            "Overall", "DistToDestination", "Time",
             "HumannessError", and "RuleViolation" scores.
         """
 

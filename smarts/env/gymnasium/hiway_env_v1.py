@@ -334,9 +334,9 @@ class HiWayEnvV1(gym.Env):
                 - "start_time" (float): Forwards the start time of the current scenario. The default is 0.
 
         Returns:
-            (dict): observation. Observation of the initial state. This will be an element of :attr:`observation_space`
+            dict: observation. Observation of the initial state. This will be an element of :attr:`observation_space`
                  and is analogous to the observation returned by :meth:`step`.
-            (dict): info. This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
+            dict: info. This dictionary contains auxiliary information complementing ``observation``. It should be analogous to
                 the ``info`` returned by :meth:`step`.
         """
         super().reset(seed=seed, options=options)

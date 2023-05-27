@@ -63,10 +63,10 @@ class MapZone(Zone):
     lane_index:
         The lane index from the rightmost lane.
     offset:
-        The offset in meters into the lane. Also acceptable ('max', 'random').
+        The offset in meters into the lane. Also acceptable 'max' or 'random'.
     """
     length: float
-    """The length of the geometry along the center of the lane. Also acceptable ('max')."""
+    """The length of the geometry along the center of the lane. Also acceptable 'max'."""
     n_lanes: int = 2
     """The number of lanes from right to left that this zone covers."""
 

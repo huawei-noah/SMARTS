@@ -695,7 +695,7 @@ def gen_metadata(scenario: str, scenario_metadata: types.ScenarioMetadata):
 
     Args:
         scenario (str):The scenario directory
-        scenario_metadata (ScenarioMetadata): _description_
+        scenario_metadata (ScenarioMetadata): Metadata of the scenario.
     """
     _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "scenario_metadata.pkl")
