@@ -100,5 +100,5 @@ An agent can be configured to emit any one of the following action types from :c
 .. tip::
 
     Depending on the agent's policy, :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.ActuatorDynamic` action type might 
-    allow the agent to learn faster than :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continous` action type because 
+    allow the agent to learn faster than :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous` action type because 
     learning to correct steering could be simpler than learning a mapping to all the absolute steering angle values. 

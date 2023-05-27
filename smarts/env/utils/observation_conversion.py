@@ -288,7 +288,7 @@ class BaseSpaceFormat:
     """Defines the base interface for an observation formatter."""
 
     def format(self, obs: Observation):
-        """Selects and formats the given observation to get a value that matches the :attr:`space`."""
+        """Selects and formats the given observation to get a value that matches the space attribute."""
         raise NotImplementedError()
 
     def active(self, agent_interface: AgentInterface) -> bool:
