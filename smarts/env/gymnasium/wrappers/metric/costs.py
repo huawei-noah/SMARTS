@@ -141,7 +141,7 @@ def _dist_to_destination(
             print(f"cur_route_lane {cur_route_lane.lane_id}") 
             print(f"cur_route_lane_point {cur_route_lane_point}")
 
-            if prev_on_route ^ cur_on_route and cur_on_route:
+            if (prev_on_route ^ cur_on_route) and cur_on_route:
                 prev_route_lane = cur_route_lane
                 prev_route_lane_point = cur_route_lane_point
                 prev_route_displacement = cur_route_displacement
@@ -551,7 +551,7 @@ class CostFuncsBase:
     # fmt: off
     collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_destination: Callable[[Point,float,RoadMap.Route,RoadMap.Lane,Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
     dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
     jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
@@ -680,7 +680,7 @@ def on_route(
         if lane.road in route_roads:
             offset = lane.offset_along_lane(world_point=pos)
             lane_point = lane.from_lane_coord(RefLinePoint(s=offset))
-            displacement = np.linalg.norm(lane_point - pos)
+            displacement = np.linalg.norm(lane_point.as_np_array - pos.as_np_array)
             return True, lane, lane_point, displacement
 
     return False, None, None, None
