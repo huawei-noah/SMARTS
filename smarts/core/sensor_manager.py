@@ -190,9 +190,11 @@ class SensorManager:
             logger.warning(
                 "Attempted to remove sensors from actor with no sensors: `%s`", actor_id
             )
-            return frozenset()
+            return []
         del self._sensor_states[actor_id]
-        sensors_by_actor = self._sensors_by_actor_id[actor_id]
+        sensors_by_actor = self._sensors_by_actor_id.get(actor_id)
+        if not sensors_by_actor:
+            return []
         discarded_sensors = []
         for sensor_id in sensors_by_actor:
             self._actors_by_sensor_id[sensor_id].remove(actor_id)
