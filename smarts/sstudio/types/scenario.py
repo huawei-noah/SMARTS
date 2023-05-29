@@ -46,7 +46,7 @@ class ScenarioMetadataFields(IntEnum):
     """Actors with names that match this pattern are actors of interest."""
     scenario_difficulty = enum.auto()
     """Custom difficulty marking values."""
-    base_scenario_duration = enum.auto()
+    scenario_duration = enum.auto()
     """The expected scenario time length."""
 
 
@@ -60,7 +60,7 @@ class ScenarioMetadata(StandardMetadata):
         actor_of_interest_re_filter: Optional[str] = None,
         actor_of_interest_color: Optional[Colors] = Colors.Blue,
         scenario_difficulty: Optional[int] = None,
-        base_scenario_duration: Optional[float] = None,
+        scenario_duration: Optional[float] = None,
     ) -> None:
         if metadata is None:
             metadata = {}
@@ -68,7 +68,7 @@ class ScenarioMetadata(StandardMetadata):
             ScenarioMetadataFields.actor_of_interest_color: actor_of_interest_color,
             ScenarioMetadataFields.actor_of_interest_re_filter: actor_of_interest_re_filter,
             ScenarioMetadataFields.scenario_difficulty: scenario_difficulty,
-            ScenarioMetadataFields.base_scenario_duration: base_scenario_duration,
+            ScenarioMetadataFields.scenario_duration: scenario_duration,
         }
         self._standard_metadata = tuple(
             (
