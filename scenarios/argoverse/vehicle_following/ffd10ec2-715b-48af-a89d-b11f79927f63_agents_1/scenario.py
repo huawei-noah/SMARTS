@@ -1,9 +1,8 @@
 from pathlib import Path
 
+from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-from smarts.core.colors import Colors
-
 
 scenario_id = "ffd10ec2-715b-48af-a89d-b11f79927f63"
 scenario_path = None

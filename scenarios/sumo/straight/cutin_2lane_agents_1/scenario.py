@@ -1,6 +1,7 @@
 import random
 from itertools import combinations
 from pathlib import Path
+
 from numpy import random
 
 from smarts.sstudio import gen_scenario
