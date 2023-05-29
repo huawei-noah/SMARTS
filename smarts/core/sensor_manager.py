@@ -21,12 +21,18 @@
 # THE SOFTWARE.
 import logging
 from collections import Counter
-from typing import Dict, FrozenSet, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from smarts.core import config
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.renderer_base import RendererBase
-from smarts.core.sensors import Observation, Sensor, Sensors, SensorState
+from smarts.core.sensors import (
+    Observation,
+    Sensor,
+    SensorResolver,
+    Sensors,
+    SensorState,
+)
 from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
 from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
@@ -49,7 +55,7 @@ class SensorManager:
         self._actors_by_sensor_id: Dict[str, Set[str]] = {}
         self._sensor_references = Counter()
         # {sensor_id, ...}
-        self._discarded_sensors: Set[str] = set()
+        self._scheduled_sensors: List[Sensor] = []
         observation_workers = config()(
             "core", "observation_workers", default=0, cast=int
         )
@@ -71,7 +77,7 @@ class SensorManager:
             raise LookupError(
                 f"SMARTS_CORE_SENSOR_PARALLELIZATION={backing} is not a valid option."
             )
-        self._sensor_resolver = (
+        self._sensor_resolver: SensorResolver = (
             parallel_resolver() if observation_workers > 0 else LocalSensorResolver()
         )
 
@@ -168,14 +174,16 @@ class SensorManager:
         self._sensor_states = {}
         self._sensors_by_actor_id = {}
         self._sensor_references.clear()
-        self._discarded_sensors.clear()
+        self._scheduled_sensors.clear()
 
     def add_sensor_state(self, actor_id: str, sensor_state: SensorState):
         """Add a sensor state associated with a given actor."""
         self._sensor_states[actor_id] = sensor_state
 
-    def remove_sensors_by_actor_id(self, actor_id: str) -> FrozenSet[str]:
-        """Remove association of an actor to sensors. If the sensor is no longer associated the
+    def remove_sensors_by_actor_id(
+        self, actor_id: str, schedule_teardown: bool = True
+    ) -> Iterable[Tuple[Sensor, int]]:
+        """Remove association of an actor to sensors. If the sensor is no longer associated an actor, the
         sensor is scheduled to be removed."""
         sensor_states = self._sensor_states.get(actor_id)
         if not sensor_states:
@@ -185,29 +193,40 @@ class SensorManager:
             return frozenset()
         del self._sensor_states[actor_id]
         sensors_by_actor = self._sensors_by_actor_id[actor_id]
+        discarded_sensors = []
         for sensor_id in sensors_by_actor:
-            self._sensor_references.subtract([sensor_id])
-            count = self._sensor_references[sensor_id]
             self._actors_by_sensor_id[sensor_id].remove(actor_id)
-            if count < 1:
-                self._discarded_sensors.add(sensor_id)
+            self._sensor_references.subtract([sensor_id])
+            references = self._sensor_references[sensor_id]
+            discarded_sensors.append((self._sensors[sensor_id], references))
+            if references < 1:
+                self._disassociate_sensor(sensor_id, schedule_teardown)
         del self._sensors_by_actor_id[actor_id]
-        return frozenset(self._discarded_sensors)
+        return discarded_sensors
 
-    def remove_sensor(self, sensor_id: str) -> Optional[Sensor]:
+    def remove_sensor(
+        self, sensor_id: str, schedule_teardown: bool = False
+    ) -> Optional[Sensor]:
         """Remove a sensor by its id. Removes any associations it has with actors."""
         sensor = self._sensors.get(sensor_id)
         if not sensor:
             return None
+        self._disassociate_sensor(sensor_id, schedule_teardown)
+        return sensor
+
+    def _disassociate_sensor(self, sensor_id, schedule_teardown):
+        if schedule_teardown:
+            self._scheduled_sensors.append(self._sensors[sensor_id])
+
         del self._sensors[sensor_id]
         del self._sensor_references[sensor_id]
 
         ## clean up any remaining references by actors
         if sensor_id in self._actors_by_sensor_id:
             for actor_id in self._actors_by_sensor_id[sensor_id]:
-                self._sensors_by_actor_id[actor_id].remove(sensor_id)
+                if sensors_ids := self._sensors_by_actor_id[actor_id]:
+                    sensors_ids.remove(sensor_id)
             del self._actors_by_sensor_id[sensor_id]
-        return sensor
 
     def sensor_state_exists(self, actor_id: str) -> bool:
         """Determines if a actor has a sensor state associated with it."""
@@ -279,10 +298,7 @@ class SensorManager:
         for aid in missing_actors:
             self.remove_sensors_by_actor_id(aid)
 
-        for sensor_id in self._discarded_sensors:
-            if self._sensor_references.get(sensor_id, 0) < 1:
-                sensor = self.remove_sensor(sensor_id)
-                if sensor is not None:
-                    sensor.teardown(renderer=renderer)
+        for sensor in self._scheduled_sensors:
+            sensor.teardown(renderer=renderer)
 
-        self._discarded_sensors.clear()
+        self._scheduled_sensors.clear()
