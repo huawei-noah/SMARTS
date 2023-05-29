@@ -118,17 +118,20 @@ def _dist_to_destination(
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
-    prev_on_route = True
     route = route
     prev_route_lane = prev_route_lane
     prev_route_lane_point = prev_route_lane_point
     prev_route_displacement = prev_route_displacement
     prev_dist_travelled = 0
+    tot_dist_travelled = 0
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot, prev_on_route, route, prev_route_lane, prev_route_lane_point, prev_route_displacement, prev_dist_travelled
+        nonlocal mean, step, end_pos, dist_tot, route, prev_route_lane, prev_route_lane_point, prev_route_displacement, prev_dist_travelled, tot_dist_travelled
+
+
+        tot_dist_travelled += obs.distance_travelled
 
         if not done:
             cur_pos = Point(*obs.ego_vehicle_state.position)
@@ -141,11 +144,11 @@ def _dist_to_destination(
             print(f"cur_route_lane {cur_route_lane.lane_id}") 
             print(f"cur_route_lane_point {cur_route_lane_point}")
 
-            if (prev_on_route ^ cur_on_route) and cur_on_route:
+            if cur_on_route:
                 prev_route_lane = cur_route_lane
                 prev_route_lane_point = cur_route_lane_point
                 prev_route_displacement = cur_route_displacement
-                prev_dist_travelled = obs.distance_travelled
+                prev_dist_travelled = tot_dist_travelled
                 print(f"cur_dist_travelled {prev_dist_travelled}")
 
             prev_on_route = cur_on_route
@@ -162,7 +165,7 @@ def _dist_to_destination(
 
             # Step 1: Compute the last off-route distance driven by the vehicle, if any
             if not cur_on_route:
-                off_route_dist = obs.distance_travelled - prev_dist_travelled
+                off_route_dist = tot_dist_travelled - prev_dist_travelled
                 assert off_route_dist >= 0
                 off_route_dist += prev_route_displacement
                 last_route_lane = prev_route_lane
