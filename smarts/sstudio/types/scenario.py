@@ -38,7 +38,7 @@ from smarts.sstudio.types.zone import RoadSurfacePatch
 
 
 class ScenarioMetadataFields(IntEnum):
-    """This lists the standard metadata fields for the scenario metadata."""
+    """This lists metadata fields generally useful for scenario metadata."""
 
     actor_of_interest_color = enum.auto()
     """The color that the actors of interest should have."""
