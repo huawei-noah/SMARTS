@@ -90,7 +90,7 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
 )
 
 
-class StepReturn(IntEnum):
+class EnvReturnMode(IntEnum):
     """Configuration to determine the interface type of the step function.
 
     This configures between the environment status return (i.e. reward means the environment reward) and the per-agent
@@ -138,10 +138,10 @@ class HiWayEnvV1(gym.Env):
             for how the formatting matches the action space. String version
             can be used instead. See :class:`~smarts.env.utils.action_conversion.ActionOptions`. Defaults to
             :attr:`~smarts.env.utils.action_conversion.ActionOptions.default`.
-        step_return_type (StepReturn, str): This configures between the environment
+        environment_return_mode (EnvReturnMode, str): This configures between the environment
             step return information (i.e. reward means the environment reward) and the per-agent
             step return information (i.e. reward means rewards as key-value per agent). Defaults to
-            :attr:`~smarts.env.gymnasium.hiway_env_v1.StepReturn.agent`.
+            :attr:`~smarts.env.gymnasium.hiway_env_v1.EnvReturnMode.agent`.
     """
 
     metadata = {"render_modes": ["human"]}
@@ -176,7 +176,7 @@ class HiWayEnvV1(gym.Env):
             ObservationOptions, str
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
-        step_return_type: Union[StepReturn, str] = StepReturn.agent,
+        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.agent,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -216,10 +216,10 @@ class HiWayEnvV1(gym.Env):
         smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
 
-        if isinstance(step_return_type, str):
-            self._step_return_type = StepReturn[step_return_type]
+        if isinstance(environment_return_mode, str):
+            self._environment_return_mode = EnvReturnMode[environment_return_mode]
         else:
-            self._step_return_type = step_return_type
+            self._environment_return_mode = environment_return_mode
 
         if isinstance(action_options, str):
             action_options = ActionOptions[action_options]
@@ -311,7 +311,7 @@ class HiWayEnvV1(gym.Env):
 
         assert all("score" in v for v in info.values())
 
-        if self._step_return_type == StepReturn.environment:
+        if self._environment_return_mode == EnvReturnMode.environment:
             return (
                 self._observations_formatter.format(observations),
                 sum(r for r in rewards.values()),
@@ -319,7 +319,7 @@ class HiWayEnvV1(gym.Env):
                 dones["__all__"],
                 info,
             )
-        elif self._step_return_type == StepReturn.agent:
+        elif self._environment_return_mode == EnvReturnMode.agent:
             return (
                 self._observations_formatter.format(observations),
                 rewards,
@@ -328,7 +328,7 @@ class HiWayEnvV1(gym.Env):
                 info,
             )
         raise RuntimeError(
-            f"Invalid observation configuration using {self._step_return_type}"
+            f"Invalid observation configuration using {self._environment_return_mode}"
         )
 
     def reset(

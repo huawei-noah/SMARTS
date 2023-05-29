@@ -32,8 +32,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
 - `DistToDestination` metric now adds lane error penalty when agent terminates in different lane but same road as the goal position. 
-- `hiway-v1` can now be configured for per-agent or environment reward(s), truncation(s), and termination(s) through `step_return_type`.
-- `hiway-v1`'s `observation_options` no longer has an effect on the environment rewards, truncations, and terminations shapes.
+- `hiway-v1` can now be configured for per-agent or environment reward(s), truncation(s), termination(s), and info(s) through `environment_return_mode`.
+- `hiway-v1`'s `observation_options` no longer has an effect on the environment rewards, truncations, and terminations `agent|environment` style return mode.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
