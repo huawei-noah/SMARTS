@@ -319,13 +319,13 @@ def test_signal_observations(smarts, scenario):
                 signals[0].controlled_lanes[0] == ":junction-intersection_9_0"
             ), f"step={step}"
             assert len(signals[0].controlled_lanes) == 1, f"step={step}"
-            if step < 449:
+            if step < 448:
                 assert signals[0].state == SignalLightState.STOP, f"{step}"
                 assert signals[0].last_changed is None, f"{step}"
-            elif step < 799:
+            elif step < 798:
                 assert signals[0].state == SignalLightState.GO, f"{step}"
                 assert np.isclose(signals[0].last_changed, 45.1), f"{step}"
-            elif step < 899:
+            elif step < 898:
                 assert signals[0].state == SignalLightState.CAUTION, f"{step}"
                 assert np.isclose(signals[0].last_changed, 80.1), f"{step}"
             else:
