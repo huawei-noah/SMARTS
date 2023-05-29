@@ -28,6 +28,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import Costs
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score, avg_costs
 from smarts.env.gymnasium.wrappers.metric.params import (
     Comfort,
+    DistToDestination,
     DistToObstacles,
     JerkLinear,
     Params,
@@ -51,6 +52,9 @@ class Formula(FormulaBase):
         """
         params = Params(
             comfort=Comfort(
+                active=True,
+            ),
+            dist_to_destination=DistToDestination(
                 active=True,
             ),
             dist_to_obstacles=DistToObstacles(

@@ -34,16 +34,12 @@ from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
 from smarts.core.observations import (
     DrivableAreaGridMap,
-    EgoVehicleObservation,
     GridMapMetadata,
-    Observation,
     OccupancyGridMap,
     RoadWaypoints,
     SignalObservation,
     TopDownRGB,
-    VehicleObservation,
     ViaPoint,
-    Vias,
 )
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
