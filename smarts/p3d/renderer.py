@@ -41,7 +41,6 @@ from panda3d.core import (
     FrameBufferProperties,
     Geom,
     GeomLinestrips,
-    GeomTriangles,
     GeomTrifans,
     GeomNode,
     GeomVertexData,
