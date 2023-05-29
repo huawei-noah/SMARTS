@@ -124,12 +124,12 @@ def _dist_to_destination(
     prev_route_displacement = prev_route_displacement
     prev_dist_travelled = 0
     tot_dist_travelled = 0
+    print(route.end_lane.lane_id,"<----------END LANE")
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
         nonlocal mean, step, end_pos, dist_tot, route, prev_route_lane, prev_route_lane_point, prev_route_displacement, prev_dist_travelled, tot_dist_travelled
-
 
         tot_dist_travelled += obs.distance_travelled
 
@@ -139,19 +139,11 @@ def _dist_to_destination(
                 road_map=road_map, route=route, pos=cur_pos
             )
 
-            print(f"cur_pos {cur_pos}")
-            print(f"cur_on_route {cur_on_route}")
-            print(f"cur_route_lane {cur_route_lane.lane_id}") 
-            print(f"cur_route_lane_point {cur_route_lane_point}")
-
             if cur_on_route:
                 prev_route_lane = cur_route_lane
                 prev_route_lane_point = cur_route_lane_point
                 prev_route_displacement = cur_route_displacement
                 prev_dist_travelled = tot_dist_travelled
-                print(f"cur_dist_travelled {prev_dist_travelled}")
-
-            prev_on_route = cur_on_route
 
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
@@ -188,11 +180,14 @@ def _dist_to_destination(
             # Step 4: Compute lane error penalty if vehicle is in the same road as goal, but in a different lane.
             end_lane = route.end_lane
             lane_error_dist = 0
+            print("last road", last_route_lane.road.road_id)
+            print("end road",end_lane.road.road_id)
             if last_route_lane.road == end_lane.road:
                 lane_error = abs(last_route_lane.index - end_lane.index)
                 end_offset = end_lane.offset_along_lane(world_point=end_pos)
                 lane_width, _ = end_lane.width_at_offset(end_offset)
                 lane_error_dist = lane_error * lane_width
+                print(f"lane_error_dist {lane_error} {lane_width}")
 
             # Step 5: Total distance to destination
             dist_remainder = off_route_dist + on_route_dist + lane_error_dist
