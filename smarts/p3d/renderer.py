@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging
+import math
 import os
 import re
 from dataclasses import dataclass
@@ -41,6 +42,8 @@ from panda3d.core import (
     FrameBufferProperties,
     Geom,
     GeomLinestrips,
+    GeomTriangles,
+    GeomTrifans,
     GeomNode,
     GeomVertexData,
     GeomVertexFormat,
@@ -58,10 +61,12 @@ from panda3d.core import (
 
 from smarts.core import glsl, models
 from smarts.core.colors import Colors, SceneColors
-from smarts.core.coordinates import Pose
+from smarts.core.coordinates import Point, Pose
 from smarts.core.masks import RenderMasks
 from smarts.core.renderer_base import DEBUG_MODE, OffscreenCamera, RendererBase
 from smarts.core.scenario import Scenario
+from smarts.core.signals import SignalState, signal_state_to_color
+from smarts.core.vehicle_state import VehicleState
 
 # pytype: enable=import-error
 
@@ -252,9 +257,11 @@ class Renderer(RendererBase):
         self._simid = simid
         self._root_np = None
         self._vehicles_np = None
+        self._signals_np = None
         self._road_map_np = None
         self._dashed_lines_np = None
         self._vehicle_nodes = {}
+        self._signal_nodes = {}
         self._camera_nodes = {}
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
@@ -321,6 +328,7 @@ class Renderer(RendererBase):
         """Initialize this renderer."""
         self._root_np = self._showbase_instance.setup_sim_root(self._simid)
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        self._signals_np = self._root_np.attachNewNode("signals")
 
         map_path = scenario.map_glb_filepath
         map_dir = Path(map_path).parent
@@ -391,21 +399,37 @@ class Renderer(RendererBase):
         """Reset the render back to initialized state."""
         self._vehicles_np.removeNode()
         self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        self._signals_np.removeNode()
+        self._signals_np = self._root_np.attachNewNode("signals")
         self._vehicle_nodes = {}
+        self._signal_nodes = {}
 
     def step(self):
         """provided for non-SMARTS uses; normally not used by SMARTS."""
         self._showbase_instance.taskMgr.step()
 
     def sync(self, sim_frame):
-        """Update the current state of the vehicles within the renderer."""
-        for vehicle_id, vehicle_state in sim_frame.vehicle_states.items():
-            self.update_vehicle_node(vehicle_id, vehicle_state.pose)
+        """Update the current state of the vehicles and signals within the renderer."""
+        signal_ids = set()
+        for actor_id, actor_state in sim_frame.actor_states_by_id.items():
+            if isinstance(actor_state, VehicleState):
+                self.update_vehicle_node(actor_id, actor_state.pose)
+            elif isinstance(actor_state, SignalState):
+                signal_ids.add(actor_id)
+                color = signal_state_to_color(actor_state.state)
+                if actor_id not in self._signal_nodes:
+                    self.create_signal_node(actor_id, actor_state.stopping_pos, color)
+                    self.begin_rendering_signal(actor_id)
+                else:
+                    self.update_signal_node(actor_id, actor_state.stopping_pos, color)
 
         missing_vehicle_ids = set(self._vehicle_nodes) - set(sim_frame.vehicle_ids)
+        missing_signal_ids = set(self._signal_nodes) - signal_ids
 
         for vid in missing_vehicle_ids:
             self.remove_vehicle_node(vid)
+        for sig_id in missing_signal_ids:
+            self.remove_signal_node(sig_id)
 
     def teardown(self):
         """Clean up internal resources."""
@@ -414,6 +438,9 @@ class Renderer(RendererBase):
             self._root_np.removeNode()
             self._root_np = None
         self._vehicles_np = None
+        for sig_id in list(self._signal_nodes):
+            self.remove_signal_node(sig_id)
+        self._signals_np = None
         self._road_map_np = None
         self._dashed_lines_np = None
         self._is_setup = False
@@ -485,6 +512,77 @@ class Renderer(RendererBase):
             return
         vehicle_path.removeNode()
         del self._vehicle_nodes[vid]
+
+    def create_signal_node(
+        self, sig_id: str, position: Point, color: Union[Colors, SceneColors]
+    ):
+        """Create a signal node."""
+        if sig_id in self._signal_nodes:
+            return False
+
+        # Create geometry node
+        name = f"signal-{sig_id}"
+        geo_format = GeomVertexFormat.getV3()
+        vdata = GeomVertexData(name, geo_format, Geom.UHStatic)
+        vertex = GeomVertexWriter(vdata, "vertex")
+
+        num_pts = 10  # number of points around the circumference
+        seg_radians = 2 * math.pi / num_pts
+        vertex.addData3(0, 0, 0)
+        for i in range(num_pts):
+            angle = i * seg_radians
+            x = math.cos(angle)
+            y = math.sin(angle)
+            vertex.addData3(x, y, 0)
+
+        prim = GeomTrifans(Geom.UHStatic)
+        prim.addVertex(0)  # add center point
+        prim.add_next_vertices(num_pts)  # add outer points
+        prim.addVertex(1)  # add first outer point again to complete the circle
+        assert prim.closePrimitive()
+
+        geom = Geom(vdata)
+        geom.addPrimitive(prim)
+
+        geom_node = GeomNode(name)
+        geom_node.addGeom(geom)
+
+        np = self._root_np.attachNewNode(geom_node)
+        np.setName(name)
+        np.setColor(color.value)
+        np.setPos(position.x, position.y, 0.01)
+        np.setScale(0.9, 0.9, 1)
+        np.hide(RenderMasks.DRIVABLE_AREA_HIDE)
+        self._signal_nodes[sig_id] = np
+        return True
+
+    def begin_rendering_signal(self, sig_id: str):
+        """Add the signal node to the scene graph"""
+        signal_np = self._signal_nodes.get(sig_id, None)
+        if not signal_np:
+            self._log.warning("Renderer ignoring invalid signal id: %s", sig_id)
+            return
+        signal_np.reparentTo(self._signals_np)
+
+    def update_signal_node(
+        self, sig_id: str, position: Point, color: Union[Colors, SceneColors]
+    ):
+        """Move the specified signal node."""
+        signal_np = self._signal_nodes.get(sig_id, None)
+        if not signal_np:
+            self._log.warning("Renderer ignoring invalid signal id: %s", sig_id)
+            return
+        signal_np.setPos(position.x, position.y, 0.01)
+        signal_np.setColor(color.value)
+
+    def remove_signal_node(self, sig_id: str):
+        """Remove a signal node"""
+        signal_np = self._signal_nodes.get(sig_id, None)
+        if not signal_np:
+            self._log.warning("Renderer ignoring invalid signal id: %s", sig_id)
+            return
+        signal_np.removeNode()
+        del self._signal_nodes[sig_id]
 
     def camera_for_id(self, camera_id) -> P3dOffscreenCamera:
         """Get a camera by its id."""
