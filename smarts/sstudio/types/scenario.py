@@ -52,6 +52,7 @@ class ScenarioMetadata(StandardMetadata):
     def __init__(
         self,
         metadata: Optional[Dict[Union[str, ScenarioMetadataFields], Any]] = None,
+        *,
         actor_of_interest_re_filter: Optional[str] = None,
         actor_of_interest_color: Optional[Colors] = Colors.Blue,
         scenario_difficulty: Optional[int] = None,
