@@ -74,7 +74,8 @@ gen_scenario(
             ),
         ],
         scenario_metadata=t.ScenarioMetadata(
-            r"^(leader)|(other_interest)$", Colors.Blue
+            actor_of_interest_re_filter=r"^(leader)|(other_interest)$",
+            actor_of_interest_color=Colors.Blue,
         ),
     ),
     output_dir=Path(__file__).parent,

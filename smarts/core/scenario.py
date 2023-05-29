@@ -42,6 +42,7 @@ from typing import (
 
 import cloudpickle
 import numpy as np
+import yaml
 
 from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.data_model import SocialAgent
@@ -550,12 +551,12 @@ class Scenario:
 
     @staticmethod
     def _discover_metadata(scenario_root):
-        path = os.path.join(scenario_root, "build", "scenario_metadata.pkl")
+        path = os.path.join(scenario_root, "build", "scenario_metadata.yaml")
         if not os.path.exists(path):
             return dict()
 
-        with open(path, "rb") as f:
-            metadata = pickle.load(f)
+        with open(path, "r") as f:
+            metadata = yaml.load(f, yaml.Loader)
             return metadata
 
     def set_ego_missions(self, ego_missions: Dict[str, Mission]):
@@ -631,7 +632,7 @@ class Scenario:
             positional_radius:
                 The goal radius for the positional goal.
         Returns:
-            (positional_mission, traverse_mission): A positional mission that follows the initial
+            (smarts.core.plan.Mission, smarts.core.plan.Mission): A positional mission that follows the initial
              original vehicle's travel as well as a traverse style mission which is done when the
              vehicle leaves the map.
         """

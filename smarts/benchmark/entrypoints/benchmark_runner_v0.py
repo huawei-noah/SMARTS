@@ -212,9 +212,9 @@ def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
     """Runs a benchmark given the following.
 
     Args:
-        benchmark_config(file path): The file path to the benchmark configuration.
-        agent_locator(str): Locator string for the registered agent.
-        debug_log(bool): Whether the benchmark should log to `stdout`.
+        benchmark_config (str): The file path to the benchmark configuration.
+        agent_locator (str): Locator string for the registered agent.
+        debug_log (bool): Whether the benchmark should log to `stdout`.
     """
     benchmark_args = load_config(benchmark_config)
 

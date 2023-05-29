@@ -33,7 +33,6 @@ from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.file import unpack
 from smarts.core.utils.logging import diff_unpackable
 
 AGENT_IDS = [f"agent-00{i}" for i in range(3)]

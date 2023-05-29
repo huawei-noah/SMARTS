@@ -143,7 +143,7 @@ class Chassis:
 
     @property
     def steering(self) -> float:
-        """The steering value of the chassis in radians [-math.pi:math.pi]."""
+        """The steering value of the chassis in radians [-math.pi, math.pi]."""
         raise NotImplementedError
 
     @property

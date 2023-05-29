@@ -98,7 +98,7 @@ class SMARTS(ProviderManager):
     Args:
         agent_interfaces (Dict[str, AgentInterface]): The interfaces providing SMARTS with the understanding of what features each agent needs.
         traffic_sims (Optional[List[TrafficProvider]], optional): An optional list of traffic simulators for providing non-agent traffic. Defaults to None.
-        envision (Optional[EnvisionClient], optional): An envision client for connecting to an envision visualization server. Defaults to None.
+        envision (Optional[envision.client.Client], optional): An envision client for connecting to an envision visualization server. Defaults to None.
         visdom (Union[bool, Any], optional): Deprecated. Use SMARTS_VISDOM_ENABLED. A visdom client for connecting to a visdom visualization server.
         fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
         reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
@@ -244,7 +244,7 @@ class SMARTS(ProviderManager):
                 Overrides the simulation step length. Progress simulation time by the given amount.
                 Note the time_delta_since_last_step param is in (nominal) seconds.
         Returns:
-            Tuple[observations, rewards, dones, infos]: The simulation step return.
+            The simulation step return as (observations, rewards, dones, infos).
         """
         if not self._is_setup:
             raise SMARTSNotSetupError("Must call reset() or setup() before stepping.")
@@ -428,15 +428,19 @@ class SMARTS(ProviderManager):
          are no agents in the simulation.
 
         Args:
-            scenario(smarts.core.scenario.Scenario): The scenario to reset the simulation with.
-            start_time(float):
+            scenario (smarts.core.scenario.Scenario): The scenario to reset the simulation with.
+            start_time (float):
                 The initial amount of simulation time to skip. This has implications on all time
-                dependent systems. NOTE: SMARTS simulates a step and then updates vehicle control.
-                If you want a vehicle to enter at exactly `0.3` with a step of `0.1` it means the
-                simulation should start at `start_time==0.2`.
+                dependent systems.
+
+                .. note::
+
+                    SMARTS simulates a step and then updates vehicle control.
+                    If you want a vehicle to enter at exactly ``0.3`` with a step of ``0.1`` it means the
+                    simulation should start at ``start_time==0.2``.
 
         Returns:
-            Agent observations. This observation is as follows:
+            Dict[str, Observation]. This observation is as follows...
                 - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
@@ -1653,7 +1657,7 @@ class SMARTS(ProviderManager):
         if filter.simulation_data_filter["bubble_geometry"].enabled:
             bubble_geometry = [
                 list(bubble.geometry.exterior.coords)
-                for bubble in self._bubble_manager.bubbles
+                for bubble in self._bubble_manager.active_bubbles
             ]
 
         scenario_folder_path = self.scenario._root

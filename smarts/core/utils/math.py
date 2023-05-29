@@ -436,7 +436,7 @@ def position_to_ego_frame(position, ego_position, ego_heading):
         ego_position: Ego vehicle [x,y,z]
         ego_heading: Ego vehicle heading in radians
     Returns:
-        new_pose: The pose [x,y,z] in egocentric view
+        list: The position [x,y,z] in egocentric view
     """
     transform_matrix = _gen_ego_frame_matrix(ego_heading)
     ego_rel_position = np.asarray(position) - np.asarray(ego_position)
@@ -453,7 +453,7 @@ def world_position_from_ego_frame(position, ego_world_position, ego_world_headin
         ego_world_position: Ego vehicle [x,y,z]
         ego_world_heading: Ego vehicle heading in radians
     Returns:
-        new_pose: The pose [x,y,z] in world frame
+        list: The position [x,y,z] in world frame
     """
     transform_matrix = _gen_ego_frame_matrix(ego_world_heading)
     transform_matrix = np.linalg.inv(transform_matrix)

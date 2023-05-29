@@ -68,8 +68,8 @@ def driving_smarts_2023_env(
         a sample formatted observation data structure.
 
     Action space for each agent:
-        Action space for an ego can be either :attr:`~smarts.core.controllers.ActionSpaceType.Continuous`
-        or :attr:`~smarts.core.controllers.ActionSpaceType.RelativeTargetPose`. User should choose
+        Action space for an ego can be either :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous`
+        or :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.RelativeTargetPose`. User should choose
         one of the action spaces and specify the chosen action space through the ego's agent interface.
 
     Agent interface:

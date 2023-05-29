@@ -880,15 +880,15 @@ class ArgoverseMap(RoadMapWithCaches):
         only_drivable: bool = True,
     ) -> RoadMap.Route:
         assert not starting_road or not only_drivable or starting_road.is_drivable
-        route = ArgoverseMap.Route(self)
         next_roads = [starting_road] if starting_road else list(self._roads.values())
+        route_roads = []
         if only_drivable:
             next_roads = [r for r in next_roads if r.is_drivable]
-        while next_roads and len(route.roads) < max_route_len:
+        while next_roads and len(route_roads) < max_route_len:
             cur_road = random.choice(next_roads)
-            route._add_road(cur_road)
+            route_roads.append(cur_road)
             next_roads = list(cur_road.outgoing_roads)
-        return route
+        return ArgoverseMap.Route(road_map=self, roads=route_roads)
 
     def empty_route(self) -> RoadMap.Route:
         return ArgoverseMap.Route(self)

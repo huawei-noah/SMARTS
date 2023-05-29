@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2023-04-23 20:57:03 by Eclipse SUMO netedit Version 1.16.0
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <sumo-net-file value="t1/training/cutin_3lane_agents_1/map.net.xml"/>
+    </input>
+
+    <output>
+        <output-file value="t1/training/cutin_3lane_agents_1/map.net.xml"/>
+    </output>
+
+    <processing>
+        <geometry.min-radius.fix.railways value="false"/>
+        <geometry.max-grade.fix value="false"/>
+        <offset.disable-normalization value="true"/>
+        <lefthand value="0"/>
+    </processing>
+
+    <junctions>
+        <no-internal-links value="true"/>
+        <no-turnarounds value="true"/>
+        <junctions.corner-detail value="5"/>
+        <junctions.limit-turn-speed value="5.50"/>
+        <rectangular-lane-cut value="0"/>
+    </junctions>
+
+    <pedestrian>
+        <walkingareas value="0"/>
+    </pedestrian>
+
+</configuration>
+-->
+
+<net version="1.16" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,0.00" convBoundary="0.00,100.00,400.00,100.00" origBoundary="-10000000000.00,-10000000000.00,10000000000.00,10000000000.00" projParameter="!"/>
+
+    <edge id="gneE3" from="gneJ4" to="gneJ6" priority="-1" spreadType="center">
+        <lane id="gneE3_0" index="0" speed="13.89" length="400.00" shape="0.00,98.40 400.00,98.40"/>
+        <lane id="gneE3_1" index="1" speed="13.89" length="400.00" shape="0.00,101.60 400.00,101.60"/>
+    </edge>
+
+    <junction id="gneJ4" type="dead_end" x="0.00" y="100.00" incLanes="" intLanes="" shape="0.00,103.20 0.00,96.80"/>
+    <junction id="gneJ6" type="dead_end" x="400.00" y="100.00" incLanes="gneE3_0 gneE3_1" intLanes="" shape="400.00,96.80 400.00,103.20"/>
+
+</net>
