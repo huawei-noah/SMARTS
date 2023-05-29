@@ -100,7 +100,9 @@ gen_scenario(
         bubbles=bubbles,
         ego_missions=ego_missions,
         social_agent_missions=social_agent_missions,
-        scenario_metadata=t.ScenarioMetadata(r".*-1.*", Colors.Yellow),
+        scenario_metadata=t.ScenarioMetadata(
+            actor_of_interest_re_filter=r".*-1.*", actor_of_interest_color=Colors.Yellow
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

@@ -28,11 +28,12 @@ import logging
 import os
 import pickle
 import sqlite3
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
+import yaml
 
 from smarts.core.default_map_builder import find_mapfile_in_dir
 from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
@@ -105,7 +106,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
             graph["traffic_histories"].append(artifact_path)
 
     if scenario.scenario_metadata is not None:
-        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.pkl")]
+        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.yaml")]
 
     return graph
 
@@ -409,8 +410,8 @@ def gen_social_agent_missions(
             The scenario directory
         missions:
             A sequence of missions for social agents to perform
-        social_agent_actor(s):
-            The actor(s) to use
+        social_agent_actor:
+            The social agent actor(s) this scenario will use.
         name:
             A short name for this grouping of social agents. Is also used as the name
             of the social agent traffic file
@@ -690,14 +691,14 @@ def gen_traffic_histories(
         genhistories.import_dataset(hdsr, output_dir, map_bbox)
 
 
-def gen_metadata(scenario: str, scenario_metadata: types.ScenarioMetadata):
+def gen_metadata(scenario: str, scenario_metadata: types.StandardMetadata):
     """Generate the metadata for the scenario
 
     Args:
         scenario (str):The scenario directory
-        scenario_metadata (types.ScenarioMetadata): _description_
+        scenario_metadata (smarts.sstudio.types.standard_metadata.StandardMetadata): Scenario metadata information.
     """
     _check_if_called_externally()
-    output_path = os.path.join(scenario, "build", "scenario_metadata.pkl")
-    with open(output_path, "wb") as f:
-        pickle.dump(asdict(scenario_metadata), f)
+    output_path = os.path.join(scenario, "build", "scenario_metadata.yaml")
+    with open(output_path, "w") as f:
+        yaml.dump(scenario_metadata._dict_metadata, f)

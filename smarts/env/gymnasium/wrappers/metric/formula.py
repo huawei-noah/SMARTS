@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 import functools
 from typing import Dict, NewType
@@ -57,7 +58,7 @@ class FormulaBase:
         "Overall" on the wrapped environment.
 
         Returns:
-            Score: Contains "Overall" score and other sub-component scores.
+            "Overall" score and other sub-component scores.
         """
         raise NotImplementedError
 
@@ -99,7 +100,7 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Score: Contains "Overall", "DistToDestination", "Time",
+            "Overall", "DistToDestination", "Time",
             "HumannessError", and "RuleViolation" scores.
         """
 

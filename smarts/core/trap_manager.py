@@ -116,14 +116,16 @@ class TrapManager(ActorCaptureManager):
         :param agent_id: The agent to associate to this trap.
         :type agent_id: str
         :param mission: The mission to assign to the agent and vehicle.
-        :type mission: class: Mission
+        :type mission: smarts.core.plan.Mission
         :param road_map: The road map to provide information to about the map.
-        :type road_map: class: RoadMap
+        :type road_map: RoadMap
         :param sim_time: The current simulator time.
         :type sim_time: float
         :param reject_expired: If traps should be ignored if their patience would already be
             expired on creation
-        :type reject_expired: Tuple[bool, bool] If the trap was added and if the trap is already expired.
+        :type reject_expired: bool
+        :return: If the trap was added and if the trap is already expired.
+        :rtype: Tuple[bool, bool]
         """
         if mission is None:
             mission = Mission.random_endless_mission(road_map)
