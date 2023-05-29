@@ -700,5 +700,5 @@ def gen_metadata(scenario: str, scenario_metadata: types.StandardMetadata):
     """
     _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "scenario_metadata.yaml")
-    with open(output_path, "w") as f:
-        yaml.dump(scenario_metadata._dict_metadata, f)
+    with open(output_path, "wb") as f:
+        pickle.dump(scenario_metadata._dict_metadata, f)

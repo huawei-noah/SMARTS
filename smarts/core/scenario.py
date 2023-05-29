@@ -555,8 +555,8 @@ class Scenario:
         if not os.path.exists(path):
             return dict()
 
-        with open(path, "r") as f:
-            metadata = yaml.load(f, Loader=yaml.Loader)
+        with open(path, "rb") as f:
+            metadata = pickle.load(f)
             return metadata
 
     def set_ego_missions(self, ego_missions: Dict[str, Mission]):
