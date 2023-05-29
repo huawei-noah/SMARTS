@@ -125,7 +125,6 @@ def _dist_to_destination(
     prev_route_displacement = prev_route_displacement
     prev_dist_travelled = 0
     tot_dist_travelled = 0
-    print(route.end_lane.lane_id,"<----------END LANE")
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
@@ -150,7 +149,6 @@ def _dist_to_destination(
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
-            print("END OF EPISODE")
             cur_pos = Point(*obs.ego_vehicle_state.position)
             cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
                 road_map=road_map, route=route, pos=cur_pos
@@ -179,16 +177,15 @@ def _dist_to_destination(
             on_route_dist = abs(on_route_dist)
 
             # Step 4: Compute lane error penalty if vehicle is in the same road as goal, but in a different lane.
-            end_lane = route.end_lane
+            # TODO: Lane error penalty is not computed because the end lane of a SUMO traffic vehicle of interest
+            # is currently not easily accessible.
             lane_error_dist = 0
-            print("last road", last_route_lane.road.road_id)
-            print("end road",end_lane.road.road_id)
-            if last_route_lane.road == end_lane.road:
-                lane_error = abs(last_route_lane.index - end_lane.index)
-                end_offset = end_lane.offset_along_lane(world_point=end_pos)
-                lane_width, _ = end_lane.width_at_offset(end_offset)
-                lane_error_dist = lane_error * lane_width
-                print(f"lane_error_dist {lane_error} {lane_width}")
+            # end_lane = route.end_lane
+            # if last_route_lane.road == end_lane.road:
+            #     lane_error = abs(last_route_lane.index - end_lane.index)
+            #     end_offset = end_lane.offset_along_lane(world_point=end_pos)
+            #     lane_width, _ = end_lane.width_at_offset(end_offset)
+            #     lane_error_dist = lane_error * lane_width
 
             # Step 5: Total distance to destination
             dist_remainder = off_route_dist + on_route_dist + lane_error_dist
