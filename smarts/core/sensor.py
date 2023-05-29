@@ -101,11 +101,20 @@ class CameraSensor(Sensor):
         self._follow_actor(
             vehicle_state, renderer
         )  # ensure we have a correct initial camera position
+        self._mask = mask
+        self._width = width
+        self._height = height
+        self._resolution = resolution
 
     def __eq__(self, __value: object) -> bool:
         return (
-            isinstance(__value, CameraSensor)
-            and self._target_actor == self._target_actor
+            isinstance(__value, self.__class__)
+            and self._target_actor == __value._target_actor
+            and self._camera_name == __value._camera_name
+            and self._mask == __value._mask
+            and self._width == __value._width
+            and self._height == __value._height
+            and self._resolution == __value._resolution
         )
 
     def teardown(self, **kwargs):
