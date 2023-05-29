@@ -97,10 +97,10 @@ class EnvReturnMode(IntEnum):
     status return (i.e. rewards means reward per agent).
     """
 
-    agent = auto()
-    """Generate per-agent step returns: rewards({id: float}), terminateds({id: bool}), and truncateds({id: bool})."""
+    per_agent = auto()
+    """Generate per-agent mode step returns in the form ``(rewards({id: float}), terminateds({id: bool}), truncateds ({id: bool}), info)``."""
     environment = auto()
-    """Generate environment step returns: reward(float), terminated(bool), and truncated(bool)."""
+    """Generate environment mode step returns in the form ``(reward (float), terminated (bool), truncated (bool), info)``."""
 
 
 class HiWayEnvV1(gym.Env):
@@ -141,7 +141,7 @@ class HiWayEnvV1(gym.Env):
         environment_return_mode (EnvReturnMode, str): This configures between the environment
             step return information (i.e. reward means the environment reward) and the per-agent
             step return information (i.e. reward means rewards as key-value per agent). Defaults to
-            :attr:`~smarts.env.gymnasium.hiway_env_v1.EnvReturnMode.agent`.
+            :attr:`~smarts.env.gymnasium.hiway_env_v1.EnvReturnMode.per_agent`.
     """
 
     metadata = {"render_modes": ["human"]}
@@ -176,7 +176,7 @@ class HiWayEnvV1(gym.Env):
             ObservationOptions, str
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
-        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.agent,
+        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.per_agent,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -319,7 +319,7 @@ class HiWayEnvV1(gym.Env):
                 dones["__all__"],
                 info,
             )
-        elif self._environment_return_mode == EnvReturnMode.agent:
+        elif self._environment_return_mode == EnvReturnMode.per_agent:
             return (
                 self._observations_formatter.format(observations),
                 rewards,
