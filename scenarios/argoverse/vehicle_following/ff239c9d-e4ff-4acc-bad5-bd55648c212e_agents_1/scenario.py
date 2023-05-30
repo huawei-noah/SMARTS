@@ -24,7 +24,9 @@ gen_scenario(
         ego_missions=ego_mission,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         traffic_histories=traffic_histories,
-        scenario_metadata=t.ScenarioMetadata(leader_id, Colors.Blue),
+        scenario_metadata=t.ScenarioMetadata(
+            actor_of_interest_re_filter=leader_id, actor_of_interest_color=Colors.Blue
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

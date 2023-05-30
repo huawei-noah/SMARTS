@@ -92,12 +92,14 @@ ego_missions = [
         ),
     )  # Delayed start, to ensure road has prior traffic.
 ]
-
+leader_id = "Leader-007"
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
         ego_missions=ego_missions,
-        scenario_metadata=ScenarioMetadata("Leader-007", Colors.Blue),
+        scenario_metadata=ScenarioMetadata(
+            actor_of_interest_re_filter=leader_id, actor_of_interest_color=Colors.Blue
+        ),
     ),
     output_dir=Path(__file__).parent,
 )
