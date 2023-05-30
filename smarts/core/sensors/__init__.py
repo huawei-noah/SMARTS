@@ -720,7 +720,7 @@ class Sensors:
         min_dist = nearest_lanes[0][1]
         tied_nearest = [lane for (lane, d) in nearest_lanes if d == min_dist]
         nearest_on_route = [lane for lane in tied_nearest if lane.road in route_roads]
-        nearest_lane = nearest_on_route[0] if nearest_on_route else nearest_lanes[0]
+        nearest_lane = nearest_on_route[0] if nearest_on_route else nearest_lanes[0][0]
 
         # Check whether vehicle is in wrong-way
         is_wrong_way = cls._check_wrong_way_event(nearest_lane, vehicle_state)
