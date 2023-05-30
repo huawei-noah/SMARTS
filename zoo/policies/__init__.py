@@ -217,6 +217,17 @@ def keyboard_entry_point(**kwargs):
 
     interface = AgentInterface(
         action=ActionSpaceType.RelativeTargetPose,
+        drivable_area_grid_map=False,
+        lane_positions=True,
+        lidar_point_cloud=False,
+        occupancy_grid_map=False,
+        road_waypoints=False,
+        signals=True,
+        top_down_rgb=RGB(
+            width=200,
+            height=200,
+            resolution=80 / 200,  # m/pixels
+        ),
     )
 
     agent_params = {
