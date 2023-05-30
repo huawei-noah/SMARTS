@@ -136,7 +136,7 @@ def _dist_to_destination(
         if not done:
             cur_pos = Point(*obs.ego_vehicle_state.position)
             cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                road_map=road_map, route=route, pos=cur_pos
+                road_map=road_map, route=route, point=cur_pos
             )
 
             if cur_on_route:
@@ -151,10 +151,10 @@ def _dist_to_destination(
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
             cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                road_map=road_map, route=route, pos=cur_pos
+                road_map=road_map, route=route, point=cur_pos
             )
 
-            # Step 1: Compute the last off-route distance driven by the vehicle, if any
+            # Step 1: Compute the last off-route distance driven by the vehicle, if any.
             if not cur_on_route:
                 off_route_dist = tot_dist_travelled - prev_dist_travelled
                 assert off_route_dist >= 0
@@ -166,19 +166,21 @@ def _dist_to_destination(
                 last_route_lane = cur_route_lane
                 last_route_pos = cur_route_lane_point
 
-            # Step 2: Compute the remaining route distance from the last recorded on-route position
+            # Step 2: Compute the remaining route distance from the last recorded on-route position.
             on_route_dist = route.distance_between(
                 start=RoadMap.Route.RoutePoint(pt=last_route_pos),
                 end=RoadMap.Route.RoutePoint(pt=end_pos),
             )
 
-            # Step 3: Remaining `on_route_dist` can become negative when agent overshoots the end position while
+            # Step 3: Compute absolute `on_route_dist` because it could be
+            # negative when an agent overshoots the end position while
             # remaining outside the goal capture radius at all times.
             on_route_dist = abs(on_route_dist)
 
             # Step 4: Compute lane error penalty if vehicle is in the same road as goal, but in a different lane.
-            # TODO: Lane error penalty is not computed because the end lane of a SUMO traffic vehicle of interest
-            # is currently not easily accessible.
+            # TODO: Lane error penalty should be computed. It is not computed
+            # currently because the end lane of a SUMO traffic vehicle of
+            # interest is currently not accessible.
             lane_error_dist = 0
             # end_lane = route.end_lane
             # if last_route_lane.road == end_lane.road:
@@ -187,10 +189,10 @@ def _dist_to_destination(
             #     lane_width, _ = end_lane.width_at_offset(end_offset)
             #     lane_error_dist = lane_error * lane_width
 
-            # Step 5: Total distance to destination
+            # Step 5: Total distance to destination.
             dist_remainder = off_route_dist + on_route_dist + lane_error_dist
 
-            # Step 6: Cap distance to destination
+            # Step 6: Cap distance to destination.
             dist_remainder_capped = min(dist_remainder, dist_tot)
 
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
@@ -646,27 +648,27 @@ def get_dist(
 
 
 def on_route(
-    road_map: RoadMap, route: RoadMap.Route, pos: Point, radius: float = 7
+    road_map: RoadMap, route: RoadMap.Route, point: Point, radius: float = 7
 ) -> Tuple[bool, Optional[RoadMap.Lane], Optional[Point], Optional[float]]:
     """
-    Computes whether point `pos` is within the search `radius` distance from
-    any lane in the `route`.
+    Computes whether `point` is within the search `radius` distance from any
+    lane in the `route`.
 
     Args:
         road_map (RoadMap): Road map.
         route (RoadMap.Route): Route consisting of a set of roads.
-        pos (smarts.core.coordinates.Point): A world-coordinate point.
+        point (smarts.core.coordinates.Point): A world-coordinate point.
         radius (float): Search radius.
 
     Returns:
         Tuple[bool, Optional[RoadMap.Lane], Optional[smarts.core.coordinates.Point], Optional[float]]:
-            True if `pos` is nearby any road in `route`, else False. If true,
+            True if `point` is nearby any road in `route`, else False. If true,
             additionally returns the (i) nearest lane in route, (ii) its
-            nearest lane center point, and (iii) displacement between
-            `pos` and lane center point.
+            nearest lane center point, and (iii) displacement between `point`
+            and lane center point.
     """
     lanes = road_map.nearest_lanes(
-        point=pos,
+        point=point,
         radius=radius,
         include_junctions=True,
     )
@@ -674,9 +676,9 @@ def on_route(
     route_roads = route.roads
     for lane, _ in lanes:
         if lane.road in route_roads:
-            offset = lane.offset_along_lane(world_point=pos)
+            offset = lane.offset_along_lane(world_point=point)
             lane_point = lane.from_lane_coord(RefLinePoint(s=offset))
-            displacement = np.linalg.norm(lane_point.as_np_array - pos.as_np_array)
+            displacement = np.linalg.norm(lane_point.as_np_array - point.as_np_array)
             return True, lane, lane_point, displacement
 
     return False, None, None, None

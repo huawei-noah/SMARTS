@@ -202,6 +202,7 @@ class MetricsBase(gym.Wrapper):
                 "actors of interest."
             )
 
+        # fmt: off
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
             cost_funcs_kwargs = {}
@@ -211,7 +212,7 @@ class MetricsBase(gym.Wrapper):
                     end_pos = self._scen.missions[agent_name].goal.position
                     dist_tot, route = get_dist(
                         road_map=self._road_map,
-                        point_a=Point(*self._scen.missions[agent_name].start.position),
+                        point_a=self._scen.missions[agent_name].start.point,
                         point_b=end_pos,
                     )
                 elif isinstance(interest_criteria, InterestDoneCriteria) and (interest_actor is not None):
@@ -234,36 +235,29 @@ class MetricsBase(gym.Wrapper):
                     raise MetricsError(
                         "Unsupported configuration for distance-to-destination cost function."
                     )
-                start_pos = Point(*self._scen.missions[agent_name].start.position)
                 cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                    road_map=self._road_map, route=route, pos=start_pos
+                    road_map=self._road_map, route=route, point=self._scen.missions[agent_name].start.point
                 )
                 assert cur_on_route, f"{agent_name} does not start nearby the desired route."
-                cost_funcs_kwargs.update(
-                    {
-                        "dist_to_destination": {
-                            "end_pos": end_pos,
-                            "dist_tot": dist_tot,
-                            "route": route,
-                            "prev_route_lane": cur_route_lane,
-                            "prev_route_lane_point": cur_route_lane_point,
-                            "prev_route_displacement": cur_route_displacement,
-                        }
+                cost_funcs_kwargs.update({
+                    "dist_to_destination": {
+                        "end_pos": end_pos,
+                        "dist_tot": dist_tot,
+                        "route": route,
+                        "prev_route_lane": cur_route_lane,
+                        "prev_route_lane_point": cur_route_lane_point,
+                        "prev_route_displacement": cur_route_displacement,
                     }
-                )
+                })
 
-            cost_funcs_kwargs.update(
-                {
-                    "dist_to_obstacles": {
-                        "ignore": self._params.dist_to_obstacles.ignore
-                    },
-                    "steps": {
-                        "max_episode_steps": self.env.agent_interfaces[
-                            agent_name
-                        ].max_episode_steps
-                    },
-                }
-            )
+            cost_funcs_kwargs.update({
+                "dist_to_obstacles": {
+                    "ignore": self._params.dist_to_obstacles.ignore
+                },
+                "steps": {
+                    "max_episode_steps": self.env.agent_interfaces[agent_name].max_episode_steps
+                },
+            })
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params, **cost_funcs_kwargs
             )
@@ -279,6 +273,7 @@ class MetricsBase(gym.Wrapper):
             }
 
         return result
+        # fmt: on
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
@@ -371,7 +366,7 @@ def _get_end_and_dist(
         end_pos = goal.position
         dist_tot, route = get_dist(
             road_map=road_map,
-            point_a=Point(*interest_social_mission.start.position),
+            point_a=interest_social_mission.start.point,
             point_b=end_pos,
         )
     else:
