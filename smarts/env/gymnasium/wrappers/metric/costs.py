@@ -136,7 +136,7 @@ def _dist_to_destination(
         if not done:
             cur_pos = Point(*obs.ego_vehicle_state.position)
             cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                road_map=road_map, route=route, pos=cur_pos
+                road_map=road_map, route=route, point=cur_pos
             )
 
             if cur_on_route:
@@ -151,7 +151,7 @@ def _dist_to_destination(
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
             cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                road_map=road_map, route=route, pos=cur_pos
+                road_map=road_map, route=route, point=cur_pos
             )
 
             # Step 1: Compute the last off-route distance driven by the vehicle, if any.
@@ -179,7 +179,7 @@ def _dist_to_destination(
 
             # Step 4: Compute lane error penalty if vehicle is in the same road as goal, but in a different lane.
             # TODO: Lane error penalty should be computed. It is not computed
-            # currently because the end lane of a SUMO traffic vehicle of 
+            # currently because the end lane of a SUMO traffic vehicle of
             # interest is currently not accessible.
             lane_error_dist = 0
             # end_lane = route.end_lane
@@ -663,7 +663,7 @@ def on_route(
     Returns:
         Tuple[bool, Optional[RoadMap.Lane], Optional[smarts.core.coordinates.Point], Optional[float]]:
             True if `point` is nearby any road in `route`, else False. If true,
-            additionally returns the (i) nearest lane in route, (ii) its 
+            additionally returns the (i) nearest lane in route, (ii) its
             nearest lane center point, and (iii) displacement between `point`
             and lane center point.
     """
