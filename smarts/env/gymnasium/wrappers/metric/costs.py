@@ -135,9 +135,12 @@ def _dist_to_destination(
 
         if not done:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                road_map=road_map, route=route, point=cur_pos
-            )
+            (
+                cur_on_route,
+                cur_route_lane,
+                cur_route_lane_point,
+                cur_route_displacement,
+            ) = on_route(road_map=road_map, route=route, point=cur_pos)
 
             if cur_on_route:
                 prev_route_lane = cur_route_lane
@@ -150,9 +153,12 @@ def _dist_to_destination(
             return Costs(dist_to_destination=0)
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
-                road_map=road_map, route=route, point=cur_pos
-            )
+            (
+                cur_on_route,
+                cur_route_lane,
+                cur_route_lane_point,
+                cur_route_displacement,
+            ) = on_route(road_map=road_map, route=route, point=cur_pos)
 
             # Step 1: Compute the last off-route distance driven by the vehicle, if any.
             if not cur_on_route:
