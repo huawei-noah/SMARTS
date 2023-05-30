@@ -33,9 +33,6 @@ class Reward(gym.Wrapper):
             if terminated[agent_id] == True:
                 if agent_obs["events"]["reached_goal"]:
                     print(f"{agent_id}: Hooray! Reached goal.")
-                    raise Exception(
-                        f"{agent_id}: Goal has been leaked to the ego agent!"
-                    )
                 elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
