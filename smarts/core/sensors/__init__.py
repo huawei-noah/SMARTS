@@ -708,13 +708,19 @@ class Sensors:
         )
         # Check that center of vehicle is still close to route
         radius = vehicle_minimum_radius_bounds + 5
-        nearest_lane = sim_local_constants.road_map.nearest_lane(
+        nearest_lanes = sim_local_constants.road_map.nearest_lanes(
             vehicle_pos, radius=radius
         )
 
         # No road nearby, so we're not on route!
-        if not nearest_lane:
+        if not nearest_lanes:
             return (True, False)
+
+        # Handle case where there are multiple nearest lanes the same dist away
+        min_dist = nearest_lanes[0][1]
+        tied_nearest = [lane for (lane, d) in nearest_lanes if d == min_dist]
+        nearest_on_route = [lane for lane in tied_nearest if lane.road in route_roads]
+        nearest_lane = nearest_on_route[0] if nearest_on_route else nearest_lanes[0]
 
         # Check whether vehicle is in wrong-way
         is_wrong_way = cls._check_wrong_way_event(nearest_lane, vehicle_state)

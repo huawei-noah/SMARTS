@@ -41,6 +41,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
 - Fixed waypoints so that they will always be the length of the `lookahead` parameter, even in junctions.
 - Fixed an issue where a single waypoint would appear in off-route lanes for missions with a goal.
+- Fixed an issue where the `off_route` event would be incorrectly triggered when driving on overlapping lanes.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.
