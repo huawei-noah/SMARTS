@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 from __future__ import annotations
 
-import warnings
 from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Dict, List, NewType, Optional, Tuple
