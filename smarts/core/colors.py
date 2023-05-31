@@ -24,18 +24,15 @@ from enum import Enum
 class Colors(Enum):
     """Common simulation colors as RGBA values."""
 
-    Red =       (210/255,  30/255,  30/255, 1)
-    Rose =      (196/255,       0,  84/255, 1)
-    Burgundy =  (128/250,       0,  32/250, 1)
-    PastelRed = (250/250, 160/250, 160/250, 1)
-    Maroon =    (128/250,       0,       0, 1)
-    Marsala =   (152/250, 104/250, 104/250, 1)
-
+    Red = (210 / 255, 30 / 255, 30 / 255, 1)
+    Rose = (196 / 255, 0, 84 / 255, 1)
+    Maroon = (128 / 255, 0, 0, 1)
     Orange = (237 / 255, 109 / 255, 0, 1)
     Yellow = (255 / 255, 190 / 255, 40 / 255, 1)
     GreenTransparent = (98 / 255, 178 / 255, 48 / 255, 0.3)
     Silver = (192 / 255, 192 / 255, 192 / 255, 1)
     Black = (0, 0, 0, 1)
+    Green = (30 / 255, 210 / 255, 30 / 255, 1)
 
     DarkBlue = (5 / 255, 5 / 255, 70 / 255, 1)
     Blue = (0, 153 / 255, 1, 1)
@@ -70,3 +67,8 @@ class SceneColors(Enum):
     MissionRoute = Colors.GreenTransparent.value
     LaneDivider = Colors.OffWhite.value
     EdgeDivider = Colors.Yellow.value
+
+    SignalUnknown = Colors.Grey.value
+    SignalStop = Colors.Maroon.value
+    SignalCaution = Colors.Yellow.value
+    SignalGo = Colors.Green.value

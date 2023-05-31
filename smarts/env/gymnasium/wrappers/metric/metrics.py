@@ -409,7 +409,9 @@ def _get_traffic_end_and_dist(
             .lane_at_index(0)
             .from_lane_coord(RefLinePoint(s=np.inf))
         )
-        dist_tot, route = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        dist_tot, route = get_dist(
+            road_map=road_map, point_a=start_pos, point_b=end_pos
+        )
         return end_pos, dist_tot, route
     elif isinstance(traffic_sim, TrafficHistoryProvider):
         history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
@@ -420,7 +422,9 @@ def _get_traffic_end_and_dist(
         # roads traversed by the history vehicle in complex maps. Ideally we
         # should use the actual road ids traversed by the history vehicle to
         # compute the distance.
-        dist_tot, route = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
+        dist_tot, route = get_dist(
+            road_map=road_map, point_a=start_pos, point_b=end_pos
+        )
         return end_pos, dist_tot, route
     else:
         raise MetricsError(f"Unsupported traffic provider {traffic_sim.source_str}.")
