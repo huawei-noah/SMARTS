@@ -64,7 +64,7 @@ export const SceneColors = Object.freeze({
 
 export const SignalColors = Object.freeze({
   Unknown: Grey,
-  Stop: Red,
+  Stop: Burgundy,
   Caution: Yellow,
   Go: Green,
 });

@@ -69,6 +69,6 @@ class SceneColors(Enum):
     EdgeDivider = Colors.Yellow.value
 
     SignalUnknown = Colors.Grey.value
-    SignalStop = Colors.Red.value
+    SignalStop = Colors.Burgundy.value
     SignalCaution = Colors.Yellow.value
     SignalGo = Colors.Green.value
