@@ -461,8 +461,8 @@ def _vehicle_gap(
     # vehicle separation distance while driving.
     min_waypoints_length = int(np.ceil(max_column_length / waypoint_spacing))
 
-    def convert_2d_to_3d(array:np.ndarray)->np.ndarray:
-        return np.pad(array,(0,1), mode="constant", constant_values=0)
+    def convert_2d_to_3d(array: np.ndarray) -> np.ndarray:
+        return np.pad(array, (0, 1), mode="constant", constant_values=0)
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
@@ -482,17 +482,19 @@ def _vehicle_gap(
             max_column_length,
         )
 
+        # fmt: off
         waypoint_paths = obs.waypoint_paths
         max_len = max(map(len, waypoint_paths))
         mask = np.array([
-            [[False,False,False]]*len(path) + [[True,True,True]]*(max_len - len(path))  
+            [[False, False, False]] * len(path) + [[True, True, True]] * (max_len - len(path))
             for path in waypoint_paths
         ])
         waypoints = np.array([
-            list(map(lambda x: convert_2d_to_3d(x.pos), path))+[np.full((3,), np.nan)]*(max_len - len(path)) 
+            list(map(lambda x: convert_2d_to_3d(x.pos), path)) + [np.full((3,), np.nan)] * (max_len - len(path))
             for path in waypoint_paths
         ])
         waypoints_masked = np.ma.MaskedArray(data=waypoints, mask=mask)
+        # fmt: on
 
         # Find the nearest waypoint index to the actor of interest, if any.
         lane_width = waypoint_paths[0][0].lane_width

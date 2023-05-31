@@ -130,7 +130,7 @@ def nearest_waypoint(
     points_expanded = np.expand_dims(points, (1, 2))
     diff = matrix - points_expanded
     dist = np.linalg.norm(diff, axis=-1)
-    dist_masked = np.ma.MaskedArray(dist, diff.mask[...,0])
+    dist_masked = np.ma.MaskedArray(dist, diff.mask[..., 0])
     for ii in range(points.shape[0]):
         index = np.argmin(dist_masked[ii])
         index_unravel = np.unravel_index(index, dist_masked[ii].shape)
