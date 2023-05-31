@@ -21,12 +21,12 @@
 # THE SOFTWARE.
 
 
-import collections
+from collections.abc import Mapping
 from functools import cached_property
 from typing import Any, Dict, Iterator, Optional
 
 
-class StandardMetadata(collections.Mapping):
+class StandardMetadata(Mapping):
     """Metadata that does not have direct influence on the simulation."""
 
     def __init__(
