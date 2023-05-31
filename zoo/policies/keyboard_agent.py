@@ -14,7 +14,7 @@ class KeyboardAgent(Agent):
     def act(self, obs):
 
         from zoo.policies.helper import plotter3d
-        plotter3d(obs=obs["top_down_rgb"],rgb_gray=3,channel_order="last",pause=5)
+        plotter3d(obs=obs["top_down_rgb"],rgb_gray=3,channel_order="last",pause=0)
 
         action = 0
         while True:

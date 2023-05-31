@@ -24,9 +24,13 @@ from enum import Enum
 class Colors(Enum):
     """Common simulation colors as RGBA values."""
 
-    Red = (210 / 255, 30 / 255, 30 / 255, 1)
-    Rose = (196 / 255, 0, 84 / 255, 1)
-    Burgundy = (127 / 255, 0, 1 / 255, 1)
+    Red =       (210/255,  30/255,  30/255, 1)
+    Rose =      (196/255,       0,  84/255, 1)
+    Burgundy =  (128/250,       0,  32/250, 1)
+    PastelRed = (250/250, 160/250, 160/250, 1)
+    Maroon =    (128/250,       0,       0, 1)
+    Marsala =   (152/250, 104/250, 104/250, 1)
+
     Orange = (237 / 255, 109 / 255, 0, 1)
     Yellow = (255 / 255, 190 / 255, 40 / 255, 1)
     GreenTransparent = (98 / 255, 178 / 255, 48 / 255, 0.3)
