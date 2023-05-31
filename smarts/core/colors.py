@@ -26,7 +26,7 @@ class Colors(Enum):
 
     Red = (210 / 255, 30 / 255, 30 / 255, 1)
     Rose = (196 / 255, 0, 84 / 255, 1)
-    Burgundy = (127 / 255, 0, 1 / 255, 1)
+    Maroon = (128 / 255, 0, 0, 1)
     Orange = (237 / 255, 109 / 255, 0, 1)
     Yellow = (255 / 255, 190 / 255, 40 / 255, 1)
     GreenTransparent = (98 / 255, 178 / 255, 48 / 255, 0.3)
@@ -69,6 +69,6 @@ class SceneColors(Enum):
     EdgeDivider = Colors.Yellow.value
 
     SignalUnknown = Colors.Grey.value
-    SignalStop = Colors.Burgundy.value
+    SignalStop = Colors.Maroon.value
     SignalCaution = Colors.Yellow.value
     SignalGo = Colors.Green.value

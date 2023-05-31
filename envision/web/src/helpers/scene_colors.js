@@ -21,7 +21,7 @@
 // THE SOFTWARE.
 export const Red = [210 / 255, 30 / 255, 30 / 255, 1];
 export const Rose = [196 / 255, 0, 84 / 255, 1];
-export const Burgundy = [127 / 255, 0, 1 / 255, 1];
+export const Maroon = [128 / 255, 0, 0, 1];
 export const Orange = [237 / 255, 109 / 255, 0, 1];
 export const Yellow = [255 / 255, 190 / 255, 40 / 255, 1];
 export const GreenTransparent = [98 / 255, 178 / 255, 48 / 255, 0.3];
@@ -64,7 +64,7 @@ export const SceneColors = Object.freeze({
 
 export const SignalColors = Object.freeze({
   Unknown: Grey,
-  Stop: Burgundy,
+  Stop: Maroon,
   Caution: Yellow,
   Go: Green,
 });
