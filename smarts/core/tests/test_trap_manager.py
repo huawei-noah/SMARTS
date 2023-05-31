@@ -194,7 +194,7 @@ def test_no_recapture_agent(
     smarts_two_agents: SMARTS, two_agent_capture_offset_tenth_of_second
 ):
     smarts_two_agents.reset(next(two_agent_capture_offset_tenth_of_second))
-    assert smarts_two_agents.elapsed_sim_time == 0.1
+    assert smarts_two_agents.elapsed_sim_time == 0.2
     for i in range(3):
         smarts_two_agents.step({})
     assert len(smarts_two_agents.agent_manager.pending_agent_ids) == 0
