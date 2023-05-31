@@ -718,7 +718,7 @@ class Sensors:
 
         # Handle case where there are multiple nearest lanes the same dist away
         min_dist = nearest_lanes[0][1]
-        tied_nearest = [lane for (lane, d) in nearest_lanes if d == min_dist]
+        tied_nearest = [lane for (lane, d) in nearest_lanes if math.isclose(d, min_dist)]
         nearest_on_route = [lane for lane in tied_nearest if lane.road in route_roads]
         nearest_lane = nearest_on_route[0] if nearest_on_route else nearest_lanes[0][0]
 
