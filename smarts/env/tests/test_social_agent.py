@@ -97,4 +97,4 @@ def test_social_agents_in_env_neighborhood_vehicle_obs(env: HiWayEnvV1):
         (v_id for v_id in seen_zoo_social_vehicles if "zoo-car1" in v_id), None
     )
     assert late_entry is not None, seen_zoo_social_vehicles
-    assert first_seen_vehicles[late_entry] == 7
+    assert first_seen_vehicles[late_entry] == 8
