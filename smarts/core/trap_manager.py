@@ -61,7 +61,7 @@ class Trap:
     def patience_expired(self, sim_time: float):
         """If the trap has expired and should no longer capture a vehicle."""
         expiry_time = self.activation_time + self.patience
-        return expiry_time < sim_time or math.isclose(expiry_time, sim_time)
+        return expiry_time < sim_time and not math.isclose(expiry_time, sim_time)
 
     def includes(self, vehicle_id: str):
         """Returns if the given actor should be considered for capture."""
@@ -220,7 +220,10 @@ class TrapManager(ActorCaptureManager):
                 )
                 continue
 
-            if trap.patience_expired(sim.elapsed_sim_time):
+            if (
+                trap.patience_expired(sim.elapsed_sim_time)
+                and sim.elapsed_sim_time > sim.timestep_sec
+            ):
                 capture_by_agent_id[agent_id] = _CaptureState(
                     ConditionState.EXPIRED, trap, updated_mission=trap.mission
                 )

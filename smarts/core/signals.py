@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from enum import IntFlag
 from typing import List, Optional
 
+from smarts.core.colors import SceneColors
+
 from .actor import ActorState
 from .coordinates import Point
 from .road_map import RoadMap
@@ -37,6 +39,18 @@ class SignalLightState(IntFlag):
     GO = 4
     FLASHING = 8
     ARROW = 16
+
+
+def signal_state_to_color(state: SignalLightState) -> SceneColors:
+    """Maps a signal state to a color."""
+    if state == SignalLightState.STOP:
+        return SceneColors.SignalStop
+    elif state == SignalLightState.CAUTION:
+        return SceneColors.SignalCaution
+    elif state == SignalLightState.GO:
+        return SceneColors.SignalGo
+    else:
+        return SceneColors.SignalUnknown
 
 
 @dataclass

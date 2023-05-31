@@ -170,7 +170,7 @@ def _format_signals(signals: List[SignalObservation]):
 
     # fmt: off
     state = np.pad(state, ((0, pad_shp)), mode='constant', constant_values=0)
-    stop_point = np.pad(state, ((0, pad_shp), (0, 0)), mode='constant', constant_values=0)
+    stop_point = np.pad(stop_point, ((0, pad_shp), (0, 0)), mode='constant', constant_values=0)
     last_changed = np.pad(last_changed, ((0, pad_shp)), mode='constant', constant_values=0)
     # fmt: on
 

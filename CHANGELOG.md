@@ -13,7 +13,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
-- Traffic light signals are now visualized in Envision.
+- Traffic lights are now rendered in Envision.
+- Traffic lights are now rendered in camera observations.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 ### Changed
@@ -31,7 +32,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `info` returned by `hiway-v1` in `reset()` and `step()` methods are unified.
 - Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
-- `DistToDestination` metric now adds lane error penalty when agent terminates in different lane but same road as the goal position. 
+- `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position. 
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
@@ -42,6 +43,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed waypoints so that they will always be the length of the `lookahead` parameter, even in junctions.
 - Fixed an issue where a single waypoint would appear in off-route lanes for missions with a goal.
 - Fixed an issue where the `off_route` event would be incorrectly triggered when driving on overlapping lanes.
+- Fixed an underlying issue with the sensor manager where the sensors were not removed immediately.
+- Fixed an issue where warnings could be generated when an agent takes over an existing vehicle if the vehicle previously had sensors on it.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.

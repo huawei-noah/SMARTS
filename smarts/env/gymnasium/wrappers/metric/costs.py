@@ -22,11 +22,11 @@ from __future__ import annotations
 import warnings
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Dict, List, NewType
+from typing import Callable, Dict, List, NewType, Optional, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import Heading, Point
+from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
@@ -108,28 +108,99 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
 
 
 def _dist_to_destination(
-    end_pos: Point, dist_tot: float
+    end_pos: Point,
+    dist_tot: float,
+    route: RoadMap.Route,
+    prev_route_lane: RoadMap.Lane,
+    prev_route_lane_point: Point,
+    prev_route_displacement: float,
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
     end_pos = end_pos
     dist_tot = dist_tot
+    route = route
+    prev_route_lane = prev_route_lane
+    prev_route_lane_point = prev_route_lane_point
+    prev_route_displacement = prev_route_displacement
+    prev_dist_travelled = 0
+    tot_dist_travelled = 0
 
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
-        nonlocal mean, step, end_pos, dist_tot
+        nonlocal mean, step, end_pos, dist_tot, route, prev_route_lane, prev_route_lane_point, prev_route_displacement, prev_dist_travelled, tot_dist_travelled
+
+        tot_dist_travelled += obs.distance_travelled
 
         if not done:
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            (
+                cur_on_route,
+                cur_route_lane,
+                cur_route_lane_point,
+                cur_route_displacement,
+            ) = on_route(road_map=road_map, route=route, point=cur_pos)
+
+            if cur_on_route:
+                prev_route_lane = cur_route_lane
+                prev_route_lane_point = cur_route_lane_point
+                prev_route_displacement = cur_route_displacement
+                prev_dist_travelled = tot_dist_travelled
+
             return Costs(dist_to_destination=-np.inf)
         elif obs.events.reached_goal:
             return Costs(dist_to_destination=0)
         else:
             cur_pos = Point(*obs.ego_vehicle_state.position)
-            dist_remainder = get_dist(
-                road_map=road_map, point_a=cur_pos, point_b=end_pos
+            (
+                cur_on_route,
+                cur_route_lane,
+                cur_route_lane_point,
+                cur_route_displacement,
+            ) = on_route(road_map=road_map, route=route, point=cur_pos)
+
+            # Step 1: Compute the last off-route distance driven by the vehicle, if any.
+            if not cur_on_route:
+                off_route_dist = tot_dist_travelled - prev_dist_travelled
+                assert off_route_dist >= 0
+                off_route_dist += prev_route_displacement
+                last_route_lane = prev_route_lane
+                last_route_pos = prev_route_lane_point
+            else:
+                off_route_dist = cur_route_displacement
+                last_route_lane = cur_route_lane
+                last_route_pos = cur_route_lane_point
+
+            # Step 2: Compute the remaining route distance from the last recorded on-route position.
+            on_route_dist = route.distance_between(
+                start=RoadMap.Route.RoutePoint(pt=last_route_pos),
+                end=RoadMap.Route.RoutePoint(pt=end_pos),
             )
+
+            # Step 3: Compute absolute `on_route_dist` because it could be
+            # negative when an agent overshoots the end position while
+            # remaining outside the goal capture radius at all times.
+            on_route_dist = abs(on_route_dist)
+
+            # Step 4: Compute lane error penalty if vehicle is in the same road as goal, but in a different lane.
+            # TODO: Lane error penalty should be computed. It is not computed
+            # currently because the end lane of a SUMO traffic vehicle of
+            # interest is currently not accessible.
+            lane_error_dist = 0
+            # end_lane = route.end_lane
+            # if last_route_lane.road == end_lane.road:
+            #     lane_error = abs(last_route_lane.index - end_lane.index)
+            #     end_offset = end_lane.offset_along_lane(world_point=end_pos)
+            #     lane_width, _ = end_lane.width_at_offset(end_offset)
+            #     lane_error_dist = lane_error * lane_width
+
+            # Step 5: Total distance to destination.
+            dist_remainder = off_route_dist + on_route_dist + lane_error_dist
+
+            # Step 6: Cap distance to destination.
             dist_remainder_capped = min(dist_remainder, dist_tot)
+
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
     return func
@@ -484,7 +555,7 @@ class CostFuncsBase:
     # fmt: off
     collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
-    dist_to_destination: Callable[[Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_destination: Callable[[Point,float,RoadMap.Route,RoadMap.Lane,Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
     dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
     jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
@@ -531,7 +602,9 @@ class CostError(Exception):
     pass
 
 
-def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
+def get_dist(
+    road_map: RoadMap, point_a: Point, point_b: Point, tolerate: bool = False
+) -> Tuple[float, RoadMap.Route]:
     """
     Computes the shortest route distance from point_a to point_b in the road
     map. Both points should lie on a road in the road map. Key assumption about
@@ -542,9 +615,13 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         road_map: Scenario road map.
         point_a: A point, in world-map coordinates, which lies on a road.
         point_b: A point, in world-map coordinates, which lies on a road.
+        tolerate: If False, raises an error when distance is negative due to
+            route being computed in reverse direction from point_b to point_a.
+            Defaults to False.
 
     Returns:
         float: Shortest road distance between two points in the road map.
+        RoadMap.Route: Planned route between point_a and point_b.
     """
 
     mission = Mission(
@@ -559,7 +636,7 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
         ),
     )
     plan = Plan(road_map=road_map, mission=mission, find_route=False)
-    plan.create_route(mission=mission, radius=20)
+    plan.create_route(mission=mission, start_lane_radius=3, end_lane_radius=0.5)
     assert isinstance(plan.route, RoadMap.Route)
     from_route_point = RoadMap.Route.RoutePoint(pt=point_a)
     to_route_point = RoadMap.Route.RoutePoint(pt=point_b)
@@ -567,22 +644,47 @@ def get_dist(road_map: RoadMap, point_a: Point, point_b: Point) -> float:
     dist_tot = plan.route.distance_between(start=from_route_point, end=to_route_point)
     if dist_tot == None:
         raise CostError("Unable to find road on route near given points.")
-    elif dist_tot < 0:
-        # This happens when agent overshoots the goal position while
-        # remaining outside the goal capture radius at all times. Default
-        # positional goal radius is 2m.
-        dist_tot = abs(dist_tot)
+    elif dist_tot < 0 and not tolerate:
+        raise CostError(
+            "Route computed in reverse direction from point_b to "
+            f"point_a resulting in negative distance: {dist_tot}."
+        )
 
-    # Account for agent ending in a different lane but in the same road as
-    # the goal position.
-    start_lane = plan.route.start_lane
-    end_lane = plan.route.end_lane
-    lane_error = abs(start_lane.index - end_lane.index)
-    if len(plan.route.roads) == 1 and lane_error > 0:
-        assert start_lane.road == end_lane.road
-        end_offset = end_lane.offset_along_lane(world_point=point_b)
-        lane_width, _ = end_lane.width_at_offset(end_offset)
-        lane_error_dist = lane_error * lane_width
-        dist_tot += lane_error_dist
+    return dist_tot, plan.route
 
-    return dist_tot
+
+def on_route(
+    road_map: RoadMap, route: RoadMap.Route, point: Point, radius: float = 7
+) -> Tuple[bool, Optional[RoadMap.Lane], Optional[Point], Optional[float]]:
+    """
+    Computes whether `point` is within the search `radius` distance from any
+    lane in the `route`.
+
+    Args:
+        road_map (RoadMap): Road map.
+        route (RoadMap.Route): Route consisting of a set of roads.
+        point (smarts.core.coordinates.Point): A world-coordinate point.
+        radius (float): Search radius.
+
+    Returns:
+        Tuple[bool, Optional[RoadMap.Lane], Optional[smarts.core.coordinates.Point], Optional[float]]:
+            True if `point` is nearby any road in `route`, else False. If true,
+            additionally returns the (i) nearest lane in route, (ii) its
+            nearest lane center point, and (iii) displacement between `point`
+            and lane center point.
+    """
+    lanes = road_map.nearest_lanes(
+        point=point,
+        radius=radius,
+        include_junctions=True,
+    )
+
+    route_roads = route.roads
+    for lane, _ in lanes:
+        if lane.road in route_roads:
+            offset = lane.offset_along_lane(world_point=point)
+            lane_point = lane.from_lane_coord(RefLinePoint(s=offset))
+            displacement = np.linalg.norm(lane_point.as_np_array - point.as_np_array)
+            return True, lane, lane_point, displacement
+
+    return False, None, None, None
