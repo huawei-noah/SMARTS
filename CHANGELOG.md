@@ -13,7 +13,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
-- Traffic light signals are now visualized in Envision.
+- Traffic lights are now rendered in Envision.
+- Traffic lights are now rendered in camera observations.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 ### Changed
