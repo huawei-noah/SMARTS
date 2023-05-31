@@ -7,6 +7,7 @@ from pynput import keyboard
 from smarts.core.agent import Agent
 from smarts.core.controllers import ActionSpaceType
 
+
 class KeyboardAgent(Agent):
     def __init__(self, action_space_type):
         self._format_action = FormatAction(action_space_type=action_space_type)
