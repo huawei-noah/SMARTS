@@ -42,6 +42,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
 - Fixed waypoints so that they will always be the length of the `lookahead` parameter, even in junctions.
 - Fixed an issue where a single waypoint would appear in off-route lanes for missions with a goal.
+- Fixed an issue where the `off_route` event would be incorrectly triggered when driving on overlapping lanes.
 - Fixed an underlying issue with the sensor manager where the sensors were not removed immediately.
 - Fixed an issue where warnings could be generated when an agent takes over an existing vehicle if the vehicle previously had sensors on it.
 ### Removed
