@@ -424,7 +424,7 @@ def _steps(
             return Costs(steps=np.nan)
 
         if obs.events.reached_goal or obs.events.interest_done:
-            return Costs(steps= min(step,max_episode_steps) / max_episode_steps)
+            return Costs(steps=min(step, max_episode_steps) / max_episode_steps)
         elif (
             len(obs.events.collisions) > 0
             or obs.events.off_road
