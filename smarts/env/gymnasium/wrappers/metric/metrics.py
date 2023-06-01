@@ -250,12 +250,14 @@ class MetricsBase(gym.Wrapper):
                     }
                 })
 
+            max_episode_steps = self._scen.metadata.get("scenario_duration",0) / self.env.smarts.fixed_timestep_sec
+            max_episode_steps = max_episode_steps or self.env.agent_interfaces[agent_name].max_episode_steps
             cost_funcs_kwargs.update({
                 "dist_to_obstacles": {
                     "ignore": self._params.dist_to_obstacles.ignore
                 },
                 "steps": {
-                    "max_episode_steps": self.env.agent_interfaces[agent_name].max_episode_steps
+                    "max_episode_steps": max_episode_steps
                 },
             })
             self._cost_funcs[agent_name] = make_cost_funcs(
