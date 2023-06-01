@@ -45,7 +45,7 @@ class ScenarioMetadataFields(IntEnum):
     actor_of_interest_re_filter = enum.auto()
     """Actors with names that match this pattern are actors of interest."""
     scenario_difficulty = enum.auto()
-    """Custom difficulty marking values, normalised to [0,1]."""
+    """Custom difficulty marking values, normalised to (0,1]."""
     scenario_duration = enum.auto()
     """The expected scenario time length in seconds."""
 

@@ -529,8 +529,17 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         agent_interfaces (Dict[str,AgentInterface]): Agent interfaces.
 
     Raises:
-        AttributeError: If any agent's mission is not of type PositionGoal.
+        MetricsError: If (i) scenario difficulty is not properly normalised,
+            or (ii) any agent's goal is improperly configured.
     """
+
+    difficulty = scenario.metadata.get("scenario_difficulty", None)
+    if not ((difficulty is None) or (0 < difficulty <= 1)):
+        raise MetricsError(
+            "Expected scenario difficulty to be normalised within (0,1], but "
+            f"got difficulty={difficulty}."
+        )
+
     goal_types = {
         agent_name: type(agent_mission.goal)
         for agent_name, agent_mission in scenario.missions.items()
@@ -547,7 +556,7 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
                 and aoi != None
             )
         ):
-            raise AttributeError(
+            raise MetricsError(
                 "{0} has an unsupported goal type {1} and interest done criteria {2} "
                 "combination.".format(
                     agent_name, goal_types[agent_name], interest_criteria
