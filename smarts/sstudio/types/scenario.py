@@ -58,7 +58,7 @@ class ScenarioMetadata(StandardMetadata):
         metadata: Optional[Dict[Union[str, ScenarioMetadataFields], Any]] = None,
         *,
         actor_of_interest_re_filter: Optional[str] = None,
-        actor_of_interest_color: Optional[Colors] = Colors.Blue,
+        actor_of_interest_color: Optional[Colors] = None,
         scenario_difficulty: Optional[float] = None,
         scenario_duration: Optional[float] = None,
     ) -> None:
