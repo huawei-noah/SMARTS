@@ -37,8 +37,6 @@ class TrafficActor(Actor):
     explicit that you actually want a car.
     """
 
-    name: str
-    """The name of the traffic actor. It must be unique."""
     accel: float = 2.6
     """The maximum acceleration value of the actor (in m/s^2)."""
     decel: float = 4.5

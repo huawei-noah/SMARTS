@@ -36,6 +36,7 @@ from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.logging import suppress_output, timeit
+from smarts.core.utils.type_operations import TypeSuite
 
 from . import config, models
 from .actor import ActorRole, ActorState
@@ -165,33 +166,30 @@ class SMARTS(ProviderManager):
         self._traffic_history_provider = TrafficHistoryProvider()
         self._trajectory_interpolation_provider = TrajectoryInterpolationProvider(self)
 
-        self._traffic_sims = traffic_sims or []
-        self._traffic_sims.append(self._traffic_history_provider)
+        traffic_sims = traffic_sims or []
+        traffic_sims.append(self._traffic_history_provider)
         if traffic_sim:
             warnings.warn(
                 "SMARTS traffic_sim property has been deprecated in favor of traffic_sims.  Please update your code.",
                 category=DeprecationWarning,
             )
-            self._traffic_sims += [traffic_sim]
-        # we didn't create these; but we assume management of them...
-        for ts in self._traffic_sims:
-            ts.set_manager(self)
+            traffic_sims += [traffic_sim]
 
-        self._providers: List[Provider] = []
+        self._provider_suite = TypeSuite(Provider)
+        if external_provider:
+            self._external_provider = ExternalProvider(self)
+            self.add_provider(self._external_provider)
         self.add_provider(self._agent_physics_provider)
         self.add_provider(self._direct_control_provider)
         self.add_provider(self._motion_planner_provider)
         self.add_provider(self._trajectory_interpolation_provider)
-        for traffic_sim in self._traffic_sims:
+        for traffic_sim in traffic_sims:
             recovery_flags = (
                 ProviderRecoveryFlags.EPISODE_REQUIRED
                 | ProviderRecoveryFlags.ATTEMPT_RECOVERY
                 | ProviderRecoveryFlags.RELINQUISH_ACTORS
             )
-            self._insert_provider(len(self._providers), traffic_sim, recovery_flags)
-        if external_provider:
-            self._external_provider = ExternalProvider(self)
-            self._insert_provider(0, self._external_provider)
+            self.add_provider(traffic_sim, recovery_flags)
         self.add_provider(self._signal_provider)
 
         # We buffer provider state between steps to compensate for TRACI's timestep delay
@@ -549,19 +547,10 @@ class SMARTS(ProviderManager):
         """
         self._check_valid()
         assert isinstance(provider, Provider)
-        self._insert_provider(len(self._providers), provider, recovery_flags)
-        if isinstance(provider, TrafficProvider):
-            self._traffic_sims.append(provider)
-
-    def _insert_provider(
-        self,
-        index: int,
-        provider: Provider,
-        recovery_flags: ProviderRecoveryFlags = ProviderRecoveryFlags.EXPERIMENT_REQUIRED,
-    ):
-        assert isinstance(provider, Provider)
         provider.recovery_flags = recovery_flags
-        self._providers.insert(index, provider)
+        self._provider_suite.insert(provider)
+        if isinstance(provider, TrafficProvider):
+            provider.set_manager(self)
 
     def remove_provider(self, requested_type_or_provider: Union[type, Provider]):
         """Remove a provider from the simulation.
@@ -575,19 +564,11 @@ class SMARTS(ProviderManager):
         self._check_valid()
         out_provider = None
         if isinstance(requested_type_or_provider, type):
-            for i, provider in enumerate(self._providers):
-                if isinstance(provider, requested_type_or_provider):
-                    self._providers.pop(i)
-                    out_provider = provider
+            out_provider = self._provider_suite.remove_by_type(
+                requested_type_or_provider
+            )
         elif isinstance(requested_type_or_provider, Provider):
-            try:
-                self._providers.remove(requested_type_or_provider)
-            except ValueError:
-                pass
-            else:
-                out_provider = requested_type_or_provider
-        if isinstance(out_provider, TrafficProvider):
-            self._traffic_sims.remove(out_provider)
+            out_provider = self._provider_suite.remove(requested_type_or_provider)
         return out_provider
 
     def switch_ego_agents(self, agent_interfaces: Dict[str, AgentInterface]):
@@ -930,9 +911,9 @@ class SMARTS(ProviderManager):
             self._agent_manager = None
         if self._vehicle_index is not None:
             self._vehicle_index = None
-        for traffic_sim in self._traffic_sims:
+        for traffic_sim in self._provider_suite.get_all_by_type(TrafficProvider):
             traffic_sim.destroy()
-        self._traffic_sims = []
+        self._provider_suite.clear_type(TrafficProvider)
         if self._renderer is not None:
             self._renderer.destroy()
             self._renderer = None
@@ -1047,19 +1028,9 @@ class SMARTS(ProviderManager):
         return self._agent_physics_provider.actions
 
     @property
-    def traffic_sim(self) -> Optional[TrafficProvider]:
-        """The underlying traffic simulation."""
-        warnings.warn(
-            "SMARTS traffic_sim property has been deprecated in favor of traffic_sims.  Please update your code.",
-            category=DeprecationWarning,
-        )
-        assert len(self._traffic_sims) <= 1
-        return self._traffic_sims[0] if len(self._traffic_sims) == 1 else None
-
-    @property
     def traffic_sims(self) -> List[TrafficProvider]:
         """The underlying traffic simulations."""
-        return self._traffic_sims
+        return self._provider_suite.get_all_by_type(TrafficProvider)
 
     @property
     def traffic_history_provider(self) -> TrafficHistoryProvider:
@@ -1226,13 +1197,20 @@ class SMARTS(ProviderManager):
     @property
     def providers(self) -> List[Provider]:
         """The current providers controlling actors within the simulation."""
-        return self._providers
+        return self._provider_suite.instances
 
     def get_provider_by_type(self, requested_type) -> Optional[Provider]:
         """Get The first provider that matches the requested type."""
         self._check_valid()
-        for provider in self._providers:
+        for provider in self.providers:
             if isinstance(provider, requested_type):
+                return provider
+        return None
+
+    def get_provider_by_id(self, requested_id) -> Optional[Provider]:
+        self._check_valid()
+        for provider in self.providers:
+            if provider.provider_id() == requested_id:
                 return provider
         return None
 
@@ -1472,9 +1450,7 @@ class SMARTS(ProviderManager):
                 )
                 vehicle_collisions.append(collision)
 
-        traffic_providers = [
-            p for p in self.providers if isinstance(p, TrafficProvider)
-        ]
+        traffic_providers = self._provider_suite.get_all_by_type(TrafficProvider)[:]
         for vehicle_id in self._vehicle_index.social_vehicle_ids():
             for provider in traffic_providers:
                 if provider.manages_actor(vehicle_id) and self._get_pybullet_collisions(

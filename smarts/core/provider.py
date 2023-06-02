@@ -231,7 +231,7 @@ class Provider:
     def source_str(self) -> str:
         """This property should be used to fill in the source field
         of all ActorState objects created/managed by this Provider."""
-        return self.__class__.__name__
+        return self.provider_id()
 
     @property
     def actor_ids(self) -> Iterable[str]:
@@ -256,3 +256,7 @@ class Provider:
         if self.manages_actor(actor_id):
             self.stop_managing(actor_id)
         # can be overridden to do more cleanup as necessary
+
+    @classmethod
+    def provider_id(cls):
+        return cls.__name__

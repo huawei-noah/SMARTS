@@ -19,14 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
-
 from dataclasses import dataclass
+
+from smarts.sstudio.types.actor.traffic_actor import TrafficActor
 
 
 @dataclass(frozen=True)
-class Actor:
-    """This is the base description/spec type for traffic actors."""
+class TrafficEngineActor(TrafficActor):
+    """This represents an actor that should be controlled by a traffic simulator."""
 
-    name: str
-    """The name of the actor. This must be unique."""
+    traffic_provider: str = "SumoTrafficSimulation"
+    """The traffic provider that the actor is intended to be handed over to."""

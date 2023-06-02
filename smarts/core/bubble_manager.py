@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from sys import maxsize
-from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple
+from typing import Dict, FrozenSet, List, Optional, Sequence, Set, Tuple, Union
 
 from shapely.affinity import rotate, translate
 from shapely.geometry import CAP_STYLE, JOIN_STYLE, Point, Polygon
@@ -50,6 +50,7 @@ from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.types import BoidAgentActor
 from smarts.sstudio.types import Bubble as SSBubble
 from smarts.sstudio.types import BubbleLimits, SocialAgentActor
+from smarts.sstudio.types.actor.traffic_engine_actor import TrafficEngineActor
 from smarts.sstudio.types.condition import Condition
 from smarts.zoo.registry import make as make_social_agent
 
@@ -134,7 +135,7 @@ class Bubble:
         return self._bubble.id
 
     @property
-    def actor(self) -> SocialAgentActor:
+    def actor(self) -> Union[SocialAgentActor, TrafficEngineActor]:
         """The actor that should replace the captured actor."""
         return self._bubble.actor
 
@@ -650,20 +651,47 @@ class BubbleManager(ActorCaptureManager):
 
         transitioned = [c for c in cursors if c.transition is not None]
         for cursor in transitioned:
+            bubble = cursor.bubble
+            actor = bubble.actor
             if cursor.transition == BubbleTransition.AirlockEntered:
-                self._airlock_social_vehicle_with_social_agent(
-                    sim, cursor.vehicle_id, cursor.bubble.actor, cursor.bubble
-                )
+                if isinstance(actor, SocialAgentActor):
+                    self._airlock_social_vehicle_with_social_agent(
+                        sim,
+                        cursor.vehicle_id,
+                        social_agent_actor=actor,
+                        is_boid=bubble.is_boid,
+                        keep_alive=bubble.keep_alive,
+                    )
+                elif isinstance(actor, TrafficEngineActor):
+                    pass
+                else:
+                    self._log.warning(
+                        f"Unknown actor base used and will be skipped:\n {actor}"
+                    )
             elif cursor.transition == BubbleTransition.Entered:
-                self._hijack_social_vehicle_with_social_agent(
-                    sim, cursor.vehicle_id, cursor.bubble.actor, cursor.bubble
-                )
+                if isinstance(actor, SocialAgentActor):
+                    self._hijack_social_vehicle_with_social_agent(
+                        sim, cursor.vehicle_id, actor, bubble.is_boid
+                    )
+                elif isinstance(actor, TrafficEngineActor):
+                    self._transfer_to_traffic_engine(sim, cursor)
+                else:
+                    self._log.warning(
+                        f"Unknown actor base used and will be skipped:\n {actor}"
+                    )
             elif cursor.transition == BubbleTransition.Exited:
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
-                teardown = not cursor.bubble.is_boid or not cursor.bubble.keep_alive
-                agent_id = BubbleManager._get_agent_id_from_cursor(cursor)
-                sim.vehicle_exited_bubble(cursor.vehicle_id, agent_id, teardown)
+                teardown = not bubble.is_boid or not bubble.keep_alive
+                from smarts.core.smarts import SMARTS
+
+                sim: SMARTS
+                assert isinstance(sim, SMARTS)
+                if isinstance(actor, SocialAgentActor):
+                    agent_id = BubbleManager._get_agent_id_from_cursor(cursor)
+                    sim.vehicle_exited_bubble(
+                        cursor.vehicle_id, agent_id, teardown_agent=teardown
+                    )
 
     def _move_traveling_bubbles(self, sim):
         active_bubbles, inactive_bubbles = self._bubble_groups(sim)
@@ -692,26 +720,30 @@ class BubbleManager(ActorCaptureManager):
                 bubble.move_to_follow_vehicle(vehicles[0])
 
     def _airlock_social_vehicle_with_social_agent(
-        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
+        self,
+        sim,
+        vehicle_id: str,
+        social_agent_actor: SocialAgentActor,
+        is_boid: bool,
+        keep_alive: bool,
     ):
         """When airlocked. The social agent will receive observations and execute
         its policy, however it won't actually operate the vehicle's controller.
         """
+        assert isinstance(
+            social_agent_actor, SocialAgentActor
+        ), "This must be a social agent actor type."
         self._log.debug(
             f"Airlocked vehicle={vehicle_id} with actor={social_agent_actor}"
         )
 
-        if bubble.is_boid:
+        if is_boid:
             agent_id = BubbleManager._make_boid_social_agent_id(social_agent_actor)
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
 
         social_agent = None
-        if (
-            bubble.is_boid
-            and bubble.keep_alive
-            or agent_id in sim.agent_manager.social_agent_ids
-        ):
+        if is_boid and keep_alive or agent_id in sim.agent_manager.social_agent_ids:
             # E.g. if agent is a boid and was being re-used
             interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
         else:
@@ -722,26 +754,34 @@ class BubbleManager(ActorCaptureManager):
             interface = social_agent.interface
 
         self._prepare_sensors_for_agent_control(
-            sim, vehicle_id, agent_id, interface, bubble
+            sim, vehicle_id, agent_id, interface, is_boid=is_boid
         )
 
         if social_agent is None:
             return
 
         self._start_social_agent(
-            sim, agent_id, social_agent, social_agent_actor, bubble
+            sim,
+            agent_id,
+            social_agent,
+            social_agent_actor,
+            is_boid=is_boid,
+            keep_alive=keep_alive,
         )
 
     def _hijack_social_vehicle_with_social_agent(
-        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, bubble: Bubble
+        self, sim, vehicle_id: str, social_agent_actor: SocialAgentActor, is_boid: bool
     ):
         """Upon hijacking the social agent is now in control of the vehicle. It will
         initialize the vehicle chassis (and by extension the controller) with a
         "greatest common denominator" state; that is: what's available via the vehicle
         front-end common to both source and destination policies during airlock.
         """
+        assert isinstance(
+            social_agent_actor, SocialAgentActor
+        ), "This must be a social agent actor type."
         self._log.debug(f"Hijack vehicle={vehicle_id} with actor={social_agent_actor}")
-        if bubble.is_boid:
+        if is_boid:
             agent_id = BubbleManager._make_boid_social_agent_id(social_agent_actor)
         else:
             agent_id = BubbleManager._make_social_agent_id(vehicle_id)
@@ -751,7 +791,7 @@ class BubbleManager(ActorCaptureManager):
             sim,
             vehicle_id,
             agent_id,
-            boid=bubble.is_boid,
+            boid=is_boid,
             hijacking=True,
             recreate=False,
             agent_interface=agent_interface,
@@ -760,7 +800,7 @@ class BubbleManager(ActorCaptureManager):
             sim.create_vehicle_in_providers(vehicle, agent_id)
 
     def _prepare_sensors_for_agent_control(
-        self, sim, vehicle_id, agent_id, agent_interface, bubble
+        self, sim, vehicle_id, agent_id, agent_interface, is_boid: bool
     ):
         plan = Plan(sim.road_map, None)
         vehicle = sim.vehicle_index.start_agent_observation(
@@ -769,7 +809,7 @@ class BubbleManager(ActorCaptureManager):
             agent_id,
             agent_interface,
             plan,
-            boid=bubble.is_boid,
+            boid=is_boid,
         )
 
         # Setup mission (also used for observations)
@@ -794,14 +834,20 @@ class BubbleManager(ActorCaptureManager):
             plan.route = sim.road_map.empty_route()
 
     def _start_social_agent(
-        self, sim, agent_id, social_agent, social_agent_actor, bubble
+        self,
+        sim,
+        agent_id,
+        social_agent,
+        social_agent_actor,
+        is_boid: bool,
+        keep_alive: bool,
     ):
         id_ = SocialAgentId.new(social_agent_actor.name)
         social_agent_data_model = SocialAgent(
             id=id_,
             actor_name=id_,
-            is_boid=bubble.is_boid,
-            is_boid_keep_alive=bubble.keep_alive,
+            is_boid=is_boid,
+            is_boid_keep_alive=keep_alive,
             agent_locator=social_agent_actor.agent_locator,
             policy_kwargs=social_agent_actor.policy_kwargs,
             initial_speed=social_agent_actor.initial_speed,
@@ -810,13 +856,20 @@ class BubbleManager(ActorCaptureManager):
             agent_id, social_agent, social_agent_data_model
         )
 
+    def _transfer_to_traffic_engine(
+        self, sim, vehicle_id: str, traffic_engine_actor: TrafficEngineActor
+    ):
+        traffic_engine = traffic_engine_actor.traffic_provider
+
+        raise NotImplementedError()
+
     @staticmethod
     def _make_social_agent_id(vehicle_id):
-        return f"BUBBLE-AGENT-{truncate(vehicle_id, 48)}"
+        return f"BUBBLE-ACTOR-{truncate(vehicle_id, 48)}"
 
     @staticmethod
     def _make_boid_social_agent_id(social_agent_actor):
-        return f"BUBBLE-AGENT-{truncate(social_agent_actor.name, 48)}"
+        return f"BUBBLE-ACTOR-{truncate(social_agent_actor.name, 48)}"
 
     @staticmethod
     def _get_agent_id_from_cursor(cursor: Cursor):
