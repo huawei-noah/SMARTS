@@ -19,9 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import json
 import logging
 import os
-import pprint
 from pathlib import Path
 from typing import Dict
 
@@ -181,13 +181,13 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
         score = _get_weighted_score(
             records=records_cumulative, metric_formula=metric_formula
         )
-        print("\n\nOverall Weighted Score")
-        pprint.pprint(score, sort_dicts=False)
+        print("\n\nOverall Weighted Score:\n")
+        print(json.dumps(score, indent=2))
         score = _get_agent_score(
             records=records_cumulative, metric_formula=metric_formula
         )
-        print("\n\nIndividual Agent Score")
-        pprint.pprint(score)
+        print("\n\nIndividual Agent Score:\n")
+        print(json.dumps(score, indent=2))
 
     print("\n<-- Evaluation complete -->\n")
 
