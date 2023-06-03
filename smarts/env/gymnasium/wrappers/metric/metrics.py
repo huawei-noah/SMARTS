@@ -530,14 +530,14 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         agent_interfaces (Dict[str,AgentInterface]): Agent interfaces.
 
     Raises:
-        MetricsError: If (i) scenario difficulty is not properly normalised,
+        MetricsError: If (i) scenario difficulty is not properly normalized,
             or (ii) any agent's goal is improperly configured.
     """
 
     difficulty = scenario.metadata.get("scenario_difficulty", None)
     if not ((difficulty is None) or (0 < difficulty <= 1)):
         raise MetricsError(
-            "Expected scenario difficulty to be normalised within (0,1], but "
+            "Expected scenario difficulty to be normalized within (0,1], but "
             f"got difficulty={difficulty}."
         )
 
