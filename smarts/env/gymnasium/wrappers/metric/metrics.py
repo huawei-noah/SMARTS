@@ -46,7 +46,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
 )
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Record
+from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Metadata, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
     divide,
@@ -270,6 +270,7 @@ class MetricsBase(gym.Wrapper):
                 agent_name: Record(
                     costs=Costs(),
                     counts=Counts(),
+                    metadata=Metadata(difficulty=self._scen.metadata.get("scenario_difficulty",1)),
                 )
                 for agent_name in self._cur_agents
             }
@@ -286,11 +287,11 @@ class MetricsBase(gym.Wrapper):
             $ env.records()
             $ {
                   scen1: {
-                      agent1: Record(costs, counts),
-                      agent2: Record(costs, counts),
+                      agent1: Record(costs, counts, metadata),
+                      agent2: Record(costs, counts, metadata),
                   },
                   scen2: {
-                      agent1: Record(costs, counts),
+                      agent1: Record(costs, counts, metadata),
                   },
               }
 
@@ -309,6 +310,7 @@ class MetricsBase(gym.Wrapper):
                         data_copy.costs, data_copy.counts.episodes, divide
                     ),
                     counts=data_copy.counts,
+                    metadata=data_copy.metadata,
                 )
 
         return records
@@ -322,8 +324,7 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
-        records_sum_copy = copy.deepcopy(self._records_sum)
-        return self._formula.score(records_sum=records_sum_copy)
+        return self._formula.score(records=self.records())
 
 
 def _get_end_and_dist(

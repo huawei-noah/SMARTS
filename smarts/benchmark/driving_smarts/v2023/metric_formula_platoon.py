@@ -25,17 +25,23 @@ from typing import Dict
 import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
-from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score, avg_costs
+from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import (
+    Collisions,
     Comfort,
     DistToDestination,
     DistToObstacles,
     JerkLinear,
-    Params,
+    LaneCenterOffset,
+    OffRoad,
+    SpeedLimit,
     Steps,
     VehicleGap,
+    WrongWay,
+    Params,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
+from smarts.env.gymnasium.wrappers.metric.formula import agent_scores, agent_weights, weighted_score, score_rule_violation
 
 
 class Formula(FormulaBase):
@@ -53,26 +59,21 @@ class Formula(FormulaBase):
             Params: Cost function parameters.
         """
         params = Params(
-            comfort=Comfort(
-                active=True,
-            ),
-            dist_to_destination=DistToDestination(
-                active=True,
-            ),
-            dist_to_obstacles=DistToObstacles(
-                active=False,
-            ),
+            collisions=Collisions(active=False),
+            comfort=Comfort(active=True),
+            dist_to_destination=DistToDestination(active=True),
+            dist_to_obstacles=DistToObstacles(active=False),
             jerk_linear=JerkLinear(active=False),
-            vehicle_gap=VehicleGap(
-                active=True,
-            ),
-            steps=Steps(
-                active=False,
-            ),
+            lane_center_offset=LaneCenterOffset(active=True),
+            off_road=OffRoad(active=False),
+            speed_limit=SpeedLimit(active=True),
+            steps=Steps(active=False),
+            vehicle_gap=VehicleGap(active=True),
+            wrong_way=WrongWay(active=True),
         )
         return params
 
-    def score(self, records_sum: Dict[str, Dict[str, Record]]) -> Score:
+    def score(self, records: Dict[str, Dict[str, Record]]) -> Score:
         """
         Computes several sub-component scores and one total combined score named
         "Overall" on the wrapped environment.
@@ -92,42 +93,46 @@ class Formula(FormulaBase):
         +-------------------+--------+-----------------------------------------------------------+
 
         Returns:
-            Score: Contains "Overall", "DistToDestination", "VehicleGap",
-            "HumannessError", and "RuleViolation" scores.
+            Score: "Overall" score and other sub-component scores.
         """
 
-        costs_final = avg_costs(records_sum=records_sum)
-
-        # Compute sub-components of score.
-        dist_to_destination = costs_final.dist_to_destination
-        humanness_error = _humanness_error(costs=costs_final)
-        rule_violation = _rule_violation(costs=costs_final)
-        vehicle_gap = costs_final.vehicle_gap
-        overall = (
-            0.25 * (1 - dist_to_destination)
-            + 0.25 * (1 - vehicle_gap)
-            + 0.25 * (1 - humanness_error)
-            + 0.25 * (1 - rule_violation)
-        )
-
-        return Score(
-            {
-                "overall": overall,
-                "dist_to_destination": dist_to_destination,
-                "vehicle_gap": vehicle_gap,
-                "humanness_error": humanness_error,
-                "rule_violation": rule_violation,
-            }
-        )
+        agent_weight = agent_weights(records=records)
+        agent_score = agent_scores(records=records, func=costs_to_score)
+        return weighted_score(scores=agent_score, weights=agent_weight)
 
 
-def _humanness_error(costs: Costs) -> float:
+def costs_to_score(costs:Costs)->Score:
+    """ Compute score from costs.
+
+    Args:
+        costs (Costs): Costs.
+
+    Returns:
+        Score: Score.
+    """
+    dist_to_destination = costs.dist_to_destination
+    humanness_error = _score_humanness_error(costs=costs)
+    rule_violation = score_rule_violation(costs=costs)
+    vehicle_gap = costs.vehicle_gap
+    overall = (
+        0.25 * (1 - dist_to_destination)
+        + 0.25 * (1 - vehicle_gap)
+        + 0.25 * (1 - humanness_error)
+        + 0.25 * (1 - rule_violation)
+    )
+
+    return Score(
+        {
+            "overall": overall,
+            "dist_to_destination": dist_to_destination,
+            "vehicle_gap": vehicle_gap,
+            "humanness_error": humanness_error,
+            "rule_violation": rule_violation,
+        }
+    )
+
+
+def _score_humanness_error(costs: Costs) -> float:
     humanness_error = np.array([costs.comfort, costs.lane_center_offset])
     humanness_error = np.mean(humanness_error, dtype=float)
     return humanness_error
-
-
-def _rule_violation(costs: Costs) -> float:
-    rule_violation = np.array([costs.speed_limit, costs.wrong_way])
-    rule_violation = np.mean(rule_violation, dtype=float)
-    return rule_violation
