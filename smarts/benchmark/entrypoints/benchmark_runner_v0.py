@@ -182,7 +182,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             records=records_cumulative, metric_formula=metric_formula
         )
         print("\n\nOverall Weighted Score")
-        pprint.pprint(score)
+        pprint.pprint(score, sort_dicts=False)
         score = _get_agent_score(
             records=records_cumulative, metric_formula=metric_formula
         )
@@ -206,7 +206,7 @@ def _get_weighted_score(
 
 def _get_agent_score(
     records: Dict[str, Dict[str, Record]], metric_formula: Path
-) -> Score:
+) -> Dict[str, Dict[str, Score]]:
     import_module_from_file("custom_formula", metric_formula)
     from custom_formula import costs_to_score
 
