@@ -167,7 +167,7 @@ def weighted_score(
             }
             total_weight += weights[scen][agent_name]
 
-    return {key: val / total_weight for key, val in cumulative_score.items()}
+    return Score({key: val / total_weight for key, val in cumulative_score.items()})
 
 
 def costs_to_score(costs: Costs) -> Score:
