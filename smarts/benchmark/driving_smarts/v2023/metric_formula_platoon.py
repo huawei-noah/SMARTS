@@ -25,7 +25,14 @@ from typing import Dict
 import numpy as np
 
 from smarts.env.gymnasium.wrappers.metric.costs import Costs
-from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
+from smarts.env.gymnasium.wrappers.metric.formula import (
+    FormulaBase,
+    Score,
+    agent_scores,
+    agent_weights,
+    score_rule_violation,
+    weighted_score,
+)
 from smarts.env.gymnasium.wrappers.metric.params import (
     Collisions,
     Comfort,
@@ -34,14 +41,13 @@ from smarts.env.gymnasium.wrappers.metric.params import (
     JerkLinear,
     LaneCenterOffset,
     OffRoad,
+    Params,
     SpeedLimit,
     Steps,
     VehicleGap,
     WrongWay,
-    Params,
 )
 from smarts.env.gymnasium.wrappers.metric.types import Record
-from smarts.env.gymnasium.wrappers.metric.formula import agent_scores, agent_weights, weighted_score, score_rule_violation
 
 
 class Formula(FormulaBase):
@@ -101,8 +107,8 @@ class Formula(FormulaBase):
         return weighted_score(scores=agent_score, weights=agent_weight)
 
 
-def costs_to_score(costs:Costs)->Score:
-    """ Compute score from costs.
+def costs_to_score(costs: Costs) -> Score:
+    """Compute score from costs.
 
     Args:
         costs (Costs): Costs.

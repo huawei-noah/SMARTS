@@ -54,6 +54,7 @@ class Counts:
     """ Sum of steps taken over all episodes.
     """
 
+
 @dataclass(frozen=True)
 class Metadata:
     """Metadata of the record."""
@@ -61,6 +62,7 @@ class Metadata:
     difficulty: float = 1
     """Task difficulty value.
     """
+
 
 @dataclass
 class Record:

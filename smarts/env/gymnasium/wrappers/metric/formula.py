@@ -28,7 +28,6 @@ import numpy as np
 from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Costs, Record
 
-
 Score = NewType("Score", Dict[str, float])
 
 
@@ -101,7 +100,7 @@ class Formula(FormulaBase):
         return weighted_score(scores=agent_score, weights=agent_weight)
 
 
-def agent_weights(records: Dict[str, Dict[str, Record]]) -> Dict[str,Dict[str,float]]:
+def agent_weights(records: Dict[str, Dict[str, Record]]) -> Dict[str, Dict[str, float]]:
     """Retrieves weight for each agent in every scenario.
 
     Args:
@@ -111,16 +110,18 @@ def agent_weights(records: Dict[str, Dict[str, Record]]) -> Dict[str,Dict[str,fl
         Dict[str,Dict[str,float]]: Weight for each agent in every scenario.
     """
 
-    weights = {} 
+    weights = {}
     for scen, agents in records.items():
-        weights[scen] = dict(map(
-            lambda i: (i[0], i[1].metadata.difficulty), agents.items()
-        ))
+        weights[scen] = dict(
+            map(lambda i: (i[0], i[1].metadata.difficulty), agents.items())
+        )
 
     return weights
 
 
-def agent_scores(records: Dict[str, Dict[str, Record]], func: Callable[[Costs],Score]) -> Dict[str,Dict[str,Score]]:
+def agent_scores(
+    records: Dict[str, Dict[str, Record]], func: Callable[[Costs], Score]
+) -> Dict[str, Dict[str, Score]]:
     """Computes score for each agent in every scenario.
 
     Args:
@@ -131,16 +132,16 @@ def agent_scores(records: Dict[str, Dict[str, Record]], func: Callable[[Costs],S
         Dict[str,Dict[str,Score]]: Score for each agent in every scenario.
     """
 
-    scores = {} 
+    scores = {}
     for scen, agents in records.items():
-        scores[scen] = dict(map(
-            lambda i: (i[0], func(i[1].costs)), agents.items()
-        ))
+        scores[scen] = dict(map(lambda i: (i[0], func(i[1].costs)), agents.items()))
 
     return scores
 
 
-def weighted_score(scores:Dict[str,Dict[str,Score]], weights:Dict[str,Dict[str,float]]) -> Score:
+def weighted_score(
+    scores: Dict[str, Dict[str, Score]], weights: Dict[str, Dict[str, float]]
+) -> Score:
     """Computes single overall weighted score using `weights`.
 
     Args:
@@ -148,21 +149,29 @@ def weighted_score(scores:Dict[str,Dict[str,Score]], weights:Dict[str,Dict[str,f
         weights (Dict[str,Dict[str,float]]): Weight for each agent in every scenario.
 
     Returns:
-        Score: Weighted score. 
+        Score: Weighted score.
     """
     cumulative_score = {}
     total_weight = 0
     for scen, agent in scores.items():
         for agent_name, agent_score in agent.items():
-            current_score = dict(map(lambda i: (i[0], i[1]*weights[scen][agent_name]), agent_score.items()))          
-            cumulative_score={score_name: score_val + cumulative_score.get(score_name,0) for score_name, score_val in current_score.items()}
+            current_score = dict(
+                map(
+                    lambda i: (i[0], i[1] * weights[scen][agent_name]),
+                    agent_score.items(),
+                )
+            )
+            cumulative_score = {
+                score_name: score_val + cumulative_score.get(score_name, 0)
+                for score_name, score_val in current_score.items()
+            }
             total_weight += weights[scen][agent_name]
 
-    return {key: val/total_weight for key, val in cumulative_score.items()}
+    return {key: val / total_weight for key, val in cumulative_score.items()}
 
 
-def costs_to_score(costs:Costs)->Score:
-    """ Compute score from costs.
+def costs_to_score(costs: Costs) -> Score:
+    """Compute score from costs.
 
     Args:
         costs (Costs): Costs.

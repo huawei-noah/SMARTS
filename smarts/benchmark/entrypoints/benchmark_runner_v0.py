@@ -170,7 +170,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             )
 
         records_cumulative: Dict[str, Dict[str, Record]] = {}
-        for name, records in iterator(
+        for _, records in iterator(
             env_args=env_args,
             benchmark_args=benchmark_args,
             agent_locator=agent_locator,
@@ -178,17 +178,23 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
         ):
             records_cumulative.update(records)
 
-        score = _get_weighted_score(records=records_cumulative, metric_formula=metric_formula)
+        score = _get_weighted_score(
+            records=records_cumulative, metric_formula=metric_formula
+        )
         print("\n\nOverall Weighted Score")
         pprint.pprint(score)
-        score = _get_agent_score(records=records_cumulative, metric_formula=metric_formula)
+        score = _get_agent_score(
+            records=records_cumulative, metric_formula=metric_formula
+        )
         print("\n\nIndividual Agent Score")
         pprint.pprint(score)
 
     print("\n<-- Evaluation complete -->\n")
 
 
-def _get_weighted_score(records: Dict[str, Dict[str, Record]], metric_formula: Path) -> Score:
+def _get_weighted_score(
+    records: Dict[str, Dict[str, Record]], metric_formula: Path
+) -> Score:
     import_module_from_file("custom_formula", metric_formula)
     from custom_formula import Formula
 
@@ -197,13 +203,18 @@ def _get_weighted_score(records: Dict[str, Dict[str, Record]], metric_formula: P
     score = formula.score(records=records)
     return score
 
-def _get_agent_score(records: Dict[str, Dict[str, Record]], metric_formula: Path) -> Score:
+
+def _get_agent_score(
+    records: Dict[str, Dict[str, Record]], metric_formula: Path
+) -> Score:
     import_module_from_file("custom_formula", metric_formula)
     from custom_formula import costs_to_score
+
     from smarts.env.gymnasium.wrappers.metric.formula import agent_scores
 
     score = agent_scores(records=records, func=costs_to_score)
     return score
+
 
 def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
     """Runs a benchmark given the following.
