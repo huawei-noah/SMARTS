@@ -55,10 +55,20 @@ class Counts:
     """
 
 
+@dataclass(frozen=True)
+class Metadata:
+    """Metadata of the record."""
+
+    difficulty: float = 1
+    """Task difficulty value.
+    """
+
+
 @dataclass
 class Record:
-    """Stores an agent's scenario-completion, performance-count, and
-    performance-cost values."""
+    """Stores an agent's performance-cost, performance-count, and
+    performance-metadata values."""
 
     costs: Costs
     counts: Counts
+    metadata: Metadata
