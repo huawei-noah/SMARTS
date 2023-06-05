@@ -257,7 +257,7 @@ class LocalTrafficProvider(TrafficProvider):
     def _relinquish_actor(self, actor_state: ActorState):
         sim = self._sim()
         assert sim
-        sim.provider_relinquishing_actor(self, actor_state)
+        sim.provider_releases_actor(self, actor_state)
         self._logger.debug(
             f"{actor_state} is no longer managed by local traffic provider"
         )

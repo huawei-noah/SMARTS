@@ -859,9 +859,33 @@ class BubbleManager(ActorCaptureManager):
     def _transfer_to_traffic_engine(
         self, sim, vehicle_id: str, traffic_engine_actor: TrafficEngineActor
     ):
-        traffic_engine = traffic_engine_actor.traffic_provider
+        traffic_provider = traffic_engine_actor.traffic_provider
 
-        raise NotImplementedError()
+        from smarts.core.smarts import SMARTS
+
+        assert isinstance(sim, SMARTS)
+        new_provider = sim.get_provider_by_id(traffic_provider)
+        current_provider = sim.provider_for_actor(vehicle_id)
+
+        assert (
+            current_provider is not None
+        ), f"Actor {vehicle_id} should have a provider."
+        assert (
+            new_provider is not None
+        ), f"Actor `{traffic_engine_actor.name}` requires a specific provider. Ensure that `{traffic_provider}` is added to the simulation."
+
+        if not current_provider:
+            return
+
+        if not new_provider:
+            return
+
+        vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
+        sim.transition_to_provider(
+            **sim.provider_relinquishing_actor(
+                current_provider=current_provider, state=vehicle.state
+            )
+        )
 
     @staticmethod
     def _make_social_agent_id(vehicle_id):

@@ -118,17 +118,97 @@ class ProviderManager:
     # could just set the "source" field in the ActorState object to None and
     # other Providers that are willing to accept new actors could watch for this.
 
-    def provider_relinquishing_actor(
-        self, previous_provider: "Provider", state: ActorState
+    def provider_releases_actor(
+        self, current_provider: Optional["Provider"], state: ActorState
     ) -> Optional["Provider"]:
+        """The current provider gives up control over the specified actor. The manager
+        finds a new Provider for the actor from among the Providers managed by this
+        ProviderManager. If no provider accepts the actor the actor is removed from all providers.
+
+        Returns:
+            (Provider|None): A suitable new provider or `None` if a suitable one could not be found.
+        """
+        new_provider, actor_provider_transition = self.provider_relinquishing_actor(
+            current_provider=current_provider, actor_state=state
+        )
+        if new_provider is None or not self.transition_to_provider(
+            new_provider=new_provider,
+            actor_provider_transition=actor_provider_transition,
+        ):
+            logging.warning(
+                "could not find a provider to assume control of vehicle %s with role=%s after being relinquished.  removing it.",
+                state.actor_id,
+                state.role.name,
+            )
+            self._stop_managing_with_providers(state.actor_id, None)
+            self.provider_removing_actor(current_provider)
+        return new_provider
+
+    def provider_relinquishing_actor(
+        self, current_provider: Optional["Provider"], state: ActorState
+    ) -> Tuple[Optional["Provider"], "ActorProviderTransition"]:
         """Find a new Provider for an actor from among the Providers managed
-        by this ProviderManager.  Returns the new provider or None if a suitable
-        one could not be found, in which case the actor is removed."""
+        by this ProviderManager.
+
+        Returns:
+            (Provider|None): A suitable new provider or `None` if a suitable one could not be found.
+        """
         raise NotImplementedError
 
-    def provider_removing_actor(self, provider: "Provider", actor_id: str):
-        """Called by a Provider when it is removing an actor from the simulation.
+    def provider_removing_actor(self, provider: Optional["Provider"], actor_id: str):
+        """Called by a Provider when it is removing an actor from the simulation. It
+        means that the Provider is indicating that the actor no longer exists.
         This was added for convenience, but it isn't always necessary to be called."""
+        raise NotImplementedError
+
+    def provider_for_actor(self, actor_id: str) -> Optional["Provider"]:
+        """Find the provider that currently manages the given actor.
+
+        Args:
+            actor_id (str): The actor id to query.
+
+        Returns:
+            (Provider|None): The provider that manages this actor.
+        """
+        raise NotImplementedError
+
+    def transition_to_provider(
+        self,
+        new_provider: "Provider",
+        actor_provider_transition: "ActorProviderTransition",
+    ) -> Optional["Provider"]:
+        """Passes a released actor to a new provider. This depends on `provider_relinquishing_actor`.
+
+        Args:
+            new_provider (Provider):
+                The provider to transition to.
+            actor_provider_transition (ActorProviderTransition):
+                The released actor information.
+
+        Returns:
+            (Provider|None): Returns the provider if successful else will return `None` on failure.
+        """
+        if new_provider.can_accept_actor(actor_provider_transition.actor_state):
+            new_provider.add_actor(
+                actor_provider_transition.actor_state,
+                actor_provider_transition.current_provider,
+            )
+            self._stop_managing_with_providers(
+                actor_provider_transition.actor_state.actor_id, new_provider
+            )
+            return new_provider
+        return None
+
+    def _stop_managing_with_providers(self, actor_id: str, exclusion=None):
+        managing_providers = [p for p in self.providers if p.manages_actor(actor_id)]
+        for provider in managing_providers:
+            if provider is exclusion:
+                continue
+            provider.stop_managing(actor_id)
+
+    @property
+    def providers(self) -> List["Provider"]:
+        """The providers that are current managed by this provider manager."""
         raise NotImplementedError
 
 
@@ -170,7 +250,7 @@ class Provider:
             dt (float): time (in seconds) to simulate during this simulation step
             elapsed_sim_time (float): amount of time (in seconds) that's elapsed so far in the simulation
         Returns:
-            ProviderState representing the state of all actors this manages.
+            ProviderState: State representation of all actors this manages.
         """
         raise NotImplementedError
 
@@ -260,3 +340,9 @@ class Provider:
     @classmethod
     def provider_id(cls):
         return cls.__name__
+
+
+@dataclass(frozen=True, init=False)
+class ActorProviderTransition:
+    current_provider: Provider
+    actor_state: ActorState

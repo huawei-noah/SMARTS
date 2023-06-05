@@ -22,6 +22,7 @@ import logging
 import os
 import re
 import warnings
+from dataclasses import replace
 from functools import cached_property
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
 
@@ -54,7 +55,13 @@ from .controllers import ActionSpaceType
 from .coordinates import BoundingBox, Point
 from .external_provider import ExternalProvider
 from .observations import Observation
-from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
+from .provider import (
+    ActorProviderTransition,
+    Provider,
+    ProviderManager,
+    ProviderRecoveryFlags,
+    ProviderState,
+)
 from .road_map import RoadMap
 from .scenario import Mission, Scenario
 from .sensor_manager import SensorManager
@@ -656,18 +663,11 @@ class SMARTS(ProviderManager):
 
         return vehicle
 
-    def _provider_for_actor(self, actor_id: str) -> Optional[Provider]:
+    def provider_for_actor(self, actor_id: str) -> Optional[Provider]:
         for provider in self.providers:
             if provider.manages_actor(actor_id):
                 return provider
         return None
-
-    def _stop_managing_with_providers(self, actor_id: str, exclusion=None):
-        managing_providers = [p for p in self.providers if p.manages_actor(actor_id)]
-        for provider in managing_providers:
-            if provider is exclusion:
-                continue
-            provider.stop_managing(actor_id)
 
     def _remove_vehicle_from_providers(self, vehicle_id: str):
         for provider in self.providers:
@@ -682,7 +682,7 @@ class SMARTS(ProviderManager):
         """Notify providers of the existence of an agent-controlled vehicle,
         one of which should assume management of it."""
         self._check_valid()
-        prev_provider: Optional[Provider] = self._provider_for_actor(vehicle.id)
+        prev_provider: Optional[Provider] = self.provider_for_actor(vehicle.id)
         self._stop_managing_with_providers(vehicle.id)
         role = ActorRole.EgoAgent if is_ego else ActorRole.SocialAgent
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
@@ -731,7 +731,7 @@ class SMARTS(ProviderManager):
             state, route = self._vehicle_index.relinquish_agent_control(
                 self, vehicle_id, self.road_map
             )
-            new_prov = self._agent_relinquishing_actor(agent_id, state, teardown_agent)
+            new_prov = self._agent_releases_actor(agent_id, state, teardown_agent)
             if (
                 route is not None
                 and route.road_length > 0
@@ -750,7 +750,7 @@ class SMARTS(ProviderManager):
         if self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id) is None:
             self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
 
-    def _agent_relinquishing_actor(
+    def _agent_releases_actor(
         self,
         agent_id: str,
         state: ActorState,
@@ -758,23 +758,21 @@ class SMARTS(ProviderManager):
     ) -> Optional[Provider]:
         """Find a new provider for an actor previously managed by an agent.
         Returns the new provider or None if a suitable one could not be found."""
-        provider = self._provider_for_actor(state.actor_id)
-        new_prov = self.provider_relinquishing_actor(provider, state)
+        current_provider = self.provider_for_actor(state.actor_id)
+        new_provider = self.provider_releases_actor(current_provider, state)
         if teardown_agent:
             self.teardown_social_agents([agent_id])
-        return new_prov
+        return new_provider
 
     def provider_relinquishing_actor(
-        self, previous_provider: Provider, state: ActorState
-    ) -> Optional[Provider]:
-        """Find a new provider for an actor.  Returns the new provider
-        or None if a suitable one could not be found."""
+        self, current_provider: Optional[Provider], state: ActorState
+    ) -> Tuple[Optional[Provider], ActorProviderTransition]:
         # now try to find one who will take it...
         if isinstance(state, VehicleState):
             state.role = ActorRole.Social  # XXX ASSUMPTION: might use Unknown instead?
         new_provider = None
         for provider in self.providers:
-            if provider is previous_provider:
+            if provider is current_provider:
                 continue
             if provider.can_accept_actor(state):
                 # Here we just use the first provider we find that accepts it.
@@ -783,20 +781,14 @@ class SMARTS(ProviderManager):
                 # list we pass to SMARTS __init__().
                 new_provider = provider
                 break
-        else:
-            self._log.warning(
-                "could not find a provider to assume control of vehicle %s with role=%s after being relinquished.  removing it.",
-                state.actor_id,
-                state.role.name,
-            )
-            self.provider_removing_actor(previous_provider, state.actor_id)
 
-        if new_provider is not None:
-            new_provider.add_actor(state, previous_provider)
-        self._stop_managing_with_providers(state.actor_id, exclusion=new_provider)
-        return new_provider
+        actor_transition = ActorProviderTransition()
+        actor_transition = replace(
+            actor_transition, current_provider=current_provider, actor_state=state
+        )
+        return new_provider, actor_transition
 
-    def provider_removing_actor(self, provider: Provider, actor_id: str):
+    def provider_removing_actor(self, provider: Optional[Provider], actor_id: str):
         # Note: for vehicles, pybullet_provider_sync() will also call teardown
         # when it notices a social vehicle has exited the simulation.
         self._teardown_vehicles([actor_id])
@@ -1269,7 +1261,7 @@ class SMARTS(ProviderManager):
                 "attempting to transfer actors from {provider.source_str} to other providers..."
             )
             for actor in provider_state.actors:
-                self.provider_relinquishing_actor(provider, actor)
+                self.provider_releases_actor(provider, actor)
 
         if recovery_flags & ProviderRecoveryFlags.EPISODE_REQUIRED:
             self._reset_required = True
