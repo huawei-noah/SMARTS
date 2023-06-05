@@ -32,7 +32,9 @@ class FilterObs:
         self._lane_divider_color = np.array(SceneColors.LaneDivider.value[0:3]) * 255
         self._edge_divider_color = np.array(SceneColors.EdgeDivider.value[0:3]) * 255
         self._ego_color = np.array(SceneColors.Agent.value[0:3]) * 255
+        self._goal_color = np.array(Colors.Purple.value[0:3]) * 255
 
+        self._blur_radius = 2
         self._res = top_down_rgb.resolution
         h = top_down_rgb.height
         w = top_down_rgb.width
@@ -76,8 +78,8 @@ class FilterObs:
         # Superimpose waypoints onto rgb image
         wps = obs["waypoint_paths"]["position"][0:11, 3:, 0:3]
         for path in wps[:]:
-            wps_valid = wps_to_pixels(
-                wps=path,
+            wps_valid = points_to_pixels(
+                points=path,
                 ego_pos=ego_pos,
                 ego_heading=ego_heading,
                 w=w,
@@ -88,6 +90,25 @@ class FilterObs:
                 img_x, img_y = point[0], point[1]
                 if all(rgb_ego[img_y, img_x, :] == self._no_color):
                     rgb_ego[img_y, img_x, :] = self._wps_color
+
+        # Superimpose goal position onto rgb image       
+        if not all((goal:=obs["ego_vehicle_state"]["mission"]["goal_position"]) == np.zeros((3,))):       
+            goal_pixel = points_to_pixels(
+                points=np.expand_dims(goal,axis=0),
+                ego_pos=ego_pos,
+                ego_heading=ego_heading,
+                w=w,
+                h=h,
+                res=self._res,
+            )
+            if len(goal_pixel) != 0:
+                img_x, img_y = goal_pixel[0][0], goal_pixel[0][1]
+                if all(rgb_ego[img_y, img_x, :] == self._no_color) or all(rgb_ego[img_y, img_x, :] == self._wps_color):
+                    rgb_ego[
+                        max(img_y-self._blur_radius,0):min(img_y+self._blur_radius,h), 
+                        max(img_x-self._blur_radius,0):min(img_x+self._blur_radius,w), 
+                        :,
+                    ] = self._goal_color
 
         # Crop image
         rgb_ego = rgb_ego[self._crop[2]:h-self._crop[3],self._crop[0]:w-self._crop[1],:]
@@ -140,14 +161,19 @@ def replace_color(
     # fmt: on
 
 
-def wps_to_pixels(
-    wps: np.ndarray, ego_pos: np.ndarray, ego_heading: float, w: int, h: int, res: float
+def points_to_pixels(
+    points: np.ndarray,
+    ego_pos: np.ndarray,
+    ego_heading: float,
+    w: int,
+    h: int,
+    res: float,
 ) -> np.ndarray:
-    """Converts waypoints into pixel coordinates in order to superimpose the
-    waypoints onto the RGB image.
+    """Converts points into pixel coordinates in order to superimpose the
+    points onto the RGB image.
 
     Args:
-        wps (np.ndarray): Waypoints for a single route. Shape (n,3).
+        points (np.ndarray): Array of points. Shape (n,3).
         ego_pos (np.ndarray): Ego position. Shape = (3,).
         ego_heading (float): Ego heading in radians.
         w (int): Width of RGB image
@@ -156,19 +182,19 @@ def wps_to_pixels(
             ground_size/image_size.
 
     Returns:
-        np.ndarray: Array of waypoint coordinates on the RGB image. Shape = (m,3).
+        np.ndarray: Array of point coordinates on the RGB image. Shape = (m,3).
     """
     # fmt: off
-    mask = [False if all(point == np.zeros(3,)) else True for point in wps]
-    wps_nonzero = wps[mask]
-    wps_delta = wps_nonzero - ego_pos
-    wps_rotated = rotate_axes(wps_delta, theta=ego_heading)
-    wps_pixels = wps_rotated / np.array([res, res, res])
-    wps_overlay = np.array([w / 2, h / 2, 0]) + wps_pixels * np.array([1, -1, 1])
-    wps_rfloat = np.rint(wps_overlay)
-    wps_valid = wps_rfloat[(wps_rfloat[:,0] >= 0) & (wps_rfloat[:,0] < w) & (wps_rfloat[:,1] >= 0) & (wps_rfloat[:,1] < h)] 
-    wps_rint = wps_valid.astype(int)
-    return wps_rint
+    mask = [False if all(point == np.zeros(3,)) else True for point in points]
+    points_nonzero = points[mask]
+    points_delta = points_nonzero - ego_pos
+    points_rotated = rotate_axes(points_delta, theta=ego_heading)
+    points_pixels = points_rotated / np.array([res, res, res])
+    points_overlay = np.array([w / 2, h / 2, 0]) + points_pixels * np.array([1, -1, 1])
+    points_rfloat = np.rint(points_overlay)
+    points_valid = points_rfloat[(points_rfloat[:,0] >= 0) & (points_rfloat[:,0] < w) & (points_rfloat[:,1] >= 0) & (points_rfloat[:,1] < h)]
+    points_rint = points_valid.astype(int)
+    return points_rint
     # fmt: on
 
 
