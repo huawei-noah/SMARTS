@@ -115,7 +115,6 @@ nitpick_ignore = {
     ("py:class", "function"),
     # Most of these dynamic type ignores would go away in python>=3.10
     # See for more context: https:github.com/sphinx-doc/sphinx/issues/10090
-    ("py:class", "T"),
     ("py:class", "Score"),
     ("py:class", "Done"),
     ("py:class", "CostFuncs"),
@@ -144,6 +143,7 @@ nitpick_ignore_regex = {
     (r"py:.*", r"traci\..*"),
     (r"py:.*", r"typing(_extensions)?\..*"),
     (r"py:.*", r"configparser\..*"),
+    (r"py:class", r".*\.?T"),
 }
 
 # -- Options for spelling ----------------------------------------------------
