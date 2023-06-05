@@ -674,7 +674,7 @@ class BubbleManager(ActorCaptureManager):
                         sim, cursor.vehicle_id, actor, bubble.is_boid
                     )
                 elif isinstance(actor, TrafficEngineActor):
-                    self._transfer_to_traffic_engine(sim, cursor)
+                    self._transfer_to_traffic_engine(sim, cursor.vehicle_id, actor)
                 else:
                     self._log.warning(
                         f"Unknown actor base used and will be skipped:\n {actor}"

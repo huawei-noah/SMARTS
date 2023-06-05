@@ -129,7 +129,7 @@ class ProviderManager:
             (Provider|None): A suitable new provider or `None` if a suitable one could not be found.
         """
         new_provider, actor_provider_transition = self.provider_relinquishing_actor(
-            current_provider=current_provider, actor_state=state
+            current_provider=current_provider, state=state
         )
         if new_provider is None or not self.transition_to_provider(
             new_provider=new_provider,
@@ -141,7 +141,7 @@ class ProviderManager:
                 state.role.name,
             )
             self._stop_managing_with_providers(state.actor_id, None)
-            self.provider_removing_actor(current_provider)
+            self.provider_removing_actor(current_provider, state.actor_id)
         return new_provider
 
     def provider_relinquishing_actor(
@@ -339,10 +339,13 @@ class Provider:
 
     @classmethod
     def provider_id(cls):
+        """The identifying name of the provider."""
         return cls.__name__
 
 
 @dataclass(frozen=True, init=False)
 class ActorProviderTransition:
+    """Represents a transition of an actor between providers."""
+
     current_provider: Provider
     actor_state: ActorState

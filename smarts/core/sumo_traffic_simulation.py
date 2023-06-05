@@ -52,15 +52,7 @@ from smarts.core.utils.sumo import traci, TraciConn  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
-class Itermediary(TrafficProvider):
-    pass
-
-
-class Other:
-    pass
-
-
-class SumoTrafficSimulation(Itermediary, Other):
+class SumoTrafficSimulation(TrafficProvider):
     """
     Args:
         headless:

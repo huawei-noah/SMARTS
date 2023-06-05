@@ -904,7 +904,8 @@ class SMARTS(ProviderManager):
         if self._vehicle_index is not None:
             self._vehicle_index = None
         for traffic_sim in self._provider_suite.get_all_by_type(TrafficProvider):
-            traffic_sim.destroy()
+            if traffic_sim:
+                traffic_sim.destroy()
         self._provider_suite.clear_type(TrafficProvider)
         if self._renderer is not None:
             self._renderer.destroy()
@@ -1200,6 +1201,14 @@ class SMARTS(ProviderManager):
         return None
 
     def get_provider_by_id(self, requested_id) -> Optional[Provider]:
+        """Find the current provider by its identifier.
+
+        Args:
+            requested_id (str): The provider identifier.
+
+        Returns:
+            Optional[Provider]: The provider if it exists, otherwise `None`.
+        """
         self._check_valid()
         for provider in self.providers:
             if provider.provider_id() == requested_id:

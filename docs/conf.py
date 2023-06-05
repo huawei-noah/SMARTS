@@ -144,6 +144,7 @@ nitpick_ignore_regex = {
     (r"py:.*", r"typing(_extensions)?\..*"),
     (r"py:.*", r"configparser\..*"),
     (r"py:class", r".*\.?T"),
+    (r"py:class", r".*\.?S"),
 }
 
 # -- Options for spelling ----------------------------------------------------
