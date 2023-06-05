@@ -48,9 +48,25 @@ predictive models, etc, may be used to develop the policy.
 Several scenarios are provided for training. Their names and tasks are as follows. 
 The desired task execution is illustrated in a gif by a trained baseline agent. 
 
-.. todo::
-    
-    Provide sample training scenarios and corresponding ``.gif`` images showing a baseline model traversing the map.
+For Driving SMARTS 2023.1
+
++ :scenarios:`cruise_2lane_agents_1 <sumo/straight/cruise_2lane_agents_1>`
++ :scenarios:`cutin_2lane_agents_1 <sumo/straight/cutin_2lane_agents_1>`
++ :scenarios:`merge_exit_sumo_t_agents_1 <sumo/straight/merge_exit_sumo_t_agents_1>`
++ :scenarios:`overtake_2lane_agents_1 <sumo/straight/overtake_2lane_agents_1>`
++ :scenarios:`0a53dd99-2946-4b4d-ab66-c4d6fef97be2_agents_1 <argoverse/straight/0a53dd99-2946-4b4d-ab66-c4d6fef97be2_agents_1>`
++ :scenarios:`00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1 <argoverse/straight/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1>`
++ :scenarios:`0a576bf1-66ae-495a-9c87-236f3fc2aa01_agents_1 <argoverse/straight/0a576bf1-66ae-495a-9c87-236f3fc2aa01_agents_1>`
+
+For Driving SMARTS 2023.2
+
++ :scenarios:` <>`
++ :scenarios:` <>`
++ :scenarios:` <>`
+ 
+
+
+
 
 Observation space
 -----------------
