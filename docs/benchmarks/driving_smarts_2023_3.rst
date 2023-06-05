@@ -42,6 +42,10 @@ The desired task execution is illustrated in a gif by a trained baseline agent.
 
     .. image:: /_static/driving_smarts_2023/platoon_straight_2lane_agents_1.gif
 
++ :scenarios:`scenarios/sumo/vehicle_following/merge_exit_sumo_agents_1 <merge_exit_sumo_agents_1>`
++ :scenarios:`~scenarios/sumo/vehicle_following/merge_exit_sumo_t_agents_1`
+
+
 Observation space
 -----------------
 
