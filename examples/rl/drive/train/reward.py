@@ -3,8 +3,6 @@ from typing import Tuple
 import gymnasium as gym
 import numpy as np
 
-from smarts.core.colors import SceneColors
-
 
 class Reward(gym.Wrapper):
     def __init__(self, env: gym.Env, crop: Tuple[int, int, int, int]):
