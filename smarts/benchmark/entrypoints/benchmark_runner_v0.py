@@ -19,9 +19,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import json
 import logging
 import os
-import pprint
 from pathlib import Path
 from typing import Dict
 
@@ -35,7 +35,6 @@ from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.metrics import Metrics
 from smarts.env.gymnasium.wrappers.metric.types import Record
-from smarts.env.gymnasium.wrappers.metric.utils import multiply, op_dataclass
 from smarts.zoo import registry as agent_registry
 
 LOG_WORKERS = False
@@ -171,40 +170,49 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             )
 
         records_cumulative: Dict[str, Dict[str, Record]] = {}
-        for name, records in iterator(
+        for _, records in iterator(
             env_args=env_args,
             benchmark_args=benchmark_args,
             agent_locator=agent_locator,
             log_workers=log_workers,
         ):
             records_cumulative.update(records)
-            print(f"\nScoring {name} ...")
 
-        score = _get_score(records=records_cumulative, metric_formula=metric_formula)
-        print("\nSCORE")
-        pprint.pprint(score)
+        score = _get_weighted_score(
+            records=records_cumulative, metric_formula=metric_formula
+        )
+        print("\n\nOverall Weighted Score:\n")
+        print(json.dumps(score, indent=2))
+        score = _get_agent_score(
+            records=records_cumulative, metric_formula=metric_formula
+        )
+        print("\n\nIndividual Agent Score:\n")
+        print(json.dumps(score, indent=2))
 
     print("\n<-- Evaluation complete -->\n")
 
 
-def _get_score(records: Dict[str, Dict[str, Record]], metric_formula: Path) -> Score:
-    # Convert averaged records into sum of records.
-    records_sum = {}
-    for scen, agents in records.items():
-        records_sum[scen] = {}
-        for agent, data in agents.items():
-            records_sum[scen][agent] = Record(
-                costs=op_dataclass(data.costs, data.counts.episodes, multiply),
-                counts=data.counts,
-            )
-
-    # Import scoring formula
+def _get_weighted_score(
+    records: Dict[str, Dict[str, Record]], metric_formula: Path
+) -> Score:
     import_module_from_file("custom_formula", metric_formula)
     from custom_formula import Formula
 
     formula: FormulaBase = Formula()
 
-    score = formula.score(records_sum=records_sum)
+    score = formula.score(records=records)
+    return score
+
+
+def _get_agent_score(
+    records: Dict[str, Dict[str, Record]], metric_formula: Path
+) -> Dict[str, Dict[str, Score]]:
+    import_module_from_file("custom_formula", metric_formula)
+    from custom_formula import costs_to_score
+
+    from smarts.env.gymnasium.wrappers.metric.formula import agent_scores
+
+    score = agent_scores(records=records, func=costs_to_score)
     return score
 
 

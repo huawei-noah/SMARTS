@@ -46,7 +46,7 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
 )
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Record
+from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Metadata, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
     divide,
@@ -250,12 +250,14 @@ class MetricsBase(gym.Wrapper):
                     }
                 })
 
+            max_episode_steps = self._scen.metadata.get("scenario_duration",0) / self.env.smarts.fixed_timestep_sec
+            max_episode_steps = max_episode_steps or self.env.agent_interfaces[agent_name].max_episode_steps
             cost_funcs_kwargs.update({
                 "dist_to_obstacles": {
                     "ignore": self._params.dist_to_obstacles.ignore
                 },
                 "steps": {
-                    "max_episode_steps": self.env.agent_interfaces[agent_name].max_episode_steps
+                    "max_episode_steps": max_episode_steps
                 },
             })
             self._cost_funcs[agent_name] = make_cost_funcs(
@@ -268,6 +270,7 @@ class MetricsBase(gym.Wrapper):
                 agent_name: Record(
                     costs=Costs(),
                     counts=Counts(),
+                    metadata=Metadata(difficulty=self._scen.metadata.get("scenario_difficulty",1)),
                 )
                 for agent_name in self._cur_agents
             }
@@ -284,11 +287,11 @@ class MetricsBase(gym.Wrapper):
             $ env.records()
             $ {
                   scen1: {
-                      agent1: Record(costs, counts),
-                      agent2: Record(costs, counts),
+                      agent1: Record(costs, counts, metadata),
+                      agent2: Record(costs, counts, metadata),
                   },
                   scen2: {
-                      agent1: Record(costs, counts),
+                      agent1: Record(costs, counts, metadata),
                   },
               }
 
@@ -307,6 +310,7 @@ class MetricsBase(gym.Wrapper):
                         data_copy.costs, data_copy.counts.episodes, divide
                     ),
                     counts=data_copy.counts,
+                    metadata=data_copy.metadata,
                 )
 
         return records
@@ -320,8 +324,7 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
-        records_sum_copy = copy.deepcopy(self._records_sum)
-        return self._formula.score(records_sum=records_sum_copy)
+        return self._formula.score(records=self.records())
 
 
 def _get_end_and_dist(
@@ -527,8 +530,17 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         agent_interfaces (Dict[str,AgentInterface]): Agent interfaces.
 
     Raises:
-        AttributeError: If any agent's mission is not of type PositionGoal.
+        MetricsError: If (i) scenario difficulty is not properly normalized,
+            or (ii) any agent's goal is improperly configured.
     """
+
+    difficulty = scenario.metadata.get("scenario_difficulty", None)
+    if not ((difficulty is None) or (0 < difficulty <= 1)):
+        raise MetricsError(
+            "Expected scenario difficulty to be normalized within (0,1], but "
+            f"got difficulty={difficulty}."
+        )
+
     goal_types = {
         agent_name: type(agent_mission.goal)
         for agent_name, agent_mission in scenario.missions.items()
@@ -545,7 +557,7 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
                 and aoi != None
             )
         ):
-            raise AttributeError(
+            raise MetricsError(
                 "{0} has an unsupported goal type {1} and interest done criteria {2} "
                 "combination.".format(
                     agent_name, goal_types[agent_name], interest_criteria
