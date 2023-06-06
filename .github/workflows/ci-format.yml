@@ -80,7 +80,7 @@ jobs:
   test-docs:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v1.1.0-minimal
     steps:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -88,10 +88,6 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Install Enchant
-        run: |
-          apt-get update --fix-missing
-          apt-get install -y libenchant-dev
       - name: Build Sphinx documentation
         run: |
           python3.8 -m venv ${{env.venv_dir}}
