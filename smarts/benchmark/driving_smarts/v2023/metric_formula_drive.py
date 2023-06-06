@@ -85,7 +85,7 @@ class Formula(FormulaBase):
         "Overall" on the wrapped environment.
 
         Args:
-            records (Dict[str, Dict[str, Record]]): Records.       
+            records (Dict[str, Dict[str, Record]]): Records.
 
         Returns:
             Score: "Overall" score and other sub-component scores.
