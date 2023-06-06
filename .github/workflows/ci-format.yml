@@ -118,7 +118,7 @@ jobs:
     steps:
       - name: Install packages
         run: |
-          apt-get update
+          apt-get update --fix-missing
           apt-get install -y python3.8-dev
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
