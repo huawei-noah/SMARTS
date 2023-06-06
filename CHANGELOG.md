@@ -32,7 +32,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `info` returned by `hiway-v1` in `reset()` and `step()` methods are unified.
 - Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
-- `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position. 
+- `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position.
+- Improved error messages for scenario build failures.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
