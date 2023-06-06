@@ -19,7 +19,6 @@
 # THE SOFTWARE.
 from __future__ import annotations
 
-import warnings
 from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Dict, List, NewType, Optional, Tuple
@@ -461,6 +460,9 @@ def _vehicle_gap(
     # vehicle separation distance while driving.
     min_waypoints_length = int(np.ceil(max_column_length / waypoint_spacing))
 
+    def convert_2d_to_3d(array: np.ndarray) -> np.ndarray:
+        return np.pad(array, (0, 1), mode="constant", constant_values=0)
+
     def func(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
@@ -479,25 +481,25 @@ def _vehicle_gap(
             max_column_length,
         )
 
-        # Truncate all paths to be of the same length.
-        min_len = min(map(len, obs.waypoint_paths))
-        if min_len >= min_waypoints_length:
-            warnings.warn(
-                f"Expected waypoints length >= {min_waypoints_length}, but got "
-                + f"waypoints length = {min_len}."
-            )
-        trunc_waypoints = list(map(lambda x: x[:min_len], obs.waypoint_paths))
-        waypoints = [list(map(lambda x: x.pos, path)) for path in trunc_waypoints]
-        waypoints = np.array(waypoints, dtype=np.float64)
-        waypoints = np.pad(
-            waypoints, ((0, 0), (0, 0), (0, 1)), mode="constant", constant_values=0
-        )
+        # fmt: off
+        waypoint_paths = obs.waypoint_paths
+        max_len = max(map(len, waypoint_paths))
+        mask = np.array([
+            [[False, False, False]] * len(path) + [[True, True, True]] * (max_len - len(path))
+            for path in waypoint_paths
+        ])
+        waypoints = np.array([
+            list(map(lambda x: convert_2d_to_3d(x.pos), path)) + [np.full((3,), np.nan)] * (max_len - len(path))
+            for path in waypoint_paths
+        ])
+        waypoints_masked = np.ma.MaskedArray(data=waypoints, mask=mask)
+        # fmt: on
 
         # Find the nearest waypoint index to the actor of interest, if any.
-        lane_width = obs.waypoint_paths[0][0].lane_width
+        lane_width = waypoint_paths[0][0].lane_width
         aoi_pos = vehicle_index.vehicle_position(aoi)
         aoi_wp_ind, aoi_ind = nearest_waypoint(
-            matrix=waypoints,
+            matrix=waypoints_masked,
             points=np.array([aoi_pos]),
             radius=lane_width,
         )
@@ -511,12 +513,12 @@ def _vehicle_gap(
         else:
             # Find the nearest waypoint index to the ego.
             ego_pos = obs.ego_vehicle_state.position
-            dist = np.linalg.norm(waypoints[:, 0, :] - ego_pos, axis=-1)
+            dist = np.linalg.norm(waypoints_masked[:, 0, :] - ego_pos, axis=-1)
             ego_wp_inds = np.where(dist == dist.min())[0]
 
             if aoi_wp_ind[0] in ego_wp_inds:
                 # Ego is in the same lane as the actor of interest.
-                j_gap = (aoi_wp_ind[1] * waypoint_spacing - vehicle_length) / (
+                j_gap = max(aoi_wp_ind[1] * waypoint_spacing - vehicle_length, 0) / (
                     column_length - vehicle_length
                 )
             else:
