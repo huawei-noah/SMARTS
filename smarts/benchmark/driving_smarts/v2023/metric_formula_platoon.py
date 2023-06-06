@@ -84,19 +84,8 @@ class Formula(FormulaBase):
         Computes several sub-component scores and one total combined score named
         "Overall" on the wrapped environment.
 
-        +-------------------+--------+-----------------------------------------------------------+
-        |                   | Range  | Remarks                                                   |
-        +===================+========+===========================================================+
-        | Overall           | [0, 1] | Total score. The higher, the better.                      |
-        +-------------------+--------+-----------------------------------------------------------+
-        | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
-        +-------------------+--------+-----------------------------------------------------------+
-        | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
-        +-------------------+--------+-----------------------------------------------------------+
-        | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
-        +-------------------+--------+-----------------------------------------------------------+
-        | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
-        +-------------------+--------+-----------------------------------------------------------+
+        Args:
+            records (Dict[str, Dict[str, Record]]): Records.
 
         Returns:
             Score: "Overall" score and other sub-component scores.
@@ -109,6 +98,20 @@ class Formula(FormulaBase):
 
 def costs_to_score(costs: Costs) -> Score:
     """Compute score from costs.
+
+    +-------------------+--------+-----------------------------------------------------------+
+    |                   | Range  | Remarks                                                   |
+    +===================+========+===========================================================+
+    | Overall           | [0, 1] | Total score. The higher, the better.                      |
+    +-------------------+--------+-----------------------------------------------------------+
+    | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
+    +-------------------+--------+-----------------------------------------------------------+
+    | VehicleGap        | [0, 1] | Gap between vehicles in a convoy. The lower, the better.  |
+    +-------------------+--------+-----------------------------------------------------------+
+    | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
+    +-------------------+--------+-----------------------------------------------------------+
+    | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
+    +-------------------+--------+-----------------------------------------------------------+
 
     Args:
         costs (Costs): Costs.

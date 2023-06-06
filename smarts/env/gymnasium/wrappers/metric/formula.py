@@ -51,6 +51,9 @@ class FormulaBase:
         """Computes sub-component scores and one total combined score named
         "Overall" on the wrapped environment.
 
+        Args:
+            records (Dict[str, Dict[str, Record]]): Records.
+
         Returns:
             "Overall" score and other sub-component scores.
         """
@@ -77,19 +80,8 @@ class Formula(FormulaBase):
         """Computes sub-component scores and one total combined score named
         "Overall" on the wrapped environment.
 
-        +-------------------+--------+-----------------------------------------------------------+
-        |                   | Range  | Remarks                                                   |
-        +===================+========+===========================================================+
-        | Overall           | [0, 1] | Total score. The higher, the better.                      |
-        +-------------------+--------+-----------------------------------------------------------+
-        | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
-        +-------------------+--------+-----------------------------------------------------------+
-        | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
-        +-------------------+--------+-----------------------------------------------------------+
-        | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
-        +-------------------+--------+-----------------------------------------------------------+
-        | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
-        +-------------------+--------+-----------------------------------------------------------+
+        Args:
+            records (Dict[str, Dict[str, Record]]): Records.
 
         Returns:
             Score: "Overall" score and other sub-component scores.
@@ -172,6 +164,20 @@ def weighted_score(
 
 def costs_to_score(costs: Costs) -> Score:
     """Compute score from costs.
+
+    +-------------------+--------+-----------------------------------------------------------+
+    |                   | Range  | Remarks                                                   |
+    +===================+========+===========================================================+
+    | Overall           | [0, 1] | Total score. The higher, the better.                      |
+    +-------------------+--------+-----------------------------------------------------------+
+    | DistToDestination | [0, 1] | Remaining distance to destination. The lower, the better. |
+    +-------------------+--------+-----------------------------------------------------------+
+    | Time              | [0, 1] | Time taken to complete scenario. The lower, the better.   |
+    +-------------------+--------+-----------------------------------------------------------+
+    | HumannessError    | [0, 1] | Humanness indicator. The lower, the better.               |
+    +-------------------+--------+-----------------------------------------------------------+
+    | RuleViolation     | [0, 1] | Traffic rules compliance. The lower, the better.          |
+    +-------------------+--------+-----------------------------------------------------------+
 
     Args:
         costs (Costs): Costs.
