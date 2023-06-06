@@ -8,10 +8,4 @@
 
 5) Change Platoon name to VehicleFollowing.
 
-6) Dynamic times for each scenario depending on how long the map is.
-
-7) Dynamic score depending on scenario difficulty.
-
-8) Entry tactic guranteeing leader appears before ego.
-
-9) Fix VehicleGap metric to take in lesser than 80 waypoints at the end of the map.
+6) Entry tactic guranteeing leader appears before ego.
