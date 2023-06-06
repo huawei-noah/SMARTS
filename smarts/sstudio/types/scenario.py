@@ -59,7 +59,7 @@ class ScenarioMetadata(StandardMetadata):
         *,
         actor_of_interest_re_filter: Optional[str] = None,
         actor_of_interest_color: Optional[Colors] = Colors.Blue,
-        scenario_difficulty: Optional[int] = None,
+        scenario_difficulty: Optional[float] = None,
         scenario_duration: Optional[float] = None,
     ) -> None:
         if metadata is None:
