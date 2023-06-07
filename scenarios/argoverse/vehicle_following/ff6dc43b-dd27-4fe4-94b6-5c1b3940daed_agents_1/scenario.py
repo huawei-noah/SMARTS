@@ -1,11 +1,13 @@
 from pathlib import Path
 
-from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
+from smarts.core.colors import Colors
 
+
+PATH = "dataset"
 scenario_id = "ff6dc43b-dd27-4fe4-94b6-5c1b3940daed"
-scenario_path = None
+scenario_path = Path(__file__).resolve().parents[3] / PATH / scenario_id
 
 traffic_histories = [
     t.TrafficHistoryDataset(
@@ -15,6 +17,7 @@ traffic_histories = [
     )
 ]
 
+duration = 11
 ego_mission = [t.EndlessMission(begin=("road-243772234-243772033", 1, 10.9))]
 
 leader_id = "history-vehicle-40031$"
@@ -25,7 +28,10 @@ gen_scenario(
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         traffic_histories=traffic_histories,
         scenario_metadata=t.ScenarioMetadata(
-            actor_of_interest_re_filter=leader_id, actor_of_interest_color=Colors.Blue
+            actor_of_interest_re_filter=leader_id,
+            actor_of_interest_color=Colors.Blue,
+            scenario_difficulty=0.3,
+            scenario_duration=duration,
         ),
     ),
     output_dir=Path(__file__).parent,

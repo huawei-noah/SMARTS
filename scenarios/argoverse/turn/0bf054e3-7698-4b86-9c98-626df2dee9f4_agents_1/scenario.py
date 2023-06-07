@@ -8,8 +8,11 @@ from smarts.sstudio import types as t
 # ├── log_map_archive_{scenario_id}.json
 # └── scenario_{scenario_id}.parquet
 
+PATH = "dataset"
 scenario_id = "0bf054e3-7698-4b86-9c98-626df2dee9f4"  # e.g. "0000b6ab-e100-4f6b-aee8-b520b57c0530"
-scenario_path = None  # e.g. Path("/home/user/argoverse/train/") / scenario_id
+scenario_path = (
+    Path(__file__).resolve().parents[3] / PATH / scenario_id
+)  # e.g. Path("/home/user/argoverse/train/") / scenario_id
 
 traffic_histories = [
     t.TrafficHistoryDataset(
@@ -18,6 +21,7 @@ traffic_histories = [
         input_path=scenario_path,
     )
 ]
+duration = 11
 ego_mission = [
     t.Mission(
         route=t.Route(
@@ -32,6 +36,10 @@ gen_scenario(
         ego_missions=ego_mission,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         traffic_histories=traffic_histories,
+        scenario_metadata=t.ScenarioMetadata(
+            scenario_difficulty=0.6,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

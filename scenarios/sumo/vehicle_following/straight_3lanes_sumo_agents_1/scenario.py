@@ -59,6 +59,11 @@ for name, (social_path, leader_path) in enumerate(route_comb):
         ],
     )
 
+
+default_speed = 13
+route_length = 336
+duration = (route_length / default_speed) * 2
+
 ego_missions = [
     EndlessMission(
         begin=("E0", 1, 20),
@@ -73,7 +78,10 @@ gen_scenario(
         traffic=traffic,
         ego_missions=ego_missions,
         scenario_metadata=ScenarioMetadata(
-            actor_of_interest_re_filter=leader_id, actor_of_interest_color=Colors.Blue
+            actor_of_interest_re_filter=leader_id,
+            actor_of_interest_color=Colors.Blue,
+            scenario_difficulty=0.3,
+            scenario_duration=duration,
         ),
     ),
     output_dir=Path(__file__).parent,

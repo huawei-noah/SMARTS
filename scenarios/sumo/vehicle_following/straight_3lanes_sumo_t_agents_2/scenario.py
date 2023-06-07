@@ -96,13 +96,20 @@ ego_missions = [
         ),
     ),
 ]
+default_speed = 13
+route_length = 600
+duration = (route_length / default_speed) * 2
+
 leader_id = "Leader-007"
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
         ego_missions=ego_missions,
         scenario_metadata=ScenarioMetadata(
-            actor_of_interest_re_filter=leader_id, actor_of_interest_color=Colors.Blue
+            actor_of_interest_re_filter=leader_id,
+            actor_of_interest_color=Colors.Blue,
+            scenario_difficulty=1,
+            scenario_duration=duration,
         ),
     ),
     output_dir=Path(__file__).parent,
