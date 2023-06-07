@@ -12,7 +12,6 @@ Demo Video
         <source src="https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/demo.mp4" type="video/mp4" />
     </video>
 
-
 Prerequisites
 -------------
 
