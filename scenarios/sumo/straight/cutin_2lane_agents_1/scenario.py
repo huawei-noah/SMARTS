@@ -1,6 +1,7 @@
 import random
 from itertools import combinations
 from pathlib import Path
+
 from numpy import random
 
 from smarts.sstudio import gen_scenario
@@ -10,10 +11,10 @@ from smarts.sstudio.types import (
     Mission,
     Route,
     Scenario,
+    ScenarioMetadata,
     SmartsLaneChangingModel,
     Traffic,
     TrafficActor,
-    ScenarioMetadata,
 )
 
 normal = TrafficActor(

@@ -29,9 +29,9 @@ from smarts.sstudio.types import (
     Mission,
     Route,
     Scenario,
+    ScenarioMetadata,
     Traffic,
     TrafficActor,
-    ScenarioMetadata,
 )
 
 normal = TrafficActor(

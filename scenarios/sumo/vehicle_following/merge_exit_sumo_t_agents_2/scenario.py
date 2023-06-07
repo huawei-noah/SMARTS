@@ -8,6 +8,9 @@ from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
     Flow,
+    JunctionModel,
+    MapSpec,
+    Mission,
     Route,
     Scenario,
     ScenarioMetadata,
@@ -15,9 +18,6 @@ from smarts.sstudio.types import (
     TrafficActor,
     TrapEntryTactic,
     Trip,
-    MapSpec,
-    Mission,
-    JunctionModel,
 )
 
 normal = TrafficActor(
