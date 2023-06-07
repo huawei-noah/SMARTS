@@ -34,7 +34,6 @@ from typing import Optional, Tuple, Union
 
 import gltf
 import numpy as np
-import panda3d.core
 from direct.showbase.ShowBase import ShowBase
 
 # pytype: disable=import-error
@@ -48,9 +47,12 @@ from panda3d.core import (
     GeomVertexFormat,
     GeomVertexReader,
     GeomVertexWriter,
+    GraphicsOutput,
     GraphicsPipe,
+    NodePath,
     OrthographicLens,
     Shader,
+    Texture,
     WindowProperties,
     loadPrcFileData,
 )
@@ -147,7 +149,7 @@ class _ShowBaseInstance(ShowBase):
 
     def setup_sim_root(self, simid: str):
         """Creates the simulation root node in the scene graph."""
-        root_np = panda3d.core.NodePath(simid)
+        root_np = NodePath(simid)
         with self._render_lock:
             root_np.reparentTo(self.render)
         with pkg_resources.path(
@@ -163,7 +165,7 @@ class _ShowBaseInstance(ShowBase):
             root_np.setShader(unlit_shader, priority=10)
         return root_np
 
-    def render_node(self, sim_root: panda3d.core.NodePath):
+    def render_node(self, sim_root: NodePath):
         """Render a panda3D scene graph from the given node."""
         # Hack to prevent other SMARTS instances from also rendering
         # when we call poll() here.
@@ -182,9 +184,9 @@ class _ShowBaseInstance(ShowBase):
 class P3dOffscreenCamera(OffscreenCamera):
     """A camera used for rendering images to a graphics buffer."""
 
-    camera_np: panda3d.core.NodePath
-    buffer: panda3d.core.GraphicsOutput
-    tex: panda3d.core.Texture
+    camera_np: NodePath
+    buffer: GraphicsOutput
+    tex: Texture
 
     def wait_for_ram_image(self, img_format: str, retries=100):
         """Attempt to acquire a graphics buffer."""
@@ -625,12 +627,10 @@ class Renderer(RendererBase):
             )
 
         # setup texture
-        tex = panda3d.core.Texture()
+        tex = Texture()
         region = buffer.getDisplayRegion(0)
         region.window.addRenderTexture(
-            tex,
-            panda3d.core.GraphicsOutput.RTM_copy_ram,
-            panda3d.core.GraphicsOutput.RTP_color,
+            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
         )
 
         # setup camera
