@@ -25,6 +25,7 @@ from inspect import getclasstree
 from typing import Dict, Generic, List, Optional, Type, TypeVar
 
 T = TypeVar("T")
+S = TypeVar("S")
 
 
 def get_type_chain(target_subclass: type, target_super_class: type):
@@ -271,6 +272,7 @@ class TypeSuite(Generic[T]):
         Returns:
             Optional[T]: The instance if it exists.
         """
+        assert isinstance(instance_id, str), "Id must be a string."
         return self._type_groups[self._base_type].get_instance_by_id(instance_id)
 
     def get_by_type(self, requested_type: Type[T]) -> Optional[T]:
@@ -290,7 +292,7 @@ class TypeSuite(Generic[T]):
             instance_type=requested_type
         )
 
-    def get_all_by_type(self, requested_type: Type[T]) -> List[T]:
+    def get_all_by_type(self, requested_type: Type[S]) -> List[S]:
         """Gets all instances that are a sub-type of the given type.
 
         Args:

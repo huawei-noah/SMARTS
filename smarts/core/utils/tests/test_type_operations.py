@@ -60,10 +60,10 @@ def test_type_suite_insert():
     ts.insert(D_Inherits_ZA())
 
     with pytest.raises(TypeError):
-        ts.insert(BaseZ())
+        ts.insert(BaseZ()) # pytype: disable=wrong-arg-types
 
     with pytest.raises(TypeError):
-        ts.insert(UnrelatedBaseN())
+        ts.insert(UnrelatedBaseN()) # pytype: disable=wrong-arg-types
 
     a_expected = {
         BaseA,
@@ -100,7 +100,7 @@ def test_type_suite_remove():
     ts.remove(inst)
 
     assert len(ts.instances) == 2
-    assert ts.get_by_id(D_Inherits_ZA) is None
+    assert ts.get_by_id("D_Inherits_ZA") is None
     assert len(ts.get_all_by_type(D_Inherits_ZA)) == 0
 
 
@@ -112,7 +112,7 @@ def test_type_suite_remove_by_name():
     ts.remove_by_name(D_Inherits_ZA.__name__)
 
     assert len(ts.instances) == 0
-    assert ts.get_by_id(D_Inherits_ZA) is None
+    assert ts.get_by_id("D_Inherits_ZA") is None
 
 
 def test_type_suite_remove_by_type():
@@ -123,7 +123,7 @@ def test_type_suite_remove_by_type():
     ts.remove_by_type(D_Inherits_ZA)
 
     assert len(ts.instances) == 0
-    assert ts.get_by_id(D_Inherits_ZA) is None
+    assert ts.get_by_id("D_Inherits_ZA") is None
 
 
 def test_type_suite_clear_type():
