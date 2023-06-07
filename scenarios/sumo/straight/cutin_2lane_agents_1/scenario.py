@@ -1,7 +1,6 @@
 import random
 from itertools import combinations
 from pathlib import Path
-
 from numpy import random
 
 from smarts.sstudio import gen_scenario
@@ -14,6 +13,7 @@ from smarts.sstudio.types import (
     SmartsLaneChangingModel,
     Traffic,
     TrafficActor,
+    ScenarioMetadata,
 )
 
 normal = TrafficActor(
@@ -68,7 +68,9 @@ for name, routes in enumerate(route_comb):
         ],
     )
 
-
+default_speed = 13
+route_length = 400
+duration = (route_length / default_speed) * 2
 route = Route(begin=("gneE3", 1, 5), end=("gneE3", 1, "max"))
 ego_missions = [
     Mission(
@@ -81,6 +83,10 @@ gen_scenario(
     scenario=Scenario(
         traffic=traffic,
         ego_missions=ego_missions,
+        scenario_metadata=ScenarioMetadata(
+            scenario_difficulty=0.3,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

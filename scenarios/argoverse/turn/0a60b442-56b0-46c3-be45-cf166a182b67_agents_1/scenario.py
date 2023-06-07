@@ -10,6 +10,7 @@ from smarts.sstudio import types as t
 
 scenario_id = "0a60b442-56b0-46c3-be45-cf166a182b67"  # e.g. "0000b6ab-e100-4f6b-aee8-b520b57c0530"
 scenario_path = None  # e.g. Path("/home/user/argoverse/train/") / scenario_id
+duration = 11
 ego_mission = [
     t.Mission(
         t.Route(
@@ -32,6 +33,10 @@ gen_scenario(
         ego_missions=ego_mission,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         traffic_histories=traffic_histories,
+        scenario_metadata=t.ScenarioMetadata(
+            scenario_difficulty=0.3,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

@@ -8,9 +8,6 @@ from smarts.sstudio.types import (
     Distribution,
     EndlessMission,
     Flow,
-    JunctionModel,
-    MapSpec,
-    Mission,
     Route,
     Scenario,
     ScenarioMetadata,
@@ -18,6 +15,9 @@ from smarts.sstudio.types import (
     TrafficActor,
     TrapEntryTactic,
     Trip,
+    MapSpec,
+    Mission,
+    JunctionModel,
 )
 
 normal = TrafficActor(
@@ -96,6 +96,11 @@ for name, (social_path, leader_path) in enumerate(route_comb):
         ],
     )
 
+
+default_speed = 13
+route_length = 600
+duration = (route_length / default_speed) * 2
+
 ego_missions = [
     EndlessMission(
         begin=("E0", 2, 5),
@@ -104,7 +109,7 @@ ego_missions = [
         ),
     )  # Delayed start, to ensure road has prior traffic.
 ]
-
+leader_id = "Leader-007"
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
@@ -112,7 +117,12 @@ gen_scenario(
         map_spec=MapSpec(
             source=Path(__file__).resolve().parents[0], lanepoint_spacing=1.0
         ),
-        scenario_metadata=ScenarioMetadata("Leader-007", Colors.Blue),
+        scenario_metadata=ScenarioMetadata(
+            actor_of_interest_re_filter=leader_id,
+            actor_of_interest_color=Colors.Blue,
+            scenario_difficulty=0.9,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

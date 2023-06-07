@@ -84,6 +84,11 @@ for name, (social_path, leader_path) in enumerate(route_comb):
         ],
     )
 
+
+default_speed = 13
+route_length = 336
+duration = (route_length / default_speed) * 2
+
 ego_missions = [
     EndlessMission(
         begin=("E0", 1, 5),
@@ -92,12 +97,17 @@ ego_missions = [
         ),
     )  # Delayed start, to ensure road has prior traffic.
 ]
-
+leader_id = "Leader-007"
 gen_scenario(
     scenario=Scenario(
         traffic=traffic,
         ego_missions=ego_missions,
-        scenario_metadata=ScenarioMetadata("Leader-007", Colors.Blue),
+        scenario_metadata=ScenarioMetadata(
+            actor_of_interest_re_filter=leader_id,
+            actor_of_interest_color=Colors.Blue,
+            scenario_difficulty=0.9,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )
