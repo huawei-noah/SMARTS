@@ -45,9 +45,9 @@ class ScenarioMetadataFields(IntEnum):
     actor_of_interest_re_filter = enum.auto()
     """Actors with names that match this pattern are actors of interest."""
     scenario_difficulty = enum.auto()
-    """Custom difficulty marking values."""
+    """Custom difficulty marking values, normalized to (0,1]."""
     scenario_duration = enum.auto()
-    """The expected scenario time length."""
+    """The expected scenario time length in seconds."""
 
 
 class ScenarioMetadata(StandardMetadata):
@@ -58,7 +58,7 @@ class ScenarioMetadata(StandardMetadata):
         metadata: Optional[Dict[Union[str, ScenarioMetadataFields], Any]] = None,
         *,
         actor_of_interest_re_filter: Optional[str] = None,
-        actor_of_interest_color: Optional[Colors] = Colors.Blue,
+        actor_of_interest_color: Optional[Colors] = None,
         scenario_difficulty: Optional[float] = None,
         scenario_duration: Optional[float] = None,
     ) -> None:

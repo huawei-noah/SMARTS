@@ -100,7 +100,7 @@ def multiply(value: Union[int, float], multiplier: Union[int, float]) -> float:
 
 
 def nearest_waypoint(
-    matrix: np.ndarray, points: np.ndarray, radius: float = 1
+    matrix: np.ma.MaskedArray, points: np.ndarray, radius: float = 1
 ) -> Tuple[Tuple[int, int], Optional[int]]:
     """
     Returns
@@ -110,14 +110,14 @@ def nearest_waypoint(
     Nearby is defined as a point within `radius` of a waypoint.
 
     Args:
-        matrix (np.ndarray): Waypoints matrix.
+        matrix (np.ma.MaskedArray): Waypoints matrix.
         points (np.ndarray): Points matrix.
         radius (float, optional): Nearby radius. Defaults to 2.
 
     Returns:
         Tuple[Tuple[int, int], Optional[int]] : `matrix` index of shape (a,b) and scalar `point` index.
     """
-    cur_point_index = ((np.intp(1e10), np.intp(1e10)), None)
+    cur_point_index = ((np.int(1e10), np.int(1e10)), None)
 
     if points.shape == (0,):
         return cur_point_index
@@ -130,10 +130,11 @@ def nearest_waypoint(
     points_expanded = np.expand_dims(points, (1, 2))
     diff = matrix - points_expanded
     dist = np.linalg.norm(diff, axis=-1)
+    dist_masked = np.ma.MaskedArray(dist, diff.mask[..., 0])
     for ii in range(points.shape[0]):
-        index = np.argmin(dist[ii])
-        index_unravel = np.unravel_index(index, dist[ii].shape)
-        min_dist = dist[ii][index_unravel]
+        index = np.argmin(dist_masked[ii])
+        index_unravel = np.unravel_index(index, dist_masked[ii].shape)
+        min_dist = dist_masked[ii][index_unravel]
         if min_dist <= radius and index_unravel[1] < cur_point_index[0][1]:
             cur_point_index = (index_unravel, ii)
 
