@@ -31,7 +31,7 @@ from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
-from smarts.env.gymnasium.wrappers.metric.metrics import Metrics
+from smarts.env.gymnasium.wrappers.metric.metrics import Metrics, MetricsError
 from smarts.zoo.agent_spec import AgentSpec
 
 
@@ -163,7 +163,7 @@ def test_reset(make_env):
             goal=EndlessGoal(),
         ),
     ):
-        with pytest.raises(AttributeError):
+        with pytest.raises(MetricsError):
             env = Metrics(env=make_env)
             env.reset()
         return

@@ -16,13 +16,13 @@ RUN apt-get update --fix-missing && \
     apt-get install -y \
         software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
-    add-apt-repository -y ppa:sumo/stable && \
     apt-get update && \
     apt-get install -y \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
         libenchant-dev \
+        git \
         wget \
         xorg && \
     apt-get autoremove -y && \

@@ -371,18 +371,21 @@ class VehicleIndex:
 
     @clear_cache
     def start_agent_observation(
-        self, sim, vehicle_id, agent_id, agent_interface, plan, boid=False
+        self,
+        sim,
+        vehicle_id,
+        agent_id,
+        agent_interface,
+        plan,
+        boid=False,
+        initialize_sensors=True,
     ):
         """Associate an agent to a vehicle. Set up any needed sensor requirements."""
         original_agent_id = agent_id
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
+        self._2id_to_id[agent_id] = original_agent_id
 
         vehicle = self._vehicles[vehicle_id]
-        Vehicle.attach_sensors_to_vehicle(
-            sim.sensor_manager, sim, vehicle, agent_interface
-        )
-
-        self._2id_to_id[agent_id] = original_agent_id
 
         sim.sensor_manager.add_sensor_state(
             vehicle.id,
@@ -391,6 +394,10 @@ class VehicleIndex:
                 plan_frame=plan.frame(),
             ),
         )
+        if initialize_sensors:
+            Vehicle.attach_sensors_to_vehicle(
+                sim.sensor_manager, sim, vehicle, agent_interface
+            )
 
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
             agent_interface.action, vehicle.pose, sim
@@ -402,9 +409,9 @@ class VehicleIndex:
             entity._replace(shadower_id=agent_id, is_boid=boid)
         )
 
-        # XXX: We are not giving the vehicle an AckermannChassis here but rather later
+        # XXX: We are not giving the vehicle a chassis here but rather later
         #      when we switch_to_agent_control. This means when control that requires
-        #      an AckermannChassis comes online, it needs to appropriately initialize
+        #      a chassis comes online, it needs to appropriately initialize
         #      chassis-specific states, such as tire rotation.
 
         return vehicle
@@ -622,6 +629,7 @@ class VehicleIndex:
 
         # Remove the old vehicle
         self.teardown_vehicles_by_vehicle_ids([vehicle.id], sim.renderer_ref)
+        sim.sensor_manager.remove_sensors_by_actor_id(vehicle.id)
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_actor(vehicle.id):

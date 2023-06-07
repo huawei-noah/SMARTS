@@ -656,7 +656,12 @@ class SMARTS(ProviderManager):
         plan = Plan(self.road_map, mission)
         interface = self.agent_manager.agent_interface_for_agent_id(agent_id)
         self.vehicle_index.start_agent_observation(
-            self, vehicle_id, agent_id, interface, plan
+            self,
+            vehicle_id,
+            agent_id,
+            interface,
+            plan,
+            initialize_sensors=not recreate,
         )
         vehicle = self.vehicle_index.switch_control_to_agent(
             self,
