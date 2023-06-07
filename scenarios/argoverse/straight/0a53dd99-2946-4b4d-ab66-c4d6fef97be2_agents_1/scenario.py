@@ -9,8 +9,11 @@ from smarts.sstudio import types as t
 # └── scenario_{scenario_id}.parquet
 
 
+PATH = "dataset"
 scenario_id = "0a53dd99-2946-4b4d-ab66-c4d6fef97be2"  # e.g. "0000b6ab-e100-4f6b-aee8-b520b57c0530"
-scenario_path = None  # e.g. Path("/home/user/argoverse/train/") / scenario_id
+scenario_path = (
+    Path(__file__).resolve().parents[3] / PATH / scenario_id
+)  # e.g. Path("/home/user/argoverse/train/") / scenario_id
 
 ego_mission = [
     t.Mission(
@@ -29,12 +32,16 @@ traffic_histories = [
         input_path=scenario_path,
     )
 ]
-
+duration = 11
 gen_scenario(
     t.Scenario(
         ego_missions=ego_mission,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         traffic_histories=traffic_histories,
+        scenario_metadata=t.ScenarioMetadata(
+            scenario_difficulty=0.3,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )
