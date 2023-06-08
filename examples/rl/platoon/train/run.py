@@ -30,11 +30,11 @@ from smarts.zoo import registry
 from smarts.zoo.agent_spec import AgentSpec
 
 # Disable GPU usage
-th.cuda.is_available = lambda: False
-device = th.device("cuda" if th.cuda.is_available() else "cpu")
+# th.cuda.is_available = lambda: False
 
 print("\n")
 print(f"Torch cuda is available: {th.cuda.is_available()}")
+device = th.device("cuda" if th.cuda.is_available() else "cpu")
 print(f"Torch device: {device}")
 print("\n")
 warnings.simplefilter("ignore", category=DeprecationWarning)
