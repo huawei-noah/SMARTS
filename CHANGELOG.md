@@ -49,6 +49,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an underlying issue with the sensor manager where the sensors were not removed immediately.
 - Fixed an issue where warnings could be generated when an agent takes over an existing vehicle if the vehicle previously had sensors on it.
 - Fixed vehicle gap metric to consume ragged waypoints matrix.
+- Fixed an issue where making a deep copy of the vehicle index would cause the pybullet client to crash the simulation.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.
