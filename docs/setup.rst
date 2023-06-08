@@ -3,6 +3,15 @@
 Setup
 =====
 
+Demo Video
+----------
+
+.. raw:: html
+
+    <video controls="controls" width="640">
+        <source src="https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/demo.mp4" type="video/mp4" />
+    </video>
+
 Prerequisites
 -------------
 
