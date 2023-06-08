@@ -60,10 +60,10 @@ def test_type_suite_insert():
     ts.insert(D_Inherits_ZA())
 
     with pytest.raises(TypeError):
-        ts.insert(BaseZ()) # pytype: disable=wrong-arg-types
+        ts.insert(BaseZ())  # pytype: disable=wrong-arg-types
 
     with pytest.raises(TypeError):
-        ts.insert(UnrelatedBaseN()) # pytype: disable=wrong-arg-types
+        ts.insert(UnrelatedBaseN())  # pytype: disable=wrong-arg-types
 
     a_expected = {
         BaseA,
