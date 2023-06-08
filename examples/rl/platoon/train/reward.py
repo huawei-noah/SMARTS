@@ -103,10 +103,6 @@ class Reward(gym.Wrapper):
                 print(f"{agent_id}: Went wrong way.")
                 continue
 
-            # Reward for reaching goal
-            # if agent_obs["events"]["reached_goal"]:
-            #     reward[agent_id] += np.float64(30)
-
             # Reward for distance travelled in one step
             # reward[agent_id] += np.float64(env_reward[agent_id])
 

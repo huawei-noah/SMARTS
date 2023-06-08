@@ -5,12 +5,14 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:platoon-v0
   scenarios:
-    # - driving-smarts-2.competition-scenarios/t3/training/merge_exit_sumo_t_agents_1
-    # - driving-smarts-2.competition-scenarios/t3/training/straight_3lanes_sumo_t_agents_1
     - driving-smarts-2.competition-scenarios/t3/training/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1
+    - driving-smarts-2.competition-scenarios/t3/training/ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1
     - driving-smarts-2.competition-scenarios/t3/training/ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1
-    # - driving-smarts-2.competition-scenarios/t3/training/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1
-    # - driving-smarts-2.competition-scenarios/t3/training/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1
+    - driving-smarts-2.competition-scenarios/t3/training/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1
+    - driving-smarts-2.competition-scenarios/t3/training/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1
+    - driving-smarts-2.competition-scenarios/t3/training/merge_exit_sumo_t_agents_1
+    - driving-smarts-2.competition-scenarios/t3/training/straight_2lane_sumo_t_agents_1
+    - driving-smarts-2.competition-scenarios/t3/training/straight_3lanes_sumo_t_agents_1
 
   # PPO algorithm
   alg:
@@ -24,9 +26,7 @@ smarts:
   epochs: 500 # Number of training loops.
 
   # Training per scenario
-  # train_steps: 4_096
-  # checkpoint_freq: 4_096
-  train_steps: 5_000
-  checkpoint_freq: 5_000 # Save a model every checkpoint_freq calls to env.step().
-  eval_freq: 5_000 # Evaluate the trained model every eval_freq steps and save the best model.
+  train_steps: 4_096
+  checkpoint_freq: 4_096 # Save a model every checkpoint_freq calls to env.step().
+  eval_freq: 4_096 # Evaluate the trained model every eval_freq steps and save the best model.
   eval_eps: 5 # Number of evaluation epsiodes.

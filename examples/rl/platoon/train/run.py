@@ -25,7 +25,7 @@ from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
 from train.env import make_env
 from train.utils import ObjDict
-
+from torchinfo import summary
 from smarts.zoo import registry
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -116,61 +116,63 @@ def train(
     config: Dict[str, Any],
     agent_spec: AgentSpec,
 ):
+    print("\nStart training.\n")
+    scenarios_iter = cycle(config.scenarios)
+    save_dir = config.logdir / "train"
+    save_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_callback = CheckpointCallback(
+        save_freq=config.checkpoint_freq,
+        save_path=config.logdir / "checkpoint",
+        name_prefix="PPO",
+    )
+    
+    for index in range(config.epochs):
+        scen = next(scenarios_iter)
+        env_train = envs_train[scen]
+        env_eval = envs_eval[scen]
+        print(f"\nTraining on {scen}.\n")
+        
+        if index == 0:
+            model = sb3lib.PPO(
+                env=env_train,
+                tensorboard_log=config.logdir / "tensorboard",
+                verbose=1,
+                **network.combined_extractor(config),
+            )
+        else:
+            model = sb3lib.PPO.load(save_dir/ "intermediate")
 
+        eval_callback = EvalCallback(
+            env_eval,
+            best_model_save_path=config.logdir / "eval",
+            n_eval_episodes=3,
+            eval_freq=config.eval_freq,
+            deterministic=True,
+            render=False,
+            verbose=1,
+        )
+        model.set_env(env_train)
+        model.learn(
+            total_timesteps=config.train_steps,
+            callback=[checkpoint_callback, eval_callback],
+            reset_num_timesteps=False,
+        )
+        model.save(save_dir / "intermediate")
+
+    print("Finished training.")
+
+    # Save trained model.
+    time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    model.save(save_dir / ("model_" + time))
+    print("\nSaved trained model.\n")
+
+    # Print model summary
     crop = agent_spec.agent_params["crop"]
     top_down_rgb = agent_spec.interface.top_down_rgb
     h = top_down_rgb.height - crop[2] - crop[3]
     w = top_down_rgb.width - crop[0] - crop[1]
-
-    if config.mode == "train":
-        print("\nStart training.\n")
-        scenarios_iter = cycle(config.scenarios)
-        model = sb3lib.PPO(
-            env=envs_train[next(scenarios_iter)],
-            tensorboard_log=config.logdir / "tensorboard",
-            verbose=1,
-            **network.combined_extractor(config),
-        )
-
-        # Print model summary
-        # from torchinfo import summary
-        # td = {"rgb":th.zeros(1,9,h,w)}
-        # summary(model.policy, input_data=[td], depth=5)
-        # input("Press any key to continue ...")
-
-        for index in range(config.epochs):
-            scen = next(scenarios_iter)
-            env_train = envs_train[scen]
-            env_eval = envs_eval[scen]
-            print(f"\nTraining on {scen}.\n")
-            checkpoint_callback = CheckpointCallback(
-                save_freq=config.checkpoint_freq,
-                save_path=config.logdir / "checkpoint",
-                name_prefix=f"PPO",
-            )
-            eval_callback = EvalCallback(
-                env_eval,
-                best_model_save_path=config.logdir / "eval",
-                n_eval_episodes=3,
-                eval_freq=config.eval_freq,
-                deterministic=True,
-                render=False,
-                verbose=1,
-            )
-            model.set_env(env_train)
-            model.learn(
-                total_timesteps=config.train_steps,
-                callback=[checkpoint_callback, eval_callback],
-                reset_num_timesteps=False,
-            )
-
-        # Save trained model.
-        save_dir = config.logdir / "train"
-        save_dir.mkdir(parents=True, exist_ok=True)
-        time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        model.save(save_dir / ("model_" + time))
-        print("\nSaved trained model.\n")
-
+    td = {"rgb":th.zeros(1,9,h,w)}
+    summary(model.policy, input_data=[td], depth=5)
 
 def evaluate(
     envs: Dict[str, gym.Env],
@@ -182,7 +184,6 @@ def evaluate(
     model = sb3lib.PPO.load(config.model, print_system_info=True, device=device)
 
     # Print model summary
-    from torchinfo import summary
     crop = agent_spec.agent_params["crop"]
     top_down_rgb = agent_spec.interface.top_down_rgb
     h = top_down_rgb.height - crop[2] - crop[3]
