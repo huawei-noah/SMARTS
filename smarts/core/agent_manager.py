@@ -516,7 +516,8 @@ class AgentManager:
         sim = self._sim()
         assert sim
         for bubble in filter(
-            lambda b: b.is_boid and b.keep_alive and isinstance(b, SocialAgentActor), sim.scenario.bubbles
+            lambda b: b.is_boid and b.keep_alive and isinstance(b, SocialAgentActor),
+            sim.scenario.bubbles,
         ):
             actor = bubble.actor
             agent_id = BubbleManager._make_boid_social_agent_id(actor)

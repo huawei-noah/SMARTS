@@ -65,12 +65,20 @@ class BubbleTransition(Enum):
     AirlockExited = 3  # Airlock -->
 
 
-class BubbleState(Enum):
-    """Describes the actor's occupancy in a bubble."""
+class BubbleRelationState(Enum):
+    """Describes the actor's spatial occupancy in a bubble."""
 
     InBubble = 0
     InAirlock = 1
     WasInBubble = 2
+
+
+class BubbleCaptureState(Enum):
+    """Describes the actor's capture state in the bubble."""
+
+    Controlled = 0
+    Captured = 1
+    Uncaptured = 2
 
 
 class Bubble:
@@ -233,12 +241,12 @@ class Bubble:
 
             all_hijacked_vehicle_ids = (
                 current_hijacked_vehicle_ids
-                | vehicle_ids_by_bubble_state[BubbleState.InAirlock][self]
+                | vehicle_ids_by_bubble_state[BubbleRelationState.InAirlock][self]
             ) - {vehicle_id}
 
             all_shadowed_vehicle_ids = (
                 current_shadowed_vehicle_ids
-                | vehicle_ids_by_bubble_state[BubbleState.InBubble][self]
+                | vehicle_ids_by_bubble_state[BubbleRelationState.InBubble][self]
             ) - {vehicle_id}
 
             hijackable = len(all_hijacked_vehicle_ids) < (
@@ -250,7 +258,7 @@ class Bubble:
 
         return hijackable, shadowable
 
-    def in_bubble_or_airlock(self, position: Point):
+    def in_bubble_or_airlock_zone(self, position: Point):
         """Test if the position is within the bubble or airlock around the bubble."""
         if not isinstance(position, Point):
             position = Point(position)
@@ -326,7 +334,8 @@ class Cursor:
     # We would always want to have the vehicle go through the airlock zone. This may
     # not be the case if we spawn a vehicle in a bubble, but that wouldn't be ideal.
     vehicle_id: str
-    state: Optional[BubbleState] = None
+    state: Optional[BubbleRelationState] = None
+    capture: Optional[BubbleCaptureState] = None
     transition: Optional[BubbleTransition] = None
     bubble: Optional[Bubble] = None
 
@@ -358,7 +367,8 @@ class Cursor:
         return Cursor(
             vehicle_id=vehicle_id,
             transition=transition,
-            state=BubbleState.WasInBubble,
+            state=BubbleRelationState.WasInBubble,
+            capture=BubbleCaptureState.Uncaptured,
             bubble=bubble,
         )
 
@@ -370,6 +380,7 @@ class Cursor:
         index: VehicleIndex,
         vehicle_ids_per_bubble: Dict[Bubble, Set[str]],
         running_cursors: Set["Cursor"],
+        previous_cursor: Optional["Cursor"],
         is_hijack_admissible,
         is_airlock_admissible,
     ) -> "Cursor":
@@ -388,10 +399,14 @@ class Cursor:
             running_cursors (Set["Cursor"]):
                 A set of existing cursors.
         """
-        in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock(position)
+        in_bubble_zone, in_airlock_zone = bubble.in_bubble_or_airlock_zone(position)
         is_social = vehicle_id in index.social_vehicle_ids()
-        is_hijacked, is_shadowed = index.vehicle_is_hijacked_or_shadowed(vehicle_id)
         was_in_this_bubble = vehicle_id in vehicle_ids_per_bubble[bubble]
+        previous_capture = (
+            previous_cursor.capture
+            if previous_cursor is not None
+            else BubbleCaptureState.Uncaptured
+        )
 
         # XXX: When a traveling bubble disappears and an agent is airlocked or
         #      hijacked. It remains in that state.
@@ -400,38 +415,55 @@ class Cursor:
         #       time-based airlocking. For robust code we'll want to handle these
         #       scenarios (e.g. hijacking if didn't airlock first)
         transition = None
+        capture = previous_capture
         if (
             is_social
-            and not is_shadowed
+            and previous_capture is BubbleCaptureState.Uncaptured
             and is_airlock_admissible
             and (in_airlock_zone or in_bubble_zone)
         ):
             # In this case a vehicle has just entered the airlock
             transition = BubbleTransition.AirlockEntered
-        elif is_social and is_shadowed and is_hijack_admissible and in_bubble_zone:
+            capture = BubbleCaptureState.Captured
+        elif (
+            previous_capture is BubbleCaptureState.Captured
+            and is_hijack_admissible
+            and in_bubble_zone
+        ):
             # In this case a vehicle has just entered the bubble
             transition = BubbleTransition.Entered
-        elif was_in_this_bubble and is_hijacked and in_airlock_zone:
+            capture = BubbleCaptureState.Controlled
+        elif (
+            was_in_this_bubble
+            and previous_capture is BubbleCaptureState.Controlled
+            and in_airlock_zone
+        ):
             # XXX: This may get called repeatedly because we don't actually change
             #      any state when this happens.
             # In this case a vehicle has just exited the bubble
             transition = BubbleTransition.Exited
         elif (
             was_in_this_bubble
-            and (is_shadowed or is_hijacked)
+            and previous_capture
+            in {BubbleCaptureState.Controlled, BubbleCaptureState.Captured}
             and not (in_airlock_zone or in_bubble_zone)
         ):
             # In this case a vehicle has just exited the airlock around the bubble
             transition = BubbleTransition.AirlockExited
+            capture = BubbleCaptureState.Uncaptured
 
         state = None
         if in_bubble_zone:
-            state = BubbleState.InBubble
+            state = BubbleRelationState.InBubble
         elif in_airlock_zone:
-            state = BubbleState.InAirlock
+            state = BubbleRelationState.InAirlock
 
         return Cursor(
-            vehicle_id=vehicle_id, transition=transition, state=state, bubble=bubble
+            vehicle_id=vehicle_id,
+            transition=transition,
+            capture=capture,
+            state=state,
+            bubble=bubble,
         )
 
     def __repr__(self):
@@ -499,7 +531,7 @@ class BubbleManager(ActorCaptureManager):
     @lru_cache(maxsize=2)
     def _vehicle_ids_divided_by_bubble_state(
         cursors: FrozenSet[Cursor],
-    ) -> Dict[BubbleState, Dict[Bubble, Set[str]]]:
+    ) -> Dict[BubbleRelationState, Dict[Bubble, Set[str]]]:
         vehicle_ids_grouped_by_cursor = defaultdict(lambda: defaultdict(set))
         for cursor in cursors:
             vehicle_ids_grouped_by_cursor[cursor.state][cursor.bubble].add(
@@ -513,7 +545,8 @@ class BubbleManager(ActorCaptureManager):
         """Bubbles associated with the vehicles they contain."""
         vid = self._vehicle_ids_divided_by_bubble_state(frozenset(self._cursors))
         return defaultdict(
-            set, {**vid[BubbleState.InBubble], **vid[BubbleState.InAirlock]}
+            set,
+            {**vid[BubbleRelationState.InBubble], **vid[BubbleRelationState.InAirlock]},
         )
 
     def agent_ids_for_bubble(self, bubble: Bubble, sim) -> Set[str]:
@@ -522,7 +555,7 @@ class BubbleManager(ActorCaptureManager):
 
         agent_ids = set()
         for bc in bubble_cursors:
-            if bc.state != BubbleState.InBubble:
+            if bc.state != BubbleRelationState.InBubble:
                 continue
             agent_id = sim.vehicle_index.owner_id_from_vehicle_id(bc.vehicle_id)
             if agent_id is not None:
@@ -592,6 +625,7 @@ class BubbleManager(ActorCaptureManager):
             for _, vehicle in persisted_vehicle_index.vehicleitems()
         ]
 
+        old_cursors = {c.vehicle_id: c for c in self._cursors}
         for bubble in active_bubbles:
             sim_condition_kwargs = self._gen_simulation_condition_kwargs(
                 sim, condition_requires=bubble.airlock_condition.requires
@@ -637,6 +671,7 @@ class BubbleManager(ActorCaptureManager):
                         index=persisted_vehicle_index,
                         vehicle_ids_per_bubble=vehicle_ids_per_bubble,
                         running_cursors=cursors,
+                        previous_cursor=old_cursors.get(vehicle.id),
                         is_hijack_admissible=is_hijack_admissible,
                         is_airlock_admissible=is_airlock_admissible,
                     )
@@ -881,7 +916,7 @@ class BubbleManager(ActorCaptureManager):
         print("s")
         vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
         sim.transition_to_provider(
-            **sim.provider_relinquishing_actor(
+            *sim.provider_relinquishing_actor(
                 current_provider=current_provider, state=vehicle.state
             )
         )
