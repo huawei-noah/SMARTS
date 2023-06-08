@@ -207,7 +207,7 @@ class SMARTS(ProviderManager):
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
         with suppress_output(stderr=False):
-            self._bullet_client = bc.BulletClient(
+            self._bullet_client = pybullet.SafeBulletClient(
                 pybullet.DIRECT
             )  # pylint: disable=no-member
 
