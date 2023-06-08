@@ -24,10 +24,9 @@ import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from multiprocessing import Process, Semaphore, synchronize
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List
 
 logger = logging.getLogger(__name__)
 LOG_DEFAULT = logger.info
@@ -51,17 +50,19 @@ def build_scenario(
     scenario_py = scenario_root / "scenario.py"
     if scenario_py.exists():
         _install_requirements(scenario_root, log)
-        with tempfile.NamedTemporaryFile("w", suffix=".py", dir=scenario_root) as c:
-            with open(scenario_py, "r") as o:
-                c.write(
-                    f"from smarts.core import seed as smarts_seed; smarts_seed({seed});\n"
-                )
-                c.write(o.read())
 
-            c.flush()
+        try:
             subprocess.check_call(
-                [sys.executable, Path(c.name).name], cwd=scenario_root
+                [
+                    sys.executable,
+                    "scenario_builder.py",
+                    str(scenario_py.absolute()),
+                    str(seed),
+                ],
+                cwd=Path(__file__).parent,
             )
+        except subprocess.CalledProcessError as e:
+            raise SystemExit(e)
 
 
 def build_scenarios(
