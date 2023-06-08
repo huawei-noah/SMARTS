@@ -50,6 +50,7 @@ The desired task execution is illustrated in a gif by a trained baseline agent.
 + :scenarios:`merge_exit_sumo_agents_1 <sumo/vehicle_following/merge_exit_sumo_agents_1>`
 + :scenarios:`merge_exit_sumo_t_agents_1 <sumo/vehicle_following/merge_exit_sumo_t_agents_1>`
 + :scenarios:`merge_exit_sumo_t_agents_2 <sumo/vehicle_following/merge_exit_sumo_t_agents_2>`
++ :scenarios:`ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1 <argoverse/vehicle_following/ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1>`
 + :scenarios:`ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1 <argoverse/vehicle_following/ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1>`
 + :scenarios:`ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1 <argoverse/vehicle_following/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1>`
 + :scenarios:`ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1 <argoverse/vehicle_following/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1>`
