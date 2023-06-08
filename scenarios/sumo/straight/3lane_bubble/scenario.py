@@ -13,6 +13,10 @@ pose_boid_agent = t.BoidAgentActor(
     agent_locator="scenarios.sumo.straight.3lane_bubble.agent_prefabs:pose-boid-agent-v0",
 )
 
+traffic_actor = t.TrafficEngineActor(
+    name="local_traffic",
+)
+
 traffic = t.Traffic(
     flows=[
         t.Flow(
@@ -40,6 +44,12 @@ scenario = t.Scenario(
             zone=t.PositionalZone(pos=(150, 0), size=(50, 20)),
             margin=5,
             actor=pose_boid_agent,
+            keep_alive=True,
+        ),
+        t.Bubble(
+            zone=t.PositionalZone(pos=(100, 0), size=(20, 20)),
+            margin=5,
+            actor=traffic_actor,
             keep_alive=True,
         ),
     ],

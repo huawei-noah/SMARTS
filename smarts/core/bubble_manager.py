@@ -683,10 +683,7 @@ class BubbleManager(ActorCaptureManager):
                 continue
             elif cursor.transition == BubbleTransition.AirlockExited:
                 teardown = not bubble.is_boid or not bubble.keep_alive
-                from smarts.core.smarts import SMARTS
 
-                sim: SMARTS
-                assert isinstance(sim, SMARTS)
                 if isinstance(actor, SocialAgentActor):
                     agent_id = BubbleManager._get_agent_id_from_cursor(cursor)
                     sim.vehicle_exited_bubble(

@@ -783,9 +783,8 @@ class SMARTS(ProviderManager):
                 break
 
         actor_transition = ActorProviderTransition()
-        actor_transition = replace(
-            actor_transition, current_provider=current_provider, actor_state=state
-        )
+        object.__setattr__(actor_transition, "current_provider", current_provider)
+        object.__setattr__(actor_transition, "actor_state", state)
         return new_provider, actor_transition
 
     def provider_removing_actor(self, provider: Optional[Provider], actor_id: str):

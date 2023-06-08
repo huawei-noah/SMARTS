@@ -28,5 +28,5 @@ from smarts.sstudio.types.actor.traffic_actor import TrafficActor
 class TrafficEngineActor(TrafficActor):
     """This represents an actor that should be controlled by a traffic simulator."""
 
-    traffic_provider: str = "SumoTrafficSimulation"
+    traffic_provider: str = "LocalTrafficProvider"
     """The traffic provider that the actor is intended to be handed over to."""
