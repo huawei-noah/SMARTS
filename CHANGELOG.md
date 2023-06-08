@@ -33,6 +33,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
 - `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position. 
+- `Steps` metric is capped by scenario duration set in the scenario metadata.
+- Overall metric score is weighted by each agent's task difficulty.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
@@ -45,6 +47,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where the `off_route` event would be incorrectly triggered when driving on overlapping lanes.
 - Fixed an underlying issue with the sensor manager where the sensors were not removed immediately.
 - Fixed an issue where warnings could be generated when an agent takes over an existing vehicle if the vehicle previously had sensors on it.
+- Fixed vehicle gap metric to consume ragged waypoints matrix.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.

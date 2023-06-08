@@ -62,7 +62,7 @@ class ActorAndMission:
 def _check_if_called_externally():
     frame_info = inspect.stack()[2]
     module = inspect.getmodule(frame_info[0])
-    if module.__name__ != "smarts.sstudio.genscenario":
+    if not module or module.__name__ != "smarts.sstudio.genscenario":
         logger.warning(
             "",
             exc_info=DeprecationWarning(

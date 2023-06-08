@@ -1,13 +1,9 @@
 import random
-import sys
 from pathlib import Path
 
-from smarts.core import seed
 from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
-seed(42)
 
 traffic = t.Traffic(
     flows=[
