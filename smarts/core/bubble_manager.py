@@ -674,6 +674,7 @@ class BubbleManager(ActorCaptureManager):
                         sim, cursor.vehicle_id, actor, bubble.is_boid
                     )
                 elif isinstance(actor, TrafficEngineActor):
+                    print("t")
                     self._transfer_to_traffic_engine(sim, cursor.vehicle_id, actor)
                 else:
                     self._log.warning(
@@ -877,6 +878,7 @@ class BubbleManager(ActorCaptureManager):
         if not new_provider:
             return
 
+        print("s")
         vehicle = sim.vehicle_index.vehicle_by_id(vehicle_id)
         sim.transition_to_provider(
             **sim.provider_relinquishing_actor(
