@@ -98,11 +98,10 @@ def main(args: argparse.Namespace):
         )
 
     # Run training or evaluation.
-    run(
-        envs_train=envs_train, envs_eval=envs_eval, config=config, agent_spec=agent_spec
-    )
-
-    print("Finished training ...")
+    if config.mode == "train":
+        train(envs_train=envs_train, envs_eval=envs_eval, config=config, agent_spec=agent_spec)
+    else:
+        evaluate(envs=envs_eval, config=config, agent_spec=agent_spec)
 
     # Close all environments
     for env in envs_train.values():
@@ -111,7 +110,7 @@ def main(args: argparse.Namespace):
         env.close()
 
 
-def run(
+def train(
     envs_train: Dict[str, gym.Env],
     envs_eval: Dict[str, gym.Env],
     config: Dict[str, Any],
@@ -172,24 +171,32 @@ def run(
         model.save(save_dir / ("model_" + time))
         print("\nSaved trained model.\n")
 
-    if config.mode == "evaluate":
-        print("\nEvaluate policy.\n")
-        device = th.device("cpu")
-        model = sb3lib.PPO.load(config.model, print_system_info=True, device=device)
 
-        # Print model summary
-        # from torchinfo import summary
-        # td = {"rgb":th.zeros(1,9,h,w)}
-        # summary(model.policy, input_data=[td], depth=5)
-        # input("Press any key to continue ...")
+def evaluate(
+    envs: Dict[str, gym.Env],
+    config: Dict[str, Any],
+    agent_spec: AgentSpec,
+):
+    print("\nEvaluate policy.\n")
+    device = th.device("cpu")
+    model = sb3lib.PPO.load(config.model, print_system_info=True, device=device)
 
-        for env_name, env_eval in envs_eval.items():
-            print(f"\nEvaluating env {env_name}.")
-            mean_reward, std_reward = evaluate_policy(
-                model, env_eval, n_eval_episodes=config.eval_eps, deterministic=True
-            )
-            print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}\n")
-        print("\nFinished evaluating.\n")
+    # Print model summary
+    from torchinfo import summary
+    crop = agent_spec.agent_params["crop"]
+    top_down_rgb = agent_spec.interface.top_down_rgb
+    h = top_down_rgb.height - crop[2] - crop[3]
+    w = top_down_rgb.width - crop[0] - crop[1]
+    td = {"rgb":th.zeros(1,9,h,w)}
+    summary(model.policy, input_data=[td], depth=5)
+
+    for env_name, env_eval in envs.items():
+        print(f"\nEvaluating env {env_name}.")
+        mean_reward, std_reward = evaluate_policy(
+            model, env_eval, n_eval_episodes=config.eval_eps, deterministic=True
+        )
+        print(f"Mean reward:{mean_reward:.2f} +/- {std_reward:.2f}\n")
+    print("\nFinished evaluating.\n")
 
 
 if __name__ == "__main__":
