@@ -23,9 +23,10 @@ import yaml
 from contrib_policy import network
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
+from torchinfo import summary
 from train.env import make_env
 from train.utils import ObjDict
-from torchinfo import summary
+
 from smarts.zoo import registry
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -99,7 +100,12 @@ def main(args: argparse.Namespace):
 
     # Run training or evaluation.
     if config.mode == "train":
-        train(envs_train=envs_train, envs_eval=envs_eval, config=config, agent_spec=agent_spec)
+        train(
+            envs_train=envs_train,
+            envs_eval=envs_eval,
+            config=config,
+            agent_spec=agent_spec,
+        )
     else:
         evaluate(envs=envs_eval, config=config, agent_spec=agent_spec)
 
@@ -125,13 +131,13 @@ def train(
         save_path=config.logdir / "checkpoint",
         name_prefix="PPO",
     )
-    
+
     for index in range(config.epochs):
         scen = next(scenarios_iter)
         env_train = envs_train[scen]
         env_eval = envs_eval[scen]
         print(f"\nTraining on {scen}.\n")
-        
+
         if index == 0:
             model = sb3lib.PPO(
                 env=env_train,
@@ -140,7 +146,7 @@ def train(
                 **network.combined_extractor(config),
             )
         else:
-            model = sb3lib.PPO.load(save_dir/ "intermediate")
+            model = sb3lib.PPO.load(save_dir / "intermediate")
 
         eval_callback = EvalCallback(
             env_eval,
@@ -171,8 +177,9 @@ def train(
     top_down_rgb = agent_spec.interface.top_down_rgb
     h = top_down_rgb.height - crop[2] - crop[3]
     w = top_down_rgb.width - crop[0] - crop[1]
-    td = {"rgb":th.zeros(1,9,h,w)}
+    td = {"rgb": th.zeros(1, 9, h, w)}
     summary(model.policy, input_data=[td], depth=5)
+
 
 def evaluate(
     envs: Dict[str, gym.Env],
@@ -188,7 +195,7 @@ def evaluate(
     top_down_rgb = agent_spec.interface.top_down_rgb
     h = top_down_rgb.height - crop[2] - crop[3]
     w = top_down_rgb.width - crop[0] - crop[1]
-    td = {"rgb":th.zeros(1,9,h,w)}
+    td = {"rgb": th.zeros(1, 9, h, w)}
     summary(model.policy, input_data=[td], depth=5)
 
     for env_name, env_eval in envs.items():

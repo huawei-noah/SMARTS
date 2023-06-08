@@ -5,7 +5,12 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:driving-smarts-v2023  
   scenarios:
-    - scenarios/sumo/intersections/1_to_1lane_left_turn_c_agents_1
+    - driving-smarts-2.competition-scenarios/t2/training/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1
+    - driving-smarts-2.competition-scenarios/t2/training/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1
+    - driving-smarts-2.competition-scenarios/t2/training/00b15e74-04a8-4bd4-9a78-eb24f0c0a980_agents_1
+    - driving-smarts-2.competition-scenarios/t2/training/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1
+    - driving-smarts-2.competition-scenarios/t2/training/1_to_3lane_left_turn_middle_lane_c_agents_1
+    - driving-smarts-2.competition-scenarios/t2/training/1_to_3lane_left_turn_sumo_c_agents_1
 
   # PPO algorithm
   alg:
@@ -13,15 +18,13 @@ smarts:
     batch_size: 64
     n_epochs: 4
     target_kl: 0.1
-    ent_coef: 0.01 # For exploration. Range = 0 to 0.01
+    # ent_coef: 0.01 # For exploration. Range = 0 to 0.01
 
   # Training over all scenarios
   epochs: 500 # Number of training loops.
 
   # Training per scenario
-  # train_steps: 4_096
-  # checkpoint_freq: 4_096
-  train_steps: 5_000
-  checkpoint_freq: 5_000 # Save a model every checkpoint_freq calls to env.step().
-  eval_freq: 5_000 # Evaluate the trained model every eval_freq steps and save the best model.
+  train_steps: 4_096
+  checkpoint_freq: 4_096 # Save a model every checkpoint_freq calls to env.step().
+  eval_freq: 4_096 # Evaluate the trained model every eval_freq steps and save the best model.
   eval_eps: 5 # Number of evaluation epsiodes.
