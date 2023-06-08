@@ -188,6 +188,8 @@ class ProviderManager:
         Returns:
             (Provider|None): Returns the provider if successful else will return `None` on failure.
         """
+        if actor_provider_transition.current_provider is new_provider:
+            return new_provider
         if new_provider.can_accept_actor(actor_provider_transition.actor_state):
             new_provider.add_actor(
                 actor_provider_transition.actor_state,
