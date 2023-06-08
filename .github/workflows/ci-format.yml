@@ -98,7 +98,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip "setuptools<58.3.0"
           pip install wheel==0.38.4
-          pip install .[camera_obs,doc,train,ray,envision,argoverse,opendrive,waymo]
+          pip install .[camera_obs,doc,train,ray,envision,argoverse,opendrive,waymo,sumo]
           cd ${GITHUB_WORKSPACE}/docs
           make html SPHINXOPTS="-W -T -E -n --keep-going -b spelling"
       - name: Check build output
