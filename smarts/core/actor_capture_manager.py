@@ -169,7 +169,9 @@ class ActorCaptureManager:
         if ConditionRequires.time in condition_requires:
             out_kwargs[ConditionRequires.time.name] = sim.elapsed_sim_time
         if ConditionRequires.actor_ids in condition_requires:
-            out_kwargs[ConditionRequires.actor_ids.name] = sim.vehicle_index.vehicle_ids
+            out_kwargs[
+                ConditionRequires.actor_ids.name
+            ] = sim.vehicle_index.vehicle_ids()
         if ConditionRequires.road_map in condition_requires:
             out_kwargs[ConditionRequires.road_map.name] = sim.road_map
         if ConditionRequires.actor_states in condition_requires:
