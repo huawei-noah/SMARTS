@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Traffic lights are now rendered in camera observations.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
+- Added `TrafficEngineActor` to describe a scenario studio defined actor that is controlled by a traffic engine.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
@@ -48,12 +49,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an underlying issue with the sensor manager where the sensors were not removed immediately.
 - Fixed an issue where warnings could be generated when an agent takes over an existing vehicle if the vehicle previously had sensors on it.
 - Fixed vehicle gap metric to consume ragged waypoints matrix.
+- Fixed an issue where making a deep copy of the vehicle index would cause the pybullet client to crash the simulation.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.
 - Removed `intersection-v0` env and `examples/rl/intersection` as they are superseded by `driving-smarts-v2023` env and `examples/rl/drive`, respectively.
 - Removed `examples/rl/racing` as base repository `danijar/dreamerv2` is not updated anymore and this example will be superseded by `examples/rl/drive`.
 - Removed `FrameStack` environment wrapper.
+- Removed `SMARTS.traffic_sim` property.
 ### Security
 
 ## [1.1.0] # 2023-04-28

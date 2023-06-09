@@ -150,6 +150,7 @@ class VehicleIndex:
 
         dict_ = copy(self.__dict__)
         shallow = ["_2id_to_id", "_vehicles", "_controller_states"]
+        shallow += [c for c in dict_ if c.startswith("_cache_decorator_")]
         for k in shallow:
             v = dict_.pop(k)
             setattr(result, k, copy(v))

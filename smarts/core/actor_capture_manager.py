@@ -82,9 +82,6 @@ class ActorCaptureManager:
 
     @staticmethod
     def __make_new_social_vehicle(sim, agent_id, initial_speed):
-        from smarts.core.smarts import SMARTS
-
-        sim: SMARTS = sim
         social_agent_spec, social_agent_model = sim.scenario.social_agents[agent_id]
 
         social_agent_model = replace(social_agent_model, initial_speed=initial_speed)
@@ -163,13 +160,12 @@ class ActorCaptureManager:
         ) == ConditionRequires.none:
             return out_kwargs
 
-        from smarts.core.smarts import SMARTS
-
-        sim: SMARTS = sim
         if ConditionRequires.time in condition_requires:
             out_kwargs[ConditionRequires.time.name] = sim.elapsed_sim_time
         if ConditionRequires.actor_ids in condition_requires:
-            out_kwargs[ConditionRequires.actor_ids.name] = sim.vehicle_index.vehicle_ids
+            out_kwargs[
+                ConditionRequires.actor_ids.name
+            ] = sim.vehicle_index.vehicle_ids()
         if ConditionRequires.road_map in condition_requires:
             out_kwargs[ConditionRequires.road_map.name] = sim.road_map
         if ConditionRequires.actor_states in condition_requires:

@@ -35,6 +35,7 @@ from smarts.core.sensor_manager import SensorManager
 from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle_state import VehicleState
+from smarts.sstudio.types.actor.social_agent_actor import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -515,7 +516,10 @@ class AgentManager:
         sim = self._sim()
         assert sim
         for bubble in filter(
-            lambda b: b.is_boid and b.keep_alive, sim.scenario.bubbles
+            lambda b: b.is_boid
+            and b.keep_alive
+            and isinstance(b.actor, SocialAgentActor),
+            sim.scenario.bubbles,
         ):
             actor = bubble.actor
             agent_id = BubbleManager._make_boid_social_agent_id(actor)
