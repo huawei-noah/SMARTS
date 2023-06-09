@@ -185,7 +185,7 @@ def test_capture_vehicle(smarts: SMARTS, scenarios, traffic_sim):
 @pytest.mark.parametrize("traffic_sim", ["SUMO", "SMARTS"], indirect=True)
 def test_emit_on_default(smarts: SMARTS, empty_scenarios):
     smarts.reset(next(empty_scenarios))
-    assert round(smarts.elapsed_sim_time, 2) == 3.1
+    assert round(smarts.elapsed_sim_time, 2) == 3.2
     assert len(smarts.vehicle_index.agent_vehicle_ids()) == 1
     assert len(smarts.vehicle_index.vehicle_ids_by_owner_id(AGENT_ID)) == 1
 
@@ -194,7 +194,7 @@ def test_no_recapture_agent(
     smarts_two_agents: SMARTS, two_agent_capture_offset_tenth_of_second
 ):
     smarts_two_agents.reset(next(two_agent_capture_offset_tenth_of_second))
-    assert smarts_two_agents.elapsed_sim_time == 0.1
+    assert smarts_two_agents.elapsed_sim_time == 0.2
     for i in range(3):
         smarts_two_agents.step({})
     assert len(smarts_two_agents.agent_manager.pending_agent_ids) == 0

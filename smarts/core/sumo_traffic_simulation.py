@@ -391,7 +391,7 @@ class SumoTrafficSimulation(TrafficProvider):
             )
             for actor in self._last_provider_state.actors:
                 if actor.actor_id != removed_actor_id:
-                    sim.provider_relinquishing_actor(self, actor)
+                    sim.provider_releases_actor(self, actor)
         self._traci_conn.close_traci_and_pipes()
         self._handling_error = False
 

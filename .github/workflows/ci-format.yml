@@ -114,11 +114,11 @@ jobs:
   test-package-conflicts:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v1.1.0-minimal
     steps:
       - name: Install packages
         run: |
-          apt-get update
+          apt-get update --fix-missing
           apt-get install -y python3.8-dev
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE

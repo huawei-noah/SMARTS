@@ -1,13 +1,9 @@
 import random
-import sys
 from pathlib import Path
 
-from smarts.core import seed
 from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
-
-seed(42)
 
 traffic = t.Traffic(
     flows=[
@@ -74,7 +70,8 @@ gen_scenario(
             ),
         ],
         scenario_metadata=t.ScenarioMetadata(
-            r"^(leader)|(other_interest)$", Colors.Blue
+            actor_of_interest_re_filter=r"^(leader)|(other_interest)$",
+            actor_of_interest_color=Colors.Blue,
         ),
     ),
     output_dir=Path(__file__).parent,

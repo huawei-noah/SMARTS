@@ -29,12 +29,16 @@ traffic_histories = [
         input_path=scenario_path,
     )
 ]
-
+duration = 11
 gen_scenario(
     t.Scenario(
         ego_missions=ego_mission,
         map_spec=t.MapSpec(source=f"{scenario_path}", lanepoint_spacing=1.0),
         traffic_histories=traffic_histories,
+        scenario_metadata=t.ScenarioMetadata(
+            scenario_difficulty=0.3,
+            scenario_duration=duration,
+        ),
     ),
     output_dir=Path(__file__).parent,
 )

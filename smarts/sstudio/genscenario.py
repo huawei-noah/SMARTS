@@ -28,11 +28,12 @@ import logging
 import os
 import pickle
 import sqlite3
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
+import yaml
 
 from smarts.core.default_map_builder import find_mapfile_in_dir
 from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
@@ -61,7 +62,7 @@ class ActorAndMission:
 def _check_if_called_externally():
     frame_info = inspect.stack()[2]
     module = inspect.getmodule(frame_info[0])
-    if module.__name__ != "smarts.sstudio.genscenario":
+    if not module or module.__name__ != "smarts.sstudio.genscenario":
         logger.warning(
             "",
             exc_info=DeprecationWarning(
@@ -105,7 +106,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
             graph["traffic_histories"].append(artifact_path)
 
     if scenario.scenario_metadata is not None:
-        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.pkl")]
+        graph["scenario_metadata"] = [os.path.join(base_dir, "scenario_metadata.yaml")]
 
     return graph
 
@@ -690,14 +691,14 @@ def gen_traffic_histories(
         genhistories.import_dataset(hdsr, output_dir, map_bbox)
 
 
-def gen_metadata(scenario: str, scenario_metadata: types.ScenarioMetadata):
+def gen_metadata(scenario: str, scenario_metadata: types.StandardMetadata):
     """Generate the metadata for the scenario
 
     Args:
         scenario (str):The scenario directory
-        scenario_metadata (ScenarioMetadata): Metadata of the scenario.
+        scenario_metadata (smarts.sstudio.types.standard_metadata.StandardMetadata): Scenario metadata information.
     """
     _check_if_called_externally()
-    output_path = os.path.join(scenario, "build", "scenario_metadata.pkl")
-    with open(output_path, "wb") as f:
-        pickle.dump(asdict(scenario_metadata), f)
+    output_path = os.path.join(scenario, "build", "scenario_metadata.yaml")
+    with open(output_path, "w") as f:
+        yaml.dump(scenario_metadata._dict_metadata, f)

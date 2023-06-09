@@ -28,4 +28,5 @@ from dataclasses import dataclass
 class Actor:
     """This is the base description/spec type for traffic actors."""
 
-    pass
+    name: str
+    """The name of the actor. This must be unique."""

@@ -13,9 +13,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
-- Traffic light signals are now visualized in Envision.
+- Traffic lights are now rendered in Envision.
+- Traffic lights are now rendered in camera observations.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
+- Added `TrafficEngineActor` to describe a scenario studio defined actor that is controlled by a traffic engine.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
@@ -31,9 +33,11 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `info` returned by `hiway-v1` in `reset()` and `step()` methods are unified.
 - Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
-- `DistToDestination` metric now adds lane error penalty when agent terminates in different lane but same road as the goal position. 
 - `hiway-v1` can now be configured for per-agent or environment reward(s), truncation(s), termination(s), and info(s) through `environment_return_mode`.
 - `hiway-v1`'s `observation_options` no longer has an effect on the environment rewards, truncations, and terminations `agent|environment` style return mode.
+- `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position. 
+- `Steps` metric is capped by scenario duration set in the scenario metadata.
+- Overall metric score is weighted by each agent's task difficulty.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
@@ -43,12 +47,18 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `SumoTrafficSimulation` no longer reports that it manages vehicles when it is disconnected.
 - Fixed waypoints so that they will always be the length of the `lookahead` parameter, even in junctions.
 - Fixed an issue where a single waypoint would appear in off-route lanes for missions with a goal.
+- Fixed an issue where the `off_route` event would be incorrectly triggered when driving on overlapping lanes.
+- Fixed an underlying issue with the sensor manager where the sensors were not removed immediately.
+- Fixed an issue where warnings could be generated when an agent takes over an existing vehicle if the vehicle previously had sensors on it.
+- Fixed vehicle gap metric to consume ragged waypoints matrix.
+- Fixed an issue where making a deep copy of the vehicle index would cause the pybullet client to crash the simulation.
 ### Removed
 - Removed the following dependencies from smarts: `pandas`, `rich`, `twisted`, `sh`.
 - Moved `baselines/marl_benchmark` from this repository to `smarts-project/smarts-project.rl` repository.
 - Removed `intersection-v0` env and `examples/rl/intersection` as they are superseded by `driving-smarts-v2023` env and `examples/rl/drive`, respectively.
 - Removed `examples/rl/racing` as base repository `danijar/dreamerv2` is not updated anymore and this example will be superseded by `examples/rl/drive`.
 - Removed `FrameStack` environment wrapper.
+- Removed `SMARTS.traffic_sim` property.
 ### Security
 
 ## [1.1.0] # 2023-04-28

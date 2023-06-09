@@ -42,10 +42,11 @@ from smarts.env.gymnasium.wrappers.metric.costs import (
     Done,
     get_dist,
     make_cost_funcs,
+    on_route,
 )
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.params import Params
-from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Record
+from smarts.env.gymnasium.wrappers.metric.types import Costs, Counts, Metadata, Record
 from smarts.env.gymnasium.wrappers.metric.utils import (
     add_dataclass,
     divide,
@@ -201,24 +202,21 @@ class MetricsBase(gym.Wrapper):
                 "actors of interest."
             )
 
+        # fmt: off
         # Refresh the cost functions for every episode.
         for agent_name in self._cur_agents:
             cost_funcs_kwargs = {}
             if self._params.dist_to_destination.active:
-                interest_criteria = self.env.agent_interfaces[
-                    agent_name
-                ].done_criteria.interest
+                interest_criteria = self.env.agent_interfaces[agent_name].done_criteria.interest
                 if interest_criteria == None:
                     end_pos = self._scen.missions[agent_name].goal.position
-                    dist_tot = get_dist(
+                    dist_tot, route = get_dist(
                         road_map=self._road_map,
-                        point_a=Point(*self._scen.missions[agent_name].start.position),
+                        point_a=self._scen.missions[agent_name].start.point,
                         point_b=end_pos,
                     )
-                elif isinstance(interest_criteria, InterestDoneCriteria) and (
-                    interest_actor is not None
-                ):
-                    end_pos, dist_tot = _get_end_and_dist(
+                elif isinstance(interest_criteria, InterestDoneCriteria) and (interest_actor is not None):
+                    end_pos, dist_tot, route = _get_end_and_dist(
                         interest_actor=interest_actor,
                         vehicle_index=self._vehicle_index,
                         traffic_sims=self.env.smarts.traffic_sims,
@@ -237,22 +235,31 @@ class MetricsBase(gym.Wrapper):
                     raise MetricsError(
                         "Unsupported configuration for distance-to-destination cost function."
                     )
-                cost_funcs_kwargs.update(
-                    {"dist_to_destination": {"end_pos": end_pos, "dist_tot": dist_tot}}
+                cur_on_route, cur_route_lane, cur_route_lane_point, cur_route_displacement = on_route(
+                    road_map=self._road_map, route=route, point=self._scen.missions[agent_name].start.point
                 )
+                assert cur_on_route, f"{agent_name} does not start nearby the desired route."
+                cost_funcs_kwargs.update({
+                    "dist_to_destination": {
+                        "end_pos": end_pos,
+                        "dist_tot": dist_tot,
+                        "route": route,
+                        "prev_route_lane": cur_route_lane,
+                        "prev_route_lane_point": cur_route_lane_point,
+                        "prev_route_displacement": cur_route_displacement,
+                    }
+                })
 
-            cost_funcs_kwargs.update(
-                {
-                    "dist_to_obstacles": {
-                        "ignore": self._params.dist_to_obstacles.ignore
-                    },
-                    "steps": {
-                        "max_episode_steps": self.env.agent_interfaces[
-                            agent_name
-                        ].max_episode_steps
-                    },
-                }
-            )
+            max_episode_steps = self._scen.metadata.get("scenario_duration",0) / self.env.smarts.fixed_timestep_sec
+            max_episode_steps = max_episode_steps or self.env.agent_interfaces[agent_name].max_episode_steps
+            cost_funcs_kwargs.update({
+                "dist_to_obstacles": {
+                    "ignore": self._params.dist_to_obstacles.ignore
+                },
+                "steps": {
+                    "max_episode_steps": max_episode_steps
+                },
+            })
             self._cost_funcs[agent_name] = make_cost_funcs(
                 params=self._params, **cost_funcs_kwargs
             )
@@ -263,11 +270,13 @@ class MetricsBase(gym.Wrapper):
                 agent_name: Record(
                     costs=Costs(),
                     counts=Counts(),
+                    metadata=Metadata(difficulty=self._scen.metadata.get("scenario_difficulty",1)),
                 )
                 for agent_name in self._cur_agents
             }
 
         return result
+        # fmt: on
 
     def records(self) -> Dict[str, Dict[str, Record]]:
         """
@@ -278,11 +287,11 @@ class MetricsBase(gym.Wrapper):
             $ env.records()
             $ {
                   scen1: {
-                      agent1: Record(costs, counts),
-                      agent2: Record(costs, counts),
+                      agent1: Record(costs, counts, metadata),
+                      agent2: Record(costs, counts, metadata),
                   },
                   scen2: {
-                      agent1: Record(costs, counts),
+                      agent1: Record(costs, counts, metadata),
                   },
               }
 
@@ -301,6 +310,7 @@ class MetricsBase(gym.Wrapper):
                         data_copy.costs, data_copy.counts.episodes, divide
                     ),
                     counts=data_copy.counts,
+                    metadata=data_copy.metadata,
                 )
 
         return records
@@ -314,8 +324,7 @@ class MetricsBase(gym.Wrapper):
             Dict[str, float]: Contains key-value pairs denoting score
             components.
         """
-        records_sum_copy = copy.deepcopy(self._records_sum)
-        return self._formula.score(records_sum=records_sum_copy)
+        return self._formula.score(records=self.records())
 
 
 def _get_end_and_dist(
@@ -324,7 +333,7 @@ def _get_end_and_dist(
     traffic_sims: List[TrafficProvider],
     scenario: Scenario,
     road_map: RoadMap,
-) -> Tuple[Point, float]:
+) -> Tuple[Point, float, RoadMap.Route]:
     """Computes the end point and route distance for a given vehicle of interest.
 
     Args:
@@ -335,7 +344,7 @@ def _get_end_and_dist(
         road_map (RoadMap): Underlying road map.
 
     Returns:
-        Tuple[Point, float]: End point and route distance.
+        Tuple[Point, float, RoadMap.Route]: End point, route distance, and planned route.
     """
     # Check if the interest vehicle is a social agent.
     interest_social_missions = [
@@ -358,21 +367,21 @@ def _get_end_and_dist(
         goal = interest_social_mission.goal
         assert isinstance(goal, PositionalGoal)
         end_pos = goal.position
-        dist_tot = get_dist(
+        dist_tot, route = get_dist(
             road_map=road_map,
-            point_a=Point(*interest_social_mission.start.position),
+            point_a=interest_social_mission.start.point,
             point_b=end_pos,
         )
     else:
         interest_traffic_sim = interest_traffic_sims[0]
-        end_pos, dist_tot = _get_traffic_end_and_dist(
+        end_pos, dist_tot, route = _get_traffic_end_and_dist(
             vehicle_name=interest_actor,
             vehicle_index=vehicle_index,
             traffic_sim=interest_traffic_sim,
             road_map=road_map,
         )
 
-    return end_pos, dist_tot
+    return end_pos, dist_tot, route
 
 
 def _get_traffic_end_and_dist(
@@ -380,7 +389,7 @@ def _get_traffic_end_and_dist(
     vehicle_index: VehicleIndex,
     traffic_sim: TrafficProvider,
     road_map: RoadMap,
-) -> Tuple[Point, float]:
+) -> Tuple[Point, float, RoadMap.Route]:
     """Computes the end point and route distance of a (i) SUMO traffic,
     (ii) SMARTS traffic, or (iii) history traffic vehicle
     specified by `vehicle_name`.
@@ -392,7 +401,7 @@ def _get_traffic_end_and_dist(
         road_map (RoadMap): Underlying road map.
 
     Returns:
-        Tuple[Point, float]: End point and route distance.
+        Tuple[Point, float, RoadMap.Route]: End point, route distance, and planned route.
     """
 
     if isinstance(traffic_sim, (SumoTrafficSimulation, LocalTrafficProvider)):
@@ -403,8 +412,10 @@ def _get_traffic_end_and_dist(
             .lane_at_index(0)
             .from_lane_coord(RefLinePoint(s=np.inf))
         )
-        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-        return end_pos, dist_tot
+        dist_tot, route = get_dist(
+            road_map=road_map, point_a=start_pos, point_b=end_pos
+        )
+        return end_pos, dist_tot, route
     elif isinstance(traffic_sim, TrafficHistoryProvider):
         history = traffic_sim.vehicle_history_window(vehicle_id=vehicle_name)
         start_pos = Point(x=history.start_position_x, y=history.start_position_y)
@@ -414,8 +425,10 @@ def _get_traffic_end_and_dist(
         # roads traversed by the history vehicle in complex maps. Ideally we
         # should use the actual road ids traversed by the history vehicle to
         # compute the distance.
-        dist_tot = get_dist(road_map=road_map, point_a=start_pos, point_b=end_pos)
-        return end_pos, dist_tot
+        dist_tot, route = get_dist(
+            road_map=road_map, point_a=start_pos, point_b=end_pos
+        )
+        return end_pos, dist_tot, route
     else:
         raise MetricsError(f"Unsupported traffic provider {traffic_sim.source_str}.")
 
@@ -517,8 +530,17 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
         agent_interfaces (Dict[str,AgentInterface]): Agent interfaces.
 
     Raises:
-        AttributeError: If any agent's mission is not of type PositionGoal.
+        MetricsError: If (i) scenario difficulty is not properly normalized,
+            or (ii) any agent's goal is improperly configured.
     """
+
+    difficulty = scenario.metadata.get("scenario_difficulty", None)
+    if not ((difficulty is None) or (0 < difficulty <= 1)):
+        raise MetricsError(
+            "Expected scenario difficulty to be normalized within (0,1], but "
+            f"got difficulty={difficulty}."
+        )
+
     goal_types = {
         agent_name: type(agent_mission.goal)
         for agent_name, agent_mission in scenario.missions.items()
@@ -535,7 +557,7 @@ def _check_scen(scenario: Scenario, agent_interfaces: Dict[str, AgentInterface])
                 and aoi != None
             )
         ):
-            raise AttributeError(
+            raise MetricsError(
                 "{0} has an unsupported goal type {1} and interest done criteria {2} "
                 "combination.".format(
                     agent_name, goal_types[agent_name], interest_criteria

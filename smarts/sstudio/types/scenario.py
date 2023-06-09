@@ -21,8 +21,10 @@
 # THE SOFTWARE.
 
 
+import enum
 from dataclasses import dataclass
-from typing import Dict, Optional, Sequence, Tuple, Union
+from enum import IntEnum
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 from smarts.core.colors import Colors
 from smarts.sstudio.types.actor.social_agent_actor import SocialAgentActor
@@ -30,18 +32,76 @@ from smarts.sstudio.types.bubble import Bubble
 from smarts.sstudio.types.dataset import TrafficHistoryDataset
 from smarts.sstudio.types.map_spec import MapSpec
 from smarts.sstudio.types.mission import EndlessMission, Mission
+from smarts.sstudio.types.standard_metadata import StandardMetadata
 from smarts.sstudio.types.traffic import Traffic
 from smarts.sstudio.types.zone import RoadSurfacePatch
 
 
-@dataclass(frozen=True)
-class ScenarioMetadata:
+class ScenarioMetadataFields(IntEnum):
+    """This lists metadata fields generally useful for scenario metadata."""
+
+    actor_of_interest_color = enum.auto()
+    """The color that the actors of interest should have."""
+    actor_of_interest_re_filter = enum.auto()
+    """Actors with names that match this pattern are actors of interest."""
+    scenario_difficulty = enum.auto()
+    """Custom difficulty marking values, normalized to (0,1]."""
+    scenario_duration = enum.auto()
+    """The expected scenario time length in seconds."""
+
+
+class ScenarioMetadata(StandardMetadata):
     """Scenario data that does not have influence on simulation."""
 
-    actor_of_interest_re_filter: str
-    """Vehicles with names that match this pattern are vehicles of interest."""
-    actor_of_interest_color: Colors
-    """The color that the vehicles of interest should have."""
+    def __init__(
+        self,
+        metadata: Optional[Dict[Union[str, ScenarioMetadataFields], Any]] = None,
+        *,
+        actor_of_interest_re_filter: Optional[str] = None,
+        actor_of_interest_color: Optional[Colors] = None,
+        scenario_difficulty: Optional[float] = None,
+        scenario_duration: Optional[float] = None,
+    ) -> None:
+        if metadata is None:
+            metadata = {}
+        basic_standard_metadata = {
+            ScenarioMetadataFields.actor_of_interest_color: actor_of_interest_color,
+            ScenarioMetadataFields.actor_of_interest_re_filter: actor_of_interest_re_filter,
+            ScenarioMetadataFields.scenario_difficulty: scenario_difficulty,
+            ScenarioMetadataFields.scenario_duration: scenario_duration,
+        }
+        self._standard_metadata = tuple(
+            (
+                setting_key.name
+                if isinstance(setting_key, ScenarioMetadataFields)
+                else setting_key,
+                setting_value,
+            )
+            for setting_key, setting_value in {
+                **metadata,
+                **basic_standard_metadata,
+            }.items()
+            if setting_value is not None
+        )
+
+    def __getitem__(self, __key: Any) -> Any:
+        if isinstance(__key, ScenarioMetadataFields):
+            __key = __key.name
+        return super().__getitem__(__key)
+
+    def get(self, __key, __default=None):
+        """Retrieve the value or a default.
+
+        Args:
+            __key (Any): The key to find.
+            __default (Any, optional): The default if the key does not exist. Defaults to None.
+
+        Returns:
+            Optional[Any]: The value or default.
+        """
+        if isinstance(__key, ScenarioMetadataFields):
+            __key = __key.name
+        return super().get(__key, __default)
 
 
 @dataclass(frozen=True)
@@ -70,7 +130,7 @@ class Scenario:
     """Friction coefficient of patches of road surface."""
     traffic_histories: Optional[Sequence[Union[TrafficHistoryDataset, str]]] = None
     """Traffic vehicles trajectory dataset to be replayed."""
-    scenario_metadata: Optional[ScenarioMetadata] = None
+    scenario_metadata: Optional[ScenarioMetadata] = ScenarioMetadata({})
     """"Scenario data that does not have influence on simulation."""
 
     def __post_init__(self):
