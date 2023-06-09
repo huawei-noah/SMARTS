@@ -21,20 +21,21 @@
 # THE SOFTWARE.
 
 import dataclasses
-from unittest import mock
 from pathlib import Path
+from unittest import mock
+
 import gymnasium as gym
 import numpy as np
 import pytest
 
+from smarts.benchmark.driving_smarts import load_config
+from smarts.benchmark.entrypoints.benchmark_runner_v0 import benchmark
 from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
 from smarts.env.gymnasium.wrappers.metric.metrics import Metrics, MetricsError
 from smarts.zoo.agent_spec import AgentSpec
-from smarts.benchmark.entrypoints.benchmark_runner_v0 import benchmark
-from smarts.benchmark.driving_smarts import load_config
 
 # def _intrfc_improper():
 #     return [
@@ -122,30 +123,31 @@ from smarts.benchmark.driving_smarts import load_config
 #     yield env
 #     env.close()
 
+
 @pytest.fixture(scope="module")
 def get_benchmark_args(request):
 
-    config_path = Path(__file__).resolve().parents[3]/request.param
+    config_path = Path(__file__).resolve().parents[3] / request.param
     benchmark_args_base = load_config(config_path)
-    benchmark_args = benchmark_args_base.update({"eval_episodes":2}) 
+    benchmark_args = benchmark_args_base.update({"eval_episodes": 2})
     return benchmark_args
 
+
 @pytest.mark.parametrize(
-    "get_benchmark_args", 
+    "get_benchmark_args",
     [
         "smarts/benchmark/driving_smarts/v2023/config_1.yaml",
         "smarts/benchmark/driving_smarts/v2023/config_2.yaml",
         "smarts/benchmark/driving_smarts/v2023/config_3.yaml",
-    ], 
-    indirect=True)
+    ],
+    indirect=True,
+)
 def test_benchmark():
 
     agent_locator = "zoo.policies:chase-via-points-agent-v0"
 
     # Verify that benchmark runs without errors.
-    benchmark(
-        benchmark_args=get_benchmark_args, 
-        agent_locator=agent_locator)
+    benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)
 
 
 # @pytest.mark.parametrize("get_agent_spec", [{}], indirect=True)
