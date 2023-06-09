@@ -24,7 +24,7 @@ import warnings
 from dataclasses import dataclass
 from typing import Literal, Optional, Tuple, Union
 
-from smarts.primatives.constants import SmartsLiteral
+from smarts.primatives.constants import AUTO, MISSING
 from smarts.sstudio.types.entry_tactic import EntryTactic
 from smarts.sstudio.types.route import JunctionEdgeIDResolver, RandomRoute, Route
 
@@ -55,7 +55,7 @@ class Mission:
     via: Tuple[Via, ...] = ()
     """Points on an road that an actor must pass through"""
 
-    start_time: Union[float, Literal[SmartsLiteral.MISSING]] = SmartsLiteral.MISSING
+    start_time: Union[float, Literal[MISSING]] = MISSING
     """The earliest simulation time that this mission starts but may start later in couple with
     `entry_tactic`.
     """
@@ -87,7 +87,7 @@ class EndlessMission:
     """
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
-    start_time: Union[float, Literal[SmartsLiteral.MISSING]] = SmartsLiteral.MISSING
+    start_time: Union[float, Literal[MISSING]] = MISSING
     """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
@@ -112,15 +112,15 @@ class LapMission:
     """The amount of times to repeat the mission"""
     via: Tuple[Via, ...] = ()
     """Points on a road that an actor must pass through"""
-    start_time: Union[float, Literal[SmartsLiteral.MISSING]] = SmartsLiteral.MISSING
+    start_time: Union[float, Literal[MISSING]] = MISSING
     """The earliest simulation time that this mission starts"""
     entry_tactic: Optional[EntryTactic] = None
     """A specific tactic the mission should employ to start the mission"""
 
     def __post_init__(self):
         assert isinstance(self.route, Route)
-        assert self.route.begin != SmartsLiteral.AUTO
-        assert self.route.end != SmartsLiteral.AUTO
+        assert self.route.begin != AUTO
+        assert self.route.end != AUTO
         if self.start_time != sys.maxsize:
             warnings.warn(
                 "`start_time` is deprecated. Instead use `entry_tactic=EntryTactic(start_time=...)`.",

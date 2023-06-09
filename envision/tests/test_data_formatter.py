@@ -245,7 +245,7 @@ def test_covered_data_format(covered_data):
 
 def test_primitive_data_format(primitive_data):
     for unformatted, formatted in primitive_data:
-        
+
         es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         es.add_any(unformatted)
 

@@ -20,16 +20,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-import sys
 from enum import Enum
+from typing import Final
 
 
 class SmartsLiteral(Enum):
-    AUTO = "auto"
-    MAX = sys.maxsize
-    MISSING = sys.maxsize
+    AUTO: Final = "auto"
+    MAX: Final = 9223372036854775807
+    MISSING: Final = MAX
+    NONE: Final = None
 
 
-AUTO = SmartsLiteral.AUTO
-MAX = SmartsLiteral.MAX
+AUTO: Final = SmartsLiteral.AUTO
+MAX: Final = SmartsLiteral.MAX
 MISSING = SmartsLiteral.MISSING
+NONE: Final = SmartsLiteral.NONE

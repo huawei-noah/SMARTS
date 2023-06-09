@@ -32,6 +32,7 @@ from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.file import replace
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import Vehicle
+from smarts.primatives.constants import AUTO
 from smarts.sstudio.types import MapZone, PositionalZone, TrapEntryTactic
 
 
@@ -355,11 +356,11 @@ class TrapManager(ActorCaptureManager):
         default_entry_speed = entry_tactic.default_entry_speed
         n_lane = None
 
-        if default_entry_speed is None:
+        if default_entry_speed is AUTO:
             n_lane = road_map.nearest_lane(mission.start.point)
             default_entry_speed = n_lane.speed_limit if n_lane is not None else 0
 
-        if zone is None:
+        if zone is AUTO:
             n_lane = n_lane or road_map.nearest_lane(mission.start.point)
             if n_lane is None:
                 zone = PositionalZone(mission.start.position[:2], size=(3, 3))

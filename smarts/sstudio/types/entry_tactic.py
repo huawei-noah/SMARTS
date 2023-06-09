@@ -22,9 +22,10 @@
 
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Literal, Tuple, Union
 
 from smarts.core.condition_state import ConditionState
+from smarts.primatives.constants import AUTO
 from smarts.sstudio.types.condition import (
     Condition,
     ConditionRequires,
@@ -51,11 +52,11 @@ class TrapEntryTactic(EntryTactic):
 
     wait_to_hijack_limit_s: float = 0
     """The amount of seconds a hijack will wait to get a vehicle before defaulting to a new vehicle"""
-    zone: Optional[MapZone] = None
+    zone: Union[MapZone, Literal[AUTO]] = AUTO
     """The zone of the hijack area"""
     exclusion_prefixes: Tuple[str, ...] = tuple()
     """The prefixes of vehicles to avoid hijacking"""
-    default_entry_speed: Optional[float] = None
+    default_entry_speed: Union[float, Literal[AUTO]] = AUTO
     """The speed that the vehicle starts at when the hijack limit expiry emits a new vehicle"""
     condition: Condition = LiteralCondition(ConditionState.TRUE)
     """A condition that is used to add additional exclusions."""
