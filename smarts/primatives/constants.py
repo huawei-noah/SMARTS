@@ -25,13 +25,15 @@ from typing import Final
 
 
 class SmartsLiteral(Enum):
-    AUTO: Final = "auto"
-    MAX: Final = 9223372036854775807
-    MISSING: Final = MAX
-    NONE: Final = None
+    AUTO = "auto"
+    INHERIT = ...
+    MAX = 9223372036854775807
+    MISSING = MAX
+    NONE = None
 
 
 AUTO: Final = SmartsLiteral.AUTO
+INHERIT: Final = SmartsLiteral.INHERIT
 MAX: Final = SmartsLiteral.MAX
 MISSING = SmartsLiteral.MISSING
 NONE: Final = SmartsLiteral.NONE

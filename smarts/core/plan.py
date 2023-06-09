@@ -76,10 +76,8 @@ class Start(StartBase):
 
 
 @dataclass(frozen=True)
-class AutomaticStart(StartBase):
-    """Generates a start"""
-
-    pass
+class InheritedStart(StartBase):
+    """A starting state that inherits from the original vehicle."""
 
 
 @dataclass(frozen=True, unsafe_hash=True)
@@ -94,6 +92,12 @@ class Goal:
         """If the goal has been completed."""
         return False
 
+
+@dataclass(frozen=True)
+class InheritedGoal(Goal):
+    """Describes a goal that is inherited from the vehicle (or original dataset)."""
+
+    pass
 
 @dataclass(frozen=True, unsafe_hash=True)
 class AutomaticGoal(Goal):

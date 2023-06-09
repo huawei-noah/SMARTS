@@ -86,7 +86,7 @@ class Route:
     """The ids of roads that must be included in the route between `begin` and `end`."""
 
     map_spec: Optional[MapSpec] = None
-    """All routes are relative to a road map.  If not specified here,
+    """All routes are relative to a road map. If not specified here,
     the default map_spec for the scenario is used."""
 
     @property

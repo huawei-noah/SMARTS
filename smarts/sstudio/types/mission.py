@@ -75,7 +75,7 @@ class Mission:
 class EndlessMission:
     """The descriptor for an actor's mission that has no end."""
 
-    begin: Tuple[str, int, float]
+    begin: Union[Tuple[str, int, float], Literal[AUTO]]
     """The (road, lane_index, offset) details of the start location for the route.
 
     road:
