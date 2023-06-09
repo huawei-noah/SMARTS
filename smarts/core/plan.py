@@ -99,6 +99,7 @@ class InheritedGoal(Goal):
 
     pass
 
+
 @dataclass(frozen=True, unsafe_hash=True)
 class AutomaticGoal(Goal):
     """A goal that determines an end result from pre-existing vehicle and mission values."""

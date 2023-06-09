@@ -25,6 +25,10 @@ from typing import Final
 
 
 class SmartsLiteral(Enum):
+    """Constants that SMARTS uses. This is intended to constant type the
+    values.
+    """
+
     AUTO = "auto"
     INHERIT = ...
     MAX = 9223372036854775807

@@ -124,6 +124,7 @@ nitpick_ignore = {
 }
 nitpick_ignore_regex = {
     (r"py:.*", r"av2\..*"),
+    (r"py:.*", r"configparser\..*"),
     (r"py:.*", r"google\.protobuf\..*"),
     (r"py:.*", r"grpc\..*"),
     (r"py:.*", r"gym\..*"),
@@ -142,9 +143,9 @@ nitpick_ignore_regex = {
     (r"py:.*", r"tornado\..*"),
     (r"py:.*", r"traci\..*"),
     (r"py:.*", r"typing(_extensions)?\..*"),
-    (r"py:.*", r"configparser\..*"),
-    (r"py:class", r".*\.?T"),
     (r"py:class", r".*\.?S"),
+    (r"py:class", r".*\.?T"),
+    (r"py:class", r".*typing.Literal\[<SmartsLiteral\..*>\].*"),
 }
 
 # -- Options for spelling ----------------------------------------------------

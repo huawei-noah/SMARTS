@@ -338,10 +338,10 @@ class TrafficGenerator:
             # create multiple traffic flows. Since IDs can't be reused, we also unique
             # them here.
         options: Dict[str, Union[str, int, float]] = {}
-        if len(route.via):
-            options["via"] = " ".join(route.via)
         for trip_idx, trip in enumerate(traffic.trips):
             route = resolved_routes[trip.route]
+            if len(route.via):
+                options["via"] = " ".join(route.via)
             actor = trip.actor
             doc.stag(
                 "vehicle",
