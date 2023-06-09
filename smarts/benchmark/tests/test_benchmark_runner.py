@@ -34,6 +34,7 @@ from smarts.core.controllers import ActionSpaceType
 def get_benchmark_args(request):
     config_path = Path(__file__).resolve().parents[3] / request.param
     benchmark_args = load_config(config_path)["benchmark"]
+    assert isinstance(benchmark_args, dict), f"Config path not found: {config_path}."
     benchmark_args.update({"eval_episodes": 2})
     return benchmark_args
 
