@@ -5,12 +5,20 @@ smarts:
   agent_locator: inference:contrib-agent-v0
   env_id: smarts.env:driving-smarts-v2023  
   scenarios:
-    - driving-smarts-2.competition-scenarios/t2/training/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1
-    - driving-smarts-2.competition-scenarios/t2/training/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1
-    - driving-smarts-2.competition-scenarios/t2/training/00b15e74-04a8-4bd4-9a78-eb24f0c0a980_agents_1
-    - driving-smarts-2.competition-scenarios/t2/training/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1
-    - driving-smarts-2.competition-scenarios/t2/training/1_to_3lane_left_turn_middle_lane_c_agents_1
-    - driving-smarts-2.competition-scenarios/t2/training/1_to_3lane_left_turn_sumo_c_agents_1
+    - scenarios/sumo/straight/cruise_2lane_agents_1
+    - scenarios/sumo/straight/cutin_2lane_agents_1
+    - scenarios/sumo/straight/merge_exit_sumo_t_agents_1
+    - scenarios/sumo/straight/overtake_2lane_agents_1
+
+    - scenarios/sumo/intersections/1_to_3lane_left_turn_sumo_c_agents_1
+    - scenarios/sumo/intersections/1_to_3lane_left_turn_middle_lane_c_agents_1
+
+    # - driving-smarts-2.competition-scenarios/t2/training/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1
+    # - driving-smarts-2.competition-scenarios/t2/training/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1
+    # - driving-smarts-2.competition-scenarios/t2/training/00b15e74-04a8-4bd4-9a78-eb24f0c0a980_agents_1
+    # - driving-smarts-2.competition-scenarios/t2/training/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1
+    # - driving-smarts-2.competition-scenarios/t2/training/1_to_3lane_left_turn_middle_lane_c_agents_1
+    # - driving-smarts-2.competition-scenarios/t2/training/1_to_3lane_left_turn_sumo_c_agents_1
 
   # PPO algorithm
   alg:

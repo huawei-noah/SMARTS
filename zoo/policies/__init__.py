@@ -13,7 +13,7 @@ from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import make, register
 
 from .chase_via_points_agent import ChaseViaPointsAgent
-from .keep_lane_agent import KeepLaneAgent
+from .keep_lane_agent import KeepLaneAgent, KeepLaneAgentFormatted
 from .non_interactive_agent import NonInteractiveAgent
 from .waypoint_tracking_agent import WaypointTrackingAgent
 
@@ -33,6 +33,14 @@ register(
     entry_point=lambda **kwargs: AgentSpec(
         interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=20000),
         agent_builder=KeepLaneAgent,
+    ),
+)
+
+register(
+    locator="keep-lane-agent-v1",
+    entry_point=lambda **kwargs: AgentSpec(
+        interface=AgentInterface.from_type(AgentType.Laner, max_episode_steps=20000),
+        agent_builder=KeepLaneAgentFormatted,
     ),
 )
 
