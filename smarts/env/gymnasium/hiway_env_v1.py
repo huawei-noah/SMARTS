@@ -320,13 +320,27 @@ class HiWayEnvV1(gym.Env):
                 info,
             )
         elif self._environment_return_mode == EnvReturnMode.per_agent:
-            return (
-                self._observations_formatter.format(observations),
-                rewards,
-                dones,
-                dones,
-                info,
-            )
+            observations = self._observations_formatter.format(observations)
+            if (
+                self._observations_formatter.observation_options
+                == ObservationOptions.full
+            ):
+                dones = {**{id_: False for id_ in observations}, **dones}
+                return (
+                    observations,
+                    {**{id_: 0 for id_ in observations}, **rewards},
+                    dones,
+                    dones,
+                    info,
+                )
+            else:
+                return (
+                    observations,
+                    rewards,
+                    dones,
+                    dones,
+                    info,
+                )
         raise RuntimeError(
             f"Invalid observation configuration using {self._environment_return_mode}"
         )
