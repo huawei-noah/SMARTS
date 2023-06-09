@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 from smarts.sstudio.types.actor.social_agent_actor import *
 from smarts.sstudio.types.actor.traffic_actor import *
+from smarts.sstudio.types.actor.traffic_engine_actor import *
 from smarts.sstudio.types.bubble import *
 from smarts.sstudio.types.bubble_limits import *
 from smarts.sstudio.types.condition import *

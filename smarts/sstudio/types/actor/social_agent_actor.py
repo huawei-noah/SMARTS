@@ -35,9 +35,6 @@ class SocialAgentActor(Actor):
     pre-trained model to understand how to act in the environment.
     """
 
-    name: str
-    """The name of the social actor. Must be unique."""
-
     # A pre-registered zoo identifying tag you provide to help SMARTS identify the
     # prefab of a social agent.
     agent_locator: str

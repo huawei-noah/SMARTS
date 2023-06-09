@@ -22,7 +22,7 @@
 
 
 from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from smarts.core import gen_id
 from smarts.core.condition_state import ConditionState
@@ -31,6 +31,7 @@ from smarts.sstudio.types.actor.social_agent_actor import (
     BoidAgentActor,
     SocialAgentActor,
 )
+from smarts.sstudio.types.actor.traffic_engine_actor import TrafficEngineActor
 from smarts.sstudio.types.bubble_limits import BubbleLimits
 from smarts.sstudio.types.condition import (
     Condition,
@@ -51,7 +52,7 @@ class Bubble:
 
     zone: Zone
     """The zone which to capture vehicles."""
-    actor: SocialAgentActor
+    actor: Union[SocialAgentActor, TrafficEngineActor]
     """The actor specification that this bubble works for."""
     margin: float = 2
     """The exterior buffer area that extends the air-locking zone area. Must be >= 0."""
@@ -123,11 +124,14 @@ class Bubble:
                     if follow_id
                     else f"The zone polygon of {type(self.zone).__name__} of fixed position {self.id} is not a valid closed loop"
                 )
-        if (
+
+        invalid_condition_requires = (
             ConditionRequires.any_current_actor_state & self.active_condition.requires
-        ) != ConditionRequires.none:
+        )
+        if invalid_condition_requires != ConditionRequires.none:
             raise ValueError(
                 "Actor state conditions not allowed in broadphase inclusion."
+                f"Invalid conditions requirements: {invalid_condition_requires}"
             )
 
     @staticmethod
@@ -138,4 +142,17 @@ class Bubble:
     @property
     def is_boid(self):
         """Tests if the actor is to control multiple vehicles."""
-        return isinstance(self.actor, BoidAgentActor)
+        return isinstance(self.actor, (BoidAgentActor, TrafficEngineActor))
+
+    @property
+    def traffic_provider(self) -> Optional[str]:
+        """The name of the traffic provider used if the actor is to be controlled by a traffic engine.
+
+        Returns:
+            (Optional[str]): The name of the traffic provider or `None`.
+        """
+        return (
+            self.actor.traffic_provider
+            if isinstance(self.actor, TrafficEngineActor)
+            else None
+        )

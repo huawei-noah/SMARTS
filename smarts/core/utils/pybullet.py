@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import functools
+import inspect
 
 from smarts.core.utils.logging import suppress_output
 
@@ -26,3 +28,30 @@ from smarts.core.utils.logging import suppress_output
 with suppress_output():
     from pybullet import *
     from pybullet_utils import bullet_client
+
+
+class SafeBulletClient(bullet_client.BulletClient):
+    """A wrapper for pybullet to manage different clients."""
+
+    def __init__(self, connection_mode=None):
+        """Creates a Bullet client and connects to a simulation.
+
+        Args:
+          connection_mode:
+            `None` connects to an existing simulation or, if fails, creates a
+              new headless simulation,
+            `pybullet.GUI` creates a new simulation with a GUI,
+            `pybullet.DIRECT` creates a headless simulation,
+            `pybullet.SHARED_MEMORY` connects to an existing simulation.
+        """
+        super().__init__(connection_mode=connection_mode)
+
+    def __del__(self):
+        """Clean up connection if not already done."""
+        super().__init__()
+
+    def __getattr__(self, name):
+        """Inject the client id into Bullet functions."""
+        if name in {"__deepcopy__", "__getstate__", "__setstate__"}:
+            raise RuntimeError(f"{self.__class__} does not allow `{name}`")
+        return super().__getattr__(name)
