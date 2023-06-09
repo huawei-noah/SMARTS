@@ -28,7 +28,7 @@ T = TypeVar("T")
 S = TypeVar("S")
 
 
-def get_type_chain(target_subclass: type, target_super_class: type):
+def get_type_chain(target_subclass: type, target_super_class: type) -> List[type]:
     """Finds an inheritance chain from the current sub-type to the target super-type.
 
     Args:
