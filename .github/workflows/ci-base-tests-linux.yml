@@ -82,4 +82,4 @@ jobs:
             --forked \
             --dist=no \
             -n auto \
-            ${GITHUB_WORKSPACE}/examples/tests/test_examples_rl.py::test_${{matrix.tests}}
+            ${GITHUB_WORKSPACE}/examples/tests/test_rl.py::test_${{matrix.tests}}
