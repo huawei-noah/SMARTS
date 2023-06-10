@@ -27,14 +27,10 @@ import pytest
 from helpers.scenario import temp_scenario
 
 import smarts.sstudio.types as t
-from smarts.core.agent_manager import AgentManager
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.local_traffic_provider import LocalTrafficProvider
-from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.tests.helpers.providers import MockProvider, MockTrafficProvider
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio import gen_scenario
