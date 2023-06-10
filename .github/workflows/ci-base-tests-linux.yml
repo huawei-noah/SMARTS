@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-           cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
@@ -75,7 +75,7 @@ jobs:
           pip install -e ./inference/    
       - name: Run smoke tests
         run: |
-           cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
           . ${{env.venv_dir}}/bin/activate
           PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
