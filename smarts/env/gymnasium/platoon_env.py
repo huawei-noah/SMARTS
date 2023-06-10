@@ -167,7 +167,7 @@ def resolve_agent_interface(agent_interface: AgentInterface):
         off_road=True,
         off_route=False,
         on_shoulder=False,
-        wrong_way=True,
+        wrong_way=False,
         not_moving=False,
         agents_alive=None,
         interest=InterestDoneCriteria(

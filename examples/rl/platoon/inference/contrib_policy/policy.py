@@ -16,16 +16,13 @@ class Policy(Agent):
         performed here. To be implemented by the user.
         """
 
-        import stable_baselines3 as sb3lib
         from contrib_policy import network
         from contrib_policy.filter_obs import FilterObs
         from contrib_policy.format_action import FormatAction
         from contrib_policy.frame_stack import FrameStack
         from contrib_policy.make_dict import MakeDict
 
-        self._model = sb3lib.PPO.load(
-            path=Path(__file__).resolve().parents[0] / "saved_model"
-        )
+        self._model = self._get_model()
 
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb, crop=crop)
         self._frame_stack = FrameStack(
@@ -56,3 +53,8 @@ class Policy(Agent):
         obs = self._frame_stack.stack(obs)
         obs = self._make_dict.make(obs)
         return obs
+
+    def _get_model(self):
+        import stable_baselines3 as sb3lib
+
+        return sb3lib.PPO.load(path=Path(__file__).resolve().parents[0] / "saved_model")

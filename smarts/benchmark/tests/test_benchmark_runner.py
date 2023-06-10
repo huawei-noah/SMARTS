@@ -27,7 +27,6 @@ import pytest
 
 from smarts.benchmark.driving_smarts import load_config
 from smarts.benchmark.entrypoints.benchmark_runner_v0 import benchmark
-from smarts.core.controllers import ActionSpaceType
 
 
 @pytest.fixture(scope="module")
@@ -39,33 +38,44 @@ def get_benchmark_args(request):
     return benchmark_args
 
 
+def _get_model(action):
+    class MockModel:
+        def predict(*args, **kwargs):
+            return (action, None)
+
+    return lambda _: MockModel()
+
+
 @pytest.mark.parametrize(
     "get_benchmark_args",
     [
         "smarts/benchmark/driving_smarts/v2023/config_1.yaml",
         "smarts/benchmark/driving_smarts/v2023/config_2.yaml",
+    ],
+    indirect=True,
+)
+def test_drive(get_benchmark_args):
+    """Tests Driving SMARTS 2023.1 and 2023.2 benchmarks using `examples/rl/drive` model."""
+    from contrib_policy.policy import Policy
+
+    agent_locator = "examples.rl.drive.inference:contrib-agent-v0"
+    action = 1
+    with mock.patch.object(Policy, "_get_model", _get_model(action)):
+        benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)
+
+
+@pytest.mark.parametrize(
+    "get_benchmark_args",
+    [
         "smarts/benchmark/driving_smarts/v2023/config_3.yaml",
     ],
     indirect=True,
 )
-@mock.patch(
-    "smarts.env.gymnasium.platoon_env.SUPPORTED_ACTION_TYPES",
-    (
-        ActionSpaceType.Continuous,
-        ActionSpaceType.RelativeTargetPose,
-        ActionSpaceType.Lane,
-    ),
-)
-@mock.patch(
-    "smarts.env.gymnasium.driving_smarts_2023_env.SUPPORTED_ACTION_TYPES",
-    (
-        ActionSpaceType.Continuous,
-        ActionSpaceType.RelativeTargetPose,
-        ActionSpaceType.Lane,
-    ),
-)
-def test_benchmark(get_benchmark_args):
-    agent_locator = "zoo.policies:keep-lane-agent-v1"
+def test_platoon(get_benchmark_args):
+    """Tests Driving SMARTS 2023.3 benchmark using `examples/rl/platoon` model."""
+    from contrib_policy.policy import Policy
 
-    # Verify that benchmark runs without errors.
-    benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)
+    agent_locator = "examples.rl.platoon.inference:contrib-agent-v0"
+    action = 2
+    with mock.patch.object(Policy, "_get_model", _get_model(action)):
+        benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)
