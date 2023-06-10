@@ -279,6 +279,7 @@ Evaluate
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
+    $ pip install wheel==0.38.4
     $ pip install -e .[camera_obs,argoverse,envision]
     $ scl zoo install examples/rl/drive/inference
     # For Driving SMARTS 2023.1

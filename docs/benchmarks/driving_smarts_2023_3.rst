@@ -268,6 +268,7 @@ Evaluate
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
+    $ pip install wheel==0.38.4
     $ pip install -e .[camera_obs,argoverse,envision]
     $ scl zoo install examples/rl/platoon/inference
     $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install

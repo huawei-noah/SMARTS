@@ -101,6 +101,7 @@ jobs:
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
+          pip install wheel==0.38.4
           pip install -e .[camera_obs,argoverse,test,ray]
           scl zoo install examples/rl/${{matrix.tests}}/inference
       - name: Run smoke tests
