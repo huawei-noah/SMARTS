@@ -50,11 +50,19 @@ def get_benchmark_args(request):
 )
 @mock.patch(
     "smarts.env.gymnasium.platoon_env.SUPPORTED_ACTION_TYPES",
-    (ActionSpaceType.Lane,),
+    (
+        ActionSpaceType.Continuous,
+        ActionSpaceType.RelativeTargetPose,
+        ActionSpaceType.Lane,
+    ),
 )
 @mock.patch(
     "smarts.env.gymnasium.driving_smarts_2023_env.SUPPORTED_ACTION_TYPES",
-    (ActionSpaceType.Lane,),
+    (
+        ActionSpaceType.Continuous,
+        ActionSpaceType.RelativeTargetPose,
+        ActionSpaceType.Lane,
+    ),
 )
 def test_benchmark(get_benchmark_args):
     agent_locator = "zoo.policies:keep-lane-agent-v1"
