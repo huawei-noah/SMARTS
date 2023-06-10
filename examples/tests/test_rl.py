@@ -40,6 +40,7 @@ def test_platoon():
     ):
         main(args)
 
+
 def test_drive():
     from examples.rl.drive.train.run import main, load_config
 
