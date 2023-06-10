@@ -71,7 +71,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install -e ./../../../.[camera_obs,argoverse]
+          pip install -e ./../../../.[camera_obs,argoverse,test]
           pip install -e ./inference/    
       - name: Run smoke tests
         run: |
