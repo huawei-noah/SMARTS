@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 
-# To import submission folder
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+# To import train folder
+sys.path.insert(0, str(Path(__file__).resolve().parents[0]))
 
 import gymnasium as gym
 
@@ -12,7 +12,7 @@ from smarts.zoo.agent_spec import AgentSpec
 def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
     from preprocess import Preprocess
     from stable_baselines3.common.monitor import Monitor
-    from train.reward import Reward
+    from reward import Reward
 
     from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.gymnasium.wrappers.single_agent import SingleAgent
