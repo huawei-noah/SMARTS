@@ -37,8 +37,11 @@ jobs:
         run: |
           . ${{env.venv_dir}}/bin/activate
           scl scenario build-all \
+            scenarios/open_drive/od_4lane \
+            scenarios/open_drive/od_merge \
             scenarios/sumo/figure_eight \
             scenarios/sumo/intersections/2lane \
+            scenarios/sumo/intersections/4lane \
             scenarios/sumo/intersections/6lane \
             scenarios/sumo/loop \
             scenarios/sumo/straight/3lane_bubble \
