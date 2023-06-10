@@ -43,12 +43,17 @@ warnings.simplefilter("ignore", category=ResourceWarning)
 
 # pytype: disable=attribute-error
 
-
-def main(args: argparse.Namespace):
-    # Load config file.
+def load_config():
+    """Load config file.
+    """
     parent_dir = Path(__file__).resolve().parent
     config_file = yaml.safe_load((parent_dir / "config.yaml").read_text())
     config = ObjDict(config_file["smarts"])
+    return config
+
+def main(args: argparse.Namespace):
+    parent_dir = Path(__file__).resolve().parent
+    config = load_config()
 
     # Load env config.
     config.mode = args.mode
