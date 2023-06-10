@@ -44,12 +44,12 @@ warnings.simplefilter("ignore", category=ResourceWarning)
 
 
 def load_config():
-    """Load config file.
-    """
+    """Load config file."""
     parent_dir = Path(__file__).resolve().parent
     config_file = yaml.safe_load((parent_dir / "config.yaml").read_text())
     config = ObjDict(config_file["smarts"])
     return config
+
 
 def main(args: argparse.Namespace):
     parent_dir = Path(__file__).resolve().parent
