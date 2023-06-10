@@ -23,8 +23,9 @@ class Policy(Agent):
         from contrib_policy.frame_stack import FrameStack
         from contrib_policy.make_dict import MakeDict
 
-        model_path = Path(__file__).resolve().parents[0] / "saved_model"
-        self.model = sb3lib.PPO.load(model_path)
+        self._model = sb3lib.PPO.load(
+            path=Path(__file__).resolve().parents[0] / "saved_model"
+        )
 
         self._filter_obs = FilterObs(top_down_rgb=top_down_rgb, crop=crop)
         self._frame_stack = FrameStack(
@@ -43,7 +44,7 @@ class Policy(Agent):
     def act(self, obs):
         """Mandatory act function to be implemented by user."""
         processed_obs = self._process(obs)
-        action, _ = self.model.predict(observation=processed_obs, deterministic=True)
+        action, _ = self._model.predict(observation=processed_obs, deterministic=True)
         formatted_action = self._format_action.format(action=int(action))
         return formatted_action
 

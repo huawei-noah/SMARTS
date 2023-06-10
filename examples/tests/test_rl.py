@@ -25,6 +25,8 @@ def _mock_load_config(load_config):
 
 
 def test_platoon():
+    """Tests RL training of `examples/rl/platoon` example."""
+
     from examples.rl.platoon.train.run import load_config, main
 
     args = argparse.Namespace()
@@ -41,6 +43,7 @@ def test_platoon():
 
 
 def test_drive():
+    """Tests RL training of `examples/rl/drive` example."""
     from examples.rl.drive.train.run import load_config, main
 
     args = argparse.Namespace()
