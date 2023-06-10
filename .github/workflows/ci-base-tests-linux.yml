@@ -21,7 +21,7 @@ jobs:
           - ./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/sstudio
           - ./smarts/ray
-          - ./examples/tests --ignore=./examples/tests/test_learning.py
+          - ./examples/tests/test_examples.py
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
           pip install --upgrade pip
           pip install wheel==0.38.4
           pip install -e .[camera_obs,opendrive,test,test_notebook,torch,train,gym,argoverse,envision]
-          if echo ${{matrix.tests}} | grep -q -e "test_rllib_hiway_env.py" -e "examples"; then pip install -e .[rllib]; fi
+          if echo ${{matrix.tests}} | grep -q -e "test_rllib_hiway_env.py" -e "test_examples.py"; then pip install -e .[rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "/smarts/ray" -e "/smarts/benchmark"; then pip install -e .[ray]; fi
       - name: Run smoke tests
         run: |
@@ -50,5 +50,36 @@ jobs:
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/core/tests/test_env_frame_rate.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
-            --ignore=./examples/tests/test_learning.py \
             -k 'not test_long_determinism'
+
+  examples-rl-linux:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
+    strategy:
+      matrix:
+        tests:
+          - drive
+          - platoon
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+           cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          python3.8 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install wheel==0.38.4
+          pip install -e ./../../../.[camera_obs,argoverse]
+          pip install -e ./inference/    
+      - name: Run smoke tests
+        run: |
+           cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          . ${{env.venv_dir}}/bin/activate
+          PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
+            --doctest-modules \
+            --forked \
+            --dist=no \
+            -n auto \
+            ${GITHUB_WORKSPACE}/examples/tests/test_examples_rl.py::test_${{matrix.tests}}
