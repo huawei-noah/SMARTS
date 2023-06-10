@@ -16,9 +16,9 @@ def entry_point(**kwargs):
         road_waypoints=False,
         signals=False,
         top_down_rgb=RGB(
-            width=128,
-            height=128,
-            resolution=80 / 128,  # m/pixels
+            width=200,
+            height=200,
+            resolution=80 / 200,  # m/pixels
         ),
     )
 
@@ -26,6 +26,7 @@ def entry_point(**kwargs):
         "top_down_rgb": interface.top_down_rgb,
         "action_space_type": interface.action,
         "num_stack": 3,  # Number of frames to stack as input to policy network.
+        "crop": (50, 50, 0, 70),  # Crop image from left, right, top, and bottom.
     }
 
     return AgentSpec(

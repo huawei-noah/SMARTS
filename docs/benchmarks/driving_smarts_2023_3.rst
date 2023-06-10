@@ -42,6 +42,20 @@ The desired task execution is illustrated in a gif by a trained baseline agent.
 
     .. image:: /_static/driving_smarts_2023/platoon_straight_2lane_agents_1.gif
 
++ :scenarios:`straight_2lane_sumo_agents_1 <sumo/vehicle_following/straight_2lane_sumo_agents_1>`
++ :scenarios:`straight_2lane_sumo_t_agents_1 <sumo/vehicle_following/straight_2lane_sumo_t_agents_1>`
++ :scenarios:`straight_3lanes_sumo_agents_1 <sumo/vehicle_following/straight_3lanes_sumo_agents_1>`
++ :scenarios:`straight_3lanes_sumo_t_agents_1 <sumo/vehicle_following/straight_3lanes_sumo_t_agents_1>`
++ :scenarios:`straight_3lanes_sumo_t_agents_2 <sumo/vehicle_following/straight_3lanes_sumo_t_agents_2>`
++ :scenarios:`merge_exit_sumo_agents_1 <sumo/vehicle_following/merge_exit_sumo_agents_1>`
++ :scenarios:`merge_exit_sumo_t_agents_1 <sumo/vehicle_following/merge_exit_sumo_t_agents_1>`
++ :scenarios:`merge_exit_sumo_t_agents_2 <sumo/vehicle_following/merge_exit_sumo_t_agents_2>`
++ :scenarios:`ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1 <argoverse/vehicle_following/ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1>`
++ :scenarios:`ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1 <argoverse/vehicle_following/ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1>`
++ :scenarios:`ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1 <argoverse/vehicle_following/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1>`
++ :scenarios:`ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1 <argoverse/vehicle_following/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1>`
++ :scenarios:`ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1 <argoverse/vehicle_following/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1>`
+
 Observation space
 -----------------
 
@@ -254,6 +268,7 @@ Evaluate
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
+    $ pip install wheel==0.38.4
     $ pip install -e .[camera_obs,argoverse,envision]
     $ scl zoo install examples/rl/platoon/inference
     $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
