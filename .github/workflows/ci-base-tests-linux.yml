@@ -36,13 +36,13 @@ jobs:
       - name: Build scenarios
         run: |
           . ${{env.venv_dir}}/bin/activate
-          scl scenario build-all \ 
-            scenarios/sumo/loop \ 
+          scl scenario build-all \
+            scenarios/sumo/loop \
             scenarios/sumo/straight/3lane_bubble \
             scenarios/sumo/intersections/6lane \
             scenarios/sumo/tests/multi_agents_loop \
             scenarios/sumo/zoo_intersection \
-            scenarios/sumo/figure_eight 
+            scenarios/sumo/figure_eight
       - name: Run smoke tests
         run: |
           . ${{env.venv_dir}}/bin/activate
