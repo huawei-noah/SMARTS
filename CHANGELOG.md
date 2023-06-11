@@ -18,6 +18,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 - Added `TrafficEngineActor` to describe a scenario studio defined actor that is controlled by a traffic engine.
+- Added CI test for Driving SMARTS 2023 benchmark, which tests the benchmark by using it to evaluate (i) `examples.rl.drive.inference:contrib-agent-v0`, and (ii) `examples.rl.platoon.inference:contrib-agent-v0` agents. 
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
