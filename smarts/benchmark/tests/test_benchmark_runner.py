@@ -32,8 +32,9 @@ from smarts.benchmark.entrypoints.benchmark_runner_v0 import benchmark
 @pytest.fixture(scope="module")
 def get_benchmark_args(request):
     config_path = Path(__file__).resolve().parents[3] / request.param
-    benchmark_args = load_config(config_path)["benchmark"]
+    benchmark_args = load_config(config_path)
     assert isinstance(benchmark_args, dict), f"Config path not found: {config_path}."
+    benchmark_args = benchmark_args["benchmark"]
     benchmark_args.update({"eval_episodes": 2})
     return benchmark_args
 
