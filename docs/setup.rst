@@ -62,7 +62,7 @@ Run the following commands to setup the SMARTS simulator.
     # `camera_obs` - needed for rendering camera observations, and for testing.
     # `test` - needed for testing.
     # `train` - needed for RL training and testing.
-    $ pip install -e '.[camera_obs,test,train]'
+    $ pip install -e '.[camera_obs,test,train,sumo]'
 
     # Run sanity-test and verify they are passing.
     # If tests fail, check './sanity_test_result.xml' for test report. 
