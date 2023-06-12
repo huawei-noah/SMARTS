@@ -135,7 +135,7 @@ def train(
         name_prefix="PPO",
     )
 
-    scenarios_iter = islice(cycle(config.scenarios), config.epocs)
+    scenarios_iter = islice(cycle(config.scenarios), config.epochs)
     for index, scen in enumerate(scenarios_iter):
         env_train = envs_train[scen]
         env_eval = envs_eval[scen]
