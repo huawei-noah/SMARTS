@@ -21,6 +21,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
+- Made SUMO dependencies optional. Use `pip install -e .[sumo]` to install them.
 - Made Envision dependencies optional. Use `pip install -e .[envision]` to install them.
 - Made Waymo dependencies optional. Use `pip install -e .[waymo]` to install them.
 - `SumoTrafficSimulator` now uses the last vehicle subscription update to back `route_for_vehicle()`. This means that the routes of vehicles can still be determined even if `SumoTrafficSimulation` disconnects.
