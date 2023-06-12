@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import warnings
 from datetime import datetime
-from itertools import cycle
+from itertools import cycle, islice
 from typing import Any, Dict
 
 import gym
@@ -127,7 +127,6 @@ def train(
     agent_spec: AgentSpec,
 ):
     print("\nStart training.\n")
-    scenarios_iter = cycle(config.scenarios)
     save_dir = config.logdir / "train"
     save_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_callback = CheckpointCallback(
