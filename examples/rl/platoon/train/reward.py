@@ -2,14 +2,15 @@ import gymnasium as gym
 import numpy as np
 
 from smarts.core.colors import SceneColors
-
+from typing import Tuple
 
 class Reward(gym.Wrapper):
-    def __init__(self, env):
+    def __init__(self, env: gym.Env, crop: Tuple[int, int, int, int]):
         """Constructor for the Reward wrapper."""
         super().__init__(env)
         self._leader_color = np.array(SceneColors.SocialAgent.value[0:3]) * 255
         self._total_dist = {}
+        self._crop = crop
 
     def reset(self, *, seed=None, options=None):
         self._total_dist = {}
@@ -40,7 +41,9 @@ class Reward(gym.Wrapper):
                 elif agent_obs["events"]["reached_max_episode_steps"]:
                     print(f"{agent_id}: Reached max episode steps.")
                 elif (
-                    agent_obs["events"]["collisions"] | agent_obs["events"]["off_road"]
+                    agent_obs["events"]["collisions"]
+                    | agent_obs["events"]["off_road"]
+                    | agent_obs["events"]["wrong_way"]
                 ):
                     pass
                 elif agent_obs["events"]["interest_done"]:
@@ -78,32 +81,35 @@ class Reward(gym.Wrapper):
             if agent_obs["events"]["collisions"]:
                 reward[agent_id] -= np.float64(10)
                 print(f"{agent_id}: Collided.")
-                break
+                continue
 
             # Penalty for driving off road
             if agent_obs["events"]["off_road"]:
                 reward[agent_id] -= np.float64(10)
                 print(f"{agent_id}: Went off road.")
-                break
+                continue
 
-            # Reward for reaching goal
-            # if agent_obs["events"]["reached_goal"]:
-            #     reward[agent_id] += np.float64(30)
-
-            # Reward for distance travelled by driving
-            reward[agent_id] += np.float64(env_reward[agent_id])
+            # Penalty for driving on wrong way
+            if obs[agent_id]["events"]["wrong_way"]:
+                reward[agent_id] -= np.float64(10)
+                print(f"{agent_id}: Went wrong way.")
+                continue
 
             # Check if leader is in front and within the rgb observation
             if leader:
                 rgb = agent_obs["top_down_rgb"]
                 h, w, d = rgb.shape
                 rgb_masked = rgb[0 : h // 2, :, :]
+                rgb_cropped = rgb_masked[
+                    self._crop[2] :, self._crop[0] : w - self._crop[1], :
+                ]
                 leader_in_rgb = (
-                    (rgb_masked == self._leader_color.reshape((1, 1, 3)))
+                    (rgb_cropped == self._leader_color.reshape((1, 1, 3)))
                     .all(axis=-1)
                     .any()
                 )
 
+            # Rewards specific to vehicle following task
             if leader and leader_in_rgb:
                 # Get agent's waypoints
                 waypoints = agent_obs["waypoint_paths"]["position"]
@@ -119,15 +125,12 @@ class Reward(gym.Wrapper):
                     np.array([leader["position"]]),
                 )
 
-            # Rewards specific to "platooning" and "following" tasks
-            if leader and leader_in_rgb:
-
                 # Reward for being in the same lane as the leader
                 if (leader_ind is not None) and (leader_wp_ind[0] in ego_wp_inds):
-                    reward[agent_id] += np.float64(1)
+                    reward[agent_id] += np.float64(3)
 
             else:
-                reward[agent_id] -= np.float64(0.2)
+                reward[agent_id] -= np.float64(0.3)
 
         return reward
 

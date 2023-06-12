@@ -125,7 +125,7 @@ gen_scenario(
         scenario_metadata=ScenarioMetadata(
             actor_of_interest_re_filter=leader_id,
             actor_of_interest_color=Colors.Blue,
-            scenario_difficulty=3,
+            scenario_difficulty=0.9,
             scenario_duration=duration,
         ),
     ),

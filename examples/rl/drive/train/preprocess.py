@@ -4,17 +4,20 @@ from contrib_policy.format_action import FormatAction
 from contrib_policy.frame_stack import FrameStack
 from contrib_policy.make_dict import MakeDict
 
-from smarts.core.agent_interface import AgentInterface
+from smarts.zoo.agent_spec import AgentSpec
 
 
 class Preprocess(gym.Wrapper):
-    def __init__(self, env: gym.Env, agent_interface: AgentInterface):
+    def __init__(self, env: gym.Env, agent_spec: AgentSpec):
         super().__init__(env)
 
-        self._filter_obs = FilterObs(top_down_rgb=agent_interface.top_down_rgb)
+        self._filter_obs = FilterObs(
+            top_down_rgb=agent_spec.interface.top_down_rgb,
+            crop=agent_spec.agent_params["crop"],
+        )
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
-            num_stack=3,
+            num_stack=agent_spec.agent_params["num_stack"],
             stack_axis=0,
         )
         self._frame_stack.reset()
@@ -23,7 +26,9 @@ class Preprocess(gym.Wrapper):
         self.observation_space = self._make_dict.observation_space
 
         self._prev_heading: float
-        self._format_action = FormatAction(agent_interface.action)
+        self._format_action = FormatAction(
+            action_space_type=agent_spec.interface.action
+        )
         self.action_space = self._format_action.action_space
 
     def _process(self, obs):
