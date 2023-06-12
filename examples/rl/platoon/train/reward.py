@@ -95,9 +95,6 @@ class Reward(gym.Wrapper):
                 print(f"{agent_id}: Went wrong way.")
                 continue
 
-            # Reward for distance travelled in one step
-            # reward[agent_id] += np.float64(env_reward[agent_id])
-
             # Check if leader is in front and within the rgb observation
             if leader:
                 rgb = agent_obs["top_down_rgb"]
