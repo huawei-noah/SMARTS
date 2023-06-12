@@ -18,9 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from enum import IntEnum
 import os
 import sys
+from enum import IntEnum
 from typing import NamedTuple, Optional, Tuple
 
 from smarts.core.road_map import RoadMap
