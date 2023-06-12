@@ -33,6 +33,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `info` returned by `hiway-v1` in `reset()` and `step()` methods are unified.
 - Changed instances of `hiway-v0` and `gym` to use `hiway-v1` and `gymnasium`, respectively.
 - `RoadMap.Route` now optionally stores the start and end lanes of the route.
+- `hiway-v1` can now be configured for per-agent or environment reward(s), truncation(s), termination(s), and info(s) through `environment_return_mode`.
+- `hiway-v1`'s `observation_options` no longer has an effect on the environment rewards, truncations, and terminations `agent|environment` style return mode.
 - `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position. 
 - `Steps` metric is capped by scenario duration set in the scenario metadata.
 - Overall metric score is weighted by each agent's task difficulty.
