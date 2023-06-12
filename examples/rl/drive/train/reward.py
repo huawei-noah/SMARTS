@@ -1,7 +1,7 @@
+from typing import Tuple
+
 import gymnasium as gym
 import numpy as np
-
-from typing import Tuple
 
 
 class Reward(gym.Wrapper):

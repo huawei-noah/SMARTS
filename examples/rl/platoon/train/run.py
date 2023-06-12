@@ -30,7 +30,6 @@ from train.utils import ObjDict
 from smarts.zoo import registry
 from smarts.zoo.agent_spec import AgentSpec
 
-
 print("\n")
 print(f"Torch cuda is available: {th.cuda.is_available()}")
 device = th.device("cuda" if th.cuda.is_available() else "cpu")
