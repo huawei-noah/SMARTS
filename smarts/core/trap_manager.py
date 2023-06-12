@@ -175,7 +175,11 @@ class TrapManager(ActorCaptureManager):
 
         assert isinstance(sim, SMARTS)
         capture_by_agent_id: Dict[str, _CaptureState] = defaultdict(
-            lambda: _CaptureState(ConditionState.FALSE, None, default=True)
+            lambda: _CaptureState(
+                ready_state=ConditionState.FALSE,
+                trap=None,
+                default=True,
+            )
         )
 
         # An optimization to short circuit if there are no pending agents.
@@ -300,9 +304,7 @@ class TrapManager(ActorCaptureManager):
                 )
             elif ConditionState.EXPIRED in capture.ready_state:
                 # Make sure there is not a vehicle in the same location
-                mission = capture.updated_mission
-                if mission is None:
-                    continue
+                mission = capture.updated_mission or capture.trap.mission
                 if mission.vehicle_spec is None:
                     nv_dims = Vehicle.agent_vehicle_dims(mission)
                     new_veh_maxd = max(nv_dims.as_lwh[:2])

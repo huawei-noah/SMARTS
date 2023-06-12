@@ -47,9 +47,13 @@ tools_path = os.path.join(SUMO_PATH, "tools")
 if tools_path not in sys.path:
     sys.path.append(tools_path)
 
-
-import sumo.tools.sumolib as sumolib
-import sumo.tools.traci as traci
+try:
+    import sumo.tools.sumolib as sumolib
+    import sumo.tools.traci as traci
+except ModuleNotFoundError as e:
+    raise ImportError(
+        "Missing dependencies for SUMO. Install them using the command `pip install -e .[sumo]` at the source directory."
+    ) from e
 
 
 class DomainWrapper:

@@ -35,7 +35,6 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -170,6 +169,8 @@ class HiWayEnv(gym.Env):
 
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
             sumo_traffic = SumoTrafficSimulation(
                 headless=sumo_headless,
                 time_resolution=fixed_timestep_sec,

@@ -218,7 +218,7 @@ Train
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
     $ pip install wheel==0.38.4
-    $ pip install -e ./../../../.[camera_obs,argoverse,envision]
+    $ pip install -e ./../../../.[camera_obs,argoverse,envision,sumo]
     $ pip install -e ./inference/
 
 + Train locally without visualization
@@ -269,7 +269,7 @@ Evaluate
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
     $ pip install wheel==0.38.4
-    $ pip install -e .[camera_obs,argoverse,envision]
+    $ pip install -e .[camera_obs,argoverse,envision,sumo]
     $ scl zoo install examples/rl/platoon/inference
     $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
 

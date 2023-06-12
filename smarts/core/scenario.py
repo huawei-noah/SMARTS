@@ -1019,16 +1019,11 @@ class Scenario:
     @staticmethod
     def any_support_sumo_traffic(scenarios: Sequence[str]) -> bool:
         """Determines if any of the given scenarios support Sumo traffic simulation."""
-        from smarts.core.sumo_road_network import SumoRoadNetwork
+        from smarts.core.default_map_builder import MapType, find_mapfile_in_dir
 
         for scenario_root in Scenario.get_scenario_list(scenarios):
-            try:
-                road_map, _ = Scenario.build_map(scenario_root)
-            except FileNotFoundError:
-                raise FileNotFoundError(
-                    f"Unable to find network file in map_source={scenario_root}."
-                )
-            if isinstance(road_map, SumoRoadNetwork):
+            map_type, _ = find_mapfile_in_dir(scenario_root)
+            if map_type == MapType.Sumo:
                 return True
 
         return False
