@@ -328,7 +328,7 @@ class HiWayEnvV1(gym.Env):
                 dones = {**{id_: False for id_ in observations}, **dones}
                 return (
                     observations,
-                    {**{id_: 0 for id_ in observations}, **rewards},
+                    {**{id_: np.nan for id_ in observations}, **rewards},
                     dones,
                     dones,
                     info,
