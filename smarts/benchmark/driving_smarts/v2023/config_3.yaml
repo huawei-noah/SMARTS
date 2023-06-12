@@ -15,7 +15,14 @@ benchmark:
     platoon:
       loc: "smarts.env:platoon-v0"
       scenarios:
-        - scenarios/sumo/platoon/merge_exit_sumo_t_agents_1
+        - scenarios/sumo/vehicle_following/straight_2lane_sumo_agents_1
+        - scenarios/sumo/vehicle_following/straight_2lane_sumo_t_agents_1
+        - scenarios/sumo/vehicle_following/straight_3lanes_sumo_agents_1
+        - scenarios/sumo/vehicle_following/straight_3lanes_sumo_t_agents_1
+        - scenarios/sumo/vehicle_following/straight_3lanes_sumo_t_agents_2
+        - scenarios/sumo/vehicle_following/merge_exit_sumo_agents_1
+        - scenarios/sumo/vehicle_following/merge_exit_sumo_t_agents_1
+        - scenarios/sumo/vehicle_following/merge_exit_sumo_t_agents_2
       kwargs:
         seed: 42
       metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py

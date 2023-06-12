@@ -13,7 +13,7 @@ class FormatAction:
         else:
             raise Exception(f"Unknown action space type {action_space_type}.")
 
-    def format(self, action):
+    def format(self, action: int):
         """Adapts the action input to the wrapped environment.
 
         Note: Users should not directly call this method.

@@ -11,22 +11,20 @@ class Policy(Agent):
     """Policy class to be submitted by the user. This class will be loaded
     and tested during evaluation."""
 
-    def __init__(self, num_stack, top_down_rgb, action_space_type):
+    def __init__(self, num_stack, top_down_rgb, crop, action_space_type):
         """All policy initialization matters, including loading of model, is
         performed here. To be implemented by the user.
         """
 
-        import stable_baselines3 as sb3lib
         from contrib_policy import network
         from contrib_policy.filter_obs import FilterObs
         from contrib_policy.format_action import FormatAction
         from contrib_policy.frame_stack import FrameStack
         from contrib_policy.make_dict import MakeDict
 
-        model_path = Path(__file__).resolve().parents[0] / "saved_model"
-        self.model = sb3lib.PPO.load(model_path)
+        self._model = self._get_model()
 
-        self._filter_obs = FilterObs(top_down_rgb=top_down_rgb)
+        self._filter_obs = FilterObs(top_down_rgb=top_down_rgb, crop=crop)
         self._frame_stack = FrameStack(
             input_space=self._filter_obs.observation_space,
             num_stack=num_stack,
@@ -43,7 +41,7 @@ class Policy(Agent):
     def act(self, obs):
         """Mandatory act function to be implemented by user."""
         processed_obs = self._process(obs)
-        action, _ = self.model.predict(observation=processed_obs, deterministic=True)
+        action, _ = self._model.predict(observation=processed_obs, deterministic=True)
         formatted_action = self._format_action.format(
             action=int(action), prev_heading=obs["ego_vehicle_state"]["heading"]
         )
@@ -57,3 +55,8 @@ class Policy(Agent):
         obs = self._frame_stack.stack(obs)
         obs = self._make_dict.make(obs)
         return obs
+
+    def _get_model(self):
+        import stable_baselines3 as sb3lib
+
+        return sb3lib.PPO.load(path=Path(__file__).resolve().parents[0] / "saved_model")
