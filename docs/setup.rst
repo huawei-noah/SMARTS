@@ -60,9 +60,9 @@ Run the following commands to setup the SMARTS simulator.
 
     # Install smarts with extras as needed. Extras include the following: 
     # `camera_obs` - needed for rendering camera observations, and for testing.
+    # `sumo` - needed for using SUMO scenarios.
     # `test` - needed for testing.
-    # `train` - needed for RL training and testing.
-    $ pip install -e '.[camera_obs,test,train,sumo]'
+    $ pip install -e .[camera_obs,sumo,test]
 
     # Run sanity-test and verify they are passing.
     # If tests fail, check './sanity_test_result.xml' for test report. 
