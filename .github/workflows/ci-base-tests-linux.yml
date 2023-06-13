@@ -95,3 +95,34 @@ jobs:
             --dist=no \
             -n auto \
             ${GITHUB_WORKSPACE}/examples/tests/test_rl.py::test_${{matrix.tests}}
+
+  benchmark:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
+    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
+    strategy:
+      matrix:
+        tests:
+          - drive
+          - platoon
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          python3.8 -m venv ${{env.venv_dir}}
+          . ${{env.venv_dir}}/bin/activate
+          pip install --upgrade pip
+          pip install wheel==0.38.4
+          pip install -e .[camera_obs,argoverse,test,ray,sumo]
+          scl zoo install examples/rl/${{matrix.tests}}/inference
+      - name: Run smoke tests
+        run: |
+          cd ${GITHUB_WORKSPACE}
+          . ${{env.venv_dir}}/bin/activate
+          PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
+            --doctest-modules \
+            --forked \
+            --dist=no \
+            ${GITHUB_WORKSPACE}/smarts/benchmark/tests/test_benchmark_runner.py::test_${{matrix.tests}}
