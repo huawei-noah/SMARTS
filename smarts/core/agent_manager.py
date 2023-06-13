@@ -46,7 +46,7 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, sim, interfaces, zoo_addrs=None):
+    def __init__(self, sim, interfaces):
         from smarts.core.vehicle_index import VehicleIndex
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -54,7 +54,6 @@ class AgentManager:
         self._vehicle_index: VehicleIndex = sim.vehicle_index
         self._sensor_manager: SensorManager = sim.sensor_manager
         self._agent_buffer = None
-        self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
 

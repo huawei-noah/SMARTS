@@ -126,9 +126,6 @@ class HiWayEnvV1(gym.Env):
         visualization_client_builder: A method that must must construct an
             object that follows the Envision interface. Allows tapping into a
             direct data stream from the simulation.
-        zoo_addrs (str, optional): List of (`ip`, `port`) tuples of
-            zoo server, used to instantiate remote social agents. Defaults
-            to None.
         observation_options (ObservationOptions, str): Defines the options
             for how the formatting matches the observation space. String version
             can be used instead. See :class:`~smarts.env.utils.observation_conversion.ObservationOptions`. Defaults to
@@ -170,7 +167,6 @@ class HiWayEnvV1(gym.Env):
         seed: int = 42,
         sumo_options: Union[Dict[str, Any], SumoOptions] = SumoOptions(),
         visualization_client_builder: partial = DEFAULT_VISUALIZATION_CLIENT_BUILDER,
-        zoo_addrs: Optional[str] = None,
         observation_options: Union[
             ObservationOptions, str
         ] = ObservationOptions.default,
@@ -244,7 +240,6 @@ class HiWayEnvV1(gym.Env):
             envision=visualization_client,
             visdom=visdom,
             fixed_timestep_sec=fixed_timestep_sec,
-            zoo_addrs=zoo_addrs,
         )
 
     def step(
