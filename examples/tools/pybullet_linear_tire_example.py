@@ -1,6 +1,5 @@
 import math
 from pathlib import Path
-from unittest import mock
 
 import matplotlib.pyplot as plt
 import numpy as np

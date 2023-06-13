@@ -64,7 +64,7 @@ turn_right_routes = [
     ("E8", 0, "E4", 0),
 ]
 
-# Total route combinations = 14C1 + 14C2 + 14C3 + 14C4 = 1470
+# Total route combinations
 all_routes = vertical_routes + horizontal_routes + turn_left_routes + turn_right_routes
 route_comb = [com for elems in range(4, 5) for com in combinations(all_routes, elems)]
 traffic = {}
