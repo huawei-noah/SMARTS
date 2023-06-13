@@ -53,10 +53,10 @@ def test_scenario_generation_unchanged():
             _hashseed = os.getenv("PYTHONHASHSEED")
             assert _hashseed not in (None, "random"), f"PYTHONHASHSEED is {_hashseed}"
 
-            shutil.copytree("scenarios/sumo", loc1)
+            shutil.copytree("scenarios/sumo/loop", loc1)
             build_scenarios(scenarios=[loc1], clean=True, seed=42)
 
-            shutil.copytree("scenarios/sumo", loc2)
+            shutil.copytree("scenarios/sumo/loop", loc2)
             build_scenarios(scenarios=[loc2], clean=True, seed=42)
 
             for dirpath, dirnames, files in os.walk(loc1):

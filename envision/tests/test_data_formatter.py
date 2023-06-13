@@ -45,7 +45,6 @@ from smarts.core.road_map import Waypoint
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.tests.helpers.bubbles import bubble_geometry
 from smarts.core.tests.helpers.scenario import temp_scenario
 from smarts.core.utils.file import unpack
 from smarts.sstudio.genscenario import gen_scenario
@@ -321,7 +320,7 @@ def bubble():
         actor=t.BoidAgentActor(
             # TODO: Provide a more self-contained way to build agent locators for tests
             name="hive-mind",
-            agent_locator="scenarios.sumo.straight.agent_prefabs:pose-boid-agent-v0",
+            agent_locator="scenarios.sumo.straight.3lane_bubble.agent_prefabs:pose-boid-agent-v0",
         ),
     )
 

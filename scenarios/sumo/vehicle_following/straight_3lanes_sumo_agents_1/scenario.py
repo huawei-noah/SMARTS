@@ -26,23 +26,13 @@ normal = TrafficActor(
 
 leader = TrafficActor(name="Leader-007", depart_speed=0)
 
-# Social path = (start_lane, end_lane)
-social_paths = [(0, 0), (0, 2), (2, 0), (2, 2)]
-min_flows = 2
-max_flows = 4
-social_comb = [
-    com
-    for elems in range(min_flows, max_flows + 1)
-    for com in combinations(social_paths, elems)
-]
-
 # Leader path = (start_lane, end_lane)
 leader_paths = [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]
 
 # Overall routes
-route_comb = product(social_comb, leader_paths)
+route_comb = leader_paths
 traffic = {}
-for name, (social_path, leader_path) in enumerate(route_comb):
+for name, leader_path in enumerate(route_comb):
     traffic[str(name)] = Traffic(
         engine="SUMO",
         flows=[],
