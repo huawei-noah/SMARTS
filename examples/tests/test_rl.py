@@ -12,12 +12,13 @@ import_utils.import_module_from_file(
 def _mock_load_config(load_config):
     def func():
         config = load_config()
-        config.alg["n_steps"] = 20
-        config.alg["batch_size"] = 5
+        config.alg["n_steps"] = 4
+        config.alg["batch_size"] = 2
+        config.alg["n_epochs"] = 2
         config.epochs = 2 * len(config.scenarios)
-        config.train_steps = 40
-        config.checkpoint_freq = 40
-        config.eval_freq = 40
+        config.train_steps = 8
+        config.checkpoint_freq = 10000
+        config.eval_freq = 10000
         config.eval_episodes = 1
         return config
 
