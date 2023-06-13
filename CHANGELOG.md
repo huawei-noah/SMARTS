@@ -60,6 +60,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `examples/rl/racing` as base repository `danijar/dreamerv2` is not updated anymore and this example will be superseded by `examples/rl/drive`.
 - Removed `FrameStack` environment wrapper.
 - Removed `SMARTS.traffic_sim` property.
+- Removed remote agent modules.
 ### Security
 
 ## [1.1.0] # 2023-04-28
