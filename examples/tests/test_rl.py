@@ -19,7 +19,6 @@ def _mock_load_config(load_config):
         config.train_steps = 8
         config.checkpoint_freq = 10000
         config.eval_freq = 10000
-        config.eval_episodes = 1
         return config
 
     return func
