@@ -25,7 +25,7 @@ from smarts.core.utils.logging import suppress_output
 # XXX: Importing pybullet logs an annoying build version tag. There's no "friendly"
 #      way to fix this since they simply use print(...). Disabling logging at the
 #      time of import is our hack.
-with suppress_output():
+with suppress_output(stderr=False):
     from pybullet import *
     from pybullet_utils import bullet_client
 
@@ -44,11 +44,12 @@ class SafeBulletClient(bullet_client.BulletClient):
             `pybullet.DIRECT` creates a headless simulation,
             `pybullet.SHARED_MEMORY` connects to an existing simulation.
         """
-        super().__init__(connection_mode=connection_mode)
+        with suppress_output(stderr=False):
+            super().__init__(connection_mode=connection_mode)
 
     def __del__(self):
         """Clean up connection if not already done."""
-        super().__init__()
+        super().__del__()
 
     def __getattr__(self, name):
         """Inject the client id into Bullet functions."""

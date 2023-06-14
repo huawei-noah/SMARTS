@@ -36,7 +36,7 @@ from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
-from smarts.core.utils.logging import suppress_output, timeit
+from smarts.core.utils.logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
 
 from . import config, models
@@ -206,10 +206,9 @@ class SMARTS(ProviderManager):
         # For macOS GUI. See our `BulletClient` docstring for details.
         # from .utils.bullet import BulletClient
         # self._bullet_client = BulletClient(pybullet.GUI)
-        with suppress_output(stderr=False):
-            self._bullet_client = pybullet.SafeBulletClient(
-                pybullet.DIRECT
-            )  # pylint: disable=no-member
+        self._bullet_client = pybullet.SafeBulletClient(
+            pybullet.DIRECT
+        )  # pylint: disable=no-member
 
         # Set up indices
         self._sensor_manager = SensorManager()

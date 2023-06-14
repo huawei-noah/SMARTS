@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import logging
 import os
-from enum import IntEnum
+from enum import IntEnum, auto
 from functools import partial
 from pathlib import Path
 from typing import (
@@ -51,7 +51,6 @@ from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.env.utils.observation_conversion import (
     ObservationOptions,
@@ -90,6 +89,19 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
 )
 
 
+class EnvReturnMode(IntEnum):
+    """Configuration to determine the interface type of the step function.
+
+    This configures between the environment status return (i.e. reward means the environment reward) and the per-agent
+    status return (i.e. rewards means reward per agent).
+    """
+
+    per_agent = auto()
+    """Generate per-agent mode step returns in the form ``(rewards({id: float}), terminateds({id: bool}), truncateds ({id: bool}), info)``."""
+    environment = auto()
+    """Generate environment mode step returns in the form ``(reward (float), terminated (bool), truncated (bool), info)``."""
+
+
 class HiWayEnvV1(gym.Env):
     """A generic environment for various driving tasks simulated by SMARTS.
 
@@ -125,6 +137,10 @@ class HiWayEnvV1(gym.Env):
             for how the formatting matches the action space. String version
             can be used instead. See :class:`~smarts.env.utils.action_conversion.ActionOptions`. Defaults to
             :attr:`~smarts.env.utils.action_conversion.ActionOptions.default`.
+        environment_return_mode (EnvReturnMode, str): This configures between the environment
+            step return information (i.e. reward means the environment reward) and the per-agent
+            step return information (i.e. reward means rewards as key-value per agent). Defaults to
+            :attr:`~smarts.env.gymnasium.hiway_env_v1.EnvReturnMode.per_agent`.
     """
 
     metadata = {"render_modes": ["human"]}
@@ -159,6 +175,7 @@ class HiWayEnvV1(gym.Env):
             ObservationOptions, str
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
+        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.per_agent,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -185,6 +202,8 @@ class HiWayEnvV1(gym.Env):
 
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
             if isinstance(sumo_options, tuple):
                 sumo_options = sumo_options._asdict()
             sumo_traffic = SumoTrafficSimulation(
@@ -197,6 +216,11 @@ class HiWayEnvV1(gym.Env):
             traffic_sims += [sumo_traffic]
         smarts_traffic = LocalTrafficProvider()
         traffic_sims += [smarts_traffic]
+
+        if isinstance(environment_return_mode, str):
+            self._environment_return_mode = EnvReturnMode[environment_return_mode]
+        else:
+            self._environment_return_mode = environment_return_mode
 
         if isinstance(action_options, str):
             action_options = ActionOptions[action_options]
@@ -288,7 +312,7 @@ class HiWayEnvV1(gym.Env):
 
         assert all("score" in v for v in info.values())
 
-        if self._observations_formatter.observation_options == ObservationOptions.full:
+        if self._environment_return_mode == EnvReturnMode.environment:
             return (
                 self._observations_formatter.format(observations),
                 sum(r for r in rewards.values()),
@@ -296,19 +320,30 @@ class HiWayEnvV1(gym.Env):
                 dones["__all__"],
                 info,
             )
-        elif self._observations_formatter.observation_options in (
-            ObservationOptions.multi_agent,
-            ObservationOptions.unformatted,
-        ):
-            return (
-                self._observations_formatter.format(observations),
-                rewards,
-                dones,
-                dones,
-                info,
-            )
+        elif self._environment_return_mode == EnvReturnMode.per_agent:
+            observations = self._observations_formatter.format(observations)
+            if (
+                self._observations_formatter.observation_options
+                == ObservationOptions.full
+            ):
+                dones = {**{id_: False for id_ in observations}, **dones}
+                return (
+                    observations,
+                    {**{id_: np.nan for id_ in observations}, **rewards},
+                    dones,
+                    dones,
+                    info,
+                )
+            else:
+                return (
+                    observations,
+                    rewards,
+                    dones,
+                    dones,
+                    info,
+                )
         raise RuntimeError(
-            f"Invalid observation configuration using {self._observations_formatter.observation_options}"
+            f"Invalid observation configuration using {self._environment_return_mode}"
         )
 
     def reset(

@@ -91,20 +91,11 @@ class Reward(gym.Wrapper):
                 print(f"{agent_id}: Went off road.")
                 continue
 
-            # Penalty for driving off route
-            # if obs[agent_id]["events"]["off_route"]:
-            #     reward[agent_id] -= np.float64(10)
-            #     print(f"{agent_id}: Went off route.")
-            #     continue
-
             # Penalty for driving on wrong way
             if obs[agent_id]["events"]["wrong_way"]:
                 reward[agent_id] -= np.float64(10)
                 print(f"{agent_id}: Went wrong way.")
                 continue
-
-            # Reward for distance travelled in one step
-            # reward[agent_id] += np.float64(env_reward[agent_id])
 
             # Check if leader is in front and within the rgb observation
             if leader:
@@ -125,7 +116,7 @@ class Reward(gym.Wrapper):
                 # plotter3d(obs=rgb_cropped,rgb_gray=3,channel_order="last",pause=0)
                 # print("-----------------------------")
 
-            # Rewards specific to "platooning" and "following" tasks
+            # Rewards specific to vehicle following task
             if leader and leader_in_rgb:
                 # Get agent's waypoints
                 waypoints = agent_obs["waypoint_paths"]["position"]

@@ -29,7 +29,6 @@ from envision.client import Client as Envision
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 
 class RLlibHiWayEnv(MultiAgentEnv):
@@ -214,18 +213,24 @@ class RLlibHiWayEnv(MultiAgentEnv):
             preamble = envision_types.Preamble(scenarios=self._scenarios)
             envision.send(preamble)
 
-        sumo_traffic = SumoTrafficSimulation(
-            headless=self._sumo_headless,
-            time_resolution=self._fixed_timestep_sec,
-            num_external_sumo_clients=self._num_external_sumo_clients,
-            sumo_port=self._sumo_port,
-            auto_start=self._sumo_auto_start,
-        )
+        traffic_sims = []
+        if Scenario.any_support_sumo_traffic(self._scenarios):
+            from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
+
+            sumo_traffic = SumoTrafficSimulation(
+                headless=self._sumo_headless,
+                time_resolution=self._fixed_timestep_sec,
+                num_external_sumo_clients=self._num_external_sumo_clients,
+                sumo_port=self._sumo_port,
+                auto_start=self._sumo_auto_start,
+            )
+            traffic_sims += [sumo_traffic]
         smarts_traffic = LocalTrafficProvider()
+        traffic_sims += [smarts_traffic]
 
         sim = SMARTS(
             agent_interfaces=agent_interfaces,
-            traffic_sims=[sumo_traffic, smarts_traffic],
+            traffic_sims=traffic_sims,
             envision=envision,
             fixed_timestep_sec=self._fixed_timestep_sec,
         )

@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import argparse
 import warnings
 from datetime import datetime
-from itertools import cycle
+from itertools import cycle, islice
 from typing import Any, Dict
 
 import gym
@@ -28,9 +28,6 @@ from train.utils import ObjDict
 
 from smarts.zoo import registry
 from smarts.zoo.agent_spec import AgentSpec
-
-# Disable GPU usage
-# th.cuda.is_available = lambda: False
 
 print("\n")
 print(f"Torch cuda is available: {th.cuda.is_available()}")
@@ -128,7 +125,6 @@ def train(
     agent_spec: AgentSpec,
 ):
     print("\nStart training.\n")
-    scenarios_iter = cycle(config.scenarios)
     save_dir = config.logdir / "train"
     save_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_callback = CheckpointCallback(
@@ -137,8 +133,8 @@ def train(
         name_prefix="PPO",
     )
 
-    for index in range(config.epochs):
-        scen = next(scenarios_iter)
+    scenarios_iter = islice(cycle(config.scenarios), config.epochs)
+    for index, scen in enumerate(scenarios_iter):
         env_train = envs_train[scen]
         env_eval = envs_eval[scen]
         print(f"\nTraining on {scen}.\n")
