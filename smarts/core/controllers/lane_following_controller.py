@@ -244,13 +244,6 @@ class LaneFollowingController:
             vehicle_look_ahead_pt
         )
 
-        abs_heading_error = min(
-            abs((vehicle.heading % (2 * math.pi)) - reference_heading),
-            abs(
-                2 * math.pi - abs((vehicle.heading % (2 * math.pi)) - reference_heading)
-            ),
-        )
-
         curvature_radius = TrajectoryTrackingController.curvature_calculation(
             trajectory
         )
