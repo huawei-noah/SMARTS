@@ -28,11 +28,10 @@ from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
-from smarts.core.heterogenous_agent_buffer import HeterogenousAgentBuffer
+from smarts.core.local_agent_buffer import LocalAgentBuffer
 from smarts.core.observations import Observation
-from smarts.core.plan import Mission, Plan, PositionalGoal
+from smarts.core.plan import Plan
 from smarts.core.sensor_manager import SensorManager
-from smarts.core.sensors import Sensors
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle_state import VehicleState
 from smarts.sstudio.types.actor.social_agent_actor import SocialAgentActor
@@ -47,7 +46,7 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, sim, interfaces, zoo_addrs=None):
+    def __init__(self, sim, interfaces):
         from smarts.core.vehicle_index import VehicleIndex
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -55,7 +54,6 @@ class AgentManager:
         self._vehicle_index: VehicleIndex = sim.vehicle_index
         self._sensor_manager: SensorManager = sim.sensor_manager
         self._agent_buffer = None
-        self._zoo_addrs = zoo_addrs
         self._ego_agent_ids = set()
         self._social_agent_ids = set()
 
@@ -500,9 +498,7 @@ class AgentManager:
 
     def _setup_agent_buffer(self):
         if not self._agent_buffer:
-            self._agent_buffer = HeterogenousAgentBuffer(
-                zoo_manager_addrs=self._zoo_addrs
-            )
+            self._agent_buffer = LocalAgentBuffer()
 
     def _setup_social_agents(self):
         """Initialize all social agents."""

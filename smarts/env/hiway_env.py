@@ -71,9 +71,6 @@ class HiWayEnv(gym.Env):
             Defaults to None.
         envision_record_data_replay_path (Optional[str], optional):
             Envision's data replay output directory. Defaults to None.
-        zoo_addrs (Optional[str], optional): List of (ip, port) tuples of
-            zoo server, used to instantiate remote social agents. Defaults
-            to None.
         timestep_sec (Optional[float], optional): [description]. Defaults
             to None.
         agent_interfaces (Dict[str, AgentInterface]): Specification of the agents
@@ -101,7 +98,6 @@ class HiWayEnv(gym.Env):
         sumo_auto_start: bool = True,
         envision_endpoint: Optional[str] = None,
         envision_record_data_replay_path: Optional[str] = None,
-        zoo_addrs: Optional[str] = None,
         agent_interfaces: Optional[Dict[str, AgentInterface]] = None,
         timestep_sec: Optional[
             float
@@ -188,7 +184,6 @@ class HiWayEnv(gym.Env):
             envision=envision_client,
             visdom=visdom,
             fixed_timestep_sec=fixed_timestep_sec,
-            zoo_addrs=zoo_addrs,
         )
 
     @property

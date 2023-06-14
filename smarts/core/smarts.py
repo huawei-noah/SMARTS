@@ -110,7 +110,6 @@ class SMARTS(ProviderManager):
         visdom (Union[bool, Any], optional): Deprecated. Use SMARTS_VISDOM_ENABLED. A visdom client for connecting to a visdom visualization server.
         fixed_timestep_sec (Optional[float], optional): The fixed timestep that will be default if time is not otherwise specified at step. Defaults to 0.1.
         reset_agents_only (bool, optional): When specified the simulation will continue use of the current scenario. Defaults to False.
-        zoo_addrs (Optional[Tuple[str, int]], optional): The `{ip:port}` values of remote agent workers for externally hosted agents. Defaults to None.
         external_provider (bool, optional): Creates a special provider `SMARTS.external_provider` that allows for inserting state. Defaults to False.
     """
 
@@ -124,7 +123,6 @@ class SMARTS(ProviderManager):
         visdom: Optional[Union[bool, Any]] = False,
         fixed_timestep_sec: Optional[float] = 0.1,
         reset_agents_only: bool = False,
-        zoo_addrs: Optional[Tuple[str, int]] = None,
         external_provider: bool = False,
     ):
         conf = config()
@@ -213,7 +211,7 @@ class SMARTS(ProviderManager):
         # Set up indices
         self._sensor_manager = SensorManager()
         self._vehicle_index = VehicleIndex()
-        self._agent_manager = AgentManager(self, agent_interfaces, zoo_addrs)
+        self._agent_manager = AgentManager(self, agent_interfaces)
 
         # TODO: Should not be stored in SMARTS
         self._vehicle_collisions: Dict[str, List[Collision]] = dict()
