@@ -70,6 +70,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `SMARTS.traffic_sim` property.
 - Removed remote agent modules.
 - Removed `protobuf` as a core package dependency.
+- Removed `TruncatedDistribution` from scenario studio.
 ### Security
 
 ## [1.1.0] # 2023-04-28
