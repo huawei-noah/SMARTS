@@ -20,7 +20,6 @@
 import math
 
 import numpy as np
-from scipy import signal
 
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.trajectory_tracking_controller import (
@@ -377,6 +376,31 @@ class LaneFollowingController:
         return np.argmin(relative_distant_lane)
 
     @staticmethod
+    def place_poles(A: np.ndarray, B: np.ndarray, poles: np.ndarray) -> np.ndarray:
+        """Given a linear system described by ẋ = Ax + Bu, compute the gain matrix K
+        such that the closed loop eigenvalues of A - BK are in the desired pole locations.
+
+        References:
+         - https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.place_poles.html
+         - https://en.wikipedia.org/wiki/Ackermann%27s_formula
+        """
+
+        # Controllability matrix
+        C = np.hstack(
+            [B] + [np.linalg.matrix_power(A, i) @ B for i in range(1, A.shape[0])]
+        )
+
+        # Desired characteristic polynomial of A - BK
+        poly = np.real(np.poly(poles))
+
+        # Solve using Ackermann's formula
+        n = np.size(poly)
+        p = poly[n - 1] * np.linalg.matrix_power(A, 0)
+        for i in np.arange(1, n):
+            p = p + poly[n - i - 1] * np.linalg.matrix_power(A, i)
+        return np.linalg.solve(C, p)[-1][:]
+
+    @staticmethod
     def calculate_lateral_gains(sim, state, vehicle, desired_poles, target_speed):
         """Update the state lateral gains"""
         # Only calculate gains if the target_speed is updated.
@@ -420,18 +444,15 @@ class LaneFollowingController:
                     [road_stiffness / (vehicle_mass * target_speed)],
                 ]
             )
-            fsf1 = signal.place_poles(
-                state_matrix, input_matrix, desired_poles, method="KNV0"
+            K = LaneFollowingController.place_poles(
+                state_matrix, input_matrix, desired_poles
             )
-            # 0.01 and 0.015 denote the max and min gains for heading controller
-            # This is done to ensure that the linearization error will not affect
-            # the stability of the controller.
-            state.heading_error_gain = np.clip(fsf1.gain_matrix[0][1], 0.02, 0.04)
-            # 3.4 and 4.1 denote the max and min gains for lateral error controller
-            # As for heading, this is done to ensure that the linearization error
-            # will not affect the stability and performance of the controller.
-            state.lateral_error_gain = np.clip(fsf1.gain_matrix[0][0], 3.4, 4.1)
 
+            # These constants are the min/max gains for the lateral error controller
+            # and the heading controller, respectively. This is done to ensure that
+            # the linearization error will not affect the stability of the controller.
+            state.lateral_error_gain = np.clip(K[0], 3.4, 4.1)
+            state.heading_error_gain = np.clip(K[1], 0.02, 0.04)
         else:
             # 0.01 and 0.36 are initial values for heading and lateral gains
             # This is only done to ensure that the vehicle starts to move for
