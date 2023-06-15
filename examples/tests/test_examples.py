@@ -57,5 +57,7 @@ def test_rllib_example():
             resume_training=False,
             result_dir=result_dir,
             checkpoint_num=None,
+            checkpoint_freq=1,
             save_model_path=model_dir,
+            log_level="WARN",
         )
