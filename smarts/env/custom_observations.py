@@ -18,14 +18,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from dataclasses import dataclass
-from typing import Callable, Dict
+from typing import Callable, Dict, List, Union
 
 import gymnasium as gym
 import numpy as np
 
 from smarts.core.coordinates import Heading
-from smarts.core.observations import Observation
-from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
+from smarts.core.observations import EgoVehicleObservation, Observation
+from smarts.core.road_map import Waypoint
+from smarts.core.utils.math import (
+    squared_dist,
+    vec_2d,
+    vec_to_radians,
+)
 
 
 @dataclass
@@ -143,7 +148,17 @@ _LANE_TTC_OBSERVATION_SPACE = gym.spaces.Dict(
 )
 
 
-def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
+@dataclass
+class _VehicleState:
+    speed: np.ndarray
+    position: np.ndarray
+    lane_index: int
+    heading: float
+    lane_id: str
+    steering: float
+
+
+def lane_ttc(obs: Union[Observation, Dict]) -> Dict[str, np.ndarray]:
     """Computes time-to-collision (TTC) and distance-to-collision (DTC) using
     the given agent's observation. TTC and DTC are numpy arrays of shape (3,)
     with values for the right lane (at index [0]), current lane (at index [1]),
@@ -162,18 +177,78 @@ def lane_ttc(obs: Observation) -> Dict[str, np.ndarray]:
         + :spelling:ignore:`ego_ttc`: Time to collision in each lane. Shape=(3,).
         + ego_lane_dist: Closest cars’ distance to ego in each lane. Shape=(3,).
     """
-    ego = obs.ego_vehicle_state
-    waypoint_paths = obs.waypoint_paths
-    wps = [path[0] for path in waypoint_paths]
 
-    # distance of vehicle from center of lane
+    if isinstance(obs, Observation):
+        ego = obs.ego_vehicle_state
+        waypoint_paths = obs.waypoint_paths
+        wps = [path[0] for path in waypoint_paths]
+        neighborhood_vehicle_states = obs.neighborhood_vehicle_states
+
+        # distance of vehicle from center of lane
+
+    elif isinstance(obs, dict):
+        waypoint_paths = obs["waypoint_paths"]
+        waypoint_paths = [
+            [
+                Waypoint(
+                    position[:2],
+                    Heading(heading),
+                    lane_id,
+                    lane_width,
+                    speed_limit,
+                    lane_index,
+                    np.nan,
+                )
+                for position, heading, lane_id, lane_width, speed_limit, lane_index in zip(
+                    waypoint_paths["position"][i],
+                    waypoint_paths["heading"][i],
+                    waypoint_paths["lane_id"][i],
+                    waypoint_paths["lane_width"][i],
+                    waypoint_paths["speed_limit"][i],
+                    waypoint_paths["lane_index"][i],
+                )
+            ]
+            for i in range(4)
+        ]
+        wps = [path[0] for path in waypoint_paths]
+
+        evs = obs["ego_vehicle_state"]
+        ego = _VehicleState(
+            speed=evs["speed"],
+            position=evs["position"],
+            lane_index=evs["lane_index"],
+            heading=Heading(evs["heading"]),
+            lane_id=evs["lane_id"],
+            steering=evs["steering"],
+        )
+        neighborhood_vehicle_states_dict = obs["neighborhood_vehicle_states"]
+        neighborhood_vehicle_states = [
+            _VehicleState(
+                position=position,
+                heading=heading,
+                speed=speed,
+                lane_id=lane_id,
+                lane_index=lane_index,
+                steering=np.nan,
+            )
+            for position, heading, speed, lane_id, lane_index in zip(
+                neighborhood_vehicle_states_dict["position"],
+                neighborhood_vehicle_states_dict["heading"],
+                neighborhood_vehicle_states_dict["speed"],
+                neighborhood_vehicle_states_dict["lane_id"],
+                neighborhood_vehicle_states_dict["lane_index"],
+            )
+        ]
+    else:
+        raise NotImplementedError("Cannot generate using given observations")
+
     closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
     signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
-    lane_hwidth = closest_wp.lane_width * 0.5
-    norm_dist_from_center = signed_dist_from_center / lane_hwidth
-
-    ego_ttc, ego_lane_dist = _ego_ttc_lane_dist(obs, closest_wp.lane_index)
-
+    lane_half_width = closest_wp.lane_width * 0.5
+    norm_dist_from_center = signed_dist_from_center / lane_half_width
+    ego_ttc, ego_lane_dist = _ego_ttc_lane_dist(
+        ego, neighborhood_vehicle_states, waypoint_paths, closest_wp.lane_index
+    )
     return {
         "distance_from_center": np.array([norm_dist_from_center]),
         "angle_error": np.array([closest_wp.relative_heading(ego.heading)]),
@@ -189,16 +264,25 @@ lane_ttc_observation_adapter = Adapter(
 )
 
 
-def _ego_ttc_lane_dist(obs: Observation, ego_lane_index: int):
-    ttc_by_p, lane_dist_by_p = _ttc_by_path(obs)
+def _ego_ttc_lane_dist(
+    ego_state: _VehicleState,
+    neighborhood_vehicle_states,
+    waypoint_paths,
+    ego_lane_index: int,
+):
+    ttc_by_p, lane_dist_by_p = _ttc_by_path(
+        ego_state, neighborhood_vehicle_states, waypoint_paths
+    )
 
     return _ego_ttc_calc(ego_lane_index, ttc_by_p, lane_dist_by_p)
 
 
-def _ttc_by_path(obs: Observation):
-    ego = obs.ego_vehicle_state
-    waypoint_paths = obs.waypoint_paths
-    neighborhood_vehicle_states = obs.neighborhood_vehicle_states
+def _ttc_by_path(
+    ego: _VehicleState,
+    neighborhood_vehicle_states,
+    waypoint_paths: List[List[Waypoint]],
+):
+    neighborhood_vehicle_states = neighborhood_vehicle_states
 
     # first sum up the distance between waypoints along a path
     # ie. [(wp1, path1, 0),

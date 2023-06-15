@@ -3,7 +3,8 @@ import logging
 import multiprocessing
 import random
 from pathlib import Path
-from typing import Dict
+from pprint import pprint as print
+from typing import Dict, Literal, Union
 
 import numpy as np
 
@@ -12,14 +13,18 @@ import numpy as np
 # whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
 try:
     from ray import tune
-    from ray.rllib.agents.callbacks import DefaultCallbacks
+    from ray.rllib.algorithms.callbacks import DefaultCallbacks
+    from ray.rllib.algorithms.pg import PGConfig
     from ray.rllib.env.base_env import BaseEnv
-    from ray.rllib.evaluation.episode import MultiAgentEpisode
+    from ray.rllib.evaluation.episode import Episode
+    from ray.rllib.evaluation.episode_v2 import EpisodeV2
     from ray.rllib.evaluation.rollout_worker import RolloutWorker
     from ray.rllib.policy.policy import Policy
     from ray.rllib.utils.typing import PolicyID
+    from ray.tune.registry import register_env
     from ray.tune.schedulers import PopulationBasedTraining
 except Exception as e:
+    raise
     from smarts.core.utils.custom_exceptions import RayException
 
     raise RayException.required_to("rllib.py")
@@ -35,7 +40,7 @@ else:
     from .rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)
-
+register_env("rllib_hiway-v0", RLlibHiWayEnv)
 
 # Add custom metrics to your tensorboard using these callbacks
 # See: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
@@ -45,43 +50,43 @@ class Callbacks(DefaultCallbacks):
         worker: RolloutWorker,
         base_env: BaseEnv,
         policies: Dict[PolicyID, Policy],
-        episode: MultiAgentEpisode,
+        episode: Union[Episode, EpisodeV2],
         env_index: int,
         **kwargs,
     ):
 
-        episode.user_data["ego_speed"] = []
+        episode.user_data["ego_reward"] = []
 
     @staticmethod
     def on_episode_step(
         worker: RolloutWorker,
         base_env: BaseEnv,
-        episode: MultiAgentEpisode,
+        episode: Union[Episode, EpisodeV2],
         env_index: int,
         **kwargs,
     ):
-
-        single_agent_id = list(episode._agent_to_last_obs)[0]
-        obs = episode.last_raw_obs_for(single_agent_id)
-        episode.user_data["ego_speed"].append(obs["speed"])
+        single_agent_id = list(episode.get_agents())[0]
+        infos = episode._last_infos.get(single_agent_id)
+        if infos is not None:
+            episode.user_data["ego_reward"].append(infos["reward"])
 
     @staticmethod
     def on_episode_end(
         worker: RolloutWorker,
         base_env: BaseEnv,
         policies: Dict[PolicyID, Policy],
-        episode: MultiAgentEpisode,
+        episode: Union[Episode, EpisodeV2],
         env_index: int,
         **kwargs,
     ):
 
-        mean_ego_speed = np.mean(episode.user_data["ego_speed"])
+        mean_ego_speed = np.mean(episode.user_data["ego_reward"])
         print(
             f"ep. {episode.episode_id:<12} ended;"
             f" length={episode.length:<6}"
-            f" mean_ego_speed={mean_ego_speed:.2f}"
+            f" mean_ego_reward={mean_ego_speed:.2f}"
         )
-        episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
+        episode.custom_metrics["mean_ego_reward"] = mean_ego_speed
 
 
 def explore(config):
@@ -103,13 +108,78 @@ def main(
     num_workers,
     resume_training,
     result_dir,
-    checkpoint_num,
+    checkpoint_freq: int,
+    checkpoint_num: int,
+    log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"],
     save_model_path,
 ):
     assert train_batch_size > 0, f"{train_batch_size.__name__} cannot be less than 1."
-    if rollout_fragment_length > train_batch_size:
+    if (
+        isinstance(rollout_fragment_length, int)
+        and rollout_fragment_length > train_batch_size
+    ):
         rollout_fragment_length = train_batch_size
 
+    rllib_policies = {
+        f"AGENT-{i}": (
+            None,
+            rllib_agent["observation_space"],
+            rllib_agent["action_space"],
+            {"model": {"custom_model": TrainingModel.NAME}},
+        )
+        for i in range(num_agents)
+    }
+
+    smarts.core.seed(seed)
+    algo_config = (
+        PGConfig()
+        .environment(
+            env="rllib_hiway-v0",
+            env_config={
+                "seed": 42,
+                "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
+                "headless": not envision,
+                "agent_specs": {
+                    f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
+                },
+                "observation_options": "multi_agent",
+            },
+            disable_env_checking=True,
+        )
+        .framework(framework="tf2", eager_tracing=True)
+        .rollouts(
+            rollout_fragment_length=rollout_fragment_length,
+            num_rollout_workers=num_workers,
+            num_envs_per_worker=1,
+        )
+        .training(
+            lr_schedule=[(0, 1e-3), (1e3, 5e-4), (1e5, 1e-4), (1e7, 5e-5), (1e8, 1e-5)],
+            train_batch_size=train_batch_size,
+        )
+        .multi_agent(
+            policies=rllib_policies,
+            policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: f"{agent_id}",
+        )
+        # .callbacks(callbacks_class=Callbacks)
+        .debugging(log_level=log_level)
+    )
+
+    experiment_name = "rllib_example_multi"
+    result_dir = Path(result_dir).expanduser().resolve().absolute()
+
+    def get_checkpoint_dir(num):
+        checkpoint_dir = result_dir / f"checkpoint_{num}" / f"checkpoint-{num}"
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        return checkpoint_dir
+
+    if checkpoint_num:
+        checkpoint = str(get_checkpoint_dir(checkpoint_num))
+    else:
+        checkpoint = None
+
+    print(f"======= Checkpointing at {str(result_dir)} =======")
+
+    ## Approach 1
     pbt = PopulationBasedTraining(
         time_attr="time_total_s",
         metric="episode_reward_mean",
@@ -126,69 +196,95 @@ def main(
         # Specifies additional mutations after hyperparam_mutations is applied
         custom_explore_fn=explore,
     )
+    # analysis = tune.run(
+    #     "PG",
+    #     name=experiment_name,
+    #     stop={"time_total_s": time_total_s},
+    #     checkpoint_freq=checkpoint_freq,
+    #     checkpoint_at_end=True,
+    #     local_dir=str(result_dir),
+    #     resume=resume_training,
+    #     restore=checkpoint,
+    #     max_failures=3,
+    #     num_samples=num_samples,
+    #     export_formats=["model", "checkpoint"],
+    #     config=algo_config,
+    #     scheduler=pbt,
+    # )
 
-    # XXX: There is a bug in Ray where we can only export a trained model if
-    #      the policy it's attached to is named 'default_policy'.
-    #      See: https://github.com/ray-project/ray/issues/5339
-    rllib_policies = {
-        "default_policy": (
-            None,
-            rllib_agent["observation_space"],
-            rllib_agent["action_space"],
-            {"model": {"custom_model": TrainingModel.NAME}},
-        )
-    }
+    # print(analysis.dataframe().head())
 
-    smarts.core.seed(seed)
-    tune_config = {
-        "env": RLlibHiWayEnv,
-        "log_level": "WARN",
-        "num_workers": num_workers,
-        "env_config": {
-            "seed": tune.sample_from(lambda spec: random.randint(0, 300)),
-            "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
-            "headless": not envision,
-            "agent_specs": {
-                f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
-            },
-        },
-        "multiagent": {"policies": rllib_policies},
-        "callbacks": Callbacks,
-    }
+    # best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
+    # model_path = best_logdir / "model"
 
-    experiment_name = "rllib_example_multi"
-    result_dir = Path(result_dir).expanduser().resolve().absolute()
-    if checkpoint_num:
-        checkpoint = str(
-            result_dir / f"checkpoint_{checkpoint_num}" / f"checkpoint-{checkpoint_num}"
-        )
-    else:
-        checkpoint = None
+    # copy_tree(str(model_path), save_model_path, overwrite=True)
+    # print(f"Wrote model to: {save_model_path}")
 
-    print(f"Checkpointing at {str(result_dir)}")
-    analysis = tune.run(
-        "PG",
-        name=experiment_name,
-        stop={"time_total_s": time_total_s},
-        checkpoint_freq=1,
-        checkpoint_at_end=True,
-        local_dir=str(result_dir),
-        resume=resume_training,
-        restore=checkpoint,
-        max_failures=3,
-        num_samples=num_samples,
-        export_formats=["model", "checkpoint"],
-        config=tune_config,
-        scheduler=pbt,
-    )
+    ## Approach 2
+    from ray.rllib.algorithms.algorithm import Algorithm
 
-    print(analysis.dataframe().head())
+    algo = algo_config.build()
+    if checkpoint is not None:
+        Algorithm.load_checkpoint(algo, checkpoint=checkpoint)
+    result = {}
+    current_iteration = 0
+    checkpoint_iteration = checkpoint_num or 0
 
-    best_logdir = Path(analysis.get_best_logdir("episode_reward_max", mode="max"))
-    model_path = best_logdir / "model"
+    try:
+        while result.get("time_total_s", 0) < time_total_s:
+            result = algo.train()
+            print(f"======== Iteration {result['training_iteration']} ========")
+            print(result, depth=1)
 
-    copy_tree(str(model_path), save_model_path, overwrite=True)
-    print(f"Wrote model to: {save_model_path}")
+            if current_iteration % checkpoint_freq == 0:
+                checkpoint_dir = get_checkpoint_dir(checkpoint_iteration)
+                print(f"======= Saving checkpoint {checkpoint_iteration} =======")
+                algo.save_checkpoint(checkpoint_dir)
+                checkpoint_iteration += 1
+            current_iteration += 1
+        algo.save_checkpoint(get_checkpoint_dir(checkpoint_iteration))
+    finally:
+        algo.save(get_checkpoint_dir("latest"))
+
+    algo.stop()
+
+    ## Approach 3
+    # from ray import air
+    # run_config = air.RunConfig(
+    #     name=experiment_name,
+    #     stop={"time_total_s": time_total_s},
+    #     callbacks=[Callbacks],
+    #     storage_path=result_dir,
+    #     checkpoint_config=air.CheckpointConfig(
+    #         num_to_keep=3,
+    #         checkpoint_frequency=checkpoint_freq,
+    #         checkpoint_at_end=True,
+    #     ),
+    #     failure_config=air.FailureConfig(
+    #         max_failures=3,
+    #         fail_fast=False,
+    #     ),
+    #     local_dir=str(result_dir),
+    # )
+    # tune_config = tune.TuneConfig(
+    #     metric="episode_reward_mean",
+    #     mode="max",
+    #     num_samples=num_samples,
+    #     scheduler=pbt,
+    # )
+    # tuner = tune.Tuner(
+    #     "PPO",
+    #     param_space=algo_config,
+    #     tune_config=tune_config,
+    #     run_config=run_config,
+    # )
+
+    # results = tuner.fit()
+    # # Get the best result based on a particular metric.
+    # best_result = results.get_best_result(metric="episode_reward_mean", mode="max")
+
+    # # Get the best checkpoint corresponding to the best result.
+    # best_checkpoint = best_result.checkpoint
 
 
 if __name__ == "__main__":
@@ -212,8 +308,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rollout_fragment_length",
-        type=int,
-        default=200,
+        type=str,
+        default="auto",
         help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
     )
     parser.add_argument(
@@ -256,7 +352,16 @@ if __name__ == "__main__":
         help="Directory containing results",
     )
     parser.add_argument(
+        "--log_level",
+        type=str,
+        default="ERROR",
+        help="Log level (DEBUG|INFO|WARN|ERROR)",
+    )
+    parser.add_argument(
         "--checkpoint_num", type=int, default=None, help="Checkpoint number"
+    )
+    parser.add_argument(
+        "--checkpoint_freq", type=int, default=3, help="Checkpoint frequency"
     )
 
     save_model_path = str(Path(__file__).expanduser().resolve().parent / "model")
@@ -281,6 +386,8 @@ if __name__ == "__main__":
         num_workers=args.num_workers,
         resume_training=args.resume_training,
         result_dir=args.result_dir,
+        checkpoint_freq=max(args.checkpoint_freq, 1),
         checkpoint_num=args.checkpoint_num,
+        log_level=args.log_level,
         save_model_path=args.save_model_path,
     )

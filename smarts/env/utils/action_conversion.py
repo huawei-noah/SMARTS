@@ -246,9 +246,10 @@ class ActionSpacesFormatter:
             format_ = formatting_groups[agent_interface.action]
             space: gym.Space = self.space[agent_id]
             assert space is format_.space
+            dtype = action.dtype if isinstance(action, np.ndarray) else None
             assert space.contains(
                 action
-            ), f"Action {action} does not match space {space}!"
+            ), f"Action {action} of type `{type(action)}` & {dtype} does not match space {space}!"
             formatted_action = format_.formatting_func(action)
             out_actions[agent_id] = formatted_action
 

@@ -1,7 +1,8 @@
 from pathlib import Path
 
-import gym
+import gymnasium as gym
 import numpy as np
+from ray.rllib.utils.typing import ModelConfigDict
 
 # ray[rllib] is not the part of main dependency of the SMARTS package. It needs to be installed separately
 # as a part of the smarts[train] dependency using the command "pip install -e .[train]. The following try block checks
@@ -41,18 +42,37 @@ OBSERVATION_SPACE = gym.spaces.Dict(
     }
 )
 
-
-def observation_adapter(env_observation):
-    return lane_ttc_observation_adapter.transform(env_observation)
+FLATTENED_OBSERVATION_SPACE = gym.spaces.utils.flatten_space(OBSERVATION_SPACE)
 
 
-def action_adapter(model_action):
-    throttle, brake, steering = model_action
-    return np.array([throttle, brake, steering * np.pi * 0.25])
+def observation_adapter(agent_observation, /):
+    return gym.spaces.utils.flatten(
+        OBSERVATION_SPACE, lane_ttc_observation_adapter.transform(agent_observation)
+    )
+
+
+def action_adapter(agent_action, /):
+    throttle, brake, steering = agent_action
+    return np.array([throttle, brake, steering * np.pi * 0.25], dtype=np.float32)
 
 
 class TrainingModel(FullyConnectedNetwork):
     NAME = "FullyConnectedNetwork"
+
+    def __init__(
+        self,
+        obs_space,
+        action_space,
+        num_outputs: int,
+        model_config: ModelConfigDict,
+        name: str,
+    ):
+        super().__init__(obs_space, action_space, num_outputs, model_config, name)
+
+    def forward(self, input_dict, state, seq_lens):
+        # return super().forward(input_dict, state, seq_lens)
+        model_out, self._value_out = self.base_model(input_dict["obs_flat"])
+        return model_out, state
 
 
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
@@ -87,12 +107,12 @@ rllib_agent = {
         interface=AgentInterface.from_type(AgentType.Standard, max_episode_steps=500),
         agent_params={
             "path_to_model": Path(__file__).resolve().parent / "model",
-            "observation_space": OBSERVATION_SPACE,
+            "observation_space": FLATTENED_OBSERVATION_SPACE,
         },
         agent_builder=RLLibTFSavedModelAgent,
         observation_adapter=observation_adapter,
         action_adapter=action_adapter,
     ),
-    "observation_space": OBSERVATION_SPACE,
+    "observation_space": FLATTENED_OBSERVATION_SPACE,
     "action_space": ACTION_SPACE,
 }
