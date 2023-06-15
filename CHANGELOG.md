@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 ### Removed
 ### Security
 
