@@ -4,7 +4,7 @@ import multiprocessing
 import random
 from pathlib import Path
 from pprint import pprint as print
-from typing import Dict, Literal, Union
+from typing import Dict, Literal, Optional, Union
 
 import numpy as np
 
@@ -109,7 +109,7 @@ def main(
     resume_training,
     result_dir,
     checkpoint_freq: int,
-    checkpoint_num: int,
+    checkpoint_num: Optional[int],
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"],
     save_model_path,
 ):
