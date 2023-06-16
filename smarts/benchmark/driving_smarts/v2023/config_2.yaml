@@ -17,6 +17,12 @@ benchmark:
       scenarios:
         - scenarios/sumo/intersections/1_to_3lane_left_turn_sumo_c_agents_1
         - scenarios/sumo/intersections/1_to_3lane_left_turn_middle_lane_c_agents_1
+
+        - driving-smarts-2.competition-scenarios/t2/training/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1
+        - driving-smarts-2.competition-scenarios/t2/training/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1
+        - driving-smarts-2.competition-scenarios/t2/training/00b15e74-04a8-4bd4-9a78-eb24f0c0a980_agents_1
+        - driving-smarts-2.competition-scenarios/t2/training/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1
+
       kwargs:
         seed: 42
       metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_drive.py
