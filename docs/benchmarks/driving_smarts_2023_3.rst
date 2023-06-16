@@ -62,15 +62,15 @@ The corresponding gifs show the task execution by a trained baseline agent.
 + :scenarios:`ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1 <argoverse/vehicle_following/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1>`
 
   .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1.gif
-     :width: 500px
+     :width: 75%
 + :scenarios:`ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1 <argoverse/vehicle_following/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1>`
 
   .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1.gif
-     :width: 500px
+     :width: 75%
 + :scenarios:`ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1 <argoverse/vehicle_following/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1>`
 
   .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1.gif
-     :width: 500px
+     :width: 75%
 
 Observation space
 -----------------
