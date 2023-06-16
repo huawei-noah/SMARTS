@@ -38,7 +38,7 @@ Training scenarios
 ------------------
 
 Several scenarios are provided for training as follows. 
-The corresponding gifs show the task execution by a trained baseline agent. 
+The corresponding GIF image shows the task execution by a trained baseline agent.
 
 + :scenarios:`straight_2lane_sumo_agents_1 <sumo/vehicle_following/straight_2lane_sumo_agents_1>`
 + :scenarios:`straight_2lane_sumo_t_agents_1 <sumo/vehicle_following/straight_2lane_sumo_t_agents_1>`
