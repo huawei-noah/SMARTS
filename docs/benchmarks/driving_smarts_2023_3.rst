@@ -34,27 +34,43 @@ of steps per episode.
 Any method such as reinforcement learning, offline reinforcement learning, behavior cloning, generative models,
 predictive models, etc, may be used to develop the policy.
 
-Several scenarios are provided for training. Their names and tasks are as follows. 
-The desired task execution is illustrated in a gif by a trained baseline agent. 
+Training scenarios
+------------------
 
-+ straight_2lane_agents_1
-    A single ego must follow a specified leader, with no background traffic.
-
-    .. image:: /_static/driving_smarts_2023/platoon_straight_2lane_agents_1.gif
+Several scenarios are provided for training as follows. 
+The corresponding gifs show the task execution by a trained baseline agent. 
 
 + :scenarios:`straight_2lane_sumo_agents_1 <sumo/vehicle_following/straight_2lane_sumo_agents_1>`
 + :scenarios:`straight_2lane_sumo_t_agents_1 <sumo/vehicle_following/straight_2lane_sumo_t_agents_1>`
 + :scenarios:`straight_3lanes_sumo_agents_1 <sumo/vehicle_following/straight_3lanes_sumo_agents_1>`
 + :scenarios:`straight_3lanes_sumo_t_agents_1 <sumo/vehicle_following/straight_3lanes_sumo_t_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/straight_3lanes_sumo_t_agents_1.gif
+
 + :scenarios:`straight_3lanes_sumo_t_agents_2 <sumo/vehicle_following/straight_3lanes_sumo_t_agents_2>`
 + :scenarios:`merge_exit_sumo_agents_1 <sumo/vehicle_following/merge_exit_sumo_agents_1>`
 + :scenarios:`merge_exit_sumo_t_agents_1 <sumo/vehicle_following/merge_exit_sumo_t_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/merge_exit_sumo_t_agents_1.gif
+
 + :scenarios:`merge_exit_sumo_t_agents_2 <sumo/vehicle_following/merge_exit_sumo_t_agents_2>`
 + :scenarios:`ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1 <argoverse/vehicle_following/ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ff239c9d-e4ff-4acc-bad5-bd55648c212e_0_agents_1.gif
+
 + :scenarios:`ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1 <argoverse/vehicle_following/ff239c9d-e4ff-4acc-bad5-bd55648c212e_agents_1>`
 + :scenarios:`ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1 <argoverse/vehicle_following/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ff6dc43b-dd27-4fe4-94b6-5c1b3940daed_agents_1.gif
+     :width: 500px
 + :scenarios:`ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1 <argoverse/vehicle_following/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1.gif
+     :width: 500px
 + :scenarios:`ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1 <argoverse/vehicle_following/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_3/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1.gif
+     :width: 500px
 
 Observation space
 -----------------
