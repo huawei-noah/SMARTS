@@ -45,27 +45,54 @@ below.
 Any method such as reinforcement learning, offline reinforcement learning, behavior cloning, generative models,
 predictive models, etc, may be used to develop the policy.
 
-Several scenarios are provided for training. Their names and tasks are as follows. 
-The desired task execution is illustrated in a gif by a trained baseline agent. 
+Training scenarios
+------------------
+
+Several scenarios are provided for training as follows. 
+The corresponding gifs show the task execution by a trained baseline agent. 
 
 **Driving SMARTS 2023.1 scenarios**
 
 + :scenarios:`cruise_2lane_agents_1 <sumo/straight/cruise_2lane_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_1/cruise_2lane_agents_1.gif
+
 + :scenarios:`cutin_2lane_agents_1 <sumo/straight/cutin_2lane_agents_1>`
+
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_1/cutin_2lane_agents_1.gif
+
 + :scenarios:`merge_exit_sumo_t_agents_1 <sumo/straight/merge_exit_sumo_t_agents_1>`
 + :scenarios:`overtake_2lane_agents_1 <sumo/straight/overtake_2lane_agents_1>`
 + :scenarios:`00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1 <argoverse/straight/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1>`
+  
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_1/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1.gif
+     :width: 75%
 + :scenarios:`0a53dd99-2946-4b4d-ab66-c4d6fef97be2_agents_1 <argoverse/straight/0a53dd99-2946-4b4d-ab66-c4d6fef97be2_agents_1>`
+  
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_1/0a53dd99-2946-4b4d-ab66-c4d6fef97be2_agents_1.gif
+     :width: 75%
 + :scenarios:`0a576bf1-66ae-495a-9c87-236f3fc2aa01_agents_1 <argoverse/straight/0a576bf1-66ae-495a-9c87-236f3fc2aa01_agents_1>`
 
 **Driving SMARTS 2023.2 scenarios**
 
 + :scenarios:`1_to_3lane_left_turn_sumo_c_agents_1 <sumo/intersections/1_to_3lane_left_turn_sumo_c_agents_1>`
+  
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_2/1_to_3lane_left_turn_sumo_c_agents_1.gif
+     :width: 75%
 + :scenarios:`1_to_3lane_left_turn_middle_lane_c_agents_1 <sumo/intersections/1_to_3lane_left_turn_middle_lane_c_agents_1>`
 + :scenarios:`00b15e74-04a8-4bd4-9a78-eb24f0c0a980_agents_1 <argoverse/turn/00b15e74-04a8-4bd4-9a78-eb24f0c0a980_agents_1>`
 + :scenarios:`0a60b442-56b0-46c3-be45-cf166a182b67_agents_1 <argoverse/turn/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1>`
+  
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_2/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1.gif
+     :width: 75%
 + :scenarios:`0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1 <argoverse/turn/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1>`
+  
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_2/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1.gif
+     :width: 75%
 + :scenarios:`0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1 <argoverse/turn/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1>`
+  
+  .. image:: https://raw.githubusercontent.com/smarts-project/smarts-project.github.io/master/assets/driving_smarts_2023_2/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1.gif
+     :width: 75%
 
 Observation space
 -----------------
