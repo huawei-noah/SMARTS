@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.2.0] # 2023-06-14
+### Added
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
 - Added an install extra that installs the requirements for all optional modules. Use `pip install .[all]`.
 - Added `Condition`, `ConditionRequires`, `ConditionState` and various condition implementations to enable logical operations in scenarios.
@@ -60,6 +68,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `examples/rl/racing` as base repository `danijar/dreamerv2` is not updated anymore and this example will be superseded by `examples/rl/drive`.
 - Removed `FrameStack` environment wrapper.
 - Removed `SMARTS.traffic_sim` property.
+- Removed remote agent modules.
+- Removed `protobuf` as a core package dependency.
 ### Security
 
 ## [1.1.0] # 2023-04-28
