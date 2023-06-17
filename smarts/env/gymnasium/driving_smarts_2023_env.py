@@ -160,9 +160,9 @@ def resolve_agent_interface(agent_interface: AgentInterface):
     done_criteria = DoneCriteria(
         collision=True,
         off_road=True,
-        off_route=False,
+        off_route=True,
         on_shoulder=False,
-        wrong_way=False,
+        wrong_way=True,
         not_moving=False,
         agents_alive=None,
         interest=None,

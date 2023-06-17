@@ -92,23 +92,23 @@ class FilterObs:
                     rgb_ego[img_y, img_x, :] = self._wps_color
 
         # Superimpose goal position onto rgb image       
-        if not all((goal:=obs["ego_vehicle_state"]["mission"]["goal_position"]) == np.zeros((3,))):       
-            goal_pixel = points_to_pixels(
-                points=np.expand_dims(goal,axis=0),
-                ego_pos=ego_pos,
-                ego_heading=ego_heading,
-                w=w,
-                h=h,
-                res=self._res,
-            )
-            if len(goal_pixel) != 0:
-                img_x, img_y = goal_pixel[0][0], goal_pixel[0][1]
-                if all(rgb_ego[img_y, img_x, :] == self._no_color) or all(rgb_ego[img_y, img_x, :] == self._wps_color):
-                    rgb_ego[
-                        max(img_y-self._blur_radius,0):min(img_y+self._blur_radius,h), 
-                        max(img_x-self._blur_radius,0):min(img_x+self._blur_radius,w), 
-                        :,
-                    ] = self._goal_color
+        # if not all((goal:=obs["ego_vehicle_state"]["mission"]["goal_position"]) == np.zeros((3,))):       
+        #     goal_pixel = points_to_pixels(
+        #         points=np.expand_dims(goal,axis=0),
+        #         ego_pos=ego_pos,
+        #         ego_heading=ego_heading,
+        #         w=w,
+        #         h=h,
+        #         res=self._res,
+        #     )
+        #     if len(goal_pixel) != 0:
+        #         img_x, img_y = goal_pixel[0][0], goal_pixel[0][1]
+        #         if all(rgb_ego[img_y, img_x, :] == self._no_color) or all(rgb_ego[img_y, img_x, :] == self._wps_color):
+        #             rgb_ego[
+        #                 max(img_y-self._blur_radius,0):min(img_y+self._blur_radius,h), 
+        #                 max(img_x-self._blur_radius,0):min(img_x+self._blur_radius,w), 
+        #                 :,
+        #             ] = self._goal_color
 
         # Crop image
         rgb_ego = rgb_ego[self._crop[2]:h-self._crop[3],self._crop[0]:w-self._crop[1],:]
