@@ -79,16 +79,16 @@ ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
 
 
 class RLLibTFSavedModelAgent(Agent):
-    def __init__(self, path_to_model, observation_space):
+    def __init__(self, path_to_model, observation_space, policy_name="default_policy"):
         path_to_model = str(path_to_model)  # might be a str or a Path, normalize to str
         self._prep = ModelCatalog.get_preprocessor_for_space(observation_space)
         self._sess = tf.compat.v1.Session(graph=tf.Graph())
         tf.compat.v1.saved_model.load(
             self._sess, export_dir=path_to_model, tags=["serve"]
         )
-        self._output_node = self._sess.graph.get_tensor_by_name("default_policy/add:0")
+        self._output_node = self._sess.graph.get_tensor_by_name(f"policy_name/add:0")
         self._input_node = self._sess.graph.get_tensor_by_name(
-            "default_policy/observation:0"
+            f"{policy_name}/observation:0"
         )
 
     def __del__(self):

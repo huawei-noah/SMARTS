@@ -26,11 +26,7 @@ import numpy as np
 from smarts.core.coordinates import Heading
 from smarts.core.observations import EgoVehicleObservation, Observation
 from smarts.core.road_map import Waypoint
-from smarts.core.utils.math import (
-    squared_dist,
-    vec_2d,
-    vec_to_radians,
-)
+from smarts.core.utils.math import squared_dist, vec_2d, vec_to_radians
 
 
 @dataclass

@@ -116,7 +116,8 @@ class RLlibHiWayEnv(MultiAgentEnv):
         a = config.worker_index
         b = config.vector_index
         c = (a + b) * (a + b + 1) // 2 + b
-        smarts.core.seed(seed + c)
+        self._seed = seed + c
+        smarts.core.seed(self._seed + c)
 
         self._scenarios = [
             str(Path(scenario).resolve()) for scenario in config["scenarios"]
@@ -192,7 +193,14 @@ class RLlibHiWayEnv(MultiAgentEnv):
             if agent_id in formatted_actions
         }
 
-        infos = {key: {"score": value} for key, value in scores.items()}
+        infos = {
+            agent_id: {
+                "score": value,
+                "reward": rewards[agent_id],
+                "speed": observations[agent_id]["ego_vehicle_state"]["speed"],
+            }
+            for agent_id, value in scores.items()
+        }
 
         # Ensure all contain the same agent_ids as keys
         assert (
@@ -225,11 +233,7 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
     def reset(self, *, seed=None, options=None):
         """Environment reset."""
-        if seed is not None:
-            a = self._config.worker_index
-            b = self._config.vector_index
-            c = (a + b) * (a + b + 1) // 2 + b
-            smarts.core.seed(seed + c)
+        smarts.core.seed(self._seed + (seed or 0))
 
         scenario = next(self._scenarios_iterator)
 
@@ -250,9 +254,9 @@ class RLlibHiWayEnv(MultiAgentEnv):
         info = {
             agent_id: {
                 "score": 0,
+                "reward": 0,
                 "env_obs": agent_obs,
                 "done": False,
-                "reward": 0,
                 "map_source": self._smarts.scenario.road_map.source,
             }
             for agent_id, agent_obs in observations.items()
