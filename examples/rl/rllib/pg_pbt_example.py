@@ -11,7 +11,9 @@ from ray.tune.experiment import Trial
 # whether ray[rllib] was installed by user and raises an Exception warning the user to install it if not so.
 try:
     from ray import tune
-    from ray.rllib.algorithms.callbacks import DefaultCallbacks, make_multi_callbacks
+    from ray.rllib.algorithms.algorithm import AlgorithmConfig
+    from ray.rllib.algorithms.callbacks import DefaultCallbacks
+    from ray.rllib.algorithms.pg import PGConfig
     from ray.rllib.env.base_env import BaseEnv
     from ray.rllib.evaluation.episode import Episode
     from ray.rllib.evaluation.episode_v2 import EpisodeV2
@@ -32,10 +34,10 @@ from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.sstudio.scenario_construction import build_scenario
 
 if __name__ == "__main__":
-    from configs import gen_parser, gen_pg_config
+    from configs import gen_parser
     from rllib_agent import TrainingModel, rllib_agent
 else:
-    from .configs import gen_parser, gen_pg_config
+    from .configs import gen_parser
     from .rllib_agent import TrainingModel, rllib_agent
 
 logging.basicConfig(level=logging.INFO)
@@ -152,17 +154,37 @@ def main(
     agent_specs = agent_values["agent_specs"]
 
     smarts.core.seed(seed)
-    algo_config = gen_pg_config(
-        scenario=scenario,
-        envision=envision,
-        rollout_fragment_length=rollout_fragment_length,
-        train_batch_size=train_batch_size,
-        num_workers=max(num_workers, 1),
-        log_level=log_level,
-        seed=seed,
-        callbacks=make_multi_callbacks([Callbacks]),
-        rllib_policies=rllib_policies,
-        agent_specs=agent_specs,
+    assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0
+    algo_config: AlgorithmConfig = (
+        PGConfig()
+        .environment(
+            env=RLlibHiWayEnv,
+            env_config={
+                "seed": seed,
+                "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
+                "headless": not envision,
+                "agent_specs": agent_specs,
+                "observation_options": "multi_agent",
+            },
+            disable_env_checking=True,
+        )
+        .framework(framework="tf2", eager_tracing=True)
+        .rollouts(
+            rollout_fragment_length=rollout_fragment_length,
+            num_rollout_workers=num_workers,
+            num_envs_per_worker=1,
+            enable_tf1_exec_eagerly=True,
+        )
+        .training(
+            lr_schedule=[(0, 1e-3), (1e3, 5e-4), (1e5, 1e-4), (1e7, 5e-5), (1e8, 1e-5)],
+            train_batch_size=train_batch_size,
+        )
+        .multi_agent(
+            policies=rllib_policies,
+            policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: f"{agent_id}",
+        )
+        .callbacks(callbacks_class=Callbacks)
+        .debugging(log_level=log_level)
     )
 
     experiment_name = "rllib_example_multi"

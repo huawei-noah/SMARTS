@@ -1,64 +1,6 @@
 import argparse
 import multiprocessing
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional, Union
-
-try:
-    from ray.rllib.algorithms.algorithm import AlgorithmConfig
-    from ray.rllib.algorithms.callbacks import DefaultCallbacks
-    from ray.rllib.algorithms.pg import PGConfig
-    from ray.tune.search.sample import Integer as IntegerDomain
-except Exception as e:
-    from smarts.core.utils.custom_exceptions import RayException
-
-    raise RayException.required_to("rllib.py")
-
-
-def gen_pg_config(
-    scenario,
-    envision,
-    rollout_fragment_length,
-    train_batch_size,
-    num_workers,
-    log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"],
-    seed: Union[int, IntegerDomain],
-    rllib_policies: Dict[str, Any],
-    agent_specs: Dict[str, Any],
-    callbacks: Optional[DefaultCallbacks],
-) -> AlgorithmConfig:
-    assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0
-    algo_config = (
-        PGConfig()
-        .environment(
-            env="rllib_hiway-v0",
-            env_config={
-                "seed": seed,
-                "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
-                "headless": not envision,
-                "agent_specs": agent_specs,
-                "observation_options": "multi_agent",
-            },
-            disable_env_checking=True,
-        )
-        .framework(framework="tf2", eager_tracing=True)
-        .rollouts(
-            rollout_fragment_length=rollout_fragment_length,
-            num_rollout_workers=num_workers,
-            num_envs_per_worker=1,
-            enable_tf1_exec_eagerly=True,
-        )
-        .training(
-            lr_schedule=[(0, 1e-3), (1e3, 5e-4), (1e5, 1e-4), (1e7, 5e-5), (1e8, 1e-5)],
-            train_batch_size=train_batch_size,
-        )
-        .multi_agent(
-            policies=rllib_policies,
-            policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: f"{agent_id}",
-        )
-        .callbacks(callbacks_class=callbacks)
-        .debugging(log_level=log_level)
-    )
-    return algo_config
 
 
 def gen_parser(prog: str, default_result_dir: str) -> argparse.ArgumentParser:
