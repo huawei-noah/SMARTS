@@ -81,7 +81,6 @@ def main(
     rollout_fragment_length,
     train_batch_size,
     seed,
-    num_samples,
     num_agents,
     num_workers,
     resume_training,
@@ -89,7 +88,6 @@ def main(
     checkpoint_freq: int,
     checkpoint_num: Optional[int],
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"],
-    save_model_path,
 ):
     agent_values = {
         "agent_specs": {
@@ -162,12 +160,14 @@ def main(
 
 
 if __name__ == "__main__":
-    default_save_model_path = str(
-        Path(__file__).expanduser().resolve().parent / "pg_model"
-    )
     default_result_dir = str(Path(__file__).resolve().parent / "results" / "pg_results")
-    parser = gen_parser("rllib-example", default_result_dir, default_save_model_path)
-
+    parser = gen_parser("rllib-example", default_result_dir)
+    parser.add_argument(
+        "--checkpoint_num",
+        type=int,
+        default=None,
+        help="The checkpoint number to restart from.",
+    )
     args = parser.parse_args()
     build_scenario(scenario=args.scenario, clean=False, seed=42)
 
@@ -178,7 +178,6 @@ if __name__ == "__main__":
         rollout_fragment_length=args.rollout_fragment_length,
         train_batch_size=args.train_batch_size,
         seed=args.seed,
-        num_samples=args.num_samples,
         num_agents=args.num_agents,
         num_workers=args.num_workers,
         resume_training=args.resume_training,
@@ -186,5 +185,4 @@ if __name__ == "__main__":
         checkpoint_freq=max(args.checkpoint_freq, 1),
         checkpoint_num=args.checkpoint_num,
         log_level=args.log_level,
-        save_model_path=args.save_model_path,
     )

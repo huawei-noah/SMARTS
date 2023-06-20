@@ -61,9 +61,7 @@ def gen_pg_config(
     return algo_config
 
 
-def gen_parser(
-    prog: str, default_result_dir: str, default_save_model_path: str
-) -> argparse.ArgumentParser:
+def gen_parser(prog: str, default_result_dir: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog)
     parser.add_argument(
         "--scenario",
@@ -75,12 +73,6 @@ def gen_parser(
         "--envision",
         action="store_true",
         help="Run simulation with Envision display.",
-    )
-    parser.add_argument(
-        "--num_samples",
-        type=int,
-        default=1,
-        help="Number of times to sample from hyperparameter space",
     )
     parser.add_argument(
         "--rollout_fragment_length",
@@ -134,16 +126,6 @@ def gen_parser(
         help="Log level (DEBUG|INFO|WARN|ERROR)",
     )
     parser.add_argument(
-        "--checkpoint_num", type=int, default=None, help="Checkpoint number"
-    )
-    parser.add_argument(
         "--checkpoint_freq", type=int, default=3, help="Checkpoint frequency"
-    )
-
-    parser.add_argument(
-        "--save_model_path",
-        type=str,
-        default=default_save_model_path,
-        help="Destination path of where to copy the model when training is over",
     )
     return parser

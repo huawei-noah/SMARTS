@@ -51,22 +51,20 @@ def test_rllib_pg_example():
             rollout_fragment_length=200,
             train_batch_size=200,
             seed=42,
-            num_samples=1,
             num_agents=2,
             num_workers=1,
             resume_training=False,
             result_dir=result_dir,
             checkpoint_num=None,
             checkpoint_freq=1,
-            save_model_path=model_dir,
             log_level="WARN",
         )
 
 
 def test_rllib_tune_pg_example():
-    from examples.rl.rllib import rllib
+    from examples.rl.rllib import pg_pbt_example
 
-    main = rllib.main
+    main = pg_pbt_example.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
             scenario="scenarios/sumo/loop",
@@ -80,7 +78,6 @@ def test_rllib_tune_pg_example():
             num_workers=1,
             resume_training=False,
             result_dir=result_dir,
-            checkpoint_num=None,
             checkpoint_freq=1,
             save_model_path=model_dir,
             log_level="WARN",

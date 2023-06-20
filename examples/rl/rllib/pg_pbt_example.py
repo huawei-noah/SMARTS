@@ -124,7 +124,6 @@ def main(
     resume_training,
     result_dir,
     checkpoint_freq: int,
-    checkpoint_num: Optional[int],
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"],
     save_model_path,
 ):
@@ -240,12 +239,22 @@ def main(
 
 
 if __name__ == "__main__":
-    default_save_model_path = str(
-        Path(__file__).expanduser().resolve().parent / "model"
+    default_result_dir = str(
+        Path(__file__).resolve().parent / "results" / "tune_pg_results"
     )
-    default_result_dir = str(Path(__file__).resolve().parent / "results" / "tune_pg_results")
-    parser = gen_parser("rllib-example", default_result_dir, default_save_model_path)
-
+    parser = gen_parser("rllib-example", default_result_dir)
+    parser.add_argument(
+        "--num_samples",
+        type=int,
+        default=1,
+        help="Number of times to sample from hyperparameter space",
+    )
+    parser.add_argument(
+        "--save_model_path",
+        type=str,
+        default=str(Path(__file__).expanduser().resolve().parent / "model"),
+        help="Destination path of where to copy the model when training is over",
+    )
     args = parser.parse_args()
     build_scenario(scenario=args.scenario, clean=False, seed=42)
 
@@ -262,7 +271,6 @@ if __name__ == "__main__":
         resume_training=args.resume_training,
         result_dir=args.result_dir,
         checkpoint_freq=max(args.checkpoint_freq, 1),
-        checkpoint_num=args.checkpoint_num,
         log_level=args.log_level,
         save_model_path=args.save_model_path,
     )
