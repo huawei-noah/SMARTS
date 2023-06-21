@@ -21,7 +21,7 @@ import_utils.import_module_from_file(
 
 
 def test_learning_regression_rllib():
-    from examples.rllib.rllib_agent import TrainingModel, rllib_agent
+    from examples.rl.rllib.rllib_agent import TrainingModel, rllib_agent
 
     ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)
     rllib_policies = {
@@ -37,7 +37,8 @@ def test_learning_regression_rllib():
     scenario_path = Path(__file__).parents[2] / "scenarios/sumo/loop"
     scenario_path = str(scenario_path.absolute())
 
-    tune_confg = {
+    tune_config = {
+        "disable_env_checking":True,
         "env": RLlibHiWayEnv,
         "env_config": {
             "scenarios": [scenario_path],
@@ -47,8 +48,9 @@ def test_learning_regression_rllib():
         },
         "multiagent": {
             "policies": rllib_policies,
-            "policy_mapping_fn": lambda _: "policy",
+            "policy_mapping_fn": lambda agent_id, episode, worker, **kwargs: "policy",
         },
+        "framework": "tf2",
         "log_level": "WARN",
         "num_workers": multiprocessing.cpu_count() - 1,
         "horizon": HORIZON,
@@ -58,9 +60,9 @@ def test_learning_regression_rllib():
         "PPO",
         name="learning_regression_test",
         stop={"training_iteration": 60},
-        max_failures=10,
+        max_failures=0,
         local_dir=make_dir_in_smarts_log_dir("smarts_learning_regression"),
-        config=tune_confg,
+        config=tune_config,
     )
 
     df = analysis.dataframe()
