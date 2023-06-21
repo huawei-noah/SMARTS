@@ -208,7 +208,7 @@ if __name__ == "__main__":
     build_scenarios(scenarios=args.scenarios, clean=False, seed=args.seed)
 
     main(
-        scenario=args.scenarios,
+        scenarios=args.scenarios,
         envision=args.envision,
         time_total_s=args.time_total_s,
         rollout_fragment_length=args.rollout_fragment_length,
