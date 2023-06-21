@@ -101,7 +101,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     scenario_path = str(scenario_path.absolute())
 
     tune_config = {
-        "disable_env_checking":True,
+        "disable_env_checking": True,
         "env": RLlibHiWayEnv,
         "env_config": {
             "scenarios": [scenario_path],

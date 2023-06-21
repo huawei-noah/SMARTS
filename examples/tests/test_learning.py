@@ -38,7 +38,7 @@ def test_learning_regression_rllib():
     scenario_path = str(scenario_path.absolute())
 
     tune_config = {
-        "disable_env_checking":True,
+        "disable_env_checking": True,
         "env": RLlibHiWayEnv,
         "env_config": {
             "scenarios": [scenario_path],
