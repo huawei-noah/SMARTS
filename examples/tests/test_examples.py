@@ -45,7 +45,7 @@ def test_rllib_pg_example():
     main = pg_example.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
-            scenario="scenarios/sumo/loop",
+            scenarios=["./scenarios/sumo/loop"],
             envision=False,
             time_total_s=20,
             rollout_fragment_length=200,
@@ -67,7 +67,7 @@ def test_rllib_tune_pg_example():
     main = pg_pbt_example.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
-            scenario="scenarios/sumo/loop",
+            scenarios=["./scenarios/sumo/loop"],
             envision=False,
             time_total_s=20,
             rollout_fragment_length=200,

@@ -1,4 +1,5 @@
 import logging
+import warnings
 from pathlib import Path
 from pprint import pprint as print
 from typing import Dict, List, Literal, Optional, Union
@@ -31,7 +32,7 @@ except Exception as e:
 import smarts
 from smarts.core.utils.file import copy_tree
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-from smarts.sstudio.scenario_construction import build_scenario
+from smarts.sstudio.scenario_construction import build_scenarios
 
 if __name__ == "__main__":
     from configs import gen_parser
@@ -45,7 +46,7 @@ register_env("rllib_hiway-v0", RLlibHiWayEnv)
 
 # Add custom metrics to your tensorboard using these callbacks
 # See: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
-class Callbacks(DefaultCallbacks):
+class AlgorithmCallbacks(DefaultCallbacks):
     @staticmethod
     def on_episode_start(
         worker: RolloutWorker,
@@ -89,32 +90,27 @@ class Callbacks(DefaultCallbacks):
         episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
 
 
-class TrialCallback(Callback):
+class ExperimentCallback(Callback):
     def on_trial_error(self, iteration: int, trials: List[Trial], trial: Trial, **info):
-        t = trials[-1]
-        path = Path(t.local_path)
-        with open(path.parent / "meta", "wt") as f:
+        path = Path(trial.local_path)
+        with open(path.parent / "failed_trial", "wt") as f:
             f.write(str(path))
         return super().on_trial_error(iteration, trials, trial, **info)
-
-    def on_experiment_end(self, trials: List[Trial], **info):
-        t = trials[-1]
-        path = Path(t.local_path)
-        with open(path.parent / "meta", "wt") as f:
-            f.write(str(path))
-            print(f"Saved to {f.name}")
-        return super().on_experiment_end(trials, **info)
 
 
 def explore(config):
     # ensure we collect enough timesteps to do sgd
-    if config["train_batch_size"] < config["rollout_fragment_length"] * 2:
-        config["train_batch_size"] = config["rollout_fragment_length"] * 2
+    rollout_fragment_length = config["rollout_fragment_length"]
+    if (
+        not isinstance(rollout_fragment_length, str)
+        and config["train_batch_size"] < rollout_fragment_length * 2
+    ):
+        config["train_batch_size"] = int(rollout_fragment_length * 2)
     return config
 
 
 def main(
-    scenario,
+    scenarios,
     envision,
     time_total_s,
     rollout_fragment_length,
@@ -130,6 +126,8 @@ def main(
     save_model_path,
 ):
     assert train_batch_size > 0, f"{train_batch_size.__name__} cannot be less than 1."
+    if isinstance(rollout_fragment_length, str) and rollout_fragment_length != "auto":
+        rollout_fragment_length = int(rollout_fragment_length)
     if (
         isinstance(rollout_fragment_length, int)
         and rollout_fragment_length > train_batch_size
@@ -161,7 +159,10 @@ def main(
             env=RLlibHiWayEnv,
             env_config={
                 "seed": seed,
-                "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
+                "scenarios": [
+                    str(Path(scenario).expanduser().resolve().absolute())
+                    for scenario in scenarios
+                ],
                 "headless": not envision,
                 "agent_specs": agent_specs,
                 "observation_options": "multi_agent",
@@ -183,26 +184,28 @@ def main(
             policies=rllib_policies,
             policy_mapping_fn=lambda agent_id, episode, worker, **kwargs: f"{agent_id}",
         )
-        .callbacks(callbacks_class=Callbacks)
+        .callbacks(callbacks_class=AlgorithmCallbacks)
         .debugging(log_level=log_level)
     )
+    print(algo_config.to_dict())
+    exit(0)
 
     experiment_name = "rllib_example_multi"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
     experiment_dir = result_dir / experiment_name
 
     print(f"======= Checkpointing at {str(result_dir)} =======")
+    # Note that PBT modifies the hyperparameters during the run. This perturbation can be applied
+    # to nearly anything passed to `Tuner(param_space=<config>)`.
     pbt = PopulationBasedTraining(
         time_attr="time_total_s",
         metric="episode_reward_mean",
         mode="max",
-        perturbation_interval=300,
+        perturbation_interval=20,
         resample_probability=0.25,
         # Specifies the mutations of these hyperparams
-        # See: `ray.rllib.agents.trainer.COMMON_CONFIG` for common hyperparams
         hyperparam_mutations={
             "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5],
-            "rollout_fragment_length": lambda: rollout_fragment_length,
             "train_batch_size": lambda: train_batch_size,
         },
         # Specifies additional mutations after hyperparam_mutations is applied
@@ -214,7 +217,7 @@ def main(
     run_config = air.RunConfig(
         name=experiment_name,
         stop={"time_total_s": time_total_s},
-        callbacks=[TrialCallback()],
+        callbacks=[ExperimentCallback()],
         storage_path=str(result_dir),
         checkpoint_config=air.CheckpointConfig(
             num_to_keep=3,
@@ -268,8 +271,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_samples",
         type=int,
-        default=1,
-        help="Number of times to sample from hyperparameter space",
+        default=2,
+        help="Number of times to sample from hyperparameter space.",
     )
     parser.add_argument(
         "--save_model_path",
@@ -277,11 +280,23 @@ if __name__ == "__main__":
         default=str(Path(__file__).expanduser().resolve().parent / "model"),
         help="Destination path of where to copy the model when training is over",
     )
+    parser.add_argument(
+        "--rollout_fragment_length",
+        type=str,
+        default="auto",
+        help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
+    )
     args = parser.parse_args()
-    build_scenario(scenario=args.scenario, clean=False, seed=42)
+    if args.num_samples < 2:
+        warnings.warn(
+            f"It is recommended to specify number_samples to be at least 2 to make use of PBT trial cloning.",
+            category=UserWarning,
+        )
+
+    build_scenarios(scenarios=args.scenarios, clean=False, seed=args.seed)
 
     main(
-        scenario=args.scenario,
+        scenarios=args.scenarios,
         envision=args.envision,
         time_total_s=args.time_total_s,
         rollout_fragment_length=args.rollout_fragment_length,

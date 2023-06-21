@@ -6,21 +6,17 @@ from pathlib import Path
 def gen_parser(prog: str, default_result_dir: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog)
     parser.add_argument(
-        "--scenario",
+        "scenarios",
+        help="A list of scenarios. Each element can be either the scenario to"
+        "run or a directory of scenarios to sample from. See `scenarios/`"
+        "folder for some samples you can use.",
         type=str,
-        default=str(Path(__file__).resolve().parents[3] / "scenarios/sumo/loop"),
-        help="Scenario to run (see scenarios/ for some samples you can use)",
+        nargs="*",
     )
     parser.add_argument(
         "--envision",
         action="store_true",
         help="Run simulation with Envision display.",
-    )
-    parser.add_argument(
-        "--rollout_fragment_length",
-        type=str,
-        default="auto",
-        help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
     )
     parser.add_argument(
         "--train_batch_size",

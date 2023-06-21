@@ -21,7 +21,7 @@ except Exception as e:
 
 import smarts
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
-from smarts.sstudio.scenario_construction import build_scenario
+from smarts.sstudio.scenario_construction import build_scenarios
 
 if __name__ == "__main__":
     from configs import gen_parser
@@ -78,7 +78,7 @@ class Callbacks(DefaultCallbacks):
 
 
 def main(
-    scenario,
+    scenarios,
     envision,
     time_total_s,
     rollout_fragment_length,
@@ -117,7 +117,10 @@ def main(
             env=RLlibHiWayEnv,
             env_config={
                 "seed": seed,
-                "scenarios": [str(Path(scenario).expanduser().resolve().absolute())],
+                "scenarios": [
+                    str(Path(scenario).expanduser().resolve().absolute())
+                    for scenario in scenarios
+                ],
                 "headless": not envision,
                 "agent_specs": agent_specs,
                 "observation_options": "multi_agent",
@@ -191,11 +194,17 @@ if __name__ == "__main__":
         default=None,
         help="The checkpoint number to restart from.",
     )
+    parser.add_argument(
+        "--rollout_fragment_length",
+        type=str,
+        default="auto",
+        help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
+    )
     args = parser.parse_args()
-    build_scenario(scenario=args.scenario, clean=False, seed=42)
+    build_scenarios(scenarios=args.scenarios, clean=False, seed=args.seed)
 
     main(
-        scenario=args.scenario,
+        scenario=args.scenarios,
         envision=args.envision,
         time_total_s=args.time_total_s,
         rollout_fragment_length=args.rollout_fragment_length,
