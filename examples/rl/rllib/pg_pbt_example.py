@@ -187,8 +187,6 @@ def main(
         .callbacks(callbacks_class=AlgorithmCallbacks)
         .debugging(log_level=log_level)
     )
-    print(algo_config.to_dict())
-    exit(0)
 
     experiment_name = "rllib_example_multi"
     result_dir = Path(result_dir).expanduser().resolve().absolute()
@@ -287,6 +285,10 @@ if __name__ == "__main__":
         help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
     )
     args = parser.parse_args()
+    if not args.scenarios:
+        args.scenarios = [
+            str(Path(__file__).absolute().parents[3] / "scenarios" / "sumo" / "loop"),
+        ]
     if args.num_samples < 2:
         warnings.warn(
             f"It is recommended to specify number_samples to be at least 2 to make use of PBT trial cloning.",

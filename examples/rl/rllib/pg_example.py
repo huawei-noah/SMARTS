@@ -201,6 +201,10 @@ if __name__ == "__main__":
         help="Episodes are divided into fragments of this many steps for each rollout. In this example this will be ensured to be `1=<rollout_fragment_length<=train_batch_size`",
     )
     args = parser.parse_args()
+    if not args.scenarios:
+        args.scenarios = [
+            str(Path(__file__).absolute().parents[3] / "scenarios" / "sumo" / "loop"),
+        ]
     build_scenarios(scenarios=args.scenarios, clean=False, seed=args.seed)
 
     main(
