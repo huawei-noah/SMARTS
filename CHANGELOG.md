@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed a regression where `pybullet` build time messages returned.
 ### Removed
 ### Security
 
