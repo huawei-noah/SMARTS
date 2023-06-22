@@ -17,6 +17,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Introduced `tensorflow-probability` to `smarts[rllib]`.
 - Updated `RLlibHiWayEnv` to use the `gymnasium` interface.
 - Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
+- Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.

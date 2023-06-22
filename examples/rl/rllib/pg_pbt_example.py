@@ -45,7 +45,7 @@ logging.basicConfig(level=logging.INFO)
 register_env("rllib_hiway-v0", RLlibHiWayEnv)
 
 # Add custom metrics to your tensorboard using these callbacks
-# See: https://ray.readthedocs.io/en/latest/rllib-training.html#callbacks-and-custom-metrics
+# See: https://docs.ray.io/en/latest/rllib/rllib-examples.html#training-workflows
 class AlgorithmCallbacks(DefaultCallbacks):
     @staticmethod
     def on_episode_start(
@@ -56,7 +56,7 @@ class AlgorithmCallbacks(DefaultCallbacks):
         env_index: int,
         **kwargs,
     ):
-        episode.user_data["ego_speed"] = []
+        episode.user_data["ego_reward"] = []
 
     @staticmethod
     def on_episode_step(
@@ -69,7 +69,7 @@ class AlgorithmCallbacks(DefaultCallbacks):
         single_agent_id = list(episode.get_agents())[0]
         infos = episode._last_infos.get(single_agent_id)
         if infos is not None:
-            episode.user_data["ego_speed"].append(infos["speed"])
+            episode.user_data["ego_reward"].append(infos["reward"])
 
     @staticmethod
     def on_episode_end(
@@ -81,20 +81,19 @@ class AlgorithmCallbacks(DefaultCallbacks):
         **kwargs,
     ):
 
-        mean_ego_speed = np.mean(episode.user_data["ego_speed"])
+        mean_ego_reward = np.mean(episode.user_data["ego_reward"])
         print(
             f"ep. {episode.episode_id:<12} ended;"
             f" length={episode.length:<6}"
-            f" mean_ego_speed={mean_ego_speed:.2f}"
+            f" mean_ego_reward={mean_ego_reward:.2f}"
         )
-        episode.custom_metrics["mean_ego_speed"] = mean_ego_speed
+        episode.custom_metrics["mean_ego_reward"] = mean_ego_reward
 
 
 class ExperimentCallback(Callback):
     def on_trial_error(self, iteration: int, trials: List[Trial], trial: Trial, **info):
-        path = Path(trial.local_path)
-        with open(path.parent / "failed_trial", "wt") as f:
-            f.write(str(path))
+        failed_trial = trial
+        print(f"Trial has failed after {failed_trial.num_failures} failures.")
         return super().on_trial_error(iteration, trials, trial, **info)
 
 
@@ -134,22 +133,16 @@ def main(
     ):
         rollout_fragment_length = train_batch_size
 
-    agent_values = {
-        "agent_specs": {
-            f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
-        },
-        "rllib_policies": {
-            f"AGENT-{i}": (
-                None,
-                rllib_agent["observation_space"],
-                rllib_agent["action_space"],
-                {"model": {"custom_model": TrainingModel.NAME}},
-            )
-            for i in range(num_agents)
-        },
+    rllib_policies = {
+        f"AGENT-{i}": (
+            None,
+            rllib_agent["observation_space"],
+            rllib_agent["action_space"],
+            {"model": {"custom_model": TrainingModel.NAME}},
+        )
+        for i in range(num_agents)
     }
-    rllib_policies = agent_values["rllib_policies"]
-    agent_specs = agent_values["agent_specs"]
+    agent_specs = {f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)}
 
     smarts.core.seed(seed)
     assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0

@@ -42,6 +42,7 @@ OBSERVATION_SPACE = gym.spaces.Dict(
     }
 )
 
+# The FullyConnectedNetwork expects a flattened space.
 FLATTENED_OBSERVATION_SPACE = gym.spaces.utils.flatten_space(OBSERVATION_SPACE)
 
 
@@ -70,9 +71,7 @@ class TrainingModel(FullyConnectedNetwork):
         super().__init__(obs_space, action_space, num_outputs, model_config, name)
 
     def forward(self, input_dict, state, seq_lens):
-        # return super().forward(input_dict, state, seq_lens)
-        model_out, self._value_out = self.base_model(input_dict["obs_flat"])
-        return model_out, state
+        return super().forward(input_dict, state, seq_lens)
 
 
 ModelCatalog.register_custom_model(TrainingModel.NAME, TrainingModel)

@@ -180,8 +180,6 @@ def lane_ttc(obs: Union[Observation, Dict]) -> Dict[str, np.ndarray]:
         wps = [path[0] for path in waypoint_paths]
         neighborhood_vehicle_states = obs.neighborhood_vehicle_states
 
-        # distance of vehicle from center of lane
-
     elif isinstance(obs, dict):
         waypoint_paths = obs["waypoint_paths"]
         waypoint_paths = [
@@ -238,6 +236,7 @@ def lane_ttc(obs: Union[Observation, Dict]) -> Dict[str, np.ndarray]:
     else:
         raise NotImplementedError("Cannot generate using given observations")
 
+    # distance of vehicle from center of lane
     closest_wp = min(wps, key=lambda wp: wp.dist_to(ego.position))
     signed_dist_from_center = closest_wp.signed_lateral_error(ego.position)
     lane_half_width = closest_wp.lane_width * 0.5

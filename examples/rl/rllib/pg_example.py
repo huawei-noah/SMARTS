@@ -92,22 +92,16 @@ def main(
     checkpoint_num: Optional[int],
     log_level: Literal["DEBUG", "INFO", "WARN", "ERROR"],
 ):
-    agent_values = {
-        "agent_specs": {
-            f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)
-        },
-        "rllib_policies": {
-            f"AGENT-{i}": (
-                None,
-                rllib_agent["observation_space"],
-                rllib_agent["action_space"],
-                {"model": {"custom_model": TrainingModel.NAME}},
-            )
-            for i in range(num_agents)
-        },
+    rllib_policies = {
+        f"AGENT-{i}": (
+            None,
+            rllib_agent["observation_space"],
+            rllib_agent["action_space"],
+            {"model": {"custom_model": TrainingModel.NAME}},
+        )
+        for i in range(num_agents)
     }
-    rllib_policies = agent_values["rllib_policies"]
-    agent_specs = agent_values["agent_specs"]
+    agent_specs = {f"AGENT-{i}": rllib_agent["agent_spec"] for i in range(num_agents)}
 
     smarts.core.seed(seed)
     assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0
@@ -162,7 +156,7 @@ def main(
 
     algo = algo_config.build()
     if checkpoint is not None:
-        Algorithm.load_checkpoint(algo, checkpoint=checkpoint)
+        algo.load_checkpoint(checkpoint=checkpoint)
     result = {}
     current_iteration = 0
     checkpoint_iteration = checkpoint_num or 0

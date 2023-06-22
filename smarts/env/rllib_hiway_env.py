@@ -153,7 +153,6 @@ class RLlibHiWayEnv(MultiAgentEnv):
         )
         self._smarts = None  # Created on env.setup()
         self._dones_registered = 0
-        self._config = config
 
     def step(self, agent_actions):
         """Environment step"""
@@ -233,7 +232,8 @@ class RLlibHiWayEnv(MultiAgentEnv):
 
     def reset(self, *, seed=None, options=None):
         """Environment reset."""
-        smarts.core.seed(self._seed + (seed or 0))
+        if seed not in (None, 0):
+            smarts.core.seed(self._seed + (seed or 0))
 
         scenario = next(self._scenarios_iterator)
 
