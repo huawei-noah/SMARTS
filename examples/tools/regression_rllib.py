@@ -24,7 +24,7 @@ from smarts.env.custom_observations import lane_ttc_observation_adapter
 from smarts.env.rllib_hiway_env import RLlibHiWayEnv
 from smarts.zoo.agent_spec import AgentSpec
 
-from ..rllib.rllib_agent import TrainingModel
+from ..rl.rllib.rllib_agent import TrainingModel
 
 HORIZON = 5000
 
@@ -100,7 +100,8 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
     scenario_path = Path(__file__).parent / "../../scenarios/sumo/loop"
     scenario_path = str(scenario_path.absolute())
 
-    tune_confg = {
+    tune_config = {
+        "disable_env_checking": True,
         "env": RLlibHiWayEnv,
         "env_config": {
             "scenarios": [scenario_path],
@@ -110,7 +111,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
         },
         "multiagent": {
             "policies": rllib_policies,
-            "policy_mapping_fn": lambda _: "policy",
+            "policy_mapping_fn": lambda agent_id, episode, worker, **kwargs: "policy",
         },
         "log_level": "WARN",
         "num_workers": multiprocessing.cpu_count() - 1,
@@ -123,7 +124,7 @@ def run_experiment(log_path, experiment_name, training_iteration=100):
         stop={"training_iteration": training_iteration},
         max_failures=10,
         local_dir=log_path,
-        config=tune_confg,
+        config=tune_config,
     )
 
     return analysis

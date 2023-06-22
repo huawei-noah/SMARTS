@@ -10,9 +10,17 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased]
 ### Added
+- Added `rllib/pg_example.py` to demonstrate a simple integration with `RLlib` and `tensorflow` for policy training.
+- Added `rllib/pg_pbt_example.py` to demonstrate integration with `ray.RLlib`, `tensorflow`, and `ray.tune` for scheduled policy training.
 ### Changed
+- Updated `smarts[ray]` (`ray==2.2`) and `smarts[rllib]` (`ray[rllib]==1.4`) to use `ray~=2.5`.
+- Introduced `tensorflow-probability` to `smarts[rllib]`.
+- Updated `RLlibHiWayEnv` to use the `gymnasium` interface.
+- Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
+- Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
 ### Deprecated
 ### Fixed
+- Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
 ### Removed
 ### Security
