@@ -774,6 +774,7 @@ def test_waymo_map():
     # nearest lane for a point inside a lane
     point = Point(2910.0, -2608.0, 0)
     l2 = road_map.nearest_lane(point)
+    assert l2
     assert l2.lane_id == "156"
     assert l2.index == 0
     assert l2.road.road_id == "waymo_road-156"
