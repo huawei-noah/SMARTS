@@ -784,6 +784,7 @@ def test_waymo_map():
     # nearest lane for a point outside all lanes
     point = Point(2910.0, -2612.0, 0)
     l3 = road_map.nearest_lane(point)
+    assert l3
     assert l3.lane_id == "156"
     assert not l3.contains_point(point)
 
