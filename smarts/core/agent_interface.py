@@ -415,6 +415,7 @@ class AgentInterface:
         elif requested_type == AgentType.LanerWithSpeed:
             interface = AgentInterface(
                 waypoint_paths=True,
+                neighborhood_vehicle_states=NeighborhoodVehicles(5),
                 action=ActionSpaceType.LaneWithContinuousSpeed,
             )
         # The trajectory tracking agent which receives a series of reference trajectory
