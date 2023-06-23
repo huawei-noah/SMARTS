@@ -34,7 +34,7 @@ importlib-metadata==6.7.0
 importlib-resources==5.12.0
 incremental==22.10.0
 iniconfig==2.0.0
-jax==0.4.12
+jax==0.4.13
 jsonschema==4.17.3
 keras==2.12.0
 lazy_loader==0.2
@@ -70,7 +70,7 @@ pyasn1-modules==0.3.0
 pybullet==3.2.5
 Pygments==2.15.1
 pyrsistent==0.19.3
-pytest==7.3.2
+pytest==7.4.0
 pytest-benchmark==4.0.0
 pytest-cov==4.1.0
 pytest-forked==1.6.0
