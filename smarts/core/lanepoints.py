@@ -785,12 +785,9 @@ class LanePoints:
             maximum_count:
                 The maximum number of lane-points that should be found.
         """
-        lanepoints = self._linked_lanepoints
-        kd_tree = self._lanepoints_kd_tree
         linked_lanepoints = LanePoints._closest_linked_lp_to_point(
             pose.point,
-            lanepoints,
-            kd_tree,
+            self._linked_lanepoints,
             self._lp_points,
             k=maximum_count,
             filter_composites=True,

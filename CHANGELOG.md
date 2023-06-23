@@ -18,11 +18,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Updated `RLlibHiWayEnv` to use the `gymnasium` interface.
 - Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
 - Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
+- `LaneFollowingController` now uses a different pole placement method to compute lateral/heading gains. Numerical behaviour is unchanged. Performance is slightly faster.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
 ### Removed
+- Removed `TruncatedDistribution` from scenario studio.
+- Removed `scipy` as a core package dependency.
 ### Security
 
 ## [1.2.0] # 2023-06-14
@@ -56,7 +59,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `DistToDestination` metric is now computed by summing the (i) off-route distance driven by the vehicle from its last on-route position, and (ii) the distance to goal from the vehicle's last on-route position. 
 - `Steps` metric is capped by scenario duration set in the scenario metadata.
 - Overall metric score is weighted by each agent's task difficulty.
-- `LaneFollowingController` now uses a different pole placement method to compute lateral/heading gains. Numerical behaviour is unchanged. Performance is slightly faster.
 ### Deprecated
 - `visdom` is set to be removed from the SMARTS object parameters.
 - Deprecated `start_time` on missions.
@@ -80,7 +82,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `SMARTS.traffic_sim` property.
 - Removed remote agent modules.
 - Removed `protobuf` as a core package dependency.
-- Removed `TruncatedDistribution` from scenario studio.
 ### Security
 
 ## [1.1.0] # 2023-04-28
