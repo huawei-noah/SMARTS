@@ -67,12 +67,15 @@ def test_rllib_hiway_env(rllib_agent):
         __delattr__ = dict.__delitem__
 
     env = RLlibHiWayEnv(config=atdict(**env_config, worker_index=0, vector_index=1))
-    agent_ids = list(env_config["agent_specs"].keys())
+    agent_ids = env.get_agent_ids()
+    assert isinstance(agent_ids, set)
+    assert AGENT_ID in agent_ids
+    print(env.observation_space)
 
-    dones = {"__all__": False}
+    term = {"__all__": False}
     env.reset()
-    while not dones["__all__"]:
-        _, _, dones, _ = env.step(
+    while not term["__all__"]:
+        _, _, term, _, _ = env.step(
             {aid: rllib_agent["action_space"].sample() for aid in agent_ids}
         )
     env.close()

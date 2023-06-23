@@ -335,7 +335,7 @@ def default_argument_parser(program: str):
         nargs="+",
     )
     parser.add_argument(
-        "--sim-name",
+        "--sim_name",
         help="a string that gives this simulation a name.",
         type=str,
         default=None,
@@ -345,7 +345,7 @@ def default_argument_parser(program: str):
     )
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
-        "--sumo-port", help="Run SUMO with a specified port.", type=int, default=None
+        "--sumo_port", help="Run SUMO with a specified port.", type=int, default=None
     )
     parser.add_argument(
         "--episodes",

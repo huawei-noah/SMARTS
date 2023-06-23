@@ -9,7 +9,7 @@ Base environments
 SMARTS environment module is defined in :mod:`~smarts.env` package. Currently SMARTS provides two kinds of training 
 environments, namely:
 
-+ ``HiWayEnv`` utilizing ``gym.env`` style interface 
++ ``HiWayEnv`` utilizing a ``gymnasium.Env`` interface 
 + ``RLlibHiwayEnv`` customized for `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_ training
 
 .. image:: ../_static/env.png
@@ -17,11 +17,12 @@ environments, namely:
 HiWayEnv
 ^^^^^^^^
 
-``HiWayEnv`` inherits class ``gym.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
+``HiWayEnv`` inherits class ``gymnasium.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
 Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
 
 .. code-block:: python
 
+    import gymnasium as gym
     # Make env
     env = gym.make(
             "smarts.env:hiway-v0", # Env entry name.
@@ -53,6 +54,7 @@ exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent
 
 .. code-block:: python
 
+    import gymnasium as gym
     # Make env
     env = gym.make(
             "smarts.env:hiway-v1", # Env entry name.
@@ -81,6 +83,7 @@ This can be done with :class:`~smarts.env.gymnasium.wrappers.api_reversion.Api02
 
 .. code-block:: python
 
+    import gymnasium as gym
     # Make env
     env = gym.make(
         "smarts.env:hiway-v1", # Env entry name.
@@ -91,7 +94,7 @@ This can be done with :class:`~smarts.env.gymnasium.wrappers.api_reversion.Api02
 RLlibHiwayEnv
 ^^^^^^^^^^^^^
 
-``RLlibHiwayEnv`` inherits class ``MultiAgentEnv``, which is defined in `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_. It also supports common env APIs like ``reset``, 
+``RLlibHiwayEnv`` inherits class ``MultiAgentEnv``, which is defined in `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_. It also supports common environment APIs like ``reset``, 
 ``step``, ``close``. An usage example is shown below. Refer to :class:`~smarts.env.rllib_hiway_env.RLlibHiWayEnv` for more details.
 
 .. code-block:: python
