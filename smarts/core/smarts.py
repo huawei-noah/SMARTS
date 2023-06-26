@@ -1646,4 +1646,3 @@ class SMARTS(ProviderManager):
             ),
             _collision_filter=frozenset((self._physics_simulation._ground_bullet_id,)),
         )
-
