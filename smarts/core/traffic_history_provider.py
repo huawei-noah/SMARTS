@@ -109,7 +109,7 @@ class TrafficHistoryProvider(TrafficProvider):
         return self._dbid_to_actor_id(actor_id)
 
     def reset(self):
-        pass
+        self._reset_scenario_state()
 
     def teardown(self):
         self._is_setup = False
