@@ -49,7 +49,7 @@ Training scenarios
 ------------------
 
 Several scenarios are provided for training as follows. 
-The corresponding gifs show the task execution by a trained baseline agent. 
+The corresponding GIF image shows the task execution by a trained baseline agent.
 
 **Driving SMARTS 2023.1 scenarios**
 

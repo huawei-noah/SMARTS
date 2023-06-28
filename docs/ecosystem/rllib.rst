@@ -8,6 +8,13 @@ RLlib
 of applications. ``RLlib`` natively supports ``TensorFlow``, ``TensorFlow Eager``, and ``PyTorch``. Most of its internals are agnostic to such
 deep learning frameworks.
 
+SMARTS contains two examples using `Policy Gradients (PG) <https://docs.ray.io/en/latest/rllib-algorithms.html#policy-gradients-pg>`_.
+
+1. ``rllib/pg_example.py``
+This example shows the basics of using RLlib with SMARTS through :class:`~smarts.env.rllib_hiway_env.RLlibHiWayEnv`.
+1. ``rllib/pg_pbt_example.py``
+This example combines Policy Gradients with `Population Based Training (PBT) <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.PopulationBasedTraining.html>`_ scheduling.
+
 Recommended reads
 -----------------
 
@@ -28,7 +35,7 @@ many docs about ``Ray`` and ``RLlib``. We recommend to read the following pages 
 Resume training
 ---------------
 
-With respect to ``SMARTS/examples/rl/rllib`` example, if you want to continue an aborted experiment, you can set ``resume=True`` in ``tune.run``. But note that ``resume=True`` will continue to use the same configuration as was set in the original experiment.
+With respect to ``SMARTS/examples/rl/rllib`` examples, if you want to continue an aborted experiment, you can set ``resume_training=True``. But note that ``resume_training=True`` will continue to use the same configuration as was set in the original experiment.
 To make changes to a started experiment, you can edit the latest experiment file in ``./results``.
 
-Or if you want to start a new experiment but train from an existing checkpoint, you can set ``restore=checkpoint_path`` in ``tune.run``.
+Or if you want to start a new experiment but train from an existing checkpoint, you will need to look into `How to Save and Load Trial Checkpoints <https://docs.ray.io/en/latest/tune/tutorials/tune-trial-checkpoints>`_.

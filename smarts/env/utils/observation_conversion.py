@@ -74,7 +74,8 @@ def _format_id(lane_id: str, max_length, type_):
         warnings.warn(
             f"`{type_}` named `{lane_name}` is more than "
             f"`{max_length}` characters long. It will be truncated "
-            "and may cause unintended issues with navigation and lane identification."
+            "and may cause unintended issues with navigation and lane identification.",
+            category=UserWarning,
         )
     return lane_name[:max_length]
 
@@ -193,10 +194,11 @@ def _format_neighborhood_vehicle_states(
             "box": np.zeros((des_shp, 3), dtype=np.float32),
             "heading": np.zeros((des_shp,), dtype=np.float32),
             "id": [""] * des_shp,
+            "interest": np.zeros((des_shp,), dtype=np.int8),
+            "lane_id": [""] * des_shp,
             "lane_index": np.zeros((des_shp,), dtype=np.int8),
             "position": np.zeros((des_shp, 3), dtype=np.float64),
             "speed": np.zeros((des_shp,), dtype=np.float32),
-            "interest": np.zeros((des_shp,), dtype=np.int8),
         }
 
     neighborhood_vehicle_states = [
@@ -207,11 +209,12 @@ def _format_neighborhood_vehicle_states(
             nghb.lane_index,
             nghb.position,
             nghb.speed,
+            _format_id(nghb.lane_id, _WAYPOINT_NAME_LIMIT, "lane id"),
             nghb.interest,
         )
         for nghb in neighborhood_vehicle_states[:des_shp]
     ]
-    box, heading, vehicle_id, lane_index, pos, speed, interest = zip(
+    box, heading, vehicle_id, lane_index, pos, speed, lane_id, interest = zip(
         *neighborhood_vehicle_states
     )
 
@@ -229,6 +232,7 @@ def _format_neighborhood_vehicle_states(
     lane_index = np.pad(lane_index, ((0,pad_shp)), mode='constant', constant_values=0)
     pos = np.pad(pos, ((0,pad_shp),(0,0)), mode='constant', constant_values=0)
     speed = np.pad(speed, ((0,pad_shp)), mode='constant', constant_values=0)
+    lane_id = tuple(lane_id + ("",) * pad_shp)
     interest = np.pad(interest, ((0,pad_shp)), mode="constant", constant_values=False)
     # fmt: on
 
@@ -236,10 +240,11 @@ def _format_neighborhood_vehicle_states(
         "box": box,
         "heading": heading,
         "id": vehicle_id,
+        "interest": interest,
+        "lane_id": lane_id,
         "lane_index": lane_index,
         "position": pos,
         "speed": speed,
-        "interest": interest,
     }
 
 
@@ -1021,6 +1026,12 @@ class ObservationSpacesFormatter:
                     np.array([0]) per vehicle. shape=(10,). dtype=np.float32.
                 "id":
                     The vehicle ids of neighbor vehicles. Defaults to str("") per vehicle.
+                    shape=(10,Text(50))
+                "interest":
+                    If the vehicles are of interest. Defaults to np.array([False]) per vehicle.
+                    shape=(10,). dtype=np.int8
+                "lane_id":
+                    The ID of the lane that the vehicle is on. Defaults to str("") per vehicle.
                     shape=(10,Text(50))
                 "lane_index":
                     Lane number of neighbor vehicles. Defaults to np.array([0]) per
