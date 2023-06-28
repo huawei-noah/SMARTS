@@ -15,6 +15,8 @@ from typing import Any, Dict
 
 import gymnasium as gym
 
+sys.modules["gym"] = gym
+
 # Load inference module to register agent
 import inference
 import stable_baselines3 as sb3lib
