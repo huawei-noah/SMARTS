@@ -980,7 +980,7 @@ class ArgoverseMap(RoadMapWithCaches):
         # No route provided, so generate paths based on the closest lanepoints
         waypoint_paths = []
         closest_lps: List[LanePoint] = self._lanepoints.closest_lanepoints(
-            pose, within_radius=within_radius, maximum_count=15
+            pose, maximum_count=15
         )
         closest_lane: RoadMap.Lane = closest_lps[0].lane
 

@@ -55,24 +55,3 @@ class UniformDistribution:
     def sample(self):
         """Get the next sample."""
         return random.uniform(self.a, self.b)
-
-
-@dataclass
-class TruncatedDistribution:
-    """A truncated normal distribution, by default, location=0, scale=1"""
-
-    a: float
-    b: float
-    loc: float = 0
-    scale: float = 1
-
-    def __post_init__(self):
-        assert self.a != self.b
-        if self.b < self.a:
-            self.a, self.b = self.b, self.a
-
-    def sample(self):
-        """Get the next sample"""
-        from scipy.stats import truncnorm
-
-        return truncnorm.rvs(self.a, self.b, loc=self.loc, scale=self.scale)

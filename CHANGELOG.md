@@ -18,11 +18,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Updated `RLlibHiWayEnv` to use the `gymnasium` interface.
 - Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
 - Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
+- `LaneFollowingController` now uses a different pole placement method to compute lateral/heading gains. Numerical behaviour is unchanged. Performance is slightly faster.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
 ### Removed
+- Removed `TruncatedDistribution` from scenario studio.
+- Removed `scipy` as a core package dependency.
 ### Security
 
 ## [1.2.0] # 2023-06-14

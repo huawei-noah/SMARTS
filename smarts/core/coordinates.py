@@ -311,6 +311,7 @@ class Pose:
         assert len(self.position) <= 3
         if len(self.position) < 3:
             self.position = np.resize(self.position, 3)
+            self.position[-1] = 0
         assert len(self.orientation) == 4
         if not isinstance(self.orientation, np.ndarray):
             self.orientation = np.array(self.orientation, dtype=np.float64)

@@ -1853,9 +1853,7 @@ class WaymoMap(RoadMapWithCaches):
             road_ids = [road.road_id for road in route.roads]
         if road_ids:
             return self._waypoint_paths_along_route(pose.point, lookahead, road_ids)
-        closest_lps = self._lanepoints.closest_lanepoints(
-            pose, within_radius=within_radius
-        )
+        closest_lps = self._lanepoints.closest_lanepoints(pose)
         closest_lane = closest_lps[0].lane
         waypoint_paths = []
         for lane in closest_lane.road.lanes:
