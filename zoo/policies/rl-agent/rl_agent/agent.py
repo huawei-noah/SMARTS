@@ -3,7 +3,7 @@ This file contains an RLlib-trained policy evaluation usage (not for training).
 """
 import pickle
 
-import gym
+import gymnasium as gym
 import tensorflow.compat.v1 as tf
 
 tf.disable_v2_behavior()

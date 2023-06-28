@@ -2,7 +2,7 @@ import argparse
 import logging
 from importlib import import_module
 
-import gym
+import gymnasium as gym
 
 from smarts.core.utils.episodes import episodes
 

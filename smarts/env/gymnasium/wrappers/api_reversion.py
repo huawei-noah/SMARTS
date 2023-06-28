@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 from typing import Any, Dict, SupportsFloat, Tuple
 
-import gym
+import gymnasium as gym
 
 
 class Api021Reversion(gym.Wrapper):
