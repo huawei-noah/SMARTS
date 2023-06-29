@@ -151,6 +151,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     metric_formula_default = (
         root_dir / "smarts" / "env" / "gymnasium" / "wrappers" / "metric" / "formula.py"
     )
+    weighted_scores, agent_scores = {}, {}
     for env_name, env_config in benchmark_args["envs"].items():
         metric_formula = (
             root_dir / x
@@ -163,7 +164,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
             env_args[f"{env_name}-{scenario}"] = dict(
-                env=env_config["loc"],
+                env=env_config.get("loc") or env_config["locator"],
                 scenario=str(root_dir / scenario),
                 kwargs=kwargs,
                 metric_formula=metric_formula,
@@ -178,18 +179,21 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
         ):
             records_cumulative.update(records)
 
-        score = _get_weighted_score(
+        weighted_score = _get_weighted_score(
             records=records_cumulative, metric_formula=metric_formula
         )
+        weighted_scores[env_name] = weighted_score
         print("\n\nOverall Weighted Score:\n")
-        print(json.dumps(score, indent=2))
-        score = _get_agent_score(
+        print(json.dumps(weighted_score, indent=2))
+        agent_score = _get_agent_score(
             records=records_cumulative, metric_formula=metric_formula
         )
+        agent_scores[env_name] = agent_score
         print("\n\nIndividual Agent Score:\n")
-        print(json.dumps(score, indent=2))
+        print(json.dumps(agent_score, indent=2))
 
     print("\n<-- Evaluation complete -->\n")
+    return weighted_scores, agent_scores
 
 
 def _get_weighted_score(
