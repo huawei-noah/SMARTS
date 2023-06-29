@@ -58,11 +58,11 @@ class Preprocess(gym.Wrapper):
         obs = self._process(obs)
         return obs, reward, terminated, truncated, info
 
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
         """Uses the :meth:`reset` of the :attr:`env` that can be overwritten to change the returned data."""
 
         self._frame_stack.reset()
-        obs, info = self.env.reset()
+        obs, info = self.env.reset(seed=seed, options=options)
         self._prev_heading = obs["ego_vehicle_state"]["heading"]
         obs = self._process(obs)
         return obs, info
