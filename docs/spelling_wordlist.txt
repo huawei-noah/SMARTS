@@ -4,6 +4,7 @@
 Δy
 Δheading
 ΔTime
+ẋ
 accelerometer
 Ackermann
 acyclic
