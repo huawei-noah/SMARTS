@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from contrib_policy.filter_obs import FilterObs
 from contrib_policy.format_action import FormatAction
 from contrib_policy.frame_stack import FrameStack
@@ -50,14 +50,14 @@ class Preprocess(gym.Wrapper):
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
         formatted_action = self._format_action.format(action)
-        obs, reward, done, info = self.env.step(formatted_action)
+        obs, reward, terminated, truncated, info = self.env.step(formatted_action)
         obs = self._process(obs)
-        return obs, reward, done, info
+        return obs, reward, terminated, truncated, info
 
     def reset(self):
         """Uses the :meth:`reset` of the :attr:`env` that can be overwritten to change the returned data."""
 
         self._frame_stack.reset()
-        obs = self.env.reset()
+        obs, info = self.env.reset()
         obs = self._process(obs)
-        return obs
+        return obs, info
