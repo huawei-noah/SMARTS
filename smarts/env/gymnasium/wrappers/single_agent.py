@@ -69,11 +69,11 @@ class SingleAgent(gym.Wrapper):
             info[self._agent_id],
         )
 
-    def reset(self) -> Tuple[Any, Any]:
+    def reset(self, *, seed=None, options=None) -> Tuple[Any, Any]:
         """Resets a single-agent SMARTS environment.
 
         Returns:
             Tuple[Any, Any]: Agent's observation and info
         """
-        obs, info = self.env.reset()
+        obs, info = self.env.reset(seed=seed, options=options)
         return obs[self._agent_id], info[self._agent_id]

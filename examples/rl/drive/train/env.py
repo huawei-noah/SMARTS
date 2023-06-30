@@ -27,7 +27,6 @@ def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
     )
     env = Reward(env=env, crop=agent_spec.agent_params["crop"])
     env = SingleAgent(env=env)
-    env = Api021Reversion(env=env)
     env = Preprocess(env=env, agent_spec=agent_spec)
     env = Monitor(env)
 
