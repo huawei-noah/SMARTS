@@ -115,9 +115,11 @@ class Config:
             return cast(setting)
         try:
             value = self._config[section][option]
-        except (configparser.NoSectionError, KeyError):
+        except (configparser.NoSectionError, KeyError) as exc:
             if default is _UNSET:
-                raise
+                raise EnvironmentError(
+                    f"Setting `${env_variable}` cannot be found in environment or configuration."
+                ) from exc
             return default
         return cast(value)
 

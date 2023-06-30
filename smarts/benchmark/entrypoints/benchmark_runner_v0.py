@@ -30,6 +30,7 @@ import psutil
 import ray
 
 from smarts.benchmark.driving_smarts import load_config
+from smarts.core import config
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
@@ -90,19 +91,44 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     return name, records
 
 
-def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers):
-    num_cpus = max(
-        0, min(len(os.sched_getaffinity(0)), psutil.cpu_count(logical=False) or 4)
+def _parallel_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
+    requested_cpus: int = config()(
+        "ray",
+        "num_cpus",
+        None,
+        int,
+    )
+    num_gpus = config()(
+        "ray",
+        "num_gpus",
+        0,
+        float,
+    )
+    num_cpus = (
+        requested_cpus
+        if requested_cpus is not None
+        else max(
+            0, min(len(os.sched_getaffinity(0)), psutil.cpu_count(logical=False) or 4)
+        )
+    )
+    log_to_driver = config()(
+        "ray",
+        "log_to_driver",
+        False,
+        bool,
     )
 
-    if num_cpus == 0:
-        print(f"Resource count `{num_cpus=}`. Using serial runner instead.")
+    if num_cpus == 0 and num_gpus == 0:
+        print(
+            f"Resource count `[benchmark] {num_cpus=}` and `[benchmark] {num_gpus=}` is collectively 0. "
+            "Using the serial runner instead."
+        )
         for o in _serial_task_iterator(env_args, benchmark_args, agent_locator):
             yield o
             return
 
     with suppress_output(stdout=True):
-        ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
+        ray.init(num_cpus=num_cpus, num_gpus=num_gpus, log_to_driver=log_to_driver)
     try:
         max_queued_tasks = num_cpus
         unfinished_refs = []
@@ -142,7 +168,7 @@ def _serial_task_iterator(
         yield name, records
 
 
-def benchmark(benchmark_args, agent_locator, log_workers=False) -> Tuple[Dict, Dict]:
+def benchmark(benchmark_args, agent_locator) -> Tuple[Dict, Dict]:
     """Runs the benchmark using the following:
     Args:
         benchmark_args(dict): Arguments configuring the benchmark.
@@ -185,7 +211,6 @@ def benchmark(benchmark_args, agent_locator, log_workers=False) -> Tuple[Dict, D
             env_args=env_args,
             benchmark_args=benchmark_args,
             agent_locator=agent_locator,
-            log_workers=log_workers,
         ):
             records_cumulative.update(records)
 
@@ -230,7 +255,7 @@ def _get_agent_score(
     return score
 
 
-def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
+def benchmark_from_configs(benchmark_config, agent_locator):
     """Runs a benchmark given the following.
 
     Args:
@@ -243,5 +268,4 @@ def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
     benchmark(
         benchmark_args=benchmark_args["benchmark"],
         agent_locator=agent_locator,
-        log_workers=debug_log,
     )
