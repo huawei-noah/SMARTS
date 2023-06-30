@@ -19,6 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
 - Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
 - `LaneFollowingController` now uses a different pole placement method to compute lateral/heading gains. Numerical behaviour is unchanged. Performance is slightly faster.
+- Upgraded Stable Baselines3 from v1.7.0 to v2.0.0, and switched to Gymnasium backend, in Drive and VehicleFollowing RL examples.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
