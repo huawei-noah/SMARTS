@@ -91,14 +91,16 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
 
 
 def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers):
-    num_cpus = max(0, min(len(os.sched_getaffinity(0)), psutil.cpu_count(logical=False) or 4))
+    num_cpus = max(
+        0, min(len(os.sched_getaffinity(0)), psutil.cpu_count(logical=False) or 4)
+    )
 
     if num_cpus == 0:
         print(f"Resource count `{num_cpus=}`. Using serial runner instead.")
         for o in _serial_task_iterator(env_args, benchmark_args, agent_locator):
             yield o
             return
-    
+
     with suppress_output(stdout=True):
         ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
     try:
@@ -125,7 +127,9 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers
         ray.shutdown()
 
 
-def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_) -> Generator[Tuple[Any, Any], Any, None]:
+def _serial_task_iterator(
+    env_args, benchmark_args, agent_locator, *args, **_
+) -> Generator[Tuple[Any, Any], Any, None]:
     for name, env_config in env_args.items():
         print(f"\nEvaluating {name}...")
         name, records = _eval_worker_local(
