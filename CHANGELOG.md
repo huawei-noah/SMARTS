@@ -12,17 +12,23 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 - Added `rllib/pg_example.py` to demonstrate a simple integration with `RLlib` and `tensorflow` for policy training.
 - Added `rllib/pg_pbt_example.py` to demonstrate integration with `ray.RLlib`, `tensorflow`, and `ray.tune` for scheduled policy training.
+- Added engine configuration `ray:num_cpus`/`SMARTS_RAY_NUM_CPUS` which controls ray cpu usage (this overrides `core:observation_workers` when using `core:sensor_parallelization=ray`).
+- Added engine configuration `ray:num_gpus`/`SMARTS_RAY_NUM_GPUS` which controls ray gpu usage.
 ### Changed
 - Updated `smarts[ray]` (`ray==2.2`) and `smarts[rllib]` (`ray[rllib]==1.4`) to use `ray~=2.5`.
 - Introduced `tensorflow-probability` to `smarts[rllib]`.
 - Updated `RLlibHiWayEnv` to use the `gymnasium` interface.
 - Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
 - Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
+- Engine configuration of `ray` now affects the parallel benchmark runner.
+- Driving SMARTS benchmarks (`scl benchmark run <benchmark_id>=driving_smarts_*`) requirement `ray<=2.2.0` bumped to `ray<2.6.0`.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
+- `make format` no longer complains about a broken `./baselines` path.
 ### Removed
+- Removed `scl benchmark run --debug-log`. The same setting can be configured with `ray:log_to_driver` or `SMARTS_RAY_LOG_TO_DRIVER`.
 ### Security
 
 ## [1.2.0] # 2023-06-14
