@@ -23,7 +23,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, Generator, Tuple
 
 import gymnasium as gym
 import psutil
@@ -91,12 +91,18 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
 
 
 def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers):
-    num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
+    num_cpus = max(0, min(len(os.sched_getaffinity(0)), psutil.cpu_count(logical=False) or 4))
 
+    if num_cpus == 0:
+        print(f"Resource count `{num_cpus=}`. Using serial runner instead.")
+        for o in _serial_task_iterator(env_args, benchmark_args, agent_locator):
+            yield o
+            return
+    
     with suppress_output(stdout=True):
         ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
     try:
-        max_queued_tasks = 20
+        max_queued_tasks = num_cpus
         unfinished_refs = []
         for name, env_config in env_args.items():
             if len(unfinished_refs) >= max_queued_tasks:
@@ -119,7 +125,7 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers
         ray.shutdown()
 
 
-def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
+def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_) -> Generator[Tuple[Any, Any], Any, None]:
     for name, env_config in env_args.items():
         print(f"\nEvaluating {name}...")
         name, records = _eval_worker_local(
@@ -132,7 +138,7 @@ def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
         yield name, records
 
 
-def benchmark(benchmark_args, agent_locator, log_workers=False):
+def benchmark(benchmark_args, agent_locator, log_workers=False) -> Tuple[Dict, Dict]:
     """Runs the benchmark using the following:
     Args:
         benchmark_args(dict): Arguments configuring the benchmark.
