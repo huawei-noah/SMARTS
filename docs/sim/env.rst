@@ -48,19 +48,6 @@ exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent
     # Close env.
     env.close()
 
-To use this environment with certain frameworks you may want to convert the environment back into a 0.21 api version of gym.
-This can be done with :class:`~smarts.env.gymnasium.wrappers.api_reversion.Api021Reversion`.
-
-.. code-block:: python
-
-    import gymnasium as gym
-    # Make env
-    env = gym.make(
-        "smarts.env:hiway-v1", # Env entry name.
-        scenarios=[scenario_path], # List of paths to scenario folders.
-    )
-    env = Api021Reversion(env) # Turns the environment into roughly a 0.21 gym environment
-
 RLlibHiwayEnv
 ^^^^^^^^^^^^^
 
