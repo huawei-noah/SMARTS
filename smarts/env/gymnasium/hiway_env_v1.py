@@ -39,7 +39,6 @@ from typing import (
 
 import gymnasium as gym
 import numpy as np
-
 from gymnasium import spaces
 from gymnasium.core import ActType, ObsType
 from gymnasium.envs.registration import EnvSpec
