@@ -35,7 +35,7 @@ For recording, simply feed ``envision_record_data_replay_path`` with desired rec
 .. code-block:: python
 
     env = gym.make(
-        "smarts.env:hiway-v0",
+        "smarts.env:hiway-v1",
         scenarios=args.scenarios,
         agents={AGENT_ID: agent},
         headless=args.headless,

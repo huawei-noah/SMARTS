@@ -20,6 +20,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
 - `LaneFollowingController` now uses a different pole placement method to compute lateral/heading gains. Numerical behaviour is unchanged. Performance is slightly faster.
 - Upgraded Stable Baselines3 from v1.7.0 to v2.0.0, and switched to Gymnasium backend, in Drive and VehicleFollowing RL examples.
+- Changed all uses of `gym` to use `gymnasium`.
+- Changed `gymnasium` to be an optional dependency. Use `pip install -e .[gymnasium]` to install it.
+- Renamed the `[gym]` optional install to `[gif_recorder]`.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
@@ -27,6 +30,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 - Removed `TruncatedDistribution` from scenario studio.
 - Removed `scipy` as a core package dependency.
+- Removed `gym` as a core package dependency.
+- Removed `hiway-v0` env.
+- Removed `Api021Reversion` gym wrapper class.
 ### Security
 
 ## [1.2.0] # 2023-06-14

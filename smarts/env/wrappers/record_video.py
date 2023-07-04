@@ -34,9 +34,9 @@
 import os
 from typing import Callable
 
-import gym
-from gym import logger
-from gym.wrappers.monitoring import video_recorder
+import gymnasium as gym
+from gymnasium import logger
+from gymnasium.wrappers.monitoring import video_recorder
 
 
 def capped_cubic_video_schedule(episode_id, cap=1000):
