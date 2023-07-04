@@ -7,12 +7,12 @@ cachetools==5.3.1
 certifi==2023.5.7
 charset-normalizer==3.1.0
 click==8.1.3
-cloudpickle==1.6.0
+cloudpickle==2.1.0
 constantly==15.1.0
 coverage==7.2.7
 decorator==5.1.1
 dm-tree==0.1.8
-exceptiongroup==1.1.1
+exceptiongroup==1.1.2
 execnet==1.9.0
 filelock==3.12.2
 flatbuffers==23.5.26
@@ -23,7 +23,6 @@ google-auth==2.21.0
 google-auth-oauthlib==1.0.0
 google-pasta==0.2.0
 grpcio==1.51.3
-gym==0.19.0
 Gymnasium==0.26.3
 gymnasium-notices==0.0.1
 h5py==3.9.0
@@ -37,7 +36,7 @@ iniconfig==2.0.0
 jax==0.4.13
 jsonschema==4.17.3
 keras==2.12.0
-lazy_loader==0.2
+lazy_loader==0.3
 libclang==16.0.0
 lz4==4.3.2
 Markdown==3.4.3
@@ -57,7 +56,7 @@ Panda3D==1.10.9
 panda3d-gltf==0.13
 panda3d-simplepbr==0.10
 pandas==2.0.3
-Pillow==9.5.0
+Pillow==10.0.0
 pkgutil_resolve_name==1.3.10
 pluggy==1.2.0
 protobuf==4.23.3
@@ -104,7 +103,7 @@ torchvision==0.5.0
 trimesh==3.9.29
 Twisted==22.10.0
 typer==0.9.0
-typing_extensions==4.7.0
+typing_extensions==4.7.1
 tzdata==2023.3
 urllib3==1.26.16
 wcwidth==0.2.6
