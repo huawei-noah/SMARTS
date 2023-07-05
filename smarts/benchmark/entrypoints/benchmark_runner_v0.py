@@ -23,13 +23,14 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict, Generator, Tuple
 
 import gymnasium as gym
 import psutil
 import ray
 
 from smarts.benchmark.driving_smarts import load_config
+from smarts.core import config
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.utils.logging import suppress_output
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
@@ -90,13 +91,46 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     return name, records
 
 
-def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers):
-    num_cpus = max(1, min(len(os.sched_getaffinity(0)), psutil.cpu_count(False) or 4))
+def _parallel_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
+    requested_cpus: int = config()(
+        "ray",
+        "num_cpus",
+        None,
+        int,
+    )
+    num_gpus = config()(
+        "ray",
+        "num_gpus",
+        0,
+        float,
+    )
+    num_cpus = (
+        requested_cpus
+        if requested_cpus is not None
+        else max(
+            0, min(len(os.sched_getaffinity(0)), psutil.cpu_count(logical=False) or 4)
+        )
+    )
+    log_to_driver = config()(
+        "ray",
+        "log_to_driver",
+        False,
+        bool,
+    )
+
+    if num_cpus == 0 and num_gpus == 0:
+        print(
+            f"Resource count `[benchmark] {num_cpus=}` and `[benchmark] {num_gpus=}` is collectively 0. "
+            "Using the serial runner instead."
+        )
+        for o in _serial_task_iterator(env_args, benchmark_args, agent_locator):
+            yield o
+            return
 
     with suppress_output(stdout=True):
-        ray.init(num_cpus=num_cpus, log_to_driver=log_workers)
+        ray.init(num_cpus=num_cpus, num_gpus=num_gpus, log_to_driver=log_to_driver)
     try:
-        max_queued_tasks = 20
+        max_queued_tasks = num_cpus
         unfinished_refs = []
         for name, env_config in env_args.items():
             if len(unfinished_refs) >= max_queued_tasks:
@@ -119,7 +153,9 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, log_workers
         ray.shutdown()
 
 
-def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
+def _serial_task_iterator(
+    env_args, benchmark_args, agent_locator, *args, **_
+) -> Generator[Tuple[Any, Any], Any, None]:
     for name, env_config in env_args.items():
         print(f"\nEvaluating {name}...")
         name, records = _eval_worker_local(
@@ -132,7 +168,7 @@ def _serial_task_iterator(env_args, benchmark_args, agent_locator, *args, **_):
         yield name, records
 
 
-def benchmark(benchmark_args, agent_locator, log_workers=False):
+def benchmark(benchmark_args, agent_locator) -> Tuple[Dict, Dict]:
     """Runs the benchmark using the following:
     Args:
         benchmark_args(dict): Arguments configuring the benchmark.
@@ -151,6 +187,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
     metric_formula_default = (
         root_dir / "smarts" / "env" / "gymnasium" / "wrappers" / "metric" / "formula.py"
     )
+    weighted_scores, agent_scores = {}, {}
     for env_name, env_config in benchmark_args["envs"].items():
         metric_formula = (
             root_dir / x
@@ -163,7 +200,7 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             kwargs = dict(benchmark_args.get("shared_env_kwargs", {}))
             kwargs.update(env_config.get("kwargs", {}))
             env_args[f"{env_name}-{scenario}"] = dict(
-                env=env_config["loc"],
+                env=env_config.get("loc") or env_config["locator"],
                 scenario=str(root_dir / scenario),
                 kwargs=kwargs,
                 metric_formula=metric_formula,
@@ -174,22 +211,24 @@ def benchmark(benchmark_args, agent_locator, log_workers=False):
             env_args=env_args,
             benchmark_args=benchmark_args,
             agent_locator=agent_locator,
-            log_workers=log_workers,
         ):
             records_cumulative.update(records)
 
-        score = _get_weighted_score(
+        weighted_score = _get_weighted_score(
             records=records_cumulative, metric_formula=metric_formula
         )
+        weighted_scores[env_name] = weighted_score
         print("\n\nOverall Weighted Score:\n")
-        print(json.dumps(score, indent=2))
-        score = _get_agent_score(
+        print(json.dumps(weighted_score, indent=2))
+        agent_score = _get_agent_score(
             records=records_cumulative, metric_formula=metric_formula
         )
+        agent_scores[env_name] = agent_score
         print("\n\nIndividual Agent Score:\n")
-        print(json.dumps(score, indent=2))
+        print(json.dumps(agent_score, indent=2))
 
     print("\n<-- Evaluation complete -->\n")
+    return weighted_scores, agent_scores
 
 
 def _get_weighted_score(
@@ -216,7 +255,7 @@ def _get_agent_score(
     return score
 
 
-def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
+def benchmark_from_configs(benchmark_config, agent_locator):
     """Runs a benchmark given the following.
 
     Args:
@@ -229,5 +268,4 @@ def benchmark_from_configs(benchmark_config, agent_locator, debug_log=False):
     benchmark(
         benchmark_args=benchmark_args["benchmark"],
         agent_locator=agent_locator,
-        log_workers=debug_log,
     )

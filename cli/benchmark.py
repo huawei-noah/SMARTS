@@ -38,12 +38,6 @@ def benchmark_cli():
 @click.argument("benchmark_id", nargs=1, metavar="<benchmark_id>")
 @click.argument("agent_locator", nargs=1, metavar="<agent_locator>")
 @click.option(
-    "--debug-log",
-    is_flag=True,
-    default=False,
-    help="Log the benchmark in ``stdout``.",
-)
-@click.option(
     "--benchmark-listing",
     type=str,
     default=None,
@@ -58,7 +52,6 @@ def benchmark_cli():
 def run(
     benchmark_id: str,
     agent_locator: str,
-    debug_log: bool,
     benchmark_listing: Optional[str],
     auto_install: bool,
 ):
@@ -83,7 +76,6 @@ def run(
         benchmark_listing=Path(benchmark_listing)
         if benchmark_listing is not None
         else BENCHMARK_LISTING_FILE,
-        debug_log=debug_log,
         auto_install=auto_install,
     )
 

@@ -121,7 +121,7 @@ jobs:
         run: |
           cd ${GITHUB_WORKSPACE}
           . ${{env.venv_dir}}/bin/activate
-          PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
+          PYTHONPATH=$PWD PYTHONHASHSEED=42 SMARTS_RAY_NUM_CPUS=0 pytest -v \
             --doctest-modules \
             --forked \
             --dist=no \

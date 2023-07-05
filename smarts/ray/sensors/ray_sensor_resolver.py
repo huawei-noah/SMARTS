@@ -48,13 +48,19 @@ class RaySensorResolver(SensorResolver):
     def __init__(self, process_count_override: Optional[int] = None) -> None:
         conf: Config = config()
         self._num_observation_workers = (
-            conf("core", "observation_workers", default=8, cast=int)
+            conf(
+                "ray",
+                "num_cpus",
+                default=conf("core", "observation_workers", default=8, cast=int),
+                cast=int,
+            )
             if process_count_override == None
             else max(1, process_count_override)
         )
         if not ray.is_initialized():
             ray.init(
                 num_cpus=self._num_observation_workers,
+                num_gpus=conf("ray", "num_gpus", default=None, cast=int),
                 log_to_driver=conf("ray", "log_to_driver", default=False, cast=bool),
             )
         self._sim_local_constants: SimulationLocalConstants = None
