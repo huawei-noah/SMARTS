@@ -57,7 +57,7 @@ export default function TrafficSignals({ scene, worldState }) {
         let mesh = MeshBuilder.CreateDisc(
           `signal-${signalName}`,
           { radius: 0.8 },
-          scene
+          scene,
         );
         mesh.position = point;
         let axis = new Vector3(1, 0, 0);
@@ -66,14 +66,14 @@ export default function TrafficSignals({ scene, worldState }) {
         let color = signalColorMap[state];
         let material = new StandardMaterial(
           `signal-${signalName}-material`,
-          scene
+          scene,
         );
         material.diffuseColor = new Color4(...color);
         material.specularColor = new Color3(0, 0, 0);
         mesh.material = material;
         mesh.isVisible = true;
         return mesh;
-      }
+      },
     );
 
     signalGeometryRef.current = newSignalGeometry;

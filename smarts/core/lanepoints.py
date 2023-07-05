@@ -28,15 +28,10 @@ from functools import lru_cache
 from typing import List, NamedTuple, Sequence, Tuple
 
 import numpy as np
-from scipy.spatial import KDTree
 
 from smarts.core.coordinates import Heading, Point, Pose
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import (
-    fast_quaternion_from_angle,
-    squared_dist,
-    vec_to_radians,
-)
+from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
 
 
 @dataclass(frozen=True)
@@ -76,7 +71,9 @@ class LanePoints:
         self._linked_lanepoints = LanePoints._interpolate_shape_lanepoints(
             shape_lps, spacing
         )
-        self._lanepoints_kd_tree = LanePoints._build_kd_tree(self._linked_lanepoints)
+        self._lp_points = np.array(
+            [l_lp.lp.pose.point.as_np_array[:2] for l_lp in self._linked_lanepoints]
+        )
 
         self._lanepoints_by_lane_id = defaultdict(list)
         self._lanepoints_by_edge_id = defaultdict(list)
@@ -85,13 +82,13 @@ class LanePoints:
             self._lanepoints_by_lane_id[linked_lp.lp.lane.lane_id].append(linked_lp)
             self._lanepoints_by_edge_id[lp_edge_id].append(linked_lp)
 
-        self._lanepoints_kd_tree_by_lane_id = {
-            lane_id: LanePoints._build_kd_tree(l_lps)
+        self._lp_points_by_lane_id = {
+            lane_id: np.array([l_lp.lp.pose.point.as_np_array[:2] for l_lp in l_lps])
             for lane_id, l_lps in self._lanepoints_by_lane_id.items()
         }
 
-        self._lanepoints_kd_tree_by_edge_id = {
-            edge_id: LanePoints._build_kd_tree(l_lps)
+        self._lp_points_by_edge_id = {
+            edge_id: np.array([l_lp.lp.pose.point.as_np_array[:2] for l_lp in l_lps])
             for edge_id, l_lps in self._lanepoints_by_edge_id.items()
         }
 
@@ -180,7 +177,7 @@ class LanePoints:
                     lp=LanePoint(
                         lane=curr_lanepoint.lp.lane,
                         pose=Pose(
-                            position=lane_shape[-1],
+                            position=lane_shape[-1][:2],
                             orientation=curr_lanepoint.lp.pose.orientation,
                         ),
                         lane_width=lane_width,
@@ -611,13 +608,6 @@ class LanePoints:
         return cls(shape_lps, spacing)
 
     @staticmethod
-    def _build_kd_tree(linked_lps: Sequence[LinkedLanePoint]) -> KDTree:
-        return KDTree(
-            np.array([l_lp.lp.pose.point.as_np_array[:2] for l_lp in linked_lps]),
-            leafsize=50,
-        )
-
-    @staticmethod
     def _interpolate_shape_lanepoints(
         shape_lanepoints: Sequence[LinkedLanePoint], spacing: float
     ) -> List[LinkedLanePoint]:
@@ -760,151 +750,70 @@ class LanePoints:
         return curr_lanepoint
 
     @staticmethod
-    def _closest_linked_lp_in_kd_tree_batched(
-        points: Sequence[Point],
-        linked_lps,
-        tree: KDTree,
+    def _closest_linked_lp_to_point(
+        point: Point,
+        linked_lps: List[LinkedLanePoint],
+        points: np.ndarray,
         k: int = 1,
         filter_composites: bool = False,
-    ):
-        p2ds = np.array([p.as_np_array[:2] for p in points])
-        _, closest_indices = tree.query(p2ds, k=min(k, len(linked_lps)))
-        closest_indices = np.atleast_2d(closest_indices)
+    ) -> List[LinkedLanePoint]:
+        x = point.as_np_array[:2]
+        dists = np.sqrt(np.sum((points - x) ** 2, axis=1))
+        closest_indices = np.argsort(dists)[:k]
+
         if filter_composites:
             result = [
-                [
-                    linked_lps[idx]
-                    for idx in idxs
-                    if not linked_lps[idx].lp.lane.is_composite
-                ]
-                for idxs in closest_indices
+                linked_lps[idx]
+                for idx in closest_indices
+                if not linked_lps[idx].lp.lane.is_composite
             ]
             if result:
                 return result
+
         # if filtering, only return lane-points in composite lanes if we didn't hit any in simple lanes...
-        return [[linked_lps[idx] for idx in idxs] for idxs in closest_indices]
-
-    @staticmethod
-    def _closest_linked_lp_in_kd_tree_with_pose_batched(
-        poses,
-        lanepoints,
-        tree,
-        within_radius: float,
-        k: int = 10,
-        filter_composites: bool = False,
-    ):
-        linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_batched(
-            [pose.point for pose in poses],
-            lanepoints,
-            tree,
-            k=k,
-            filter_composites=filter_composites,
-        )
-
-        linked_lanepoints = [
-            sorted(
-                l_lps,
-                key=lambda _llp: squared_dist(
-                    poses[idx].as_position2d(), _llp.lp.pose.as_position2d()
-                ),
-            )
-            for idx, l_lps in enumerate(linked_lanepoints)
-        ]
-        # exclude those outside radius except closest
-        if within_radius is not None:
-            radius_sq = within_radius * within_radius
-            linked_lanepoints = [
-                [
-                    _llp
-                    for i, _llp in enumerate(_llps)
-                    if squared_dist(
-                        poses[idx].as_position2d(), _llp.lp.pose.as_position2d()
-                    )
-                    <= radius_sq
-                    or i == 0
-                ]
-                for idx, _llps in enumerate(linked_lanepoints)
-            ]
-        # Get the nearest point for the points where the radius check failed
-        unfound_lanepoints = [
-            (i, poses[i])
-            for i, group in enumerate(linked_lanepoints)
-            if len(group) == 0
-        ]
-        if len(unfound_lanepoints) > 0:
-            remaining_linked_lps = LanePoints._closest_linked_lp_in_kd_tree_batched(
-                [pose.point for _, pose in unfound_lanepoints],
-                lanepoints,
-                tree=tree,
-                k=k,
-                filter_composites=filter_composites,
-            )
-            # Replace the empty lanepoint locations
-            for (i, _), lps in [
-                g for g in zip(unfound_lanepoints, remaining_linked_lps)
-            ]:
-                linked_lanepoints[i] = [lps]
-
-        return [
-            sorted(
-                l_lps,
-                key=lambda _llp: squared_dist(
-                    poses[idx].as_position2d(), _llp.lp.pose.as_position2d()
-                )
-                + abs(poses[idx].heading.relative_to(_llp.lp.pose.heading)),
-            )
-            for idx, l_lps in enumerate(linked_lanepoints)
-        ]
+        return [linked_lps[idx] for idx in closest_indices]
 
     def closest_lanepoints(
         self,
         pose: Pose,
-        within_radius: float = 10,
         maximum_count: int = 10,
     ) -> List[LanePoint]:
         """Get the lane-points closest to the given pose.
         Args:
             pose:
                 The pose to look around for lane-points.
-            within_radius:
-                The radius which lane-points can be found from the given pose.
             maximum_count:
                 The maximum number of lane-points that should be found.
         """
-        lanepoints = self._linked_lanepoints
-        kd_tree = self._lanepoints_kd_tree
-        linked_lanepoints = LanePoints._closest_linked_lp_in_kd_tree_with_pose_batched(
-            [pose],
-            lanepoints,
-            kd_tree,
-            within_radius=within_radius,
+        linked_lanepoints = LanePoints._closest_linked_lp_to_point(
+            pose.point,
+            self._linked_lanepoints,
+            self._lp_points,
             k=maximum_count,
             filter_composites=True,
         )
-        return [l_lps.lp for l_lps in linked_lanepoints[0]]
-
-    def closest_lanepoint_on_lane_to_point(self, point, lane_id: str) -> LanePoint:
-        """Returns the closest lane-point on the given lane to the given world coordinate."""
-        return self.closest_linked_lanepoint_on_lane_to_point(point, lane_id).lp
+        return [llp.lp for llp in linked_lanepoints]
 
     def closest_linked_lanepoint_on_lane_to_point(
         self, point: Point, lane_id: str
     ) -> LinkedLanePoint:
         """Returns the closest linked lane-point on the given lane."""
-        lane_kd_tree = self._lanepoints_kd_tree_by_lane_id[lane_id]
-        return LanePoints._closest_linked_lp_in_kd_tree_batched(
-            [point], self._lanepoints_by_lane_id[lane_id], lane_kd_tree, k=1
-        )[0][0]
+        return LanePoints._closest_linked_lp_to_point(
+            point,
+            self._lanepoints_by_lane_id[lane_id],
+            self._lp_points_by_lane_id[lane_id],
+            k=1,
+        )[0]
 
     def closest_linked_lanepoint_on_road(
         self, point: Point, road_id: str
     ) -> LinkedLanePoint:
         """Returns the closest linked lane-point on the given road."""
-        return LanePoints._closest_linked_lp_in_kd_tree_batched(
-            [point],
+        return LanePoints._closest_linked_lp_to_point(
+            point,
             self._lanepoints_by_edge_id[road_id],
-            self._lanepoints_kd_tree_by_edge_id[road_id],
-        )[0][0]
+            self._lp_points_by_edge_id[road_id],
+        )[0]
 
     @lru_cache(maxsize=32)
     def paths_starting_at_lanepoint(

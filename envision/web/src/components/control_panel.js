@@ -101,7 +101,7 @@ export default function ControlPanel({ showControls, toggleControlModes }) {
     if (checkedKeys.includes(info.node.key)) {
       // remove from list
       setCheckedKeys((prevKeys) =>
-        prevKeys.filter((key) => key != info.node.key)
+        prevKeys.filter((key) => key != info.node.key),
       );
       toggleControlModes({ [info.node.key]: false });
     } else {

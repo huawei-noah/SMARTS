@@ -9,40 +9,10 @@ Base environments
 SMARTS environment module is defined in :mod:`~smarts.env` package. Currently SMARTS provides two kinds of training 
 environments, namely:
 
-+ ``HiWayEnv`` utilizing a ``gymnasium.Env`` interface 
++ ``HiWayEnvV1`` utilizing a ``gymnasium.Env`` interface 
 + ``RLlibHiwayEnv`` customized for `RLlib <https://docs.ray.io/en/latest/rllib/index.html>`_ training
 
 .. image:: ../_static/env.png
-
-HiWayEnv
-^^^^^^^^
-
-``HiWayEnv`` inherits class ``gymnasium.Env`` and supports gym APIs like ``reset``, ``step``, ``close``. An usage example is shown below.
-Refer to :class:`~smarts.env.hiway_env.HiWayEnv` for more details.
-
-.. code-block:: python
-
-    import gymnasium as gym
-    # Make env
-    env = gym.make(
-            "smarts.env:hiway-v0", # Env entry name.
-            scenarios=[scenario_path], # List of paths to scenario folders.
-            agent_interfaces={AGENT_ID: agent_spec.interface}, # Dictionary mapping agents to agent interfaces.
-            headless=False, # False to enable Envision visualization of the environment.
-            seed=42, # RNG seed. Seeds are set at the start of simulation, and never automatically re-seeded.
-        )
-
-    # Reset env and build agent.
-    observations = env.reset()
-    agent = agent_spec.build_agent()
-
-    # Step env.
-    agent_obs = observations[AGENT_ID]
-    agent_action = agent.act(agent_obs)
-    observations, rewards, dones, infos = env.step({AGENT_ID: agent_action})
-
-    # Close env.
-    env.close()
 
 HiWayEnvV1
 ^^^^^^^^^^
@@ -77,19 +47,6 @@ exactly matches the `env.observation_space`, and `ObservationOptions.multi_agent
 
     # Close env.
     env.close()
-
-To use this environment with certain frameworks you may want to convert the environment back into a 0.21 api version of gym.
-This can be done with :class:`~smarts.env.gymnasium.wrappers.api_reversion.Api021Reversion`.
-
-.. code-block:: python
-
-    import gymnasium as gym
-    # Make env
-    env = gym.make(
-        "smarts.env:hiway-v1", # Env entry name.
-        scenarios=[scenario_path], # List of paths to scenario folders.
-    )
-    env = Api021Reversion(env) # Turns the environment into roughly a 0.21 gym environment
 
 RLlibHiwayEnv
 ^^^^^^^^^^^^^

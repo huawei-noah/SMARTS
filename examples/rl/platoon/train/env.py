@@ -14,7 +14,6 @@ def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
     from reward import Reward
     from stable_baselines3.common.monitor import Monitor
 
-    from smarts.env.gymnasium.wrappers.api_reversion import Api021Reversion
     from smarts.env.gymnasium.wrappers.single_agent import SingleAgent
 
     env = gym.make(
@@ -27,7 +26,6 @@ def make_env(env_id, scenario, agent_spec: AgentSpec, config, seed):
     )
     env = Reward(env=env, crop=agent_spec.agent_params["crop"])
     env = SingleAgent(env=env)
-    env = Api021Reversion(env=env)
     env = Preprocess(env=env, agent_spec=agent_spec)
     env = Monitor(env)
 

@@ -73,7 +73,8 @@ class IdActorCaptureManager(ActorCaptureManager):
             if condition_result == ConditionState.EXPIRED:
                 self._log.warning(
                     f"Actor aquisition skipped for `{agent_id}` scheduled to start between "
-                    + f"`Condition `{entry_tactic.condition}` has expired with no vehicle."
+                    + f"`Condition `{entry_tactic.condition}` has expired with no vehicle. "
+                    + f"Missing actor: `{entry_tactic.actor_id}`"
                 )
                 used_actors.append(actor_id)
                 sim.agent_manager.teardown_ego_agents({agent_id})
@@ -121,9 +122,9 @@ class IdActorCaptureManager(ActorCaptureManager):
             condition_result = entry_tactic.condition.evaluate(**condition_kwargs)
             if condition_result == ConditionState.EXPIRED:
                 self._log.warning(
-                    f"Actor aquisition skipped for `{agent_id}` scheduled to start with"
+                    f"Actor acquisition skipped for `{agent_id}` scheduled to start with"
                     + f"`Condition:{entry_tactic.condition}` because simulation skipped to "
-                    f"`simulation time: {sim.elapsed_sim_time}`"
+                    f"`simulation time: {sim.elapsed_sim_time}`. Missing actor: `{entry_tactic.actor_id}`"
                 )
                 cancelled_agents.add(agent_id)
                 continue

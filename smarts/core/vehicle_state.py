@@ -23,7 +23,6 @@ from dataclasses import dataclass
 from typing import NamedTuple, Optional, Tuple
 
 import numpy as np
-from scipy.spatial.distance import cdist
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
@@ -184,9 +183,7 @@ def neighborhood_vehicles_around_vehicle(
         return []
 
     # calculate euclidean distances
-    distances = cdist(
-        other_positions, [vehicle_state.pose.position], metric="euclidean"
-    ).reshape(-1)
+    distances = np.linalg.norm(other_positions - vehicle_state.pose.position, axis=1)
 
     indices = np.argwhere(distances <= radius).flatten()
     return [other_states[i] for i in indices]

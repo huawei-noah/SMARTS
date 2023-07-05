@@ -45,5 +45,5 @@ ReactDOM.render(
       <App client={client} />
     </Router>
   </ToastProvider>,
-  document.getElementById("root")
+  document.getElementById("root"),
 );

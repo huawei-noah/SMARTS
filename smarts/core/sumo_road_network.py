@@ -996,9 +996,7 @@ class SumoRoadNetwork(RoadMap):
 
         # No route provided, so generate paths based on the closest lanepoints
         waypoint_paths = []
-        closest_lps: List[LanePoint] = self._lanepoints.closest_lanepoints(
-            pose, within_radius=within_radius
-        )
+        closest_lps: List[LanePoint] = self._lanepoints.closest_lanepoints(pose)
 
         # First, see if we are in a junction and need to do something special
         junction_paths = self._resolve_in_junction(pose, closest_lps)

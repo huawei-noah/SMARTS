@@ -26,7 +26,7 @@ import os
 import pickle
 import warnings
 
-import gym
+import gymnasium as gym
 import numpy as np
 import tensorflow as tf
 from ac_network import ActorNetwork, CriticNetwork

@@ -337,13 +337,6 @@ def test_opendrive_map_4lane(opendrive_scenario_4lane):
     # Lanepoints
     lanepoints = road_map._lanepoints
 
-    point = Point(148.0, -17.0, 0)
-    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, l1.lane_id)
-    assert (
-        round(l1_lane_point.pose.position[0], 2),
-        round(l1_lane_point.pose.position[1], 2),
-    ) == (148.4, -17.0)
-
     r5 = road_map.road_by_id("60_0_R")
     point = Point(148.00, -47.00)
     r5_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
@@ -669,13 +662,6 @@ def test_opendrive_map_merge(opendrive_scenario_merge):
     # Lanepoints
     lanepoints = road_map._lanepoints
 
-    point = Point(48.39, 0.4, 0)
-    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, "1_1_R_-1")
-    assert (
-        round(l1_lane_point.pose.position[0], 2),
-        round(l1_lane_point.pose.position[1], 2),
-    ) == (48.5, -0.15)
-
     point = Point(20.0, 1.3, 0)
     r0_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(point, "1_0_L")
     assert r0_linked_lane_point.lp.lane.lane_id == "1_0_L_1"
@@ -798,6 +784,7 @@ def test_waymo_map():
     # nearest lane for a point outside all lanes
     point = Point(2910.0, -2612.0, 0)
     l3 = road_map.nearest_lane(point)
+    assert l3
     assert l3.lane_id == "156"
     assert not l3.contains_point(point)
 
@@ -933,12 +920,6 @@ def test_waymo_map():
 
     # Lanepoints
     lanepoints = road_map._lanepoints
-    point = Point(2715.0, -2763.5, 0)
-    l1_lane_point = lanepoints.closest_lanepoint_on_lane_to_point(point, l1.lane_id)
-    assert (
-        round(l1_lane_point.pose.position[0], 2),
-        round(l1_lane_point.pose.position[1], 2),
-    ) == (2713.84, -2762.52)
 
     r1 = road_map.road_by_id("waymo_road-100")
     r1_linked_lane_point = lanepoints.closest_linked_lanepoint_on_road(
