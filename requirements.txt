@@ -96,7 +96,7 @@ tensorflow-estimator==2.12.0
 tensorflow-io-gcs-filesystem==0.32.0
 tensorflow-probability==0.20.1
 termcolor==2.3.0
-tifffile==2023.4.12
+tifffile==2023.7.4
 tomli==2.0.1
 torch==1.4.0
 torchvision==0.5.0
