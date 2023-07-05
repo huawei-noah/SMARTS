@@ -40,7 +40,7 @@ export default async function transcode(blob, onMessage = (message) => {}) {
     //      is switch the container.
     "-c:v",
     "copy",
-    "output.mp4"
+    "output.mp4",
   );
   onMessage("Transcoding complete");
 
