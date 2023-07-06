@@ -1385,15 +1385,6 @@ class SMARTS(ProviderManager):
         return self._scenario
 
     @property
-    def timestep_sec(self) -> float:
-        """Deprecated. Use `fixed_timestep_sec`."""
-        warnings.warn(
-            "SMARTS timestep_sec property has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
-            category=DeprecationWarning,
-        )
-        return self.fixed_timestep_sec
-
-    @property
     def fixed_timestep_sec(self) -> float:
         """The simulation fixed time-step."""
         # May be None if time deltas are externally driven

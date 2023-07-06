@@ -101,7 +101,7 @@ class RaySensorResolver(SensorResolver):
         tasks = []
         with timeit(
             f"parallizable observations with {len(agent_ids)} and {len(ray_actors)}",
-            logger.info,
+            logger.debug,
         ):
             # Update remote state (if necessary)
             remote_sim_frame = ray.put(dumps(sim_frame))
@@ -122,7 +122,7 @@ class RaySensorResolver(SensorResolver):
             for i, agent_group in enumerate(agent_groups):
                 if not agent_group:
                     break
-                with timeit(f"submitting {len(agent_group)} agents", logger.info):
+                with timeit(f"submitting {len(agent_group)} agents", logger.debug):
                     tasks.append(
                         ray_actors[i].do_work.remote(
                             remote_sim_frame=remote_sim_frame, agent_ids=agent_group
@@ -130,7 +130,7 @@ class RaySensorResolver(SensorResolver):
                     )
 
             # While observation processes are operating do rendering
-            with timeit("rendering", logger.info):
+            with timeit("rendering", logger.debug):
                 rendering = {}
                 for agent_id in agent_ids:
                     for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
@@ -149,7 +149,7 @@ class RaySensorResolver(SensorResolver):
                         updated_sensors[vehicle_id].update(updated_unsafe_sensors)
 
             # Collect futures
-            with timeit("waiting for observations", logger.info):
+            with timeit("waiting for observations", logger.debug):
                 for fut in concurrent.futures.as_completed(
                     [task.future() for task in tasks]
                 ):
@@ -159,7 +159,7 @@ class RaySensorResolver(SensorResolver):
                     for v_id, values in u_sens.items():
                         updated_sensors[v_id].update(values)
 
-            with timeit("merging observations", logger.info):
+            with timeit("merging observations", logger.debug):
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
                     observations[agent_id] = replace(observations[agent_id], **r_obs)

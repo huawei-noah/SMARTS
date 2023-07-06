@@ -21,21 +21,10 @@
 # THE SOFTWARE.
 import logging
 import os
-from enum import IntEnum, auto
+from dataclasses import asdict, is_dataclass
 from functools import partial
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Set,
-    SupportsFloat,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Sequence, Set, SupportsFloat, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
@@ -51,34 +40,16 @@ from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
+from smarts.env.configs.hiway_env_configs import (
+    EnvReturnMode,
+    ScenarioOrder,
+    SumoOptions,
+)
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.env.utils.observation_conversion import (
     ObservationOptions,
     ObservationSpacesFormatter,
 )
-
-
-class ScenarioOrder(IntEnum):
-    """Determines the order in which scenarios are served over successive resets."""
-
-    Sequential = 0
-    """Scenarios are served in order initially provided."""
-    Scrambled = 1
-    """Scenarios are served in random order."""
-
-
-class SumoOptions(NamedTuple):
-    """Contains options used to configure sumo."""
-
-    num_external_clients: int = 0
-    """Number of SUMO clients beyond SMARTS. Defaults to 0."""
-    auto_start: bool = True
-    """Automatic starting of SUMO. Defaults to True."""
-    headless: bool = True
-    """If True, disables visualization in SUMO GUI. Defaults to True."""
-    port: Optional[str] = None
-    """SUMO port. Defaults to None."""
-
 
 DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
     Envision,
@@ -87,19 +58,6 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
     headless=False,
     data_formatter_args=EnvisionDataFormatterArgs("base", enable_reduction=False),
 )
-
-
-class EnvReturnMode(IntEnum):
-    """Configuration to determine the interface type of the step function.
-
-    This configures between the environment status return (i.e. reward means the environment reward) and the per-agent
-    status return (i.e. rewards means reward per agent).
-    """
-
-    per_agent = auto()
-    """Generate per-agent mode step returns in the form ``(rewards({id: float}), terminateds({id: bool}), truncateds ({id: bool}), info)``."""
-    environment = auto()
-    """Generate environment mode step returns in the form ``(reward (float), terminated (bool), truncated (bool), info)``."""
 
 
 class HiWayEnvV1(gym.Env):
@@ -160,7 +118,7 @@ class HiWayEnvV1(gym.Env):
         scenarios: Sequence[str],
         agent_interfaces: Dict[str, AgentInterface],
         sim_name: Optional[str] = None,
-        scenarios_order: ScenarioOrder = ScenarioOrder.Scrambled,
+        scenarios_order: ScenarioOrder = ScenarioOrder.default,
         headless: bool = False,
         visdom: bool = False,
         fixed_timestep_sec: float = 0.1,
@@ -171,7 +129,7 @@ class HiWayEnvV1(gym.Env):
             ObservationOptions, str
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
-        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.per_agent,
+        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.default,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -182,7 +140,7 @@ class HiWayEnvV1(gym.Env):
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(agent_interfaces.keys()),
-            shuffle_scenarios=scenarios_order == ScenarioOrder.Scrambled,
+            shuffle_scenarios=scenarios_order == ScenarioOrder.scrambled,
         )
 
         visualization_client = None
@@ -200,8 +158,8 @@ class HiWayEnvV1(gym.Env):
         if Scenario.any_support_sumo_traffic(scenarios):
             from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
-            if isinstance(sumo_options, tuple):
-                sumo_options = sumo_options._asdict()
+            if is_dataclass(sumo_options):
+                sumo_options = asdict(sumo_options)
             sumo_traffic = SumoTrafficSimulation(
                 headless=sumo_options["headless"],
                 time_resolution=fixed_timestep_sec,

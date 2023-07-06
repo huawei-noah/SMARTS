@@ -62,6 +62,8 @@ def make(locator: str, **kwargs):
             is in the form `{PYTHONPATH}[n]/path/to/file.py`
         kwargs:
             Additional arguments to be passed to the constructed class.
+    Returns:
+        AgentSpec: The agent specifications needed to instantiate and configure an agent.
     """
 
     from smarts.zoo.agent_spec import AgentSpec

@@ -88,7 +88,7 @@ class ParallelSensorResolver(SensorResolver):
         used_workers: List[SensorsWorker] = []
         with timeit(
             f"parallizable observations with {len(agent_ids)} and {len(workers)}",
-            logger.info,
+            logger.debug,
         ):
             agent_ids_for_grouping = list(agent_ids)
             agent_groups = [
@@ -98,7 +98,7 @@ class ParallelSensorResolver(SensorResolver):
             for i, agent_group in enumerate(agent_groups):
                 if not agent_group:
                     break
-                with timeit(f"submitting {len(agent_group)} agents", logger.info):
+                with timeit(f"submitting {len(agent_group)} agents", logger.debug):
                     workers[i].send(
                         SensorsWorker.Request(
                             SensorsWorkerRequestId.SIMULATION_FRAME,
@@ -108,7 +108,7 @@ class ParallelSensorResolver(SensorResolver):
                     used_workers.append(workers[i])
 
             # While observation processes are operating do rendering
-            with timeit("rendering", logger.info):
+            with timeit("rendering", logger.debug):
                 rendering = {}
                 for agent_id in agent_ids:
                     for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
@@ -127,7 +127,7 @@ class ParallelSensorResolver(SensorResolver):
                         updated_sensors[vehicle_id].update(updated_unsafe_sensors)
 
             # Collect futures
-            with timeit("waiting for observations", logger.info):
+            with timeit("waiting for observations", logger.debug):
                 if used_workers:
                     while agent_ids != set(observations):
                         assert all(
@@ -144,7 +144,7 @@ class ParallelSensorResolver(SensorResolver):
                             for v_id, values in u_sens.items():
                                 updated_sensors[v_id].update(values)
 
-            with timeit(f"merging observations", logger.info):
+            with timeit(f"merging observations", logger.debug):
                 # Merge sensor information
                 for agent_id, r_obs in rendering.items():
                     observations[agent_id] = replace(observations[agent_id], **r_obs)
@@ -292,14 +292,14 @@ class ProcessWorker:
                 break
             if isinstance(work, cls.Request):
                 run_work = cls._on_request(state, request=work)
-            with timeit("do work", logger.info):
+            with timeit("do work", logger.debug):
                 if not run_work:
                     continue
                 result = cls._do_work(state=state.copy())
-                with timeit("reserialize", logger.info):
+                with timeit("reserialize", logger.debug):
                     if serialize_results:
                         result = serializer.dumps(result)
-                with timeit("put back to main thread", logger.info):
+                with timeit("put back to main thread", logger.debug):
                     connection.send(result)
 
     def run(self):
@@ -323,12 +323,12 @@ class ProcessWorker:
 
     def result(self, timeout=None):
         """The most recent result from the worker."""
-        with timeit("main thread blocked", logger.info):
+        with timeit("main thread blocked", logger.debug):
             conn = mp.connection.wait([self._parent_connection], timeout=timeout).pop()
             # pytype: disable=attribute-error
             result = conn.recv()
             # pytype: enable=attribute-error
-        with timeit("deserialize for main thread", logger.info):
+        with timeit("deserialize for main thread", logger.debug):
             if self._serialize_results:
                 result = serializer.loads(result)
         return result

@@ -38,11 +38,16 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Changed `gymnasium` to be an optional dependency. Use `pip install -e .[gymnasium]` to install it.
 - Renamed the `[gym]` optional install to `[gif_recorder]`.
 - Optimized events calculation to avoid redundant roadmap calls.
+- Moved `ScenarioOrder`, `EnvReturnMode`, and `SumoOptions` from `smarts.env.gymnasium.hiway_env_v1` to `smarts.env.configs.hiway_env_configs`.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
 - `make format` no longer complains about a broken `./baselines` path.
+- Fixed an issue where default `AgentInterface.events` reference was shared.
+- Episode log now lists current value out of maximum rather than index.
+- Episode log now correctly shows all agent scores.
+- Clarified engine configuration location under `logging.info` instead of `print`.
 ### Removed
 - Removed `scl benchmark run --debug-log`. The same setting can be configured with `ray:log_to_driver` or `SMARTS_RAY_LOG_TO_DRIVER`.
 - Removed `TruncatedDistribution` from scenario studio.
@@ -50,6 +55,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `gym` as a core package dependency.
 - Removed `hiway-v0` env.
 - Removed `Api021Reversion` gym wrapper class.
+- Removed `SMARTS.timestep_sec` attribute.
 ### Security
 
 ## [1.2.0] # 2023-06-14

@@ -51,7 +51,7 @@ class EpisodeLogs:
         assert isinstance(self._current_episode, EpisodeLog)
         e = self._current_episode
         row = (
-            f"{e.index}/{self._total_episodes}",
+            f"{e.index + 1}/{self._total_episodes}",
             f"{e.sim2wall_ratio:.2f}",
             e.steps,
             f"{e.steps_per_second:.2f}",
@@ -159,6 +159,9 @@ class EpisodeLog:
         if terminateds.get("__all__", False) and infos is not None:
             for agent, score in infos.items():
                 self.scores[agent] = score["score"]
+        else:
+            for id in (_id for _id, t in terminateds.items() if t):
+                self.scores[id] = infos[id]["score"]
 
     def _convert_to_dict(self, observations, rewards, terminateds, truncateds, infos):
         observations, rewards, infos = [

@@ -42,7 +42,7 @@ class LocalSensorResolver(SensorResolver):
         renderer,
         bullet_client,
     ):
-        with timeit("serial run", logger.info):
+        with timeit("serial run", logger.debug):
             (
                 observations,
                 dones,
@@ -54,7 +54,7 @@ class LocalSensorResolver(SensorResolver):
             )
 
         # While observation processes are operating do rendering
-        with timeit("rendering", logger.info):
+        with timeit("rendering", logger.debug):
             rendering = {}
             for agent_id in agent_ids:
                 for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
@@ -72,7 +72,7 @@ class LocalSensorResolver(SensorResolver):
                     )
                     updated_sensors[vehicle_id].update(updated_unsafe_sensors)
 
-        with timeit(f"merging observations", logger.info):
+        with timeit(f"merging observations", logger.debug):
             # Merge sensor information
             for agent_id, r_obs in rendering.items():
                 observations[agent_id] = replace(observations[agent_id], **r_obs)
