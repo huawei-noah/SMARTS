@@ -35,7 +35,7 @@ def display_config(settings):
     with hydra.initialize("clicktest_dir", version_base=None):
         cfg = hydra.compose("base.yaml", overrides=settings)
         typed_cfg = OmegaConf.to_object(cfg)
-        print(typed_cfg)
+        print(OmegaConf.to_yaml(cfg))
 
 
 @click.group()
