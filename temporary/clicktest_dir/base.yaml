@@ -1,0 +1,9 @@
+defaults:
+  - base_cfg
+  - _self_
+  # - top/hand: right
+
+# name: base
+top: ???
+  # hand:
+  #   strength: 90
