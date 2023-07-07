@@ -122,14 +122,14 @@ class RecordVideo(gym.Wrapper):
 
     def step(self, action):
         """Step."""
-        observations, rewards, dones, infos = super().step(action)
+        observations, rewards, terminateds, truncateds, infos = super().step(action)
 
         # increment steps and episodes
         self.step_id += 1
         if not self.is_vector_env:
-            if dones:
+            if terminateds:
                 self.episode_id += 1
-        elif dones[0]:
+        elif terminateds[0]:
             self.episode_id += 1
 
         if self.recording:
@@ -140,15 +140,15 @@ class RecordVideo(gym.Wrapper):
                     self.close_video_recorder()
             else:
                 if not self.is_vector_env:
-                    if dones:
+                    if terminateds:
                         self.close_video_recorder()
-                elif dones[0]:
+                elif terminateds[0]:
                     self.close_video_recorder()
 
         elif self._video_enabled():
             self.start_video_recorder()
 
-        return observations, rewards, dones, infos
+        return observations, rewards, terminateds, truncateds, infos
 
     def close_video_recorder(self) -> None:
         """Ends recording."""

@@ -4,6 +4,8 @@ import gymnasium as gym
 
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.env.gymnasium.wrappers.single_agent import SingleAgent
+from smarts.env.utils.action_conversion import ActionOptions
+from smarts.env.utils.observation_conversion import ObservationOptions
 
 agent_interface = AgentInterface.from_type(
     AgentType.Laner,
@@ -27,8 +29,11 @@ def entry_point(*args, **kwargs):
         agent_interfaces={"agent-007": agent_interface},
         scenarios=[scenario],
         headless=True,
+        action_options=ActionOptions.unformatted,
+        observation_options=ObservationOptions.unformatted,
+        disable_env_checker=True,
     )
-    env.metadata["render.modes"] = set(env.metadata["render.modes"]) | {"rgb_array"}
+    env.metadata["render.modes"] = set(env.metadata.get("render.modes", ()))| {"rgb_array"}
     return SingleAgent(env)
 
 
