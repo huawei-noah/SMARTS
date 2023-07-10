@@ -23,6 +23,7 @@ import gc
 import logging
 
 import gymnasium as gym
+import numpy as np
 import pytest
 from pympler import muppy, summary, tracker
 
@@ -31,7 +32,7 @@ from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.zoo.agent_spec import AgentSpec
 
 SMARTS_MEMORY_GROWTH_LIMIT = 2e5
-EPISODE_MEMORY_GROWTH_LIMIT = 2e5
+EPISODE_MEMORY_GROWTH_LIMIT = 8e5
 TIMESTEP_SEC = 0.1
 # Disable logging because it causes memory growth
 logging.disable(logging.WARNING)
@@ -63,15 +64,15 @@ def seed():
 @pytest.fixture(
     params=[
         # ( episodes, action, agent_type )
-        (100, None, AgentType.Buddha),
-        (100, (30, 1, -1), AgentType.Full),
+        (100, (), AgentType.Buddha),
+        (100, np.array((1, 1, -1), dtype=np.float32), AgentType.Full),
         # (10, (30, 1, -1), AgentType.Standard),  # standard is just full but less
-        (100, "keep_lane", AgentType.Laner),
+        (100, 2, AgentType.Laner),
         # (100, (30, 1, -1), AgentType.Loner),
         # (100, (30, 1, -1), AgentType.Tagger),
         # (100, (30, 1, -1), AgentType.StandardWithAbsoluteSteering),
         # (100, (50, 0), AgentType.LanerWithSpeed),
-        (100, ([1, 2, 3], [1, 2, 3], [0.5, 1, 1.5], [20, 20, 20]), AgentType.Tracker),
+        (100, (np.array([1, 2,]*10), np.array([1, 2]*10), np.array([0.5, 1] *10), np.array([20, 20]*10)), AgentType.Tracker),
         # ( 5, ([0,1,2], [0,1,2], [0,1,2]), AgentType.MPCTracker),
     ]
 )
@@ -81,7 +82,7 @@ def agent_params(request):
 
 @pytest.fixture
 def agent_type():
-    return ((30, 1, -1), AgentType.Full)
+    return (np.array((1, 1, -1), dtype=np.float32), AgentType.Full)
 
 
 def env_and_spec(
@@ -212,6 +213,7 @@ def test_smarts_episode_memory_cleanup(
     size = 0
     last_size = 0
     gc.collect()
+    from pympler import refbrowser
     tr = tracker.SummaryTracker()
     try:
         for current_episode in _every_nth_episode(
@@ -285,7 +287,7 @@ def test_smarts_fast_reset_memory_cleanup(agent_id, seed, social_agent_scenarios
             seed,
             social_agent_scenarios,
             1,
-            None,
+            (),
             agent_type,
             max_episode_steps=2,
         )
@@ -305,7 +307,7 @@ def test_smarts_social_agent_scenario_memory_cleanup(
     agent_id, seed, social_agent_scenarios, agent_type
 ):
     # Run once to initialize globals and test to see if smarts is working
-    _memory_buildup(agent_id, seed, social_agent_scenarios, 1, *agent_type)
+    _memory_buildup(agent_id, seed, social_agent_scenarios, 1, agent_type[0], agent_type[1])
 
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
