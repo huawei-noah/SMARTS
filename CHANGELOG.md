@@ -15,7 +15,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Deprecated
 ### Fixed
 - The `smarts` package now works with `python3.10` and `python3.11`.
+- Fixed an issue where default `AgentInterface.events` reference was shared.
+- Episode log now lists current value out of maximum rather than index.
+- Episode log now correctly shows all agent scores.
+- Clarified engine configuration location under `logging.info` instead of `print`.
 ### Removed
+- Removed `SMARTS.timestep_sec` attribute.
 ### Security
 
 ## [1.3.0] - 2023-07-11
@@ -44,10 +49,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
 - `make format` no longer complains about a broken `./baselines` path.
-- Fixed an issue where default `AgentInterface.events` reference was shared.
-- Episode log now lists current value out of maximum rather than index.
-- Episode log now correctly shows all agent scores.
-- Clarified engine configuration location under `logging.info` instead of `print`.
 ### Removed
 - Removed `scl benchmark run --debug-log`. The same setting can be configured with `ray:log_to_driver` or `SMARTS_RAY_LOG_TO_DRIVER`.
 - Removed `TruncatedDistribution` from scenario studio.
@@ -55,7 +56,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Removed `gym` as a core package dependency.
 - Removed `hiway-v0` env.
 - Removed `Api021Reversion` gym wrapper class.
-- Removed `SMARTS.timestep_sec` attribute.
 ### Security
 
 ## [1.2.0] # 2023-06-14
