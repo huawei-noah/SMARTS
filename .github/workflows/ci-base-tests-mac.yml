@@ -49,7 +49,8 @@ jobs:
           pip install wheel==0.38.4
           pip install -r utils/setup/mac_requirements.txt
           pip install -e .[camera_obs,opendrive,rllib,test,test_notebook,torch,train,argoverse,envision,sumo]
-          if echo ${{matrix.tests}} | grep -q -e "/env" -e "/examples"; then pip install -e .[rllib]; fi
+          if echo ${{matrix.tests}} | grep -q -e "/env"; then pip install -e .[rllib]; fi
+          if echo ${{matrix.tests}} | grep -q -e "/examples"; then pip install -e .[examples,rllib]; fi
           if echo ${{matrix.tests}} | grep -q "/ray"; then pip install -e .[ray]; fi
       - name: Run smoke tests
         run: |
