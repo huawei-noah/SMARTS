@@ -8,7 +8,15 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unreleased]
+## [Unreleased] - XXXX-XX-XX
+### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.3.0] - 2023-07-11
 ### Added
 - Added `rllib/pg_example.py` to demonstrate a simple integration with `RLlib` and `tensorflow` for policy training.
 - Added `rllib/pg_pbt_example.py` to demonstrate integration with `ray.RLlib`, `tensorflow`, and `ray.tune` for scheduled policy training.
@@ -696,3 +704,11 @@ the missions for all agents.
 – Note any features that have been deleted and removed from the software.
 ### Security
 – Invite users to upgrade and avoid fixed software vulnerabilities.
+
+## [Version] - XXXX-XX-XX
+### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
