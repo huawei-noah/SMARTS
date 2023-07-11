@@ -20,7 +20,7 @@ from smarts.env.configs.base_config import (
     EnvironmentArguments,
     EnvironmentConfiguration,
 )
-from smarts.env.configs.hiway_env_configs import HiWayEnvV1Config
+from smarts.env.configs.hiway_env_configs import HiWayEnvV1Configuration
 from smarts.env.utils.action_conversion import ActionOptions
 from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.zoo import registry
@@ -32,7 +32,7 @@ class ExperimentEnvCfg(EnvironmentConfiguration):
     id: str = "smarts.env:hiway-v1"
     """The gymnasium environment name."""
     params: EnvironmentArguments = field(
-        default_factory=lambda: HiWayEnvV1Config(
+        default_factory=lambda: HiWayEnvV1Configuration(
             scenarios=[
                 str(
                     Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "loop"

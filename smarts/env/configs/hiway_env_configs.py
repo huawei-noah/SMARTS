@@ -71,7 +71,7 @@ class SumoOptions:
 
 
 @dataclass
-class HiWayEnvV1Config(EnvironmentArguments):
+class HiWayEnvV1Configuration(EnvironmentArguments):
     """The base configurations that should be used for HiWayEnvV1."""
 
     scenarios: List[str]
