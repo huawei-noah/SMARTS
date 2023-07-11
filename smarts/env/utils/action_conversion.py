@@ -200,7 +200,7 @@ class ActionOptions(IntEnum):
     unformatted = 2
     """Actions are not reformatted or constrained to action space. Actions must directly map to
     underlying SMARTS actions."""
-    default = 0
+    default = multi_agent
     """Defaults to :attr:`multi_agent`."""
 
 

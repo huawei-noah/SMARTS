@@ -905,7 +905,7 @@ class ObservationOptions(IntEnum):
     unformatted = 2
     """Observation is the original unformatted observation. The observation will not match the
     observation space."""
-    default = 0
+    default = multi_agent
     """Defaults to :attr:`multi_agent`."""
 
 
