@@ -72,7 +72,22 @@ def seed():
         # (100, (30, 1, -1), AgentType.Tagger),
         # (100, (30, 1, -1), AgentType.StandardWithAbsoluteSteering),
         # (100, (50, 0), AgentType.LanerWithSpeed),
-        (100, (np.array([1, 2,]*10), np.array([1, 2]*10), np.array([0.5, 1] *10), np.array([20, 20]*10)), AgentType.Tracker),
+        (
+            100,
+            (
+                np.array(
+                    [
+                        1,
+                        2,
+                    ]
+                    * 10
+                ),
+                np.array([1, 2] * 10),
+                np.array([0.5, 1] * 10),
+                np.array([20, 20] * 10),
+            ),
+            AgentType.Tracker,
+        ),
         # ( 5, ([0,1,2], [0,1,2], [0,1,2]), AgentType.MPCTracker),
     ]
 )
@@ -120,7 +135,7 @@ def _env_memory_buildup(
     gc.collect()
 
 
-def _every_nth_episode(agent_id, episode_count, env_and_spec, steps_per_yield):
+def _every_nth_episode(agent_id, episode_count, env_and_spec, episodes_per_yield):
     env, agent_spec = env_and_spec
 
     for episode_index in range(episode_count):
@@ -143,7 +158,7 @@ def _every_nth_episode(agent_id, episode_count, env_and_spec, steps_per_yield):
             None,
             None,
         )
-        if episode_index % steps_per_yield == 0:
+        if episode_index % episodes_per_yield == 0:
             yield episode_index
 
 
@@ -202,7 +217,7 @@ def test_smarts_episode_memory_cleanup(
 ):
     MAX_EPISODE_STEPS = 100
     EPISODE_COUNT = 100
-    STEPS_PER_YIELD = 10
+    EPISODES_PER_CHECK = 10
 
     _, action, agent_type = agent_params
 
@@ -214,10 +229,14 @@ def test_smarts_episode_memory_cleanup(
     last_size = 0
     gc.collect()
     from pympler import refbrowser
+
     tr = tracker.SummaryTracker()
     try:
         for current_episode in _every_nth_episode(
-            agent_id, EPISODE_COUNT, env_and_agent_spec, steps_per_yield=STEPS_PER_YIELD
+            agent_id,
+            EPISODE_COUNT,
+            env_and_agent_spec,
+            episodes_per_yield=EPISODES_PER_CHECK,
         ):
             gc.collect()
             all_objects = muppy.get_objects()
@@ -225,10 +244,9 @@ def test_smarts_episode_memory_cleanup(
             tr.print_diff(summary.summarize(all_objects))
             print(flush=True)
             all_objects = None
-            if current_episode > STEPS_PER_YIELD:
-                assert (
-                    size - last_size < EPISODE_MEMORY_GROWTH_LIMIT
-                ), f"End size delta {size - last_size}"
+            assert (
+                size - last_size < EPISODE_MEMORY_GROWTH_LIMIT
+            ), f"End size delta `{size - last_size=}` at `{current_episode=}`"
             last_size = size
     finally:
         env_and_agent_spec[0].close()
@@ -307,7 +325,9 @@ def test_smarts_social_agent_scenario_memory_cleanup(
     agent_id, seed, social_agent_scenarios, agent_type
 ):
     # Run once to initialize globals and test to see if smarts is working
-    _memory_buildup(agent_id, seed, social_agent_scenarios, 1, agent_type[0], agent_type[1])
+    _memory_buildup(
+        agent_id, seed, social_agent_scenarios, 1, agent_type[0], agent_type[1]
+    )
 
     gc.collect()
     initial_size = muppy.get_size(muppy.get_objects())
