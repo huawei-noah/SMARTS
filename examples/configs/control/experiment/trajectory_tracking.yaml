@@ -1,0 +1,4 @@
+# @package _global_
+defaults:
+  - /agents_configs@agents_configs.tracker_agent: trajectory_tracking-v0
+  - override /env_config: hiway_env-v1_unformatted

@@ -7,7 +7,7 @@ from functools import partial
 from pathlib import Path
 from typing import Dict, Sequence, Tuple
 
-sys.path.insert(0, str(Path(__file__).parents[2].absolute()))
+sys.path.insert(0, str(Path(__file__).parents[1].absolute()))
 from examples.tools.argument_parser import default_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface

@@ -1,0 +1,4 @@
+# @package _global_
+defaults:
+  - /agents_configs@agents_configs.agent_smith: chase_via_points-v0 # agent_configs/chase_via_points-v0.yaml
+  - override /env_config: hiway_env-v1_unformatted
