@@ -136,14 +136,14 @@ class RoadMap:
         return nearest_lanes[0][0] if nearest_lanes else None
 
     def road_with_point(
-        self, point: Point, lanes_to_search: Optional[List["RoadMap.Lane"]] = None
+        self, point: Point, lanes_to_search: Optional[Sequence["RoadMap.Lane"]] = None
     ) -> Optional[RoadMap.Road]:
         """Find the road that contains the given point.
         Args:
             point:
                 The point to check.
             lanes_to_search:
-                A list of lanes with their distances. If not provided, the nearest lanes will be used.
+                A sequence of lanes with their distances. If not provided, the nearest lanes will be used.
         Returns:
             A list of generated routes that satisfy the given restrictions. Routes will be
             returned in order of increasing length."""

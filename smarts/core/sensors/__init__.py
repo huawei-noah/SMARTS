@@ -21,7 +21,7 @@ import logging
 import math
 import re
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 
@@ -581,14 +581,14 @@ class Sensors:
         vehicle_minimum_radius_bounds = (
             np.linalg.norm(vehicle_state.dimensions.as_lwh[:2]) * 0.5
         )
-        # Check that center of vehicle is still close to route
         radius = vehicle_minimum_radius_bounds + 5
         nearest_lanes_and_dists = sim_local_constants.road_map.nearest_lanes(
             vehicle_pos, radius=radius
         )
-        nearest_lanes = tuple([nl for (nl, _) in nearest_lanes_and_dists])
+        nearest_lanes = tuple(
+            [nl for (nl, _) in nearest_lanes_and_dists]
+        )  # Needs to be a tuple to be hashable
 
-        # TODO:  the following calls nearest_lanes (expensive) 6 times
         reached_goal = cls._agent_reached_goal(
             sensor_state, plan, vehicle_state, vehicle_sensors.get("trip_meter_sensor")
         )
@@ -663,7 +663,7 @@ class Sensors:
         cls,
         road_map,
         vehicle_state: VehicleState,
-        nearest_lanes: Optional[List["RoadMap.Lane"]] = None,
+        nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
     ):
         return not road_map.road_with_point(vehicle_state.pose.point, nearest_lanes)
 
@@ -672,7 +672,7 @@ class Sensors:
         cls,
         road_map,
         vehicle_state: VehicleState,
-        nearest_lanes: Optional[List["RoadMap.Lane"]] = None,
+        nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
     ):
         # XXX: this isn't technically right as this would also return True
         #      for vehicles that are completely off road.
@@ -706,7 +706,7 @@ class Sensors:
         sim_local_constants: SimulationLocalConstants,
         vehicle_state: VehicleState,
         plan,
-        nearest_lanes: Optional[List[Tuple[RoadMap.Lane, float]]] = None,
+        nearest_lanes: Optional[Sequence[Tuple[RoadMap.Lane, float]]] = None,
     ):
         """Determines if the agent is on route and on the correct side of the road.
 
@@ -750,6 +750,7 @@ class Sensors:
         ):
             return (False, is_wrong_way)
 
+        vehicle_pos = vehicle_state.pose.point
         veh_offset = nearest_lane.offset_along_lane(vehicle_pos)
 
         # so we're obviously not on the route, but we might have just gone

@@ -1596,7 +1596,7 @@ class WaymoMap(RoadMapWithCaches):
 
     @lru_cache(maxsize=16)
     def road_with_point(
-        self, point: Point, lanes_to_search: Optional[List["RoadMap.Lane"]] = None
+        self, point: Point, lanes_to_search: Optional[Sequence["RoadMap.Lane"]] = None
     ) -> Optional[RoadMap.Road]:
         # Lookup nearest lanes if no search lanes were provided
         if not lanes_to_search:
