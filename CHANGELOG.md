@@ -20,7 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Episode log now correctly shows all agent scores.
 - Clarified engine configuration location under `logging.info` instead of `print`.
 ### Removed
-- Removed `SMARTS.timestep_sec` attribute.
+- Removed previously deprecated `SMARTS.timestep_sec` attribute.
 ### Security
 
 ## [1.3.0] - 2023-07-11
