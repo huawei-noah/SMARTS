@@ -70,7 +70,7 @@ class HiWayEnvV1(gym.Env):
             needs that will be used to configure the environment.
         sim_name (str, optional): Simulation name. Defaults to None.
         scenarios_order (ScenarioOrder, optional): Configures the order of
-            scenarios provided over successive resets.
+            scenarios provided over successive resets. See :class`~smarts.env.configs.hiway_env_configs.ScenarioOrder`.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool): Deprecated. Use SMARTS_VISDOM_ENABLED.
@@ -80,7 +80,7 @@ class HiWayEnvV1(gym.Env):
         seed (int, optional): Random number generator seed. Defaults to 42.
         sumo_options (SumoOptions, Dict[str, Any]): The configuration for the
             sumo instance. A dictionary with the fields can be used instead.
-            See :class:`SumoOptions`.
+            See :class:`~smarts.env.configs.hiway_env_configs.SumoOptions`.
         visualization_client_builder: A method that must must construct an
             object that follows the Envision interface. Allows tapping into a
             direct data stream from the simulation.
@@ -95,7 +95,7 @@ class HiWayEnvV1(gym.Env):
         environment_return_mode (EnvReturnMode, str): This configures between the environment
             step return information (i.e. reward means the environment reward) and the per-agent
             step return information (i.e. reward means rewards as key-value per agent). Defaults to
-            :attr:`~smarts.env.gymnasium.hiway_env_v1.EnvReturnMode.per_agent`.
+            :attr:`~smarts.env.configs.hiway_env_configs.EnvReturnMode.per_agent`.
     """
 
     metadata = {"render_modes": ["human"]}
