@@ -1,7 +1,7 @@
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Dict, Final, List
+from typing import Dict, Final
 
 import gymnasium as gym
 
@@ -77,8 +77,9 @@ class ExperimentCfg:
     """The environment configuration for the environment used in this experiment. Typically 'smarts.env:hiway-v1'."""
 
 
-# This registers "__main__:keep_lane_control-v0"
-registry.register("keep_lane_control-v0", kla_entrypoint)
+registry.register(
+    "keep_lane_control-v0", kla_entrypoint
+)  # This registers "__main__:keep_lane_control-v0"
 registry.register(locator="open_agent-v0", entry_point=open_entrypoint)
 registry.register(locator="chase_via_points-v0", entry_point=cvpa_entrypoint)
 registry.register(
@@ -112,7 +113,10 @@ def main(experiment_config: ExperimentCfg) -> None:
         set(name for name, _ in typed_experiment_config.agents_configs.items())
     ), f"Agent names must be unique in configuration."
 
-    build_scenarios(scenarios=typed_experiment_config.env_config.params.scenarios)
+    if hasattr(typed_experiment_config.env_config.params, "scenarios"):
+        build_scenarios(
+            scenarios=getattr(typed_experiment_config.env_config.params, "scenarios")
+        )
 
     agent_specs = {
         name: registry.make(
@@ -121,7 +125,7 @@ def main(experiment_config: ExperimentCfg) -> None:
         )
         for name, cfg in typed_experiment_config.agents_configs.items()
     }
-    # This is the one point of pain that the agent interfaces are needed
+    # This is the one point of pain that the agent interfaces are needed for the environment
     #  but the agent should be constructed by the `smarts.zoo` separately.
     env_params = asdict(typed_experiment_config.env_config.params)
     if "agent_interfaces" in env_params:
