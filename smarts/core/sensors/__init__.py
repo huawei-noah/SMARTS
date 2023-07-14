@@ -665,7 +665,9 @@ class Sensors:
         vehicle_state: VehicleState,
         nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
     ):
-        return not road_map.road_with_point(vehicle_state.pose.point, nearest_lanes)
+        return not road_map.road_with_point(
+            vehicle_state.pose.point, lanes_to_search=nearest_lanes
+        )
 
     @classmethod
     def _vehicle_is_on_shoulder(
@@ -677,7 +679,9 @@ class Sensors:
         # XXX: this isn't technically right as this would also return True
         #      for vehicles that are completely off road.
         for corner_coordinate in vehicle_state.bounding_box_points:
-            if not road_map.road_with_point(Point(*corner_coordinate), nearest_lanes):
+            if not road_map.road_with_point(
+                Point(*corner_coordinate), lanes_to_search=nearest_lanes
+            ):
                 return True
         return False
 
