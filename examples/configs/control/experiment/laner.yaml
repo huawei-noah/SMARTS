@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - /agents_configs@agents_configs.agent_black: keep_lane_control-v0 # agent_configs/keep_lane_control-v0.yaml
+  - /agent_configs@agent_configs.agent_black: keep_lane_control-v0 # agent_configs/keep_lane_control-v0.yaml
   - override /env_config: hiway_env-v1_unformatted
 
 env_config:

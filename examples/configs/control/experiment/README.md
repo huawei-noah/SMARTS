@@ -17,7 +17,7 @@ See [Configuration package overrides](https://hydra.cc/docs/advanced/overriding_
 # experiment/laner.yaml
 defaults:
   - /experiment_default # unnecessary but useful to visualize
-  - /agents_configs@agents_configs.agent_black: keep_lane_control-v0 # agent_configs/keep_lane_control-v0.yaml
+  - /agent_configs@agent_configs.agent_black: keep_lane_control-v0 # agent_configs/keep_lane_control-v0.yaml
   - override /env_config: hiway_env-v1_unformatted
   - _self_ # this is also unnecessary because it is implied
 ```

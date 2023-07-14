@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - /agents_configs@agent_configs.agent_007: open_agent-v0 # agent_configs/open_agent.yaml applied to agent_configs.agent_007
+  - /agent_configs@agent_configs.agent_007: open_agent-v0 # agent_configs/open_agent.yaml applied to agent_configs.agent_007
   - override /env_config: hiway_env-v1_unformatted
 
 env_config:

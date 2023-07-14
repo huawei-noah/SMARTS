@@ -71,7 +71,7 @@ class ExperimentCfg:
     """If true the yaml structure of the configuration for this run will be printed."""
     minimum_steps: int = 1
     """The minimum number of steps to run before reset. This can be used to run egoless."""
-    agents_configs: Dict[str, AgentCfg] = field(default_factory=lambda: {})
+    agent_configs: Dict[str, AgentCfg] = field(default_factory=lambda: {})
     """The configuration of the agents to include in this experiment."""
     env_config: EnvironmentConfiguration = field(default_factory=ExperimentEnvCfg)
     """The environment configuration for the environment used in this experiment. Typically 'smarts.env:hiway-v1'."""
@@ -109,8 +109,8 @@ def main(experiment_config: ExperimentCfg) -> None:
         print(OmegaConf.to_yaml(cfg=experiment_config))
         print("# ==========================")
 
-    assert len(typed_experiment_config.agents_configs) == len(
-        set(name for name, _ in typed_experiment_config.agents_configs.items())
+    assert len(typed_experiment_config.agent_configs) == len(
+        set(name for name, _ in typed_experiment_config.agent_configs.items())
     ), f"Agent names must be unique in configuration."
 
     if hasattr(typed_experiment_config.env_config.params, "scenarios"):
@@ -123,7 +123,7 @@ def main(experiment_config: ExperimentCfg) -> None:
             locator=cfg.locator,
             **cfg.params,
         )
-        for name, cfg in typed_experiment_config.agents_configs.items()
+        for name, cfg in typed_experiment_config.agent_configs.items()
     }
     # This is the one point of pain that the agent interfaces are needed for the environment
     #  but the agent should be constructed by the `smarts.zoo` separately.
