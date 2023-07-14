@@ -636,11 +636,22 @@ class ArgoverseMap(RoadMapWithCaches):
         return candidate_lanes
 
     @lru_cache(maxsize=16)
-    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
-        radius = 5
-        for nl, dist in self.nearest_lanes(point, radius):
-            if nl.contains_point(point):
-                return nl.road
+    def road_with_point(
+        self,
+        point: Point,
+        *,
+        lanes_to_search: Optional[Sequence["RoadMap.Lane"]] = None,
+    ) -> Optional[RoadMap.Road]:
+        # Lookup nearest lanes if no search lanes were provided
+        if not lanes_to_search:
+            radius = 5
+            lanes = [nl for (nl, _) in self.nearest_lanes(point, radius)]
+        else:
+            lanes = lanes_to_search
+
+        for lane in lanes:
+            if lane.contains_point(point):
+                return lane.road
         return None
 
     class Road(RoadMapWithCaches.Road, Surface):

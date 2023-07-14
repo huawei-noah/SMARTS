@@ -1595,11 +1595,22 @@ class WaymoMap(RoadMapWithCaches):
         return nearest_lanes[0][0] if nearest_lanes else None
 
     @lru_cache(maxsize=16)
-    def road_with_point(self, point: Point) -> Optional[RoadMap.Road]:
-        radius = max(5, 2 * self._default_lane_width)
-        for nl, dist in self.nearest_lanes(point, radius):
-            if nl.contains_point(point):
-                return nl.road
+    def road_with_point(
+        self,
+        point: Point,
+        *,
+        lanes_to_search: Optional[Sequence["RoadMap.Lane"]] = None,
+    ) -> Optional[RoadMap.Road]:
+        # Lookup nearest lanes if no search lanes were provided
+        if not lanes_to_search:
+            radius = max(5, 2 * self._default_lane_width)
+            lanes = [nl for (nl, _) in self.nearest_lanes(point, radius)]
+        else:
+            lanes = lanes_to_search
+
+        for lane in lanes:
+            if lane.contains_point(point):
+                return lane.road
         return None
 
     class Feature(RoadMap.Feature):
