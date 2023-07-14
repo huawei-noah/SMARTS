@@ -70,7 +70,7 @@ class HiWayEnvV1(gym.Env):
             needs that will be used to configure the environment.
         sim_name (str, optional): Simulation name. Defaults to None.
         scenarios_order (ScenarioOrder, optional): Configures the order of
-            scenarios provided over successive resets. See :class`~smarts.env.configs.hiway_env_configs.ScenarioOrder`.
+            scenarios provided over successive resets. See :class:`~smarts.env.configs.hiway_env_configs.ScenarioOrder`.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool): Deprecated. Use SMARTS_VISDOM_ENABLED.
