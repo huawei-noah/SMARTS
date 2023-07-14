@@ -21,9 +21,9 @@ def entry_point(*args, **kwargs):
         (Path(__file__).parent / "../../scenarios/sumo/figure_eight").resolve()
     )
     # Note: can build the scenario here
-    # from smarts.sstudio.scenario_construction import build_scenario
+    from smarts.sstudio.scenario_construction import build_scenario
 
-    # build_scenario(scenario=scenario, clean=True)
+    build_scenario(scenario=scenario, clean=True)
     env = gym.make(
         "smarts.env:hiway-v1",
         agent_interfaces={"agent-007": agent_interface},
@@ -33,7 +33,10 @@ def entry_point(*args, **kwargs):
         observation_options=ObservationOptions.unformatted,
         disable_env_checker=True,
     )
-    env.metadata["render_modes"] = set(env.metadata.get("render_modes", ()))| {"rgb_array"}
+    env.unwrapped.render_mode = "rgb_array"
+    env.metadata["render_modes"] = set(env.metadata.get("render_modes", ())) | {
+        "rgb_array"
+    }
     return SingleAgent(env)
 
 
