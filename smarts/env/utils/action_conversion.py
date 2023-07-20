@@ -51,7 +51,9 @@ def _DEFAULT_PASSTHROUGH(action):
 
 
 _throttle_break_steering_space = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
+    low=np.array([0.0, 0.0, -1.0], dtype=np.float32),
+    high=np.array([1.0, 1.0, 1.0], dtype=np.float32),
+    dtype=np.float32,
 )
 
 _actuator_dynamic_space = _throttle_break_steering_space
@@ -61,8 +63,12 @@ _continuous_space = _throttle_break_steering_space
 
 
 _direct_space = gym.spaces.Box(
-    low=np.array([LINEAR_ACCELERATION_MINIMUM, ANGULAR_VELOCITY_MINIMUM]),
-    high=np.array([LINEAR_ACCELERATION_MAXIMUM, ANGULAR_VELOCITY_MAXIMUM]),
+    low=np.array(
+        [LINEAR_ACCELERATION_MINIMUM, ANGULAR_VELOCITY_MINIMUM], dtype=np.float32
+    ),
+    high=np.array(
+        [LINEAR_ACCELERATION_MAXIMUM, ANGULAR_VELOCITY_MAXIMUM], dtype=np.float32
+    ),
     dtype=np.float32,
 )
 
