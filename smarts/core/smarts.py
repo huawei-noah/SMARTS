@@ -1007,7 +1007,7 @@ class SMARTS(ProviderManager):
         return self._renderer
 
     @property
-    def renderer_ref(self) -> Optional[Any]:
+    def renderer_ref(self) -> Optional[RendererBase]:
         """Get the reference of the renderer. This can be `None`."""
         return self._renderer
 

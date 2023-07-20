@@ -73,7 +73,7 @@ target/
 celerybeat-schedule
 
 # Environments
-.venv
+.venv*
 venv
 .bugtest
 

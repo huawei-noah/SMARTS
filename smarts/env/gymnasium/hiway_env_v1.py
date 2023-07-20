@@ -98,7 +98,9 @@ class HiWayEnvV1(gym.Env):
             :attr:`~smarts.env.configs.hiway_env_configs.EnvReturnMode.per_agent`.
     """
 
-    metadata = {"render_modes": ["human"]}
+    metadata = {
+        "render_modes": ["rgb_array"],
+    }
     """Metadata for gym's use."""
 
     # define render_mode if your environment supports rendering
@@ -130,6 +132,7 @@ class HiWayEnvV1(gym.Env):
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
         environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.default,
+        render_mode: Optional[str] = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
@@ -153,6 +156,7 @@ class HiWayEnvV1(gym.Env):
             visualization_client.send(preamble)
 
         self._env_renderer = None
+        self.render_mode = render_mode
 
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
@@ -386,10 +390,7 @@ class HiWayEnvV1(gym.Env):
         Note:
             Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
         """
-        if (
-            "rgb_array" in self.metadata["render_modes"]
-            or self.render_mode == "rgb_array"
-        ):
+        if self.render_mode == "rgb_array":
             if self._env_renderer is None:
                 from smarts.env.utils.record import AgentCameraRGBRender
 
@@ -432,14 +433,11 @@ class HiWayEnvV1(gym.Env):
         Returns:
             A string identifying the environment.
         """
-        if self.spec is None:
-            return f"<{type(self).__name__} instance>"
-        else:
-            return f"<{type(self).__name__}<{self.spec.id}>>"
+        return super().__str__()
 
     def __enter__(self):
         """Support with-statement for the environment."""
-        return self
+        return super().__enter__()
 
     def __exit__(self, *args: Any):
         """Support with-statement for the environment and closes the environment."""
