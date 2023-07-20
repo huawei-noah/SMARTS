@@ -136,15 +136,14 @@ class HiWayEnvV1(gym.Env):
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
-        self._agent_interfaces = [
-            (
-                a_id,
+        self._agent_interfaces = {
+            a_id: (
                 a_interface
                 if isinstance(a_interface, AgentInterface)
                 else AgentInterface(**a_interface),
             )
             for a_id, a_interface in agent_interfaces.items()
-        ]
+        }
         self._dones_registered = 0
 
         scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]

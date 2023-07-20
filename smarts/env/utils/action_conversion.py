@@ -223,7 +223,7 @@ class ActionSpacesFormatter:
         self, agent_interfaces: Dict[str, AgentInterface], action_options: ActionOptions
     ) -> None:
         self._agent_interfaces = agent_interfaces
-        self._action_options = action_options
+        self.action_options = action_options
 
         for agent_id, agent_interface in agent_interfaces.items():
             assert self.supported(agent_interface.action), (
@@ -242,7 +242,7 @@ class ActionSpacesFormatter:
             (Observation, Dict[str, Any]): The formatted actions.
         """
 
-        if self._action_options == ActionOptions.unformatted:
+        if self.action_options == ActionOptions.unformatted:
             return actions
 
         out_actions = {}
@@ -259,7 +259,7 @@ class ActionSpacesFormatter:
             formatted_action = format_.formatting_func(action)
             out_actions[agent_id] = formatted_action
 
-        if self._action_options == ActionOptions.full:
+        if self.action_options == ActionOptions.full:
             assert actions.keys() == self.space.spaces.keys()
 
         return out_actions
@@ -283,7 +283,7 @@ class ActionSpacesFormatter:
         Returns:
             gym.spaces.Dict: A description of the action space that this formatter requires.
         """
-        if self._action_options is ActionOptions.unformatted:
+        if self.action_options is ActionOptions.unformatted:
             return None
         return gym.spaces.Dict(
             {

@@ -10,15 +10,21 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased] - XXXX-XX-XX
 ### Added
+- SMARTS option `smarts[examples]` added for running SMARTS examples.
 ### Changed
 - The following dependencies have been loosened: `numpy`, `opencv`, `torch`.
+- Clarified engine configuration location under `logging.info` instead of `print`.
+- `ScenarioOrder` enumeration values are now lower-case (e.g. `scrambled` instead of `Scrambled`).
+- `EnvReturnMode`, `ScenarioOrder`, and `SumoOptions` have been moved to `smarts.env.configs.hiway_env_configs`.
+- `trimesh` version has been loosened to `trimesh>=3.9.29`.
 ### Deprecated
 ### Fixed
 - The `smarts` package now works with `python3.10` and `python3.11`.
-- Fixed an issue where default `AgentInterface.events` reference was shared.
+- Fixed an issue where default `AgentInterface.events` shared a reference.
 - Episode log now lists current value out of maximum rather than index.
 - Episode log now correctly shows all agent scores.
-- Clarified engine configuration location under `logging.info` instead of `print`.
+- Added `scipy` back to dependencies to fix scenario building.
+- Fixed `gymnasium` floating type cast warnings in action conversion.
 ### Removed
 - Removed previously deprecated `SMARTS.timestep_sec` attribute.
 ### Security

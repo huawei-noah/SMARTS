@@ -15,14 +15,11 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
         headless=headless,
     )
 
-    if max_episode_steps is None:
-        max_episode_steps = 300
-
     for episode in episodes(n=num_episodes):
         env.reset()
         episode.record_scenario(env.scenario_log)
 
-        for _ in range(max_episode_steps):
+        for _ in range(max_episode_steps or 300):
             env.step({})
             episode.record_step({}, {}, {}, {}, {})
 
@@ -35,7 +32,7 @@ if __name__ == "__main__":
 
     if not args.scenarios:
         args.scenarios = [
-            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop")
+            str(Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "loop")
         ]
 
     build_scenarios(scenarios=args.scenarios)
