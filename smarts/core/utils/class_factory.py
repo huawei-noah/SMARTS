@@ -109,8 +109,7 @@ class ClassRegister:
         self._raise_on_invalid_locator(locator)
 
         mod_name, _, name = locator.partition(":")
-
-        if name is not None:
+        if name != "":
             # There is a module component.
             try:
                 # Import the module so that the agent may register itself in the index
@@ -157,7 +156,7 @@ class ClassRegister:
         out = ""
         for i, name in enumerate(self.index.keys()):
             out = f"{out}{name.ljust(max_justify)} "
-            if i % columns == 0:
+            if i % columns == 0 and len(self.index) != i + 1:
                 out += "\n"
         out += "\n"
 

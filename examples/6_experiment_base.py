@@ -84,7 +84,7 @@ cs.store(name="base_experiment", node=ExperimentCfg, group=None)
     config_name="experiment_default",
     version_base=None,
 )
-def main(experiment_config: ExperimentCfg) -> None:
+def experiment_main(experiment_config: ExperimentCfg) -> None:
     typed_experiment_config: ExperimentCfg = OmegaConf.to_object(cfg=experiment_config)
     print(f"Loading configuration from `{CONFIG_LOCATION}`")
     if typed_experiment_config.show_config:
@@ -147,4 +147,4 @@ def main(experiment_config: ExperimentCfg) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    experiment_main()
