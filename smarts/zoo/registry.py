@@ -47,7 +47,7 @@ def register(locator: str, entry_point, **kwargs):
         )
     """
 
-    agent_registry.register(locator=locator, entry_point=entry_point, **kwargs)
+    agent_registry.register(name=locator, entry_point=entry_point, **kwargs)
 
 
 def make(locator: str, **kwargs):
