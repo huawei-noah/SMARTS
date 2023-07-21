@@ -44,45 +44,40 @@ def detail_environment(env: HiWayEnvV1, name: str):
 
 
 def main():
-    agent_interface = AgentInterface.from_type(AgentType.Standard)
-    scenarios = [
-        str(Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "loop")
-    ]
+    defaults = dict(
+        agent_interfaces={AGENT_ID: AgentInterface.from_type(AgentType.Standard)},
+        scenarios=[
+            str(Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "figure_eight")
+        ],
+        headless=True,
+    )
 
     with HiWayEnvV1(
-        scenarios=scenarios,
-        agent_interfaces={AGENT_ID: agent_interface},
-        headless=True,
         # observation_options=ObservationOptions.multi_agent,
         # action_options=ActionOptions.multi_agent,
+        **defaults,
     ) as env:
         detail_environment(env, "multi_agent")
 
     with HiWayEnvV1(
-        scenarios=scenarios,
-        agent_interfaces={AGENT_ID: agent_interface},
-        headless=True,
         observation_options=ObservationOptions.full,
         action_options=ActionOptions.full,
+        **defaults,
     ) as env:
         detail_environment(env, "full")
 
     with HiWayEnvV1(
-        scenarios=scenarios,
-        agent_interfaces={AGENT_ID: agent_interface},
-        headless=True,
         observation_options=ObservationOptions.unformatted,
         action_options=ActionOptions.unformatted,
+        **defaults,
     ) as env:
         detail_environment(env, "unformatted")
 
     with HiWayEnvV1(
-        scenarios=scenarios,
-        agent_interfaces={AGENT_ID: agent_interface},
-        headless=True,
         observation_options=ObservationOptions.unformatted,
         action_options=ActionOptions.unformatted,
         environment_return_mode=EnvReturnMode.environment,
+        **defaults,
     ) as env:
         detail_environment(env, "env return")
 
