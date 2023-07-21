@@ -2,7 +2,7 @@
 from pathlib import Path
 
 import gymnasium as gym
-from tools.argument_parser import default_argument_parser
+from tools.argument_parser import empty_parser
 
 from smarts.core.utils.episodes import episodes
 from smarts.sstudio.scenario_construction import build_scenarios
@@ -39,4 +39,7 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = empty_parser(Path(__file__).stem)
+    args = parser.parse_args()
+
     main()

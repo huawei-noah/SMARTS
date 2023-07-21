@@ -5,8 +5,6 @@ from typing import Dict, Final, Type
 
 import gymnasium as gym
 
-from smarts.env.utils.observation_conversion import ObservationOptions
-
 try:
     import hydra
     from hydra.core.config_store import ConfigStore
@@ -18,7 +16,6 @@ except ImportError as exc:
 from smarts.core.utils.episodes import episodes
 from smarts.env.configs.base_config import EnvironmentConfiguration
 from smarts.env.configs.hiway_env_configs import HiWayEnvV1Configuration
-from smarts.env.utils.action_conversion import ActionOptions
 from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.zoo import registry
 
@@ -67,13 +64,11 @@ class ExperimentCfg:
 registry.register(
     "keep_lane_control-v0", kla_entrypoint
 )  # This registers "__main__:keep_lane_control-v0"
-registry.register(locator="open_agent-v0", entry_point=open_entrypoint)
-registry.register(locator="chase_via_points-v0", entry_point=cvpa_entrypoint)
+registry.register("open_agent-v0", entry_point=open_entrypoint)
+registry.register("chase_via_points-v0", entry_point=cvpa_entrypoint)
+registry.register("trajectory_tracking-v0", entry_point=trajectory_tracking_entrypoint)
 registry.register(
-    locator="trajectory_tracking-v0", entry_point=trajectory_tracking_entrypoint
-)
-registry.register(
-    locator="standard_lane_follower-v0", entry_point=standard_lane_follower_entrypoint
+    "standard_lane_follower-v0", entry_point=standard_lane_follower_entrypoint
 )
 
 

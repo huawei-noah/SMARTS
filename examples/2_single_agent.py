@@ -15,7 +15,6 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
 from smarts.env.gymnasium.wrappers.single_agent import SingleAgent
-from smarts.env.utils.action_conversion import ActionOptions
 from smarts.sstudio.scenario_construction import build_scenarios
 
 AGENT_ID: Final[str] = "Agent"
@@ -55,7 +54,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = minimal_argument_parser("2_simple_agent")
+    parser = minimal_argument_parser(Path(__file__).stem)
     args = parser.parse_args()
 
     if not args.scenarios:
