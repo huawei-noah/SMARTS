@@ -89,7 +89,7 @@ registry.register(
     locator="standard_lane_follower-v0", entry_point=standard_lane_follower_entrypoint
 )
 
-CONFIG_LOCATION: Final[str] = str(Path(__file__).parent.absolute() / "configs/control")
+CONFIG_LOCATION: Final[str] = str(Path(__file__).parent.absolute() / "configs/5_experiment_base")
 cs = ConfigStore.instance()
 cs.store(name="base_experiment", node=ExperimentCfg, group=None)
 
