@@ -42,14 +42,7 @@ def test_examples(
     current_example = import_module(example, "examples")
     main = current_example.main
 
-    if example != "6_experiment_base":
-        main(
-            scenarios=["scenarios/sumo/loop"],
-            headless=True,
-            num_episodes=1,
-            max_episode_steps=100,
-        )
-    else:
+    if example == "6_experiment_base":
         example_path = Path(current_example.__file__).parent
         with initialize_config_dir(
             version_base=None,
@@ -57,6 +50,13 @@ def test_examples(
         ):
             cfg = compose(config_name="experiment_default")
             main(cfg)
+    else:
+        main(
+            scenarios=["scenarios/sumo/loop"],
+            headless=True,
+            num_episodes=1,
+            max_episode_steps=100,
+        )
 
 
 def test_rllib_pg_example():
