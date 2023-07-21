@@ -156,7 +156,7 @@ the user.
                 agent_params=agent_params,
             )
 
-        register(locator="contrib-agent-v0", entry_point=entry_point)
+        register("contrib-agent-v0", entry_point=entry_point)
 
     + User may fill in the ``<...>`` spaces in the template.
     + User may specify the ego's interface by configuring any field of :class:`~smarts.core.agent_interface.AgentInterface`, except
