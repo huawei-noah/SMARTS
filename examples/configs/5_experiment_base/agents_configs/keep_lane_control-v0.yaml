@@ -1,3 +1,0 @@
-locator: __main__:keep_lane_control-v0
-params:
-  max_episode_steps: 1000

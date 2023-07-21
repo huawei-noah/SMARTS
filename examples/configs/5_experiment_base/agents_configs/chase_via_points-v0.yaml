@@ -1,3 +1,0 @@
-locator: __main__:chase_via_points-v0
-params:
-  max_episode_steps: 1000

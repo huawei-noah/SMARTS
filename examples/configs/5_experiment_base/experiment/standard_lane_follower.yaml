@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - /agent_configs@agent_configs.agent_black: standard_lane_follower-v0
+  - /agent_configs@agent_configs.agent_j: standard_lane_follower-v0
   - /agent_configs@agent_configs.agent_k: standard_lane_follower-v0
   - override /env_config: hiway_env-v1
 

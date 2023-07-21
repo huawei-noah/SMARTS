@@ -23,13 +23,13 @@ def test_examples(example):
     if example == "egoless":
         from examples import egoless as current_example
     elif example == "chase_via_points":
-        from examples.control import chase_via_points as current_example
+        from examples.experiment import chase_via_points as current_example
     elif example == "trajectory_tracking":
-        from examples.control import trajectory_tracking as current_example
+        from examples.experiment import trajectory_tracking as current_example
     elif example == "laner":
-        from examples.control import laner as current_example
+        from examples.experiment import laner as current_example
     elif example == "hiway_v1":
-        from examples.control import hiway_env_v1_lane_follower as current_example
+        from examples.experiment import hiway_env_v1_lane_follower as current_example
     main = current_example.main
     main(
         scenarios=["scenarios/sumo/loop"],

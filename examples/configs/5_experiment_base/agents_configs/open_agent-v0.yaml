@@ -1,4 +1,0 @@
-locator: __main__:open_agent-v0
-params:
-  debug: false
-  aggressiveness: 3
