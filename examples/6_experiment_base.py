@@ -1,3 +1,4 @@
+"""This example allows you to play around with the features of the previous examples through configuration."""
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -73,7 +74,7 @@ registry.register(
 
 
 CONFIG_LOCATION: Final[str] = str(
-    Path(__file__).parent.absolute() / "configs/6_experiment_base"
+    Path(__file__).parent.absolute() / "configs" / "6_experiment_base"
 )
 cs = ConfigStore.instance()
 cs.store(name="base_experiment", node=ExperimentCfg, group=None)
@@ -92,6 +93,7 @@ def hydra_main(experiment_config: ExperimentCfg) -> None:
         print(OmegaConf.to_yaml(cfg=experiment_config))
         print("# ==========================")
     main(experiment_config)
+
 
 def main(experiment_config: ExperimentCfg, *_, **kwargs):
     typed_experiment_config: ExperimentCfg = OmegaConf.to_object(cfg=experiment_config)
@@ -116,6 +118,9 @@ def main(experiment_config: ExperimentCfg, *_, **kwargs):
     #  but the agent should be constructed by the `smarts.zoo` separately.
     env_params = asdict(typed_experiment_config.env_config)
     if "agent_interfaces" in env_params:
+        assert (
+            len(env_params["agent_interfaces"]) == 0
+        ), "Agent interfaces in this case are attached to the agent configuration."
         # I would consider allowing agent interface to also be just a dictionary.
         env_params["agent_interfaces"] = {
             a_id: a_intrf.interface for a_id, a_intrf in agent_specs.items()
@@ -147,6 +152,7 @@ def main(experiment_config: ExperimentCfg, *_, **kwargs):
             episode.record_step(observations, rewards, terminateds, truncateds, infos)
 
     env.close()
+
 
 if __name__ == "__main__":
     hydra_main()
