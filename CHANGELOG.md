@@ -49,7 +49,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Changed `gymnasium` to be an optional dependency. Use `pip install -e .[gymnasium]` to install it.
 - Renamed the `[gym]` optional install to `[gif_recorder]`.
 - Optimized events calculation to avoid redundant roadmap calls.
-- Moved `ScenarioOrder`, `EnvReturnMode`, and `SumoOptions` from `smarts.env.gymnasium.hiway_env_v1` to `smarts.env.configs.hiway_env_configs`.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
