@@ -20,7 +20,7 @@
 
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, Final, List, Tuple, Union
 
 import numpy as np
 import trimesh
@@ -29,6 +29,12 @@ from trimesh.exchange import gltf
 
 from smarts.core.coordinates import BoundingBox
 from smarts.core.utils.geometry import triangulate_polygon
+
+OLD_TRIMESH: Final[bool] = tuple(int(d) for d in trimesh.__version__.split(".")) <= (
+    3,
+    9,
+    29,
+)
 
 
 def _convert_camera(camera):
@@ -139,7 +145,10 @@ def make_map_glb(
         name = str(road_id)
         if lane_id is not None:
             name += f"-{lane_id}"
-        scene.add_geometry(mesh, name, extras=mesh.metadata)
+        if OLD_TRIMESH:
+            scene.add_geometry(mesh, name, extras=mesh.metadata)
+        else:
+            scene.add_geometry(mesh, name, metadata=mesh.metadata)
     return GLBData(gltf.export_glb(scene, include_normals=True))
 
 
