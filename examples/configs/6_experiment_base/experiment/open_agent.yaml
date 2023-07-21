@@ -4,7 +4,6 @@ defaults:
   - override /env_config: hiway_env-v1_unformatted
 
 env_config:
-  params:
-    scenarios:
-    - ./scenarios/sumo/loop
-    - ./scenarios/sumo/figure_eight
+  scenarios:
+  - ./scenarios/sumo/loop
+  - ./scenarios/sumo/figure_eight

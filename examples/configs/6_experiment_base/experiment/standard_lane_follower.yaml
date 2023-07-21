@@ -5,6 +5,5 @@ defaults:
   - override /env_config: hiway_env-v1
 
 env_config:
-  params:
-    scenarios:
-    - ./scenarios/sumo/merge/3lane_agents_2
+  scenarios:
+  - ./scenarios/sumo/merge/3lane_agents_2

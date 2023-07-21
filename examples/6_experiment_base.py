@@ -73,7 +73,7 @@ registry.register(
 
 
 CONFIG_LOCATION: Final[str] = str(
-    Path(__file__).parent.absolute() / "configs/5_experiment_base"
+    Path(__file__).parent.absolute() / "configs/6_experiment_base"
 )
 cs = ConfigStore.instance()
 cs.store(name="base_experiment", node=ExperimentCfg, group=None)
@@ -95,7 +95,7 @@ def experiment_main(experiment_config: ExperimentCfg) -> None:
         print("# ==========================")
 
     assert not any(
-        "locator" not in v for v in typed_experiment_config.agent_configs.items()
+        "locator" not in v for v in typed_experiment_config.agent_configs.values()
     ), "A declared agent is missing a locator."
 
     if hasattr(typed_experiment_config.env_config, "scenarios"):
