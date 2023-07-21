@@ -1,7 +1,6 @@
 defaults:
   - hiway_env-v1_default # env_config/hiway_env-v1_default
 
-params:
-  observation_options: unformatted
-  action_options: unformatted
-  environment_return_mode: default
+observation_options: unformatted
+action_options: unformatted
+environment_return_mode: default

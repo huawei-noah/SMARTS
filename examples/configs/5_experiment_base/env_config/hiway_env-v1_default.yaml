@@ -1,20 +1,19 @@
 defaults:
-  - params/scenarios/figure_eight
+  - scenarios/figure_eight
 
 id: smarts.env:hiway-v1
-params:
-  agent_interfaces: {}
-  sim_name: null
-  scenarios_order: scrambled
+agent_interfaces: {}
+sim_name: null
+scenarios_order: scrambled
+headless: true
+visdom: false
+fixed_timestep_sec: 0.1
+sumo_options:
+  num_external_clients: 0
+  auto_start: true
   headless: true
-  visdom: false
-  fixed_timestep_sec: 0.1
-  sumo_options:
-    num_external_clients: 0
-    auto_start: true
-    headless: true
-    port: null
-  seed: 42
-  observation_options: default
-  action_options: default
-  environment_return_mode: default
+  port: null
+seed: 42
+observation_options: default
+action_options: default
+environment_return_mode: default

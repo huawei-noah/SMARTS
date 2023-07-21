@@ -35,5 +35,3 @@ class EnvironmentConfiguration:
 
     id: str
     """The gymnasium registered id of the environment."""
-    params: EnvironmentArguments
-    """The arguments for an environment."""

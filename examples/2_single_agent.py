@@ -1,3 +1,6 @@
+"""This example shows how you might run a SMARTS environment for single-agent work. SMARTS is
+natively multi-agent so a single-agent wrapper is used."""
+import argparse
 import random
 import sys
 from pathlib import Path
@@ -7,7 +10,7 @@ import gymnasium as gym
 
 SMARTS_REPO_PATH = Path(__file__).parents[1].absolute()
 sys.path.insert(0, str(SMARTS_REPO_PATH))
-from examples.tools.argument_parser import default_argument_parser
+from examples.tools.argument_parser import minimal_argument_parser
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.utils.episodes import episodes
@@ -52,7 +55,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("2_simple_agent")
+    parser = minimal_argument_parser("2_simple_agent")
     args = parser.parse_args()
 
     if not args.scenarios:

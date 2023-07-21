@@ -1,3 +1,4 @@
+"""This example is intended to show how a SMARTS environment would be set up without any agents."""
 from pathlib import Path
 
 import gymnasium as gym
@@ -7,12 +8,23 @@ from smarts.core.utils.episodes import episodes
 from smarts.sstudio.scenario_construction import build_scenarios
 
 
-def main(scenarios, headless, num_episodes, max_episode_steps=None):
+def main():
+    max_episode_steps = None
+    num_episodes = 10
+    scenarios_path = Path(__file__).absolute().parents[1] / "scenarios" / "sumo"
+
+    # Scenarios have to be built for the scenario to be complete. This can be done
+    # in two ways:
+    # - From the cli like: `scl scenario build-all <scenario>`
+    # - From code using `build_scenarios(scenarios=[<scenario>, ...])`
+    scenarios = [str(scenarios_path / "figure_eight"), str(scenarios_path / "loop")]
+    build_scenarios(scenarios=scenarios)
+
     env = gym.make(
         "smarts.env:hiway-v1",
         scenarios=scenarios,
         agent_interfaces={},
-        headless=headless,
+        headless=True,
     )
 
     for episode in episodes(n=num_episodes):
@@ -27,18 +39,4 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("egoless")
-    args = parser.parse_args()
-
-    if not args.scenarios:
-        args.scenarios = [
-            str(Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "loop")
-        ]
-
-    build_scenarios(scenarios=args.scenarios)
-
-    main(
-        scenarios=args.scenarios,
-        headless=args.headless,
-        num_episodes=args.episodes,
-    )
+    main()

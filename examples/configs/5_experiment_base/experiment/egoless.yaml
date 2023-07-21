@@ -1,6 +1,6 @@
 # @package _global_
 defaults:
-  - /env_config/params/scenarios: intersections
+  - /env_config/scenarios: intersections
 
 minimum_steps: 1000
 episodes: 10
