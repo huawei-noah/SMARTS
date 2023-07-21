@@ -1,6 +1,9 @@
 import sys
 import tempfile
 from pathlib import Path
+from importlib import import_module
+from typing import Literal
+from hydra import initialize_config_dir, compose
 
 import pytest
 
@@ -16,27 +19,25 @@ import_utils.import_module_from_file(
 
 @pytest.mark.parametrize(
     "example",
-    ["egoless", "chase_via_points", "trajectory_tracking", "laner", "hiway_v1"],
+    ["1_egoless", "2_single_agent", "3_multi_agent", "4_environment_config", "5_agent_zoo", "6_experiment_base"],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
-def test_examples(example):
-    if example == "egoless":
-        from examples import egoless as current_example
-    elif example == "chase_via_points":
-        from examples.experiment import chase_via_points as current_example
-    elif example == "trajectory_tracking":
-        from examples.experiment import trajectory_tracking as current_example
-    elif example == "laner":
-        from examples.experiment import laner as current_example
-    elif example == "hiway_v1":
-        from examples.experiment import hiway_env_v1_lane_follower as current_example
+def test_examples(example: Literal['1_egoless', '2_single_agent', '3_multi_agent', '4_environment_config', '5_agent_zoo', '6_experiment_base']):
+    current_example = import_module(example, "examples")
     main = current_example.main
-    main(
-        scenarios=["scenarios/sumo/loop"],
-        headless=True,
-        num_episodes=1,
-        max_episode_steps=100,
-    )
+
+    if example != "6_experiment_base":
+        main(
+            scenarios=["scenarios/sumo/loop"],
+            headless=True,
+            num_episodes=1,
+            max_episode_steps=100,
+        )
+    else:
+        example_path = Path(current_example.__file__).parent
+        with initialize_config_dir(version_base=None, config_dir=str(example_path.absolute()/"configs"/example)):
+            cfg = compose(config_name="experiment_default")
+            main(cfg)
 
 
 def test_rllib_pg_example():

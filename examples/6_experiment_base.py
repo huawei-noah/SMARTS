@@ -84,15 +84,18 @@ cs.store(name="base_experiment", node=ExperimentCfg, group=None)
     config_name="experiment_default",
     version_base=None,
 )
-def experiment_main(experiment_config: ExperimentCfg) -> None:
-    typed_experiment_config: ExperimentCfg = OmegaConf.to_object(cfg=experiment_config)
-    print(f"Loading configuration from `{CONFIG_LOCATION}`")
-    if typed_experiment_config.show_config:
+def hydra_main(experiment_config: ExperimentCfg) -> None:
+    if experiment_config.show_config:
         print()
         print("# Current used configuration")
         print("# ==========================\n")
         print(OmegaConf.to_yaml(cfg=experiment_config))
         print("# ==========================")
+    main(experiment_config)
+
+def main(experiment_config: ExperimentCfg, *_, **kwargs):
+    typed_experiment_config: ExperimentCfg = OmegaConf.to_object(cfg=experiment_config)
+    print(f"Loading configuration from `{CONFIG_LOCATION}`")
 
     assert not any(
         "locator" not in v for v in typed_experiment_config.agent_configs.values()
@@ -145,6 +148,5 @@ def experiment_main(experiment_config: ExperimentCfg) -> None:
 
     env.close()
 
-
 if __name__ == "__main__":
-    experiment_main()
+    hydra_main()

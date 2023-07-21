@@ -41,7 +41,7 @@ def detail_environment(env: HiWayEnvV1, name: str):
     print()
 
 
-def main():
+def main(*_, **kwargs):
     defaults = dict(
         agent_interfaces={AGENT_ID: AgentInterface.from_type(AgentType.Standard)},
         scenarios=[

@@ -30,7 +30,7 @@ def rla_entrypoint(max_episode_steps=1000):
     )
 
 
-def main():
+def main(*_, **kwargs):
     name = "random_lane_control-v0"
     print(f"=== Before registering `{name}` ===")
     print(registry.agent_registry)

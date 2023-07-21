@@ -8,7 +8,7 @@ from smarts.core.utils.episodes import episodes
 from smarts.sstudio.scenario_construction import build_scenarios
 
 
-def main():
+def main(*_, **kwargs):
     max_episode_steps = None
     num_episodes = 10
     scenarios_path = Path(__file__).absolute().parents[1] / "scenarios" / "sumo"
