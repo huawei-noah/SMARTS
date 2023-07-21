@@ -5,11 +5,9 @@ For the unformatted observation please see https://smarts.readthedocs.io/en/late
 import warnings
 from pathlib import Path
 
-import gymnasium as gym
-from tools.argument_parser import default_argument_parser
+from tools.argument_parser import empty_parser
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.episodes import episodes
 from smarts.core.utils.string import truncate
 from smarts.env.configs.hiway_env_configs import EnvReturnMode
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
@@ -23,7 +21,7 @@ AGENT_ID = "agent"
 
 
 def detail_environment(env: HiWayEnvV1, name: str):
-    obs, infos = env.reset()
+    obs, _ = env.reset()
 
     print(f"-------- Format '{name}' ---------")
     print(f"Environment action space {env.action_space}")
@@ -47,11 +45,19 @@ def main():
     defaults = dict(
         agent_interfaces={AGENT_ID: AgentInterface.from_type(AgentType.Standard)},
         scenarios=[
-            str(Path(__file__).absolute().parents[1] / "scenarios" / "sumo" / "figure_eight")
+            str(
+                Path(__file__).absolute().parents[1]
+                / "scenarios"
+                / "sumo"
+                / "figure_eight"
+            )
         ],
         headless=True,
     )
 
+    build_scenarios(defaults["scenarios"])
+
+    # AKA: `gym.make("smarts.env:hiway-v1")`
     with HiWayEnvV1(
         # observation_options=ObservationOptions.multi_agent,
         # action_options=ActionOptions.multi_agent,
@@ -74,8 +80,8 @@ def main():
         detail_environment(env, "unformatted")
 
     with HiWayEnvV1(
-        observation_options=ObservationOptions.unformatted,
-        action_options=ActionOptions.unformatted,
+        observation_options="unformatted",
+        action_options="unformatted",
         environment_return_mode=EnvReturnMode.environment,
         **defaults,
     ) as env:
@@ -83,19 +89,7 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = default_argument_parser("egoless")
+    parser = empty_parser("environment config")
     args = parser.parse_args()
-
-    if not args.scenarios:
-        args.scenarios = [
-            str(
-                Path(__file__).absolute().parents[1]
-                / "scenarios"
-                / "sumo"
-                / "figure_eight"
-            )
-        ]
-
-    build_scenarios(scenarios=args.scenarios)
 
     main()
