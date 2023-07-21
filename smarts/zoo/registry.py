@@ -88,8 +88,10 @@ def make_agent(locator: str, **kwargs):
             is in the form `{PYTHONPATH}[n]/path/to/file.py`
         kwargs:
             Additional arguments to be passed to the constructed class.
+    Returns:
+        Tuple[Agent, AgentInterface]: The agent and its interface.
     """
 
     agent_spec = make(locator, **kwargs)
 
-    return agent_spec.build_agent()
+    return agent_spec.build_agent(), agent_spec.interface

@@ -99,9 +99,9 @@ def main(experiment_config: ExperimentCfg) -> None:
         print(OmegaConf.to_yaml(cfg=experiment_config))
         print("# ==========================")
 
-    assert len(typed_experiment_config.agent_configs) == len(
-        set(name for name, _ in typed_experiment_config.agent_configs.items())
-    ), f"Agent names must be unique in configuration."
+    assert not any(
+        "locator" not in v for v in typed_experiment_config.agent_configs.items()
+    ), "A declared agent is missing a locator."
 
     if hasattr(typed_experiment_config.env_config, "scenarios"):
         build_scenarios(

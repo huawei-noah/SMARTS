@@ -59,7 +59,7 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     )
     env = Metrics(env, formula_path=env_config["metric_formula"])
     agents = {
-        agent_id: agent_registry.make_agent(locator=agent_locator)
+        agent_id: agent_registry.make_agent(locator=agent_locator)[0]
         for agent_id in env.agent_ids
     }
 
