@@ -22,8 +22,7 @@
 import os
 from pathlib import Path
 
-import gym
-import gym.envs
+import gymnasium as gym
 
 from smarts.env.wrappers.gif_recorder import GifRecorder
 

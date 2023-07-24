@@ -21,7 +21,7 @@ import logging
 import math
 import re
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 
@@ -576,16 +576,28 @@ class Sensors:
         event_config = interface.event_configuration
         interest = interface.done_criteria.interest
 
-        # TODO:  the following calls nearest_lanes (expensive) 6 times
+        # Optimization: avoid calling nearest_lanes 6 times
+        vehicle_pos = vehicle_state.pose.point
+        vehicle_minimum_radius_bounds = (
+            np.linalg.norm(vehicle_state.dimensions.as_lwh[:2]) * 0.5
+        )
+        radius = vehicle_minimum_radius_bounds + 5
+        nearest_lanes_and_dists = sim_local_constants.road_map.nearest_lanes(
+            vehicle_pos, radius=radius
+        )
+        nearest_lanes = tuple(
+            [nl for (nl, _) in nearest_lanes_and_dists]
+        )  # Needs to be a tuple to be hashable
+
         reached_goal = cls._agent_reached_goal(
             sensor_state, plan, vehicle_state, vehicle_sensors.get("trip_meter_sensor")
         )
         collided = sim_frame.vehicle_did_collide(vehicle_state.actor_id)
         is_off_road = cls._vehicle_is_off_road(
-            sim_local_constants.road_map, vehicle_state
+            sim_local_constants.road_map, vehicle_state, nearest_lanes
         )
         is_on_shoulder = cls._vehicle_is_on_shoulder(
-            sim_local_constants.road_map, vehicle_state
+            sim_local_constants.road_map, vehicle_state, nearest_lanes
         )
         is_not_moving = cls._vehicle_is_not_moving(
             sim_frame,
@@ -595,7 +607,7 @@ class Sensors:
         )
         reached_max_episode_steps = sensor_state.reached_max_episode_steps
         is_off_route, is_wrong_way = cls._vehicle_is_off_route_and_wrong_way(
-            sim_frame, sim_local_constants, vehicle_state, plan
+            sim_frame, sim_local_constants, vehicle_state, plan, nearest_lanes_and_dists
         )
         agents_alive_done = cls._agents_alive_done_check(
             sim_frame.ego_ids, sim_frame.potential_agent_ids, done_criteria.agents_alive
@@ -647,15 +659,29 @@ class Sensors:
         return mission.is_complete(vehicle_state, distance_travelled)
 
     @classmethod
-    def _vehicle_is_off_road(cls, road_map, vehicle_state: VehicleState):
-        return not road_map.road_with_point(vehicle_state.pose.point)
+    def _vehicle_is_off_road(
+        cls,
+        road_map,
+        vehicle_state: VehicleState,
+        nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
+    ):
+        return not road_map.road_with_point(
+            vehicle_state.pose.point, lanes_to_search=nearest_lanes
+        )
 
     @classmethod
-    def _vehicle_is_on_shoulder(cls, road_map, vehicle_state: VehicleState):
+    def _vehicle_is_on_shoulder(
+        cls,
+        road_map,
+        vehicle_state: VehicleState,
+        nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
+    ):
         # XXX: this isn't technically right as this would also return True
         #      for vehicles that are completely off road.
         for corner_coordinate in vehicle_state.bounding_box_points:
-            if not road_map.road_with_point(Point(*corner_coordinate)):
+            if not road_map.road_with_point(
+                Point(*corner_coordinate), lanes_to_search=nearest_lanes
+            ):
                 return True
         return False
 
@@ -684,6 +710,7 @@ class Sensors:
         sim_local_constants: SimulationLocalConstants,
         vehicle_state: VehicleState,
         plan,
+        nearest_lanes: Optional[Sequence[Tuple[RoadMap.Lane, float]]] = None,
     ):
         """Determines if the agent is on route and on the correct side of the road.
 
@@ -692,6 +719,7 @@ class Sensors:
             sim_local_constants: The current frozen state of the simulation for last reset.
             vehicle_state: The current state of the vehicle to check.
             plan: The current plan for the vehicle.
+            nearest_lanes: Cached result of nearest lanes and distances for the vehicle position.
 
         Returns:
             A tuple (is_off_route, is_wrong_way)
@@ -702,16 +730,6 @@ class Sensors:
         """
 
         route_roads = plan.route.roads
-
-        vehicle_pos = vehicle_state.pose.point
-        vehicle_minimum_radius_bounds = (
-            np.linalg.norm(vehicle_state.dimensions.as_lwh[:2]) * 0.5
-        )
-        # Check that center of vehicle is still close to route
-        radius = vehicle_minimum_radius_bounds + 5
-        nearest_lanes = sim_local_constants.road_map.nearest_lanes(
-            vehicle_pos, radius=radius
-        )
 
         # No road nearby, so we're not on route!
         if not nearest_lanes:
@@ -736,6 +754,7 @@ class Sensors:
         ):
             return (False, is_wrong_way)
 
+        vehicle_pos = vehicle_state.pose.point
         veh_offset = nearest_lane.offset_along_lane(vehicle_pos)
 
         # so we're obviously not on the route, but we might have just gone

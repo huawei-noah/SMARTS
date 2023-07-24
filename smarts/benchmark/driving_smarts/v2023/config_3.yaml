@@ -6,8 +6,6 @@ benchmark:
         - https://smarts-project.github.io/competition/2023_driving_smarts/
         - https://codalab.lisn.upsaclay.fr/competitions/
   eval_episodes: 50
-  debug:
-    serial: True
   shared_env_kwargs:
     seed: 42
     headless: True
@@ -30,6 +28,4 @@ benchmark:
         # - driving-smarts-2.competition-scenarios/t3/training/ff9619b5-b0c0-4942-b5d8-df6a5814f8a2_agents_1
         # - driving-smarts-2.competition-scenarios/t3/training/ffd10ec2-715b-48af-a89d-b11f79927f63_agents_1
 
-      kwargs:
-        seed: 42
       metric_formula: smarts/benchmark/driving_smarts/v2023/metric_formula_platoon.py

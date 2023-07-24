@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from contrib_policy.filter_obs import FilterObs
 from contrib_policy.format_action import FormatAction
 from contrib_policy.frame_stack import FrameStack

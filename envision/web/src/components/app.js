@@ -100,7 +100,7 @@ function App({ client }) {
       {
         type: "canvas",
         mimeType: "video/webm;codecs=h264",
-      }
+      },
     );
     await recorderRef.current.startRecording();
   }
@@ -114,7 +114,7 @@ function App({ client }) {
     let outputBlob = await transcode(blob, onMessage);
     invokeSaveAsDialog(
       outputBlob,
-      `envision-${Math.round(Date.now() / 1000)}.mp4`
+      `envision-${Math.round(Date.now() / 1000)}.mp4`,
     );
   }
 

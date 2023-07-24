@@ -22,9 +22,19 @@ import logging
 import os
 import re
 import warnings
-from dataclasses import replace
 from functools import cached_property
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Final,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 
@@ -85,7 +95,7 @@ logging.basicConfig(
     level=logging.ERROR,
 )
 
-MAX_PYBULLET_FREQ = 240
+MAX_PYBULLET_FREQ: Final[int] = 240
 
 
 class SMARTSNotSetupError(Exception):

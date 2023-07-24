@@ -9,7 +9,7 @@ test: build-all-scenarios
 		--dist=loadscope \
 		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		--nb-exec-timeout 65536 \
-		./examples/tests ./smarts/env ./envision ./smarts/core ./smarts/sstudio ./tests \
+		./examples/tests ./smarts/env ./envision ./smarts/core ./smarts/sstudio \
 		--ignore=./smarts/core/waymo_map.py \
 		--ignore=./smarts/core/argoverse_map.py \
 		--ignore=./smarts/core/tests/test_argoverse.py \
@@ -18,6 +18,7 @@ test: build-all-scenarios
 		--ignore=./smarts/core/tests/test_notebook.py \
 		--ignore=./smarts/env/tests/test_benchmark.py \
 		--ignore=./examples/tests/test_learning.py \
+		--ignore=./examples/tests/test_rl.py \
 		-k 'not test_long_determinism'
 	rm -f .coverage.*
 	rm -f .coverage*
@@ -145,7 +146,7 @@ clean:
 .PHONY: format
 format: gen-header
 	echo "isort, version `isort --version-number`"
-	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./baselines ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
+	isort -m VERTICAL_HANGING_INDENT --skip-gitignore --ac --tc --profile black ./cli ./envision ./examples/ ./utils/ ./scenarios/ ./smarts ./zoo
 	black --version
 	black .
 	# npm install prettier

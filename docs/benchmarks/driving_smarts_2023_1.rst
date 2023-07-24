@@ -97,7 +97,7 @@ The corresponding GIF image shows the task execution by a trained baseline agent
 Observation space
 -----------------
 
-The underlying environment returns formatted :class:`~smarts.core.observations.Observation` using 
+The underlying environment returns a dictionary formatted :class:`~smarts.core.observations.Observation` using 
 :attr:`~smarts.env.utils.observation_conversion.ObservationOptions.multi_agent`
 option as observation at each time point. See 
 :class:`~smarts.env.utils.observation_conversion.ObservationSpacesFormatter` for

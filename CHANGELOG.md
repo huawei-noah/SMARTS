@@ -8,25 +8,46 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unreleased]
+## [Unreleased] - XXXX-XX-XX
+### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [1.3.0] - 2023-07-11
 ### Added
 - Added `rllib/pg_example.py` to demonstrate a simple integration with `RLlib` and `tensorflow` for policy training.
 - Added `rllib/pg_pbt_example.py` to demonstrate integration with `ray.RLlib`, `tensorflow`, and `ray.tune` for scheduled policy training.
+- Added engine configuration `ray:num_cpus`/`SMARTS_RAY_NUM_CPUS` which controls ray cpu usage (this overrides `core:observation_workers` when using `core:sensor_parallelization=ray`).
+- Added engine configuration `ray:num_gpus`/`SMARTS_RAY_NUM_GPUS` which controls ray gpu usage.
 ### Changed
 - Updated `smarts[ray]` (`ray==2.2`) and `smarts[rllib]` (`ray[rllib]==1.4`) to use `ray~=2.5`.
 - Introduced `tensorflow-probability` to `smarts[rllib]`.
 - Updated `RLlibHiWayEnv` to use the `gymnasium` interface.
 - Renamed `rllib/rllib.py` to `rllib/pg_pbt_example.py`.
 - Loosened constraint of `gymnasium` from `==0.27.0` to `>=0.26.3`.
+- Engine configuration of `ray` now affects the parallel benchmark runner.
+- Driving SMARTS benchmarks (`scl benchmark run <benchmark_id>=driving_smarts_*`) requirement `ray<=2.2.0` bumped to `ray<2.6.0`.
 - `LaneFollowingController` now uses a different pole placement method to compute lateral/heading gains. Numerical behaviour is unchanged. Performance is slightly faster.
 - Upgraded Stable Baselines3 from v1.7.0 to v2.0.0, and switched to Gymnasium backend, in Drive and VehicleFollowing RL examples.
+- Changed all uses of `gym` to use `gymnasium`.
+- Changed `gymnasium` to be an optional dependency. Use `pip install -e .[gymnasium]` to install it.
+- Renamed the `[gym]` optional install to `[gif_recorder]`.
+- Optimized events calculation to avoid redundant roadmap calls.
 ### Deprecated
 ### Fixed
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
+- `make format` no longer complains about a broken `./baselines` path.
 ### Removed
+- Removed `scl benchmark run --debug-log`. The same setting can be configured with `ray:log_to_driver` or `SMARTS_RAY_LOG_TO_DRIVER`.
 - Removed `TruncatedDistribution` from scenario studio.
 - Removed `scipy` as a core package dependency.
+- Removed `gym` as a core package dependency.
+- Removed `hiway-v0` env.
+- Removed `Api021Reversion` gym wrapper class.
 ### Security
 
 ## [1.2.0] # 2023-06-14
@@ -684,3 +705,11 @@ the missions for all agents.
 – Note any features that have been deleted and removed from the software.
 ### Security
 – Invite users to upgrade and avoid fixed software vulnerabilities.
+
+## [Version] - XXXX-XX-XX
+### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security

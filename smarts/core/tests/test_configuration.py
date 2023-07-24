@@ -55,7 +55,7 @@ def test_get_setting_with_file(config_path):
     )
     assert config.get_setting("section_2", "bool_option", cast=bool) is True
     assert config.get_setting("section_2", "float_option", cast=float) == 3.14
-    with pytest.raises(KeyError):
+    with pytest.raises(EnvironmentError):
         config.get_setting("nonexistent", "option")
 
 
@@ -76,8 +76,8 @@ def test_get_missing_section_and_missing_option():
 
     config: Config = core_conf()
 
-    with pytest.raises(KeyError):
+    with pytest.raises(EnvironmentError):
         config.get_setting("core", "not_a_setting")
 
-    with pytest.raises(KeyError):
+    with pytest.raises(EnvironmentError):
         config.get_setting("not_a_section", "bar")
