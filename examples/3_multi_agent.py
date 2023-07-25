@@ -20,9 +20,12 @@ N_AGENTS = 4
 AGENT_IDS: Final[list] = ["Agent %i" % i for i in range(N_AGENTS)]
 
 
-class KeepLaneAgent(Agent):
+class RandomLanerAgent(Agent):
+    def __init__(self, action_space) -> None:
+        self._action_space = action_space
+
     def act(self, obs, **kwargs):
-        return random.randint(0, 3)
+        return self._action_space.sample()
 
 
 def main(scenarios, headless, num_episodes, max_episode_steps=None):
@@ -42,7 +45,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     for episode in episodes(n=num_episodes):
-        agents = {agent_id: KeepLaneAgent() for agent_id in agent_interfaces.keys()}
+        agents = {agent_id: RandomLanerAgent(env.action_space[agent_id]) for agent_id in agent_interfaces.keys()}
         observations, _ = env.reset()
         episode.record_scenario(env.scenario_log)
 
@@ -64,7 +67,6 @@ if __name__ == "__main__":
     if not args.scenarios:
         args.scenarios = [
             str(SMARTS_REPO_PATH / "scenarios" / "sumo" / "loop"),
-            str(SMARTS_REPO_PATH / "scenarios" / "sumo" / "figure_eight"),
         ]
 
     build_scenarios(scenarios=args.scenarios)
