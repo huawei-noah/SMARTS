@@ -26,18 +26,12 @@ import_utils.import_module_from_file(
         "4_environment_config",
         "5_agent_zoo",
         "6_experiment_base",
+        "7_parallel_environment",
     ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(
-    example: Literal[
-        "1_egoless",
-        "2_single_agent",
-        "3_multi_agent",
-        "4_environment_config",
-        "5_agent_zoo",
-        "6_experiment_base",
-    ]
+    example
 ):
     current_example = import_module(example, "examples")
     main = current_example.main
@@ -50,6 +44,27 @@ def test_examples(
         ):
             cfg = compose(config_name="experiment_default")
             main(cfg)
+    if example == "7_parallel_environment":
+        scenarios = [
+            str(
+                Path(__file__).absolute().parents[2]
+                / "scenarios"
+                / "sumo"
+                / "figure_eight"
+            )
+        ]
+        main(
+            scenarios=scenarios,
+            sim_name=f"test_sync",
+            headless=True,
+            seed=42,
+            num_agents=2,
+            num_stack=2,
+            num_env=2,
+            auto_reset=True,
+            max_episode_steps=40,
+            num_episodes=2,
+        )
     else:
         main(
             scenarios=["scenarios/sumo/loop"],

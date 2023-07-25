@@ -220,7 +220,7 @@ if __name__ == "__main__":
     if not args.scenarios:
         args.scenarios = [
             str(
-                Path(__file__).absolute().parents[2]
+                Path(__file__).absolute().parents[1]
                 / "scenarios"
                 / "sumo"
                 / "figure_eight"
