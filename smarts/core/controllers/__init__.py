@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 from enum import Enum
 from functools import partial
+from typing import Dict, Literal, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -46,6 +47,13 @@ from smarts.core.controllers.trajectory_tracking_controller import (
 from .action_space_type import ActionSpaceType
 
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
+
+
+class LaneAction(Enum):
+    keep_lane: str = "keep_lane"
+    slow_down: str = "slow_down"
+    change_lane_left: str = "change_lane_left"
+    change_lane_right: str = "change_lane_right"
 
 
 class Controllers:
@@ -127,15 +135,16 @@ class Controllers:
                 sensor_state=sensor_state,
             )
 
+            action = LaneAction(value=action)
             # 12.5 m/s (45 km/h) is used as the nominal speed for lane change.
             # For keep_lane, the nominal speed is set to 15 m/s (54 km/h).
-            if action == "keep_lane":
+            if action == LaneAction.keep_lane:
                 perform_lane_following(target_speed=15, lane_change=0)
-            elif action == "slow_down":
+            elif action == LaneAction.slow_down:
                 perform_lane_following(target_speed=0, lane_change=0)
-            elif action == "change_lane_left":
+            elif action == LaneAction.change_lane_left:
                 perform_lane_following(target_speed=12.5, lane_change=1)
-            elif action == "change_lane_right":
+            elif action == LaneAction.change_lane_right:
                 perform_lane_following(target_speed=12.5, lane_change=-1)
         elif action_space == ActionSpaceType.Direct:
             DirectController.perform_action(sim.last_dt, vehicle, action)
@@ -162,9 +171,67 @@ class Controllers:
             )
         else:
             raise ValueError(
-                f"perform_action(action_space={action_space}, ...) has failed "
-                "inside controller"
+                f"perform_action({action_space=}, ...) has failed " "inside controller"
             )
+
+    @staticmethod
+    def get_action_shape(action_space: ActionSpaceType):
+        # TODO MTA: test the action shapes against dummy agents.
+        if action_space == ActionSpaceType.Empty:
+            return Union[type(None), Literal[False], Tuple], "null"
+
+        if action_space == ActionSpaceType.Lane:
+            return (
+                Literal[
+                    LaneAction.keep_lane,
+                    LaneAction.slow_down,
+                    LaneAction.change_lane_left,
+                    LaneAction.change_lane_right,
+                ],
+                "lane_action",
+            )
+
+        if action_space in (
+            ActionSpaceType.ActuatorDynamic,
+            ActionSpaceType.Continuous,
+        ):
+            return Tuple[float, float, float], ("throttle", "break", "steering")
+
+        if action_space == ActionSpaceType.LaneWithContinuousSpeed:
+            return Tuple[float, int], ("lane_speed", "lane_change_delta")
+
+        if action_space in (ActionSpaceType.MPC, ActionSpaceType.Trajectory):
+            return Tuple[
+                Sequence[float], Sequence[float], Sequence[float], Sequence[float]
+            ], ("x_coords", "y_coords", "headings", "speeds")
+
+        if action_space == ActionSpaceType.Direct:
+            return Union[float, Tuple[float, float]], [
+                "speed",
+                ("linear_acceleration", "angular_velocity"),
+            ]
+
+        if action_space == ActionSpaceType.TrajectoryWithTime:
+            return Tuple[
+                Sequence[float],
+                Sequence[float],
+                Sequence[float],
+                Sequence[float],
+                Sequence[float],
+            ], ("times", "x_coords", "y_coords", "headings", "speeds")
+
+        TargetPoseSpace = Tuple[float, float, float, float]
+        TargetPoseAttributes = ("x_coord", "y_coord", "heading", "time_delta")
+        if action_space == ActionSpaceType.TargetPose:
+            return TargetPoseSpace, TargetPoseAttributes
+
+        if action_space == ActionSpaceType.MultiTargetPose:
+            return Dict[str, TargetPoseSpace], {"agent_id": TargetPoseAttributes}
+
+        if action_space == ActionSpaceType.RelativeTargetPose:
+            return Tuple[float, float, float], ("delta_x", "delta_y", "delta_heading")
+
+        raise NotImplementedError(f"Type {action_space} is not implemented")
 
 
 class ControllerOutOfLaneException(Exception):

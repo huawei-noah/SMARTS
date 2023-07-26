@@ -147,7 +147,7 @@ class _FormattingGroup:
 
 
 @lru_cache(maxsize=1)
-def _get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
+def get_formatters() -> Dict[ActionSpaceType, _FormattingGroup]:
     """Get the currently available formatting groups for converting actions from `gym` space
     standard to SMARTS accepted observations.
 
@@ -246,7 +246,7 @@ class ActionSpacesFormatter:
             return actions
 
         out_actions = {}
-        formatting_groups = _get_formats()
+        formatting_groups = get_formatters()
         for agent_id, action in actions.items():
             agent_interface = self._agent_interfaces[agent_id]
             format_ = formatting_groups[agent_interface.action]
@@ -274,7 +274,7 @@ class ActionSpacesFormatter:
         Returns:
             bool: If the action type is supported by the formatter.
         """
-        return action_type in _get_formats()
+        return action_type in get_formatters()
 
     @cached_property
     def space(self) -> gym.spaces.Dict:
@@ -287,7 +287,7 @@ class ActionSpacesFormatter:
             return None
         return gym.spaces.Dict(
             {
-                agent_id: _get_formats()[agent_interface.action].space
+                agent_id: get_formatters()[agent_interface.action].space
                 for agent_id, agent_interface in self._agent_interfaces.items()
             }
         )

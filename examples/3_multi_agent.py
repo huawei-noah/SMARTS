@@ -45,7 +45,10 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     )
 
     for episode in episodes(n=num_episodes):
-        agents = {agent_id: RandomLanerAgent(env.action_space[agent_id]) for agent_id in agent_interfaces.keys()}
+        agents = {
+            agent_id: RandomLanerAgent(env.action_space[agent_id])
+            for agent_id in agent_interfaces.keys()
+        }
         observations, _ = env.reset()
         episode.record_scenario(env.scenario_log)
 

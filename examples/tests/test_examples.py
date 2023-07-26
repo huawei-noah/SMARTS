@@ -25,14 +25,13 @@ import_utils.import_module_from_file(
         "3_multi_agent",
         "4_environment_config",
         "5_agent_zoo",
+        "6_agent_action_space",
         "7_experiment_base",
         "8_parallel_environment",
     ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
-def test_examples(
-    example
-):
+def test_examples(example):
     current_example = import_module(example, "examples")
     main = current_example.main
 
