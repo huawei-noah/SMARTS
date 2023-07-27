@@ -29,7 +29,7 @@ def main(*_, **kwargs):
 
     for episode in episodes(n=num_episodes):
         env.reset()
-        episode.record_scenario(env.scenario_log)
+        episode.record_scenario(env.unwrapped.scenario_log)
 
         for _ in range(max_episode_steps or 300):
             env.step({})

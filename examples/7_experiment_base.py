@@ -21,10 +21,9 @@ from smarts.sstudio.scenario_construction import build_scenarios
 from smarts.zoo import registry
 
 sys.path.insert(0, str(Path(__file__).parents[1].absolute()))
-from examples.tools.primitive_agents import (
+from zoo.policies.primitive_agents import (
     cvpa_entrypoint,
-    kla_entrypoint,
-    open_entrypoint,
+    rla_entrypoint,
     standard_lane_follower_entrypoint,
     trajectory_tracking_entrypoint,
 )
@@ -63,9 +62,8 @@ class ExperimentCfg:
 
 
 registry.register(
-    "keep_lane_control-v0", kla_entrypoint
+    "random_lane_control-v0", rla_entrypoint
 )  # This registers "__main__:keep_lane_control-v0"
-registry.register("open_agent-v0", entry_point=open_entrypoint)
 registry.register("chase_via_points-v0", entry_point=cvpa_entrypoint)
 registry.register("trajectory_tracking-v0", entry_point=trajectory_tracking_entrypoint)
 registry.register(
@@ -136,7 +134,7 @@ def main(experiment_config: ExperimentCfg, *_, **kwargs):
             for agent_id, agent_spec in agent_specs.items()
         }
         observations, _ = env.reset()
-        episode.record_scenario(env.scenario_log)
+        episode.record_scenario(env.unwrapped.scenario_log)
 
         terminateds = {"__all__": False}
         steps = 0

@@ -43,7 +43,7 @@ def test_examples(example):
         ):
             cfg = compose(config_name="experiment_default")
             main(cfg)
-    if example == "7_parallel_environment":
+    if example == "8_parallel_environment":
         scenarios = [
             str(
                 Path(__file__).absolute().parents[2]
@@ -54,7 +54,7 @@ def test_examples(example):
         ]
         main(
             scenarios=scenarios,
-            sim_name=f"test_sync",
+            sim_name=f"test_{example}",
             headless=True,
             seed=42,
             num_agents=2,

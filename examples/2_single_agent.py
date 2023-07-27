@@ -42,7 +42,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
     for episode in episodes(n=num_episodes):
         agent = KeepLaneAgent()
         observation, _ = env.reset()
-        episode.record_scenario(env.scenario_log)
+        episode.record_scenario(env.unwrapped.scenario_log)
 
         terminated = False
         while not terminated:

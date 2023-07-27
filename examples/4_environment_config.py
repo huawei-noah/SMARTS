@@ -30,7 +30,7 @@ def detail_environment(env: HiWayEnvV1, name: str):
     )
     print(f"Environment observation type {type(obs)}")
     print(f"Agent observation type {type(obs[AGENT_ID])}")
-    obs, rewards, term, trunc, info = env.step(
+    observations, rewards, terminations, truncations, infos = env.step(
         {
             AGENT_ID: None
             if env.action_space is None

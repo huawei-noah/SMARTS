@@ -1,5 +1,5 @@
 """This is an example to show how SMARTS multi-agent works. This example uses the same kind of
-agent multiple times but different agents with different action and observation shapes can be mixed
+agent multiple times. But different agents with different action and observation shapes can be mixed
 in."""
 import random
 import sys
@@ -21,6 +21,14 @@ AGENT_IDS: Final[list] = ["Agent %i" % i for i in range(N_AGENTS)]
 
 
 class RandomLanerAgent(Agent):
+    def __init__(self, action_space) -> None:
+        self._action_space = action_space
+
+    def act(self, obs, **kwargs):
+        return self._action_space.sample()
+
+
+class KeepLaneAgent(Agent):
     def __init__(self, action_space) -> None:
         self._action_space = action_space
 
@@ -50,7 +58,7 @@ def main(scenarios, headless, num_episodes, max_episode_steps=None):
             for agent_id in agent_interfaces.keys()
         }
         observations, _ = env.reset()
-        episode.record_scenario(env.scenario_log)
+        episode.record_scenario(env.unwrapped.scenario_log)
 
         terminateds = {"__all__": False}
         while not terminateds["__all__"]:
