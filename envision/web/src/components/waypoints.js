@@ -51,11 +51,11 @@ export default function Waypoints({
     if (egoWaypointModel.material == null) {
       egoWaypointModel.material = new StandardMaterial(
         "ego-waypoint-material",
-        scene,
+        scene
       );
       egoWaypointModel.material.specularColor = new Color3(0, 0, 0);
       egoWaypointModel.material.diffuseColor = new Color4(
-        ...SceneColors.EgoWaypoint,
+        ...SceneColors.EgoWaypoint
       );
       egoWaypointModel.material.alpha = SceneColors.EgoWaypoint[3];
     }
@@ -63,7 +63,7 @@ export default function Waypoints({
     if (socialWaypointModel.material == null) {
       socialWaypointModel.material = new StandardMaterial(
         "social-waypoint-material",
-        scene,
+        scene
       );
       socialWaypointModel.material.specularColor = new Color3(0, 0, 0);
       let color = vehicleMeshColor(ActorTypes.SOCIAL_AGENT);

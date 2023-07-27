@@ -129,28 +129,28 @@ export default function Simulation({
     let cylinder_ = MeshBuilder.CreateCylinder(
       "waypoint",
       { diameterTop: 0.5, diameterBottom: 0.5, height: 0.01 },
-      scene_,
+      scene_
     );
     cylinder_.isVisible = false;
 
     setEgoWaypointModel(cylinder_.clone("ego-waypoint").makeGeometryUnique());
     setSocialWaypointModel(
-      cylinder_.clone("social-waypoint").makeGeometryUnique(),
+      cylinder_.clone("social-waypoint").makeGeometryUnique()
     );
 
     // Driven path cuboid
     let cuboid_ = MeshBuilder.CreateBox(
       "drivenPath",
       { height: 0.3, width: 1, depth: 0.01 },
-      scene_,
+      scene_
     );
     cuboid_.isVisible = false;
 
     setEgoDrivenPathModel(
-      cuboid_.clone("ego-driven-path").makeGeometryUnique(),
+      cuboid_.clone("ego-driven-path").makeGeometryUnique()
     );
     setSocialDrivenPathModel(
-      cuboid_.clone("social-driven-path").makeGeometryUnique(),
+      cuboid_.clone("social-driven-path").makeGeometryUnique()
     );
 
     // Light
@@ -226,7 +226,7 @@ export default function Simulation({
       `load_gltf_extras_${worldState.scenario_id}`,
       function (loader) {
         return new LoadGLTFExtras(loader, worldState.scenario_id);
-      },
+      }
     );
 
     SceneLoader.ImportMesh("", mapRootUrl, mapFilename, scene, (meshes) => {
@@ -250,7 +250,7 @@ export default function Simulation({
         child.actionManager = new ActionManager(scene);
         child.actionManager.registerAction(
           new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, function (
-            evt,
+            evt
           ) {
             material.diffuseColor = roadColorSelected;
             setMapElementSelected(true);
@@ -259,23 +259,23 @@ export default function Simulation({
               lane_id: child.metadata.gltf.extras.lane_id,
               lane_index: child.metadata.gltf.extras.lane_index,
             });
-          }),
+          })
         );
         child.actionManager.registerAction(
           new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function (
-            evt,
+            evt
           ) {
             material.diffuseColor = roadColor;
             setMapElementSelected(false);
             setDebugInfo({});
-          }),
+          })
         );
       }
 
       mapMeshesRef.current = meshes;
 
       GLTFLoader.UnregisterExtension(
-        `load_gltf_extras_${worldState.scenario_id}`,
+        `load_gltf_extras_${worldState.scenario_id}`
       );
     });
   }, [scene, worldState.scenario_id]);
@@ -370,7 +370,7 @@ export default function Simulation({
             attrName="Position"
             data_formattter={(position) =>
               `x: ${parseFloat(position[0]).toFixed(2)} y: ${parseFloat(
-                position[1],
+                position[1]
               ).toFixed(2)}`
             }
             ego_agent_ids={worldState.ego_agent_ids}

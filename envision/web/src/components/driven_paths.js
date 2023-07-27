@@ -66,11 +66,11 @@ export default function DrivenPaths({
         } else {
           let geomPos = new Vector2(
             drivenPath[i].position.x,
-            drivenPath[i].position.z,
+            drivenPath[i].position.z
           );
           let newGeomPos = Vector2.Center(
             new Vector2(...worldState.traffic[vehicle_id].driven_path[0]),
-            new Vector2(...worldState.traffic[vehicle_id].driven_path[1]),
+            new Vector2(...worldState.traffic[vehicle_id].driven_path[1])
           );
           if (geomPos.equalsWithEpsilon(newGeomPos, 0.0001)) {
             newDrivenPathGeometries[vehicle_id] = [];
@@ -88,11 +88,11 @@ export default function DrivenPaths({
     if (egoDrivenPathModel.material == null) {
       egoDrivenPathModel.material = new StandardMaterial(
         "ego-driven-path-material",
-        scene,
+        scene
       );
       egoDrivenPathModel.material.specularColor = new Color3(0, 0, 0);
       egoDrivenPathModel.material.diffuseColor = new Color4(
-        ...SceneColors.EgoDrivenPath,
+        ...SceneColors.EgoDrivenPath
       );
       egoDrivenPathModel.material.alpha = SceneColors.EgoDrivenPath[3];
     }
@@ -100,7 +100,7 @@ export default function DrivenPaths({
     if (socialDrivenPathModel.material == null) {
       socialDrivenPathModel.material = new StandardMaterial(
         "social-driven-path-material",
-        scene,
+        scene
       );
       socialDrivenPathModel.material.specularColor = new Color3(0, 0, 0);
       let color = vehicleMeshColor(ActorTypes.SOCIAL_AGENT);
@@ -111,7 +111,7 @@ export default function DrivenPaths({
     // Add in new driven path segments
     let drivenPathOffsetY = 0.1;
     for (const [vehicle_id, trafficActor] of Object.entries(
-      worldState.traffic,
+      worldState.traffic
     )) {
       if (!(vehicle_id in newDrivenPathGeometries)) {
         newDrivenPathGeometries[vehicle_id] = [];
@@ -125,23 +125,23 @@ export default function DrivenPaths({
         let drivenPathSegment_ = null;
         if (trafficActor.actor_type == ActorTypes.SOCIAL_AGENT) {
           drivenPathSegment_ = socialDrivenPathModel.createInstance(
-            "social-driven-path-segment",
+            "social-driven-path-segment"
           );
         } else {
           drivenPathSegment_ = egoDrivenPathModel.createInstance(
-            "ego-driven-path-segment",
+            "ego-driven-path-segment"
           );
         }
 
         let p0 = new Vector3(
           trafficActor.driven_path[i][0],
           drivenPathOffsetY,
-          trafficActor.driven_path[i][1],
+          trafficActor.driven_path[i][1]
         );
         let p1 = new Vector3(
           trafficActor.driven_path[i + 1][0],
           drivenPathOffsetY,
-          trafficActor.driven_path[i + 1][1],
+          trafficActor.driven_path[i + 1][1]
         );
 
         drivenPathSegment_.position = Vector3.Center(p0, p1);
@@ -154,7 +154,7 @@ export default function DrivenPaths({
         drivenPathSegment_.rotation = Vector3.RotationFromAxis(
           axis1,
           axis2,
-          axis3,
+          axis3
         );
 
         newDrivenPathGeometries[vehicle_id].push(drivenPathSegment_);

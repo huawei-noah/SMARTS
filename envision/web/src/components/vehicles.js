@@ -84,7 +84,7 @@ export default function Vehicles({
   // Load mesh asynchronously
   useEffect(() => {
     for (const [vehicleFilename, meshTemplate] of Object.entries(
-      vehicleMeshTemplates,
+      vehicleMeshTemplates
     )) {
       if (meshTemplate != null) {
         continue;
@@ -107,7 +107,7 @@ export default function Vehicles({
 
             let material = new StandardMaterial(
               `material-${vehicleFilename}`,
-              scene,
+              scene
             );
             material.backFaceCulling = false;
             material.disableLighting = true;
@@ -121,7 +121,7 @@ export default function Vehicles({
               material.id = child.material.id;
               child.instancedBuffers.color = Color4.FromColor3(
                 child.material.albedoColor,
-                1,
+                1
               );
             }
             child.material = material;
@@ -151,7 +151,7 @@ export default function Vehicles({
 
           newRoot.setBoundingInfo(new BoundingInfo(rootMeshMin, rootMeshMax));
           vehicleMeshTemplates[vehicleFilename] = newRoot;
-        },
+        }
       );
     }
     // This useEffect is triggered when the vehicleMeshTemplate's keys() change
@@ -214,7 +214,7 @@ export default function Vehicles({
         if (state.interest && instancedSubMesh.material.id == "body") {
           instancedSubMesh.instancedBuffers.color = new Color4(
             ...SceneColors.Interest,
-            1,
+            1
           );
         } else if (
           state.actor_type == ActorTypes.SOCIAL_VEHICLE ||
@@ -235,12 +235,12 @@ export default function Vehicles({
           width: boxSize.x + 0.1,
           depth: boxSize.z + 0.1,
         },
-        scene,
+        scene
       );
 
       let boxMaterial = new StandardMaterial(
         `boundingbox-${meshId}-material`,
-        scene,
+        scene
       );
       boxMaterial.diffuseColor = new Color4(...SceneColors.Selection);
       boxMaterial.specularColor = new Color3(0, 0, 0);
@@ -251,21 +251,21 @@ export default function Vehicles({
       box.actionManager = new ActionManager(scene);
       box.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPointerOverTrigger, function (
-          evt,
+          evt
         ) {
           boxMaterial.alpha = 0.5;
           setVehicleSelected(true);
           setDebugInfo(evt.meshUnderPointer.parent.metadata.debugInfo);
-        }),
+        })
       );
       box.actionManager.registerAction(
         new ExecuteCodeAction(ActionManager.OnPointerOutTrigger, function (
-          evt,
+          evt
         ) {
           boxMaterial.alpha = 0.0;
           setVehicleSelected(false);
           setDebugInfo({});
-        }),
+        })
       );
       rootMesh.addChild(box);
 
