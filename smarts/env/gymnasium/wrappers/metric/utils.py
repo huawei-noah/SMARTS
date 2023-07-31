@@ -117,7 +117,7 @@ def nearest_waypoint(
     Returns:
         Tuple[Tuple[int, int], Optional[int]] : `matrix` index of shape (a,b) and scalar `point` index.
     """
-    cur_point_index = ((np.int(1e10), np.int(1e10)), None)
+    cur_point_index = ((np.int32(1e10), np.int32(1e10)), None)
 
     if points.shape == (0,):
         return cur_point_index
