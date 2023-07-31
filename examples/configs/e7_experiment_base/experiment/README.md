@@ -28,7 +28,7 @@ Note that because the configuration is in the global package an absolute path mu
 Then this experiment can be called like:
 
 ```bash
-python examples/7_experiment_base.py +experiment=trajectory_tracking +env_config/scenarios=intersections
+python examples/e7_experiment_base.py +experiment=trajectory_tracking +env_config/scenarios=intersections
 ```
 
 See [CLI grammar](https://hydra.cc/docs/advanced/override_grammar/basic/)

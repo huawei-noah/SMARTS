@@ -72,7 +72,7 @@ registry.register(
 
 
 CONFIG_LOCATION: Final[str] = str(
-    Path(__file__).parent.absolute() / "configs" / "7_experiment_base"
+    Path(__file__).parent.absolute() / "configs" / "e7_experiment_base"
 )
 cs = ConfigStore.instance()
 cs.store(name="base_experiment", node=ExperimentCfg, group=None)

@@ -217,7 +217,7 @@ Example
 -------
 
 An example training and inference code is provided for this benchmark. 
-See the :examples:`11_platoon` example. The example uses PPO algorithm from 
+See the :examples:`e11_platoon` example. The example uses PPO algorithm from 
 `Stable Baselines3 <https://github.com/DLR-RM/stable-baselines3>`_ reinforcement learning library. 
 It uses :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.Continuous` action space.
 Instructions for training and evaluating the example is as follows.
@@ -229,7 +229,7 @@ Train
   .. code-block:: bash
 
     # In terminal-A
-    $ cd <path>/SMARTS/examples/11_platoon
+    $ cd <path>/SMARTS/examples/e11_platoon
     $ python3.8 -m venv ./.venv
     $ source ./.venv/bin/activate
     $ pip install --upgrade pip
@@ -249,7 +249,7 @@ Train
   .. code-block:: bash
 
     # In a different terminal-B
-    $ cd <path>/SMARTS/examples/11_platoon
+    $ cd <path>/SMARTS/examples/e11_platoon
     $ source ./.venv/bin/activate
     $ scl envision start
     # Open http://localhost:8081/
@@ -259,7 +259,7 @@ Train
     # In terminal-A
     $ python3.8 train/run.py --head
 
-+ Trained models are saved by default inside the ``<path>/SMARTS/examples/11_platoon/train/logs/`` folder.
++ Trained models are saved by default inside the ``<path>/SMARTS/examples/e11_platoon/train/logs/`` folder.
 
 Docker
 ^^^^^^
@@ -268,14 +268,14 @@ Docker
   .. code-block:: bash
 
     $ cd <path>/SMARTS
-    $ docker build --file=./examples/11_platoon/train/Dockerfile --network=host --tag=platoon .
+    $ docker build --file=./examples/e11_platoon/train/Dockerfile --network=host --tag=platoon .
     $ docker run --rm -it --network=host --gpus=all platoon
-    (container) $ cd /SMARTS/examples/11_platoon
+    (container) $ cd /SMARTS/examples/e11_platoon
     (container) $ python3.8 train/run.py
 
 Evaluate
 ^^^^^^^^
-+ Choose a desired saved model from the previous training step, rename it as ``saved_model.zip``, and move it to ``<path>/SMARTS/examples/11_platoon/inference/contrib_policy/saved_model.zip``. 
++ Choose a desired saved model from the previous training step, rename it as ``saved_model.zip``, and move it to ``<path>/SMARTS/examples/e11_platoon/inference/contrib_policy/saved_model.zip``. 
 + Evaluate locally
 
   .. code-block:: bash
@@ -286,7 +286,7 @@ Evaluate
     $ pip install --upgrade pip
     $ pip install wheel==0.38.4
     $ pip install -e .[camera_obs,argoverse,envision,sumo]
-    $ scl zoo install examples/11_platoon/inference
+    $ scl zoo install examples/e11_platoon/inference
     $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
 
 Zoo agents

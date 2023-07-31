@@ -21,9 +21,9 @@ In this quickstart guide, we will run the `multi-agent` example. Here,
 1. a pre-designed scenario :scenarios:`scenarios/sumo/loop <sumo/loop>` is used.
 2. a simple agent with `interface` == :attr:`~smarts.core.agent_interface.AgentType.Laner` and `policy` == `Random Laner` is demonstrated. The agent chases via points or follows nearby waypoints if a via point is unavailable.
 
-File: :examples:`examples/3_multi_agent.py <3_multi_agent.py>`
+File: :examples:`examples/e3_multi_agent.py <e3_multi_agent.py>`
 
-.. literalinclude:: ../examples/3_multi_agent.py
+.. literalinclude:: ../examples/e3_multi_agent.py
     :language: python
 
 Use the `scl` command to run SMARTS together with it's supporting processes. 
@@ -32,7 +32,7 @@ Use the `scl` command to run SMARTS together with it's supporting processes.
 
     $ cd <path>/SMARTS
     # Run SMARTS simulation with Envision display and `loop` scenario.
-    $ scl run --envision examples/3_multi_agent.py scenarios/sumo/loop 
+    $ scl run --envision examples/e3_multi_agent.py scenarios/sumo/loop 
 
 Visit `http://localhost:8081/ <http://localhost:8081/>`_ to view the experiment.
 

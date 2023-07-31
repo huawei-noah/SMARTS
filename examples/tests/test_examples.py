@@ -20,14 +20,14 @@ import_utils.import_module_from_file(
 @pytest.mark.parametrize(
     "example",
     [
-        "1_egoless",
-        "2_single_agent",
-        "3_multi_agent",
-        "4_environment_config",
-        "5_agent_zoo",
-        "6_agent_action_space",
-        "7_experiment_base",
-        "8_parallel_environment",
+        "e1_egoless",
+        "e2_single_agent",
+        "e3_multi_agent",
+        "e4_environment_config",
+        "e5_agent_zoo",
+        "e6_agent_action_space",
+        "e7_experiment_base",
+        "e8_parallel_environment",
     ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
@@ -35,7 +35,7 @@ def test_examples(example):
     current_example = import_module(example, "examples")
     main = current_example.main
 
-    if example == "7_experiment_base":
+    if example == "e7_experiment_base":
         example_path = Path(current_example.__file__).parent
         with initialize_config_dir(
             version_base=None,
@@ -43,7 +43,7 @@ def test_examples(example):
         ):
             cfg = compose(config_name="experiment_default")
             main(cfg)
-    if example == "8_parallel_environment":
+    if example == "e8_parallel_environment":
         scenarios = [
             str(
                 Path(__file__).absolute().parents[2]

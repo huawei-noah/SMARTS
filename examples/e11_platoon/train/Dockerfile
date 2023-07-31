@@ -27,13 +27,13 @@ ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip && pip install wheel==0.38.4
 
 # Install requirements.txt .
-COPY ./examples/10_drive/train/requirements.txt /tmp/requirements.txt
+COPY ./examples/e11_platoon/train/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy source files and install.
 COPY . /SMARTS
 WORKDIR /SMARTS
 RUN pip install -e .[camera_obs,argoverse]
-RUN pip install -e ./examples/10_drive/inference
+RUN pip install -e ./examples/e11_platoon/inference
 
 SHELL ["/bin/bash", "-c", "-l"]
