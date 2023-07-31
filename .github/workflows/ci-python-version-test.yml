@@ -1,11 +1,9 @@
 name: SMARTS CI Python Version Tests
 
-# on:
-#   push:
-#     branches:
-#       - master
-on: [push, pull_request]
-
+on:
+  push:
+    branches:
+      - master
 
 env:
   venv_dir: .venv
