@@ -11,8 +11,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased] - XXXX-XX-XX
 ### Added
 ### Changed
+- The following dependencies have been loosened: `numpy`, `opencv`, `torch`.
 ### Deprecated
 ### Fixed
+- The `smarts` package now works with `python3.10` and `python3.11`.
 ### Removed
 ### Security
 
@@ -41,7 +43,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Missing neighborhood vehicle state `'lane_id'` is now added to the `hiway-v1` formatted observations.
 - Fixed a regression where `pybullet` build time messages returned.
 - `make format` no longer complains about a broken `./baselines` path.
-- `smarts[camera_obs]` now works on `python3.10`.
 ### Removed
 - Removed `scl benchmark run --debug-log`. The same setting can be configured with `ray:log_to_driver` or `SMARTS_RAY_LOG_TO_DRIVER`.
 - Removed `TruncatedDistribution` from scenario studio.
