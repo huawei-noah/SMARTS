@@ -50,6 +50,7 @@ METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
 class LaneAction(Enum):
+    """The action for lane space actions."""
     keep_lane: str = "keep_lane"
     slow_down: str = "slow_down"
     change_lane_left: str = "change_lane_left"
@@ -176,6 +177,17 @@ class Controllers:
 
     @staticmethod
     def get_action_shape(action_space: ActionSpaceType):
+        """Describes the shape of actions that are used for standard controllers.
+
+        Args:
+            action_space (ActionSpaceType): The action space to describe.
+
+        Raises:
+            NotImplementedError: The action space requested does is not yet implemented.
+
+        Returns:
+            Tuple[Any, str]: The action space and the descriptive attribute.
+        """
         # TODO MTA: test the action shapes against dummy agents.
         if action_space == ActionSpaceType.Empty:
             return Union[type(None), Literal[False], Tuple], "null"

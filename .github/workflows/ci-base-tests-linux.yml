@@ -72,14 +72,14 @@ jobs:
     strategy:
       matrix:
         tests:
-          - drive
-          - platoon
+          - e10_drive
+          - e11_platoon
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-          cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          cd ${GITHUB_WORKSPACE}/examples/${{matrix.tests}}
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
@@ -88,7 +88,7 @@ jobs:
           pip install -e ./inference/
       - name: Run smoke tests
         run: |
-          cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          cd ${GITHUB_WORKSPACE}/examples/${{matrix.tests}}
           . ${{env.venv_dir}}/bin/activate
           PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
@@ -104,8 +104,8 @@ jobs:
     strategy:
       matrix:
         tests:
-          - drive
-          - platoon
+          - e10_drive
+          - e11_platoon
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -117,7 +117,7 @@ jobs:
           pip install --upgrade pip
           pip install wheel==0.38.4
           pip install -e .[camera_obs,argoverse,test,ray,sumo]
-          scl zoo install examples/rl/${{matrix.tests}}/inference
+          scl zoo install examples/${{matrix.tests}}/inference
       - name: Run smoke tests
         run: |
           cd ${GITHUB_WORKSPACE}

@@ -141,13 +141,15 @@ _trajectory_with_time_space = gym.spaces.Tuple(
 
 
 @dataclass(frozen=True)
-class _FormattingGroup:
+class FormattingGroup:
+    """Describes the conversion necessary to generate the given space.
+    """
     space: gym.Space
     formatting_func: Callable[[Any], Any] = field(default=_DEFAULT_PASSTHROUGH)
 
 
 @lru_cache(maxsize=1)
-def get_formatters() -> Dict[ActionSpaceType, _FormattingGroup]:
+def get_formatters() -> Dict[ActionSpaceType, FormattingGroup]:
     """Get the currently available formatting groups for converting actions from `gym` space
     standard to SMARTS accepted observations.
 
@@ -155,42 +157,42 @@ def get_formatters() -> Dict[ActionSpaceType, _FormattingGroup]:
         Dict[ActionSpaceType, Any]: The currently available formatting groups.
     """
     return {
-        ActionSpaceType.ActuatorDynamic: _FormattingGroup(
+        ActionSpaceType.ActuatorDynamic: FormattingGroup(
             space=_actuator_dynamic_space,
         ),
-        ActionSpaceType.Continuous: _FormattingGroup(
+        ActionSpaceType.Continuous: FormattingGroup(
             space=_continuous_space,
         ),
-        ActionSpaceType.Direct: _FormattingGroup(
+        ActionSpaceType.Direct: FormattingGroup(
             space=_direct_space,
         ),
-        ActionSpaceType.Empty: _FormattingGroup(
+        ActionSpaceType.Empty: FormattingGroup(
             space=gym.spaces.Tuple(spaces=()),
             formatting_func=lambda a: None,
         ),
-        ActionSpaceType.Lane: _FormattingGroup(
+        ActionSpaceType.Lane: FormattingGroup(
             space=_lane_space,
             formatting_func=_format_lane_space,
         ),
-        ActionSpaceType.LaneWithContinuousSpeed: _FormattingGroup(
+        ActionSpaceType.LaneWithContinuousSpeed: FormattingGroup(
             space=_lane_with_continuous_speed_space,
         ),
-        ActionSpaceType.MPC: _FormattingGroup(
+        ActionSpaceType.MPC: FormattingGroup(
             space=_mpc_space,
         ),
-        ActionSpaceType.MultiTargetPose: _FormattingGroup(
+        ActionSpaceType.MultiTargetPose: FormattingGroup(
             space=_multi_target_pose_space,
         ),
-        ActionSpaceType.RelativeTargetPose: _FormattingGroup(
+        ActionSpaceType.RelativeTargetPose: FormattingGroup(
             space=_relative_target_pose_space,
         ),
-        ActionSpaceType.TargetPose: _FormattingGroup(
+        ActionSpaceType.TargetPose: FormattingGroup(
             space=_target_pose_space,
         ),
-        ActionSpaceType.Trajectory: _FormattingGroup(
+        ActionSpaceType.Trajectory: FormattingGroup(
             space=_trajectory_space,
         ),
-        ActionSpaceType.TrajectoryWithTime: _FormattingGroup(
+        ActionSpaceType.TrajectoryWithTime: FormattingGroup(
             space=_trajectory_with_time_space,
         ),
     }

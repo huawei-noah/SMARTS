@@ -74,7 +74,7 @@ def test_examples(example):
 
 
 def test_rllib_pg_example():
-    from examples.rl.rllib import pg_example
+    from examples.e12_rllib import pg_example
 
     main = pg_example.main
     with tempfile.TemporaryDirectory() as result_dir:
@@ -96,7 +96,7 @@ def test_rllib_pg_example():
 
 
 def test_rllib_tune_pg_example():
-    from examples.rl.rllib import pg_pbt_example
+    from examples.e12_rllib import pg_pbt_example
 
     main = pg_pbt_example.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
