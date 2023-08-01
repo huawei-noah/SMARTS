@@ -11,8 +11,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased] - XXXX-XX-XX
 ### Added
 ### Changed
+- The following dependencies have been loosened: `numpy`, `opencv`, `torch`.
 ### Deprecated
 ### Fixed
+- The `smarts` package now works with `python3.10` and `python3.11`.
 ### Removed
 ### Security
 

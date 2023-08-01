@@ -428,7 +428,10 @@ class HiWayEnvV1(gym.Env):
         Note:
             Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
         """
-        if "rgb_array" in self.metadata["render_modes"]:
+        if (
+            "rgb_array" in self.metadata["render_modes"]
+            or self.render_mode == "rgb_array"
+        ):
             if self._env_renderer is None:
                 from smarts.env.utils.record import AgentCameraRGBRender
 

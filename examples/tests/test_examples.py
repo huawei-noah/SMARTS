@@ -43,7 +43,7 @@ def test_rllib_pg_example():
     from examples.rl.rllib import pg_example
 
     main = pg_example.main
-    with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
+    with tempfile.TemporaryDirectory() as result_dir:
         main(
             scenarios=["./scenarios/sumo/loop"],
             envision=False,

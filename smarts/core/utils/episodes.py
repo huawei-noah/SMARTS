@@ -200,16 +200,16 @@ class Episode:
     def __init__(self, episodes: Episodes):
         self._episodes = episodes
 
-    def continues(self, observation, reward, done, info) -> bool:
+    def continues(self, observation, reward, terminated, truncated, info) -> bool:
         """Determine if the current episode can continue."""
 
         self._episodes.current_step += 1
 
         if self._episodes.current_step >= self._episodes.max_steps:
             return False
-        if isinstance(done, dict):
-            return not done.get("__all__", all(done.values()))
-        return not done
+        if isinstance(terminated, dict):
+            return not terminated.get("__all__", all(terminated.values()))
+        return not terminated
 
 
 def episode_range(max_steps):
