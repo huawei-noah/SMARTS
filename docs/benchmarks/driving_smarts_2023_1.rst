@@ -310,9 +310,9 @@ Evaluate
     $ pip install -e .[camera_obs,argoverse,envision,sumo]
     $ scl zoo install examples/e10_drive/inference
     # For Driving SMARTS 2023.1
-    $ scl benchmark run driving_smarts_2023_1 examples.rl.drive.inference:contrib-agent-v0 --auto-install
+    $ scl benchmark run driving_smarts_2023_1 examples.e10_drive.inference:contrib-agent-v0 --auto-install
     # For Driving SMARTS 2023.2
-    $ scl benchmark run driving_smarts_2023_2 examples.rl.drive.inference:contrib-agent-v0 --auto-install
+    $ scl benchmark run driving_smarts_2023_2 examples.e10_drive.inference:contrib-agent-v0 --auto-install
 
 Zoo agents
 ----------

@@ -36,7 +36,7 @@ def test_e11_platoon():
     args.head = False
 
     with mock.patch(
-        "examples.rl.platoon.train.run.load_config",
+        "examples.e11_platoon.train.run.load_config",
         _mock_load_config(load_config),
     ):
         main(args)
@@ -53,7 +53,7 @@ def test_e10_drive():
     args.head = False
 
     with mock.patch(
-        "examples.rl.drive.train.run.load_config",
+        "examples.e10_drive.train.run.load_config",
         _mock_load_config(load_config),
     ):
         main(args)

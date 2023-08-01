@@ -287,7 +287,7 @@ Evaluate
     $ pip install wheel==0.38.4
     $ pip install -e .[camera_obs,argoverse,envision,sumo]
     $ scl zoo install examples/e11_platoon/inference
-    $ scl benchmark run driving_smarts_2023_3 examples.rl.platoon.inference:contrib-agent-v0 --auto-install
+    $ scl benchmark run driving_smarts_2023_3 examples.e11_platoon.inference:contrib-agent-v0 --auto-install
 
 Zoo agents
 ----------
