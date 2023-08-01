@@ -140,7 +140,7 @@ class HiWayEnvV1(gym.Env):
             a_id: (
                 a_interface
                 if isinstance(a_interface, AgentInterface)
-                else AgentInterface(**a_interface),
+                else AgentInterface(**a_interface)
             )
             for a_id, a_interface in agent_interfaces.items()
         }
