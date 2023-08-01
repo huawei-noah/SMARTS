@@ -1,5 +1,7 @@
 import gymnasium as gym
 
+from smarts.env.utils.action_conversion import ActionOptions
+
 gym.logger.set_level(40)
 
 import sys
@@ -61,6 +63,7 @@ def main(
         sim_name=sim_name,
         headless=headless,
         observation_options=ObservationOptions.unformatted,
+        action_options=ActionOptions.unformatted,
         seed=seed,
     )
     # A list of env constructors of type `Callable[[int], gym.Env]`

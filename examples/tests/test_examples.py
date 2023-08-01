@@ -43,7 +43,7 @@ def test_examples(example):
         ):
             cfg = compose(config_name="experiment_default")
             main(cfg)
-    if example == "e8_parallel_environment":
+    elif example == "e8_parallel_environment":
         scenarios = [
             str(
                 Path(__file__).absolute().parents[2]

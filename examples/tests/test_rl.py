@@ -24,10 +24,10 @@ def _mock_load_config(load_config):
     return func
 
 
-def test_platoon():
+def test_e11_platoon():
     """Tests RL training of `examples/e11_platoon` example."""
 
-    from examples.rl.platoon.train.run import load_config, main
+    from examples.e11_platoon.train.run import load_config, main
 
     args = argparse.Namespace()
     args.mode = "train"
@@ -42,9 +42,9 @@ def test_platoon():
         main(args)
 
 
-def test_drive():
+def test_e10_drive():
     """Tests RL training of `examples/e10_drive` example."""
-    from examples.rl.drive.train.run import load_config, main
+    from examples.e10_drive.train.run import load_config, main
 
     args = argparse.Namespace()
     args.mode = "train"

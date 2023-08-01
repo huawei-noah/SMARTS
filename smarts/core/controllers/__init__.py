@@ -17,7 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from enum import Enum
+import enum
 from functools import partial
 from typing import Dict, Literal, Sequence, Tuple, Union
 
@@ -49,8 +49,9 @@ from .action_space_type import ActionSpaceType
 METER_PER_SECOND_TO_KM_PER_HR = 3.6
 
 
-class LaneAction(Enum):
+class LaneAction(enum.Enum):
     """The action for lane space actions."""
+
     keep_lane: str = "keep_lane"
     slow_down: str = "slow_down"
     change_lane_left: str = "change_lane_left"

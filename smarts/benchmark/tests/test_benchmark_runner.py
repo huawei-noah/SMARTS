@@ -55,7 +55,7 @@ def _get_model(action):
     ],
     indirect=True,
 )
-def test_drive(get_benchmark_args):
+def test_e10_drive(get_benchmark_args):
     """Tests Driving SMARTS 2023.1 and 2023.2 benchmarks using `examples/e10_drive` model."""
     from contrib_policy.policy import Policy
 
@@ -72,7 +72,7 @@ def test_drive(get_benchmark_args):
     ],
     indirect=True,
 )
-def test_platoon(get_benchmark_args):
+def test_e11_platoon(get_benchmark_args):
     """Tests Driving SMARTS 2023.3 benchmark using `examples/e11_platoon` model."""
     from contrib_policy.policy import Policy
 

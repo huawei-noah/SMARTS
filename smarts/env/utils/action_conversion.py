@@ -142,8 +142,8 @@ _trajectory_with_time_space = gym.spaces.Tuple(
 
 @dataclass(frozen=True)
 class FormattingGroup:
-    """Describes the conversion necessary to generate the given space.
-    """
+    """Describes the conversion necessary to generate the given space."""
+
     space: gym.Space
     formatting_func: Callable[[Any], Any] = field(default=_DEFAULT_PASSTHROUGH)
 
