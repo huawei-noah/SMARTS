@@ -1,4 +1,4 @@
-"""This is an example to show how agent interface action configuration works."""
+"""This is an example to show how agent interface action formatting configuration works."""
 from pathlib import Path
 
 from examples.tools.argument_parser import empty_parser

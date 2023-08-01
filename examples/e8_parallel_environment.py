@@ -1,3 +1,4 @@
+"""This example demonstrates using a SMARTS environment in parallel to generate batched environment returns."""
 import gymnasium as gym
 
 from smarts.env.utils.action_conversion import ActionOptions
