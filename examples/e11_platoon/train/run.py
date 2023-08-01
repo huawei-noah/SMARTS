@@ -85,7 +85,7 @@ def main(args: argparse.Namespace):
     envs_train = {}
     envs_eval = {}
     for scenario in config.scenarios:
-        scenario_path = str(Path(__file__).resolve().parents[4] / scenario)
+        scenario_path = str(Path(__file__).resolve().parents[3] / scenario)
         envs_train[f"{scenario}"] = make_env(
             env_id=config.env_id,
             scenario=scenario_path,
