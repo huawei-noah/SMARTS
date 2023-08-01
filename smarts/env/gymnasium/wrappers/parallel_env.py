@@ -205,7 +205,9 @@ class ParallelEnv(object):
                 observations and infos from the vectorized environment.
         """
 
-        observations, infos = self._call(_Message.RESET, [None] * self._num_envs)
+        # since the return is [(obs0, infos0), ...] they need to be zipped to form.
+        #   [(obs0, ...), (infos0, ...)]
+        observations, infos = zip(*self._call(_Message.RESET, [None] * self._num_envs))
         return observations, infos
 
     def step(
