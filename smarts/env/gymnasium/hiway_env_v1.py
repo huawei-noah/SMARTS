@@ -136,7 +136,7 @@ class HiWayEnvV1(gym.Env):
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
-        self._agent_interfaces = {
+        self._agent_interfaces: Dict[str, AgentInterface] = {
             a_id: (
                 a_interface
                 if isinstance(a_interface, AgentInterface)

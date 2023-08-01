@@ -12,6 +12,7 @@ def display_spaces():
     tn, _, _ = f"{ActionOptions=}".partition("=")
     action_formatters = get_formatters()
     for name, action_type in ActionSpaceType.__members__.items():
+        action_type: ActionSpaceType
         unformatted_types, unformatted_schema_names = Controllers.get_action_shape(
             action_type
         )
@@ -35,6 +36,7 @@ def display_agent_type_spaces():
     )
 
     for name, agent_type in AgentType.__members__.items():
+        agent_type: AgentType
         print(f"{name.ljust(30)}: {AgentInterface.from_type(agent_type).action}")
 
 
