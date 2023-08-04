@@ -406,18 +406,19 @@ class SumoRoadNetwork(RoadMap):
                 onlyDirect=True
             ) or self._sumo_lane.getIncoming(onlyDirect=False)
             return sorted(
-                [self._map.lane_by_id(incoming.getID()) for incoming in incoming_lanes]
+                (self._map.lane_by_id(incoming.getID()) for incoming in incoming_lanes),
+                key=lambda l: l.lane_id,
             )
 
         @cached_property
         def outgoing_lanes(self) -> List[RoadMap.Lane]:
             return sorted(
-                [
+                (
                     self._map.lane_by_id(
                         outgoing.getViaLaneID() or outgoing.getToLane().getID()
                     )
                     for outgoing in self._sumo_lane.getOutgoing()
-                ],
+                ),
                 key=lambda l: l.lane_id,
             )
 
