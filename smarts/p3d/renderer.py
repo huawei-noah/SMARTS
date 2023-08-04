@@ -73,7 +73,7 @@ class _ShowBaseInstance(ShowBase):
     """Wraps a singleton instance of ShowBase from Panda3D."""
 
     _debug_mode: DEBUG_MODE = DEBUG_MODE.WARNING
-    _rendering_backend: str = "p3headlessgl"
+    _rendering_backend: str = "pandagl"
 
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
@@ -84,11 +84,11 @@ class _ShowBaseInstance(ShowBase):
                 "",
                 f"load-display {cls._rendering_backend}",
             )
-            loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
             loadPrcFileData("", "aux-display pandagles")
             loadPrcFileData("", "aux-display pandagles2")
+            loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display p3tinydisplay")
 
             # disable vsync otherwise we are limited to refresh-rate of screen
