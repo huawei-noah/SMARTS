@@ -10,6 +10,14 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased] - XXXX-XX-XX
 ### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [v1.4.0] - 2023-08-08
+### Added
 - SMARTS option `smarts[examples]` added for running SMARTS examples.
 ### Changed
 - The following dependencies have been loosened: `numpy`, `opencv`, `torch`.
