@@ -27,10 +27,11 @@ import logging
 import math
 import os
 import re
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
-from typing import Optional, Tuple, Union
+from typing import Literal, Optional, Tuple, Union
 
 import gltf
 import numpy as np
@@ -68,12 +69,21 @@ from smarts.core.vehicle_state import VehicleState
 
 # pytype: enable=import-error
 
+BACKEND_LITERALS = Literal[
+    "pandagl",
+    "pandadx9",
+    "pandagles",
+    "pandagles2",
+    "p3headlessgl",
+    "p3tinydisplay",
+]
+
 
 class _ShowBaseInstance(ShowBase):
     """Wraps a singleton instance of ShowBase from Panda3D."""
 
     _debug_mode: DEBUG_MODE = DEBUG_MODE.WARNING
-    _rendering_backend: str = "pandagl"
+    _rendering_backend: BACKEND_LITERALS = "pandagl"
 
     def __new__(cls):
         # Singleton pattern:  ensure only 1 ShowBase instance
@@ -135,6 +145,17 @@ class _ShowBaseInstance(ShowBase):
         """Set rendering debug information verbosity."""
         cls._debug_mode = debug_mode
         loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
+
+    @classmethod
+    def set_rendering_backend(
+        cls,
+        rendering_backend: BACKEND_LITERALS,
+    ):
+        """Sets the rendering backend."""
+        if "__it__" not in cls.__dict__:
+            cls._rendering_backend = rendering_backend
+        else:
+            warnings.warn("Cannot apply rendering backend after setup.")
 
     def destroy(self):
         """Destroy this renderer and clean up all remaining resources."""
@@ -249,7 +270,12 @@ class P3dOffscreenCamera(OffscreenCamera):
 class Renderer(RendererBase):
     """The utility used to render simulation geometry."""
 
-    def __init__(self, simid: str, debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR):
+    def __init__(
+        self,
+        simid: str,
+        debug_mode: DEBUG_MODE = DEBUG_MODE.ERROR,
+        rendering_backend: BACKEND_LITERALS = "pandagl",
+    ):
         self._log: logging.Logger = logging.getLogger(self.__class__.__name__)
         self._is_setup = False
         self._simid = simid
@@ -262,6 +288,7 @@ class Renderer(RendererBase):
         self._signal_nodes = {}
         self._camera_nodes = {}
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
+        _ShowBaseInstance.set_rendering_backend(rendering_backend=rendering_backend)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
         # but all Renderer objects share the same ShowBaseInstance.
         self._showbase_instance: _ShowBaseInstance = _ShowBaseInstance()
