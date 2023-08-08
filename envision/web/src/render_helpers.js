@@ -81,7 +81,7 @@ export function buildLabel(name, text, scene) {
     name,
     { width: width, height: height },
     scene,
-    false,
+    false
   );
   plane.billboardMode = Mesh.BILLBOARDMODE_ALL;
 
@@ -89,7 +89,7 @@ export function buildLabel(name, text, scene) {
     `${name}-texture`,
     { width: width * 100, height: height * 100 },
     scene,
-    true,
+    true
   );
   texture.hasAlpha = true;
   texture.drawText(text, null, null, "bold 100px arial", "white");

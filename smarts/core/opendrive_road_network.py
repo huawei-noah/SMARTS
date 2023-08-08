@@ -506,7 +506,7 @@ class OpenDriveRoadNetwork(RoadMapWithCaches):
                     for incoming in outgoing.incoming_lanes
                     if incoming != lane
                 }
-                lane._foes = list(set(foes))
+                lane._foes = list(foes)
                 if lane.foes or len(lane.incoming_lanes) > 1:
                     road._is_junction = True
 

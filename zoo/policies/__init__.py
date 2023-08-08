@@ -205,3 +205,16 @@ def entry_point_dsac(**kwargs):
 
 
 register(locator="discrete-soft-actor-critic-agent-v0", entry_point=entry_point_dsac)
+
+
+def open_entrypoint(*, debug: bool = False, aggressiveness: int = 3) -> AgentSpec:
+    try:
+        open_agent = importlib.import_module("open_agent")
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            f"Ensure that the open-agent has been installed with `pip install open-agent"
+        )
+    return open_agent.entrypoint(debug=debug, aggressiveness=aggressiveness)
+
+
+register(locator="open-agent-v0", entry_point=open_entrypoint)

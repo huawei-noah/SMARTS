@@ -1,8 +1,11 @@
 import sys
 import tempfile
+from importlib import import_module
 from pathlib import Path
+from typing import Literal
 
 import pytest
+from hydra import compose, initialize_config_dir
 
 from smarts.core.utils import import_utils
 
@@ -16,31 +19,62 @@ import_utils.import_module_from_file(
 
 @pytest.mark.parametrize(
     "example",
-    ["egoless", "chase_via_points", "trajectory_tracking", "laner", "hiway_v1"],
+    [
+        "e1_egoless",
+        "e2_single_agent",
+        "e3_multi_agent",
+        "e4_environment_config",
+        "e5_agent_zoo",
+        "e6_agent_action_space",
+        "e7_experiment_base",
+        "e8_parallel_environment",
+    ],
     # TODO: "ego_open_agent" and "human_in_the_loop" are causing aborts, fix later
 )
 def test_examples(example):
-    if example == "egoless":
-        from examples import egoless as current_example
-    elif example == "chase_via_points":
-        from examples.control import chase_via_points as current_example
-    elif example == "trajectory_tracking":
-        from examples.control import trajectory_tracking as current_example
-    elif example == "laner":
-        from examples.control import laner as current_example
-    elif example == "hiway_v1":
-        from examples.control import hiway_env_v1_lane_follower as current_example
+    current_example = import_module(example, "examples")
     main = current_example.main
-    main(
-        scenarios=["scenarios/sumo/loop"],
-        headless=True,
-        num_episodes=1,
-        max_episode_steps=100,
-    )
+
+    if example == "e7_experiment_base":
+        example_path = Path(current_example.__file__).parent
+        with initialize_config_dir(
+            version_base=None,
+            config_dir=str(example_path.absolute() / "configs" / example),
+        ):
+            cfg = compose(config_name="experiment_default")
+            main(cfg)
+    elif example == "e8_parallel_environment":
+        scenarios = [
+            str(
+                Path(__file__).absolute().parents[2]
+                / "scenarios"
+                / "sumo"
+                / "figure_eight"
+            )
+        ]
+        main(
+            scenarios=scenarios,
+            sim_name=f"test_{example}",
+            headless=True,
+            seed=42,
+            num_agents=2,
+            num_stack=2,
+            num_env=2,
+            auto_reset=True,
+            max_episode_steps=40,
+            num_episodes=2,
+        )
+    else:
+        main(
+            scenarios=["scenarios/sumo/loop"],
+            headless=True,
+            num_episodes=1,
+            max_episode_steps=100,
+        )
 
 
 def test_rllib_pg_example():
-    from examples.rl.rllib import pg_example
+    from examples.e12_rllib import pg_example
 
     main = pg_example.main
     with tempfile.TemporaryDirectory() as result_dir:
@@ -62,7 +96,7 @@ def test_rllib_pg_example():
 
 
 def test_rllib_tune_pg_example():
-    from examples.rl.rllib import pg_pbt_example
+    from examples.e12_rllib import pg_pbt_example
 
     main = pg_pbt_example.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:

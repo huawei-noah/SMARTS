@@ -1007,7 +1007,7 @@ class SMARTS(ProviderManager):
         return self._renderer
 
     @property
-    def renderer_ref(self) -> Optional[Any]:
+    def renderer_ref(self) -> Optional[RendererBase]:
         """Get the reference of the renderer. This can be `None`."""
         return self._renderer
 
@@ -1383,15 +1383,6 @@ class SMARTS(ProviderManager):
     def scenario(self) -> Scenario:
         """The current simulation scenario."""
         return self._scenario
-
-    @property
-    def timestep_sec(self) -> float:
-        """Deprecated. Use `fixed_timestep_sec`."""
-        warnings.warn(
-            "SMARTS timestep_sec property has been deprecated in favor of fixed_timestep_sec.  Please update your code.",
-            category=DeprecationWarning,
-        )
-        return self.fixed_timestep_sec
 
     @property
     def fixed_timestep_sec(self) -> float:

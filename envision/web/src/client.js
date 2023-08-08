@@ -88,8 +88,8 @@ export default class Client {
 
     this._lastSeek = new Promise((resolve) =>
       resolve(
-        this._sockets[simulationId].send(JSON.stringify({ seek: seconds })),
-      ),
+        this._sockets[simulationId].send(JSON.stringify({ seek: seconds }))
+      )
     )
       .then(wait(500))
       .finally(() => {
@@ -124,7 +124,7 @@ export default class Client {
                 ? Infinity
                 : value === "-Infinity"
                 ? -Infinity
-                : value,
+                : value
             );
             if (
               stateQueue.length > 0 &&
@@ -150,7 +150,7 @@ export default class Client {
                   // recent events in the simulation (when not in near-real-time
                   // playing mode).
                   stateQueue = stateQueue.filter(
-                    (frame, ind) => ind % 2 == 0 && ind > 5,
+                    (frame, ind) => ind % 2 == 0 && ind > 5
                   );
                   self._stateQueues[simulationId] = stateQueue;
                   break;
@@ -158,7 +158,7 @@ export default class Client {
                 case frameBufferModes.PRIMACY_BIAS: {
                   // newer frames have a higher probability of being evicted...
                   let removeIndex = Math.floor(
-                    stateQueue.length * Math.sqrt(Math.random()),
+                    stateQueue.length * Math.sqrt(Math.random())
                   );
                   stateQueue.splice(removeIndex, 1);
                   break;
@@ -168,7 +168,7 @@ export default class Client {
                   // randomly choose a frame to remove...
                   // spread the degradation randomly throughout the history.
                   let removeIndex = Math.floor(
-                    stateQueue.length * Math.random(),
+                    stateQueue.length * Math.random()
                   );
                   stateQueue.splice(removeIndex, 1);
                 }
@@ -185,7 +185,7 @@ export default class Client {
         socket.onerror = (error) => {
           console.warn(
             `Socket encountered error=${error.message} ` +
-              `trying to connect to endpoint=${url}`,
+              `trying to connect to endpoint=${url}`
           );
           reject(error);
         };
@@ -194,7 +194,7 @@ export default class Client {
     } catch (error) {
       if (remainingRetries === 0) throw error;
       console.info(
-        `Retrying connection, attempts remaining=${remainingRetries}`,
+        `Retrying connection, attempts remaining=${remainingRetries}`
       );
 
       remainingRetries -= 1;
@@ -202,7 +202,7 @@ export default class Client {
       return await this._obtainStream(
         simulationId,
         stateQueue,
-        remainingRetries,
+        remainingRetries
       );
     }
   }
@@ -239,7 +239,7 @@ export default class Client {
         this._sockets[simulationId] = await this._obtainStream(
           simulationId,
           this._stateQueues[simulationId],
-          this._maxRetries,
+          this._maxRetries
         );
       }
 

@@ -73,7 +73,7 @@ target/
 celerybeat-schedule
 
 # Environments
-.venv
+.venv*
 venv
 .bugtest
 
@@ -151,3 +151,6 @@ collected_observations/
 
 # Benchmark
 **/diagnostic/reports/*
+
+# Experiments
+outputs/

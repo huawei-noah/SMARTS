@@ -256,6 +256,7 @@ class Client:
         def on_open(ws):
             nonlocal connection_established
             connection_established = True
+            self._log.info(f"Envision connection established at `{ws.url}`.")
 
             while True:
                 state = state_queue.get()
@@ -285,7 +286,7 @@ class Client:
                     ws.run_forever()
 
                 if not connection_established:
-                    self._log.info(f"Attempt {tries} to connect to Envision.")
+                    self._log.debug(f"Attempt {tries} to connect to Envision.")
                     if not state_queue.empty():
                         break
                 else:

@@ -1,0 +1,3 @@
+# Just an alias for hiway_env-v1_default.yaml
+defaults:
+  - hiway_env-v1_default # env_config/hiway_env-v1_default

@@ -268,7 +268,9 @@ class AgentInterface:
     debug: bool = False
     """Enable debug information for the various sensors and action spaces."""
 
-    event_configuration: EventConfiguration = EventConfiguration()
+    event_configuration: EventConfiguration = field(
+        default_factory=lambda: EventConfiguration()
+    )
     """Configurable criteria of when to trigger events"""
 
     done_criteria: DoneCriteria = field(default_factory=lambda: DoneCriteria())

@@ -1,0 +1,2 @@
+locator: __main__:random_lane_control-v0
+max_episode_steps: 1000

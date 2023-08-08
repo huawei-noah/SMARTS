@@ -1,0 +1,7 @@
+# - ./scenarios/sumo/intersections/1_to_1lane_left_turn_c_agents_1
+# - ./scenarios/sumo/intersections/1_to_2lane_left_turn_c_agents_1
+- ./scenarios/sumo/intersections/2lane
+- ./scenarios/sumo/intersections/2lane_circle
+- ./scenarios/sumo/intersections/4lane
+- ./scenarios/sumo/intersections/4lane_t
+- ./scenarios/sumo/intersections/6lane

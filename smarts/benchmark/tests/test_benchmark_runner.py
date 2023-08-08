@@ -55,11 +55,11 @@ def _get_model(action):
     ],
     indirect=True,
 )
-def test_drive(get_benchmark_args):
-    """Tests Driving SMARTS 2023.1 and 2023.2 benchmarks using `examples/rl/drive` model."""
+def test_e10_drive(get_benchmark_args):
+    """Tests Driving SMARTS 2023.1 and 2023.2 benchmarks using `examples/e10_drive` model."""
     from contrib_policy.policy import Policy
 
-    agent_locator = "examples.rl.drive.inference:contrib-agent-v0"
+    agent_locator = "examples.e10_drive.inference:contrib-agent-v0"
     action = 1
     with mock.patch.object(Policy, "_get_model", _get_model(action)):
         benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)
@@ -72,11 +72,11 @@ def test_drive(get_benchmark_args):
     ],
     indirect=True,
 )
-def test_platoon(get_benchmark_args):
-    """Tests Driving SMARTS 2023.3 benchmark using `examples/rl/platoon` model."""
+def test_e11_platoon(get_benchmark_args):
+    """Tests Driving SMARTS 2023.3 benchmark using `examples/e11_platoon` model."""
     from contrib_policy.policy import Policy
 
-    agent_locator = "examples.rl.platoon.inference:contrib-agent-v0"
+    agent_locator = "examples.e11_platoon.inference:contrib-agent-v0"
     action = 2
     with mock.patch.object(Policy, "_get_model", _get_model(action)):
         benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)

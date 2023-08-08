@@ -52,7 +52,7 @@ export default function Bubbles({ scene, worldState }) {
           shape: points,
           depth: 5,
         },
-        scene,
+        scene
       );
       polygon.position.y = 4;
       let material = new StandardMaterial(`bubble-${idx}-material`, scene);

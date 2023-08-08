@@ -51,7 +51,9 @@ def _DEFAULT_PASSTHROUGH(action):
 
 
 _throttle_break_steering_space = gym.spaces.Box(
-    low=np.array([0.0, 0.0, -1.0]), high=np.array([1.0, 1.0, 1.0]), dtype=np.float32
+    low=np.array([0.0, 0.0, -1.0], dtype=np.float32),
+    high=np.array([1.0, 1.0, 1.0], dtype=np.float32),
+    dtype=np.float32,
 )
 
 _actuator_dynamic_space = _throttle_break_steering_space
@@ -61,8 +63,12 @@ _continuous_space = _throttle_break_steering_space
 
 
 _direct_space = gym.spaces.Box(
-    low=np.array([LINEAR_ACCELERATION_MINIMUM, ANGULAR_VELOCITY_MINIMUM]),
-    high=np.array([LINEAR_ACCELERATION_MAXIMUM, ANGULAR_VELOCITY_MAXIMUM]),
+    low=np.array(
+        [LINEAR_ACCELERATION_MINIMUM, ANGULAR_VELOCITY_MINIMUM], dtype=np.float32
+    ),
+    high=np.array(
+        [LINEAR_ACCELERATION_MAXIMUM, ANGULAR_VELOCITY_MAXIMUM], dtype=np.float32
+    ),
     dtype=np.float32,
 )
 
@@ -135,13 +141,15 @@ _trajectory_with_time_space = gym.spaces.Tuple(
 
 
 @dataclass(frozen=True)
-class _FormattingGroup:
+class FormattingGroup:
+    """Describes the conversion necessary to generate the given space."""
+
     space: gym.Space
     formatting_func: Callable[[Any], Any] = field(default=_DEFAULT_PASSTHROUGH)
 
 
 @lru_cache(maxsize=1)
-def _get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
+def get_formatters() -> Dict[ActionSpaceType, FormattingGroup]:
     """Get the currently available formatting groups for converting actions from `gym` space
     standard to SMARTS accepted observations.
 
@@ -149,42 +157,42 @@ def _get_formats() -> Dict[ActionSpaceType, _FormattingGroup]:
         Dict[ActionSpaceType, Any]: The currently available formatting groups.
     """
     return {
-        ActionSpaceType.ActuatorDynamic: _FormattingGroup(
+        ActionSpaceType.ActuatorDynamic: FormattingGroup(
             space=_actuator_dynamic_space,
         ),
-        ActionSpaceType.Continuous: _FormattingGroup(
+        ActionSpaceType.Continuous: FormattingGroup(
             space=_continuous_space,
         ),
-        ActionSpaceType.Direct: _FormattingGroup(
+        ActionSpaceType.Direct: FormattingGroup(
             space=_direct_space,
         ),
-        ActionSpaceType.Empty: _FormattingGroup(
+        ActionSpaceType.Empty: FormattingGroup(
             space=gym.spaces.Tuple(spaces=()),
             formatting_func=lambda a: None,
         ),
-        ActionSpaceType.Lane: _FormattingGroup(
+        ActionSpaceType.Lane: FormattingGroup(
             space=_lane_space,
             formatting_func=_format_lane_space,
         ),
-        ActionSpaceType.LaneWithContinuousSpeed: _FormattingGroup(
+        ActionSpaceType.LaneWithContinuousSpeed: FormattingGroup(
             space=_lane_with_continuous_speed_space,
         ),
-        ActionSpaceType.MPC: _FormattingGroup(
+        ActionSpaceType.MPC: FormattingGroup(
             space=_mpc_space,
         ),
-        ActionSpaceType.MultiTargetPose: _FormattingGroup(
+        ActionSpaceType.MultiTargetPose: FormattingGroup(
             space=_multi_target_pose_space,
         ),
-        ActionSpaceType.RelativeTargetPose: _FormattingGroup(
+        ActionSpaceType.RelativeTargetPose: FormattingGroup(
             space=_relative_target_pose_space,
         ),
-        ActionSpaceType.TargetPose: _FormattingGroup(
+        ActionSpaceType.TargetPose: FormattingGroup(
             space=_target_pose_space,
         ),
-        ActionSpaceType.Trajectory: _FormattingGroup(
+        ActionSpaceType.Trajectory: FormattingGroup(
             space=_trajectory_space,
         ),
-        ActionSpaceType.TrajectoryWithTime: _FormattingGroup(
+        ActionSpaceType.TrajectoryWithTime: FormattingGroup(
             space=_trajectory_with_time_space,
         ),
     }
@@ -200,7 +208,7 @@ class ActionOptions(IntEnum):
     unformatted = 2
     """Actions are not reformatted or constrained to action space. Actions must directly map to
     underlying SMARTS actions."""
-    default = 0
+    default = multi_agent
     """Defaults to :attr:`multi_agent`."""
 
 
@@ -217,7 +225,7 @@ class ActionSpacesFormatter:
         self, agent_interfaces: Dict[str, AgentInterface], action_options: ActionOptions
     ) -> None:
         self._agent_interfaces = agent_interfaces
-        self._action_options = action_options
+        self.action_options = action_options
 
         for agent_id, agent_interface in agent_interfaces.items():
             assert self.supported(agent_interface.action), (
@@ -236,11 +244,11 @@ class ActionSpacesFormatter:
             (Observation, Dict[str, Any]): The formatted actions.
         """
 
-        if self._action_options == ActionOptions.unformatted:
+        if self.action_options == ActionOptions.unformatted:
             return actions
 
         out_actions = {}
-        formatting_groups = _get_formats()
+        formatting_groups = get_formatters()
         for agent_id, action in actions.items():
             agent_interface = self._agent_interfaces[agent_id]
             format_ = formatting_groups[agent_interface.action]
@@ -253,7 +261,7 @@ class ActionSpacesFormatter:
             formatted_action = format_.formatting_func(action)
             out_actions[agent_id] = formatted_action
 
-        if self._action_options == ActionOptions.full:
+        if self.action_options == ActionOptions.full:
             assert actions.keys() == self.space.spaces.keys()
 
         return out_actions
@@ -268,7 +276,7 @@ class ActionSpacesFormatter:
         Returns:
             bool: If the action type is supported by the formatter.
         """
-        return action_type in _get_formats()
+        return action_type in get_formatters()
 
     @cached_property
     def space(self) -> gym.spaces.Dict:
@@ -277,11 +285,11 @@ class ActionSpacesFormatter:
         Returns:
             gym.spaces.Dict: A description of the action space that this formatter requires.
         """
-        if self._action_options is ActionOptions.unformatted:
+        if self.action_options is ActionOptions.unformatted:
             return None
         return gym.spaces.Dict(
             {
-                agent_id: _get_formats()[agent_interface.action].space
+                agent_id: get_formatters()[agent_interface.action].space
                 for agent_id, agent_interface in self._agent_interfaces.items()
             }
         )

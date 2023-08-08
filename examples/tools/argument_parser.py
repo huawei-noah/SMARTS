@@ -2,8 +2,24 @@ import argparse
 from typing import Optional
 
 
-def default_argument_parser(program: Optional[str] = None):
-    """This factory method returns a vanilla `argparse.ArgumentParser` with the
+def empty_parser(program: Optional[str] = None):
+    """This factory method returns an empty `argparse.ArgumentParser` with primitive
+    configuration.
+
+    You can extend it with more `parser.add_argument(...)` calls or obtain the
+    arguments via `parser.parse_args()`.
+    """
+    if not program:
+        from pathlib import Path
+
+        program = Path(__file__).stem
+
+    parser = argparse.ArgumentParser(program)
+    return parser
+
+
+def minimal_argument_parser(program: Optional[str] = None):
+    """This factory method returns a minimal `argparse.ArgumentParser` with the
     minimum subset of arguments that should be supported.
 
     You can extend it with more `parser.add_argument(...)` calls or obtain the
@@ -38,6 +54,17 @@ def default_argument_parser(program: Optional[str] = None):
         type=int,
         default=100,
     )
+    return parser
+
+
+def default_argument_parser(program: Optional[str] = None):
+    """This factory method returns a vanilla `argparse.ArgumentParser` with a
+     slightly broader subset of arguments that should be supported.
+
+    You can extend it with more `parser.add_argument(...)` calls or obtain the
+    arguments via `parser.parse_args()`.
+    """
+    parser = minimal_argument_parser(program=program)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--sim_name",

@@ -226,7 +226,7 @@ class TrapManager(ActorCaptureManager):
 
             if (
                 trap.patience_expired(sim.elapsed_sim_time)
-                and sim.elapsed_sim_time > sim.timestep_sec
+                and sim.elapsed_sim_time > sim.fixed_timestep_sec
             ):
                 capture_by_agent_id[agent_id] = _CaptureState(
                     ConditionState.EXPIRED, trap, updated_mission=trap.mission

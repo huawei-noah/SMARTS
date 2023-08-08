@@ -50,7 +50,7 @@ export default function TrafficDividers({
       let dashLine = MeshBuilder.CreateDashedLines(
         `lane-divider-${idx}`,
         { points: points, updatable: false, dashSize: 1, gapSize: 2 },
-        scene,
+        scene
       );
       dashLine.color = new Color4(...SceneColors.LaneDivider);
       return dashLine;
@@ -77,7 +77,7 @@ export default function TrafficDividers({
     let newEdgeDividers = MeshBuilder.CreateLineSystem(
       "edge-dividers",
       { lines: edgeDividerPoints, updatable: false },
-      scene,
+      scene
     );
     newEdgeDividers.color = new Color4(...SceneColors.EdgeDivider);
 
