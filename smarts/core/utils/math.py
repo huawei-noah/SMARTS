@@ -220,6 +220,14 @@ def lerp(a, b, p):
     return a * (1.0 - p) + b * p
 
 
+def safe_division(n: float, d: float, default=math.inf):
+    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
+    True and # == #
+    False and NaN == False
+    """
+    return d and n / d or default
+
+
 def low_pass_filter(
     input_value,
     previous_filter_state,

@@ -50,18 +50,15 @@ from .utils.kinematics import (
     stopping_time,
     time_to_cover,
 )
-from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
+from .utils.math import (
+    min_angles_difference_signed,
+    radians_to_vec,
+    safe_division,
+    vec_to_radians,
+)
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 MAX_IMPATIENCE = 3.0
-
-
-def _safe_division(n: float, d: float, default=math.inf):
-    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
-    True and # == #
-    False and NaN == False
-    """
-    return d and n / d or default
 
 
 class LocalTrafficProvider(TrafficProvider):
@@ -137,7 +134,7 @@ class LocalTrafficProvider(TrafficProvider):
                             f"vehPerHour value is {freq}<=0 vehicles may not be emitted!!!"
                         )
                         freq = 0
-                    flow["emit_period"] = _safe_division(3600.0, freq)
+                    flow["emit_period"] = safe_division(3600.0, freq)
                 elif "period" in flow:
                     period = float(flow["period"])
                     assert period > 0.0
@@ -823,9 +820,9 @@ class _TrafficActor:
             # we need to correct for not going straight across.
             # other things being equal, we target ~30 degrees (sin(30)=.5) on average.
             if abs(self.radius) > 1e5 or self.radius == 0:
-                return _safe_division(1.0, math.sin(theta), 1e6)
+                return safe_division(1.0, math.sin(theta), 1e6)
             # here we correct for the local road curvature (which affects how far we must travel)...
-            T = _safe_division(self.radius, self.width, 1e6)
+            T = safe_division(self.radius, self.width, 1e6)
             # XXX: This cannot be an assertion because it could happen for map related reasons.
             if abs(T) <= 1.0:
                 logging.debug(
@@ -844,7 +841,7 @@ class _TrafficActor:
                         + 0.5
                         - se
                         * math.cos(
-                            _safe_division(1, (math.tan(theta) * (T - 1)), default=0)
+                            safe_division(1, (math.tan(theta) * (T - 1)), default=0)
                         )
                     )
                 )
@@ -855,9 +852,7 @@ class _TrafficActor:
                     se
                     + 0.5
                     - se
-                    * math.cos(
-                        _safe_division(1, (math.tan(theta) * (T + 1)), default=0)
-                    )
+                    * math.cos(safe_division(1, (math.tan(theta) * (T + 1)), default=0))
                 )
             )
 
@@ -1008,7 +1003,7 @@ class _TrafficActor:
         rt_ln = RoadMap.Route.RouteLane(lane, self._route_ind)
         path_len = self._route.distance_from(rt_ln) or lane.length
         path_len -= my_offset
-        lane_time_left = _safe_division(path_len, self.speed)
+        lane_time_left = safe_division(path_len, self.speed)
 
         half_len = 0.5 * self._state.dimensions.length
         front_bumper = my_offset + half_len
@@ -1097,7 +1092,7 @@ class _TrafficActor:
             self.speed, self._max_decel
         ):
             return False
-        min_gap = _safe_division(
+        min_gap = safe_division(
             self._target_cutin_gap, self._aggressiveness, default=1e5
         )
         max_gap = self._target_cutin_gap + 2
@@ -1247,7 +1242,7 @@ class _TrafficActor:
             if l != self._lane and abs(my_radius) < 1e5:
                 l_radius = _get_radius(l)
                 if abs(l_radius) < 1e5:
-                    ratio = _safe_division(l_radius, my_radius, default=0)
+                    ratio = safe_division(l_radius, my_radius, default=0)
                     if ratio < 0:
                         ratio = 1.0
             self._lane_speed[l.index] = (ratio * self.speed, ratio * self.acceleration)
@@ -1352,10 +1347,10 @@ class _TrafficActor:
             final_range = window[-1].dist
 
             # the exponent here was determined by trial and error
-            if range_del < 0 and abs(bearing_del) < _safe_division(
+            if range_del < 0 and abs(bearing_del) < safe_division(
                 math.pi, final_range**1.4
             ):
-                return _safe_division(-final_range, range_del)
+                return safe_division(-final_range, range_del)
             return math.inf
 
         def purge_unseen(self, seen: Set[str]):
@@ -1755,10 +1750,10 @@ class _TrafficActor:
         time_cush = max(
             min(
                 self._target_lane_win.ttc,
-                _safe_division(self._target_lane_win.gap, speed_denom),
+                safe_division(self._target_lane_win.gap, speed_denom),
                 self._target_lane_win.time_left,
                 self._lane_win.ttc,
-                _safe_division(self._lane_win.gap, speed_denom),
+                safe_division(self._lane_win.gap, speed_denom),
                 2 * self._lane_win.time_left,
             ),
             1e-13,
@@ -1770,16 +1765,14 @@ class _TrafficActor:
             and time_cush < min_time_cush
         ):
             if self.speed > 0:
-                severity = 4 * _safe_division(
-                    (min_time_cush - time_cush), min_time_cush
-                )
+                severity = 4 * safe_division((min_time_cush - time_cush), min_time_cush)
                 return -emergency_decl * np.clip(severity, 0, 1.0)
             return 0
 
         space_cush = max(min(self._target_lane_win.gap, self._lane_win.gap), 1e-13)
         if space_cush < self._min_space_cush - self._min_space_cush * self._impatience:
             if self.speed > 0:
-                severity = 4 * _safe_division(
+                severity = 4 * safe_division(
                     (self._min_space_cush - space_cush), self._min_space_cush
                 )
                 return -emergency_decl * np.clip(severity, 0, 1.0)
