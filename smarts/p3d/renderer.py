@@ -348,17 +348,14 @@ class Renderer(RendererBase):
         np = GeomNode(name)
         np.addGeom(geom)
         return np
-
-    def setup(self, scenario: Scenario):
-        """Initialize this renderer."""
-        self._root_np = self._showbase_instance.setup_sim_root(self._simid)
-        self._vehicles_np = self._root_np.attachNewNode("vehicles")
-        self._signals_np = self._root_np.attachNewNode("signals")
-
-        map_path = scenario.map_glb_filepath
-        map_dir = Path(map_path).parent
-
+    
+    def _ensure_root(self):
+        if self._root_np is None:
+            self._root_np = self._showbase_instance.setup_sim_root(self._simid)
+    
+    def load_road_map(self, map_path):
         # Load map
+        self._ensure_root()
         if self._road_map_np:
             self._log.debug(
                 "road_map=%s already exists. Removing and adding a new "
@@ -372,6 +369,19 @@ class Renderer(RendererBase):
         np.hide(RenderMasks.OCCUPANCY_HIDE)
         np.setColor(SceneColors.Road.value)
         self._road_map_np = np
+        return map_np.getBounds()
+
+    def setup(self, scenario: Scenario):
+        """Initialize this renderer."""
+        self._ensure_root()
+        self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        self._signals_np = self._root_np.attachNewNode("signals")
+
+        map_path = scenario.map_glb_filepath
+        map_dir = Path(map_path).parent
+
+        # Load map
+        self.load_road_map(map_path)
 
         # Road lines (solid, yellow)
         road_lines_path = map_dir / "road_lines.glb"

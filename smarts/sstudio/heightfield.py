@@ -27,8 +27,6 @@ import numpy as np
 
 class HeightField(ABC):
     def __init__(self, data: np.ndarray, size: Tuple[int, int]) -> None:
-        print(data.shape)
-        print(data.dtype == np.uint8, data.dtype)
         assert data.dtype == np.uint8 and (
             len(data.shape) == 2 or (len(data.shape) == 3 and data.shape[-1] == 1)
         ), f"Image is not greyscale format."
@@ -50,7 +48,7 @@ class HeightField(ABC):
     def resolution(self):
         return self._resolution
 
-    def apply_kernel(self, kernel: np.ndarray, output_dtype=np.uint8):
+    def apply_kernel(self, kernel: np.ndarray, output_dtype=np.uint8, min_val=-np.inf, max_val=np.inf)):
         # kernel can be asymmetric but still needs to be odd
         k_height, k_width = kernel.shape
         m_height, m_width = self.data.shape
@@ -68,7 +66,22 @@ class HeightField(ABC):
         for i in range(m_height):
             for j in range(m_width):
                 between = padded[i : k_height + i, j : k_width + j] * kernel
-                output.append(np.sum(between))
+                output.append(min(max(np.sum(between), min_val), max_val))
 
         output = np.array(output, dtype=output_dtype).reshape((m_height, m_width))
         return HeightField(output, self.size)
+
+    def write_image(self, file):
+        from PIL import Image
+        a = self.data.astype(np.uint8)
+        im = Image.fromarray(a, "L")
+        im.save(file)
+        
+    @classmethod
+    def load_image(cls, file):
+        from PIL import Image
+        with Image.open(file) as im:
+            data = np.asarray(im)
+            assert len(data.shape) == 2
+        return cls(data, data.shape[:2])
+            
