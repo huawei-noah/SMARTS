@@ -48,7 +48,7 @@ class HeightField(ABC):
     def resolution(self):
         return self._resolution
 
-    def apply_kernel(self, kernel: np.ndarray, output_dtype=np.uint8, min_val=-np.inf, max_val=np.inf)):
+    def apply_kernel(self, kernel: np.ndarray, output_dtype=np.uint8, min_val=-np.inf, max_val=np.inf):
         # kernel can be asymmetric but still needs to be odd
         k_height, k_width = kernel.shape
         m_height, m_width = self.data.shape
