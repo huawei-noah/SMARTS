@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 from abc import ABC
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 
@@ -48,8 +48,11 @@ class HeightField(ABC):
     def resolution(self):
         return self._resolution
 
-    def apply_kernel(self, kernel: np.ndarray, output_dtype=np.uint8, min_val=-np.inf, max_val=np.inf):
+    def apply_kernel(self, kernel: np.ndarray, min_val=-np.inf, max_val=np.inf):
         # kernel can be asymmetric but still needs to be odd
+        assert len(kernel.shape) == 2 and np.all(
+            [k % 2 for k in kernel.shape]
+        ), "Kernel shape must be 2D and shape dimension values must be odd"
         k_height, k_width = kernel.shape
         m_height, m_width = self.data.shape
         k_size = max(k_height, k_width)
@@ -61,27 +64,40 @@ class HeightField(ABC):
             elif k_width == 1:
                 padded = padded[:, 1:-1]
 
-        # iterates through matrix, applies kernel, and sums
-        output = []
-        for i in range(m_height):
-            for j in range(m_width):
-                between = padded[i : k_height + i, j : k_width + j] * kernel
-                output.append(min(max(np.sum(between), min_val), max_val))
+        # iterate through matrix, apply kernel, and sum
+        output = np.empty_like(self.data)
+        for v in range(m_height):
+            for u in range(m_width):
+                between = padded[v : k_height + v, u : k_width + u] * kernel
+                output[v][u] = min(max(np.sum(between), min_val), max_val)
 
-        output = np.array(output, dtype=output_dtype).reshape((m_height, m_width))
+        return HeightField(output, self.size)
+
+    def apply_function(
+        self,
+        fn: Callable[[np.ndarray, int, int], np.uint8],
+        min_val=-np.inf,
+        max_val=np.inf,
+    ):
+        output = np.empty_like(self.data)
+        for i in range(self.data.shape[0]):
+            for j in range(self.data.shape[1]):
+                output[i][j] = min(max(fn(self.data, i, j), min_val), max_val)
+
         return HeightField(output, self.size)
 
     def write_image(self, file):
         from PIL import Image
+
         a = self.data.astype(np.uint8)
         im = Image.fromarray(a, "L")
         im.save(file)
-        
+
     @classmethod
     def load_image(cls, file):
         from PIL import Image
+
         with Image.open(file) as im:
             data = np.asarray(im)
             assert len(data.shape) == 2
         return cls(data, data.shape[:2])
-            
