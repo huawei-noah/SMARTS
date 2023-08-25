@@ -348,11 +348,11 @@ class Renderer(RendererBase):
         np = GeomNode(name)
         np.addGeom(geom)
         return np
-    
+
     def _ensure_root(self):
         if self._root_np is None:
             self._root_np = self._showbase_instance.setup_sim_root(self._simid)
-    
+
     def load_road_map(self, map_path):
         # Load map
         self._ensure_root()

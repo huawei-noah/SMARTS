@@ -20,27 +20,37 @@
 import argparse
 
 import numpy as np
-from smarts.core.coordinates import Dimensions, Pose
 
-from smarts.core.sumo_road_network import SumoRoadNetwork
+from smarts.core.coordinates import Dimensions, Pose
+from smarts.core.sensor import DrivableAreaGridMapSensor
 from smarts.core.vehicle_state import VehicleState
 from smarts.p3d.renderer import Renderer
-from smarts.core.sensor import DrivableAreaGridMapSensor
 
 
-def generate_bitmap_from_glb_file(glb_file: str, out_bitmap_dir: str, padding: int):
+def generate_bitmap_from_glb_file(glb_file: str, out_bitmap_file: str, padding: int):
     """Creates a geometry file from a sumo map file."""
     renderer = Renderer("r")
     bounds = renderer.load_road_map(glb_file)
     size = (*(bounds.max - bounds.min),)
-    vs = VehicleState("a", pose=Pose(np.array((*bounds.center,)), np.array([0, 0, 0, 1])), dimensions=Dimensions(1, 1, 1))
-    camera = DrivableAreaGridMapSensor(vehicle_state=vs, width=int(size[0]) + padding, height=int(size[1]) + padding, resolution=1, renderer=renderer)
+    vs = VehicleState(
+        "a",
+        pose=Pose(np.array((*bounds.center,)), np.array([0, 0, 0, 1])),
+        dimensions=Dimensions(1, 1, 1),
+    )
+    camera = DrivableAreaGridMapSensor(
+        vehicle_state=vs,
+        width=int(size[0]) + padding,
+        height=int(size[1]) + padding,
+        resolution=1,
+        renderer=renderer,
+    )
     renderer.render()
     image = camera(renderer)
 
     from PIL import Image
+
     im = Image.fromarray(image.data.squeeze(), "L")
-    im.save(out_bitmap_dir)
+    im.save(out_bitmap_file)
     im.close()
 
 
