@@ -61,7 +61,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("mesh", help="mesh file (*.glb)", type=str)
     parser.add_argument("output_path", help="where to write the bitmap file", type=str)
-    parser.add_argument("--padding", help="the padding pixels", type=int, default=10)
+    parser.add_argument("--padding", help="the padding pixels", type=int, default=0)
     args = parser.parse_args()
 
     generate_bitmap_from_glb_file(args.mesh, args.output_path, padding=args.padding)
