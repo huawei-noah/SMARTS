@@ -25,7 +25,7 @@ import numpy as np
 from smarts.sstudio.heightfield import HeightField
 
 
-@lru_cache
+@lru_cache(2)
 def table_cache(table_dim, seed):
     p = np.arange(table_dim, dtype=int)
     np.random.shuffle(p)
