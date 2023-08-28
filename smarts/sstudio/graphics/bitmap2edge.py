@@ -21,7 +21,7 @@ import argparse
 
 import numpy as np
 
-from smarts.sstudio.heightfield import HeightField
+from smarts.sstudio.graphics.heightfield import HeightField
 
 
 def generate_edge_bitmap_from_bitmap(bitmap_file, out_edge_bitmap_file):

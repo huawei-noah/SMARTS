@@ -24,7 +24,7 @@ import os
 import numpy as np
 import pytest
 
-from smarts.sstudio.heightfield import HeightField
+from smarts.sstudio.graphics.heightfield import HeightField
 
 
 @pytest.fixture

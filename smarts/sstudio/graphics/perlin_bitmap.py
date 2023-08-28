@@ -22,7 +22,7 @@ from functools import lru_cache
 
 import numpy as np
 
-from smarts.sstudio.heightfield import HeightField
+from smarts.sstudio.graphics.heightfield import HeightField
 
 
 @lru_cache(2)
