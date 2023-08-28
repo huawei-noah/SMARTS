@@ -19,15 +19,11 @@
 # THE SOFTWARE.
 import argparse
 from functools import lru_cache
-import math
 
 import numpy as np
 
-from smarts.core.coordinates import Dimensions, Pose
-from smarts.core.sensor import DrivableAreaGridMapSensor
-from smarts.core.vehicle_state import VehicleState
-from smarts.p3d.renderer import Renderer
 from smarts.sstudio.heightfield import HeightField
+
 
 @lru_cache
 def table_cache(table_dim, seed):
@@ -39,6 +35,7 @@ def table_cache(table_dim, seed):
 
 class PerlinNoise:
     """This is a performant perlin noise generator heavily based on https://stackoverflow.com/a/42154921"""
+
     @classmethod
     def noise(cls, x, y, seed, table_dim):
         """Vectorizes the generation of noise.
@@ -71,7 +68,7 @@ class PerlinNoise:
         x1 = cls.lerp(n00, n10, u)
         x2 = cls.lerp(n01, n11, u)  # FIX1: I was using n10 instead of n01
         return cls.lerp(x1, x2, v)  # FIX2: I also had to reverse x1 and x2 here
-    
+
     @staticmethod
     def fade(t: float) -> float:
         """The fade function"""
@@ -90,15 +87,18 @@ class PerlinNoise:
         return g[:, :, 0] * x + g[:, :, 1] * y
 
 
-
-def generate_bitmap(out_bitmap_file, width, height, smooth_iterations, seed, table_dim):
+def generate_bitmap(
+    out_bitmap_file, width, height, smooth_iterations, seed, table_dim, shift
+):
     image = np.zeros((height, width))
     for i in range(0, 20):
         freq = 2**i
-        lin = np.linspace(0, freq, width, endpoint=False)
-        lin2 = np.linspace(0, freq, height, endpoint=False)
-        x, y = np.meshgrid(lin, lin2)  # FIX3: I thought I had to invert x and y here but it was a mistake
-        image = PerlinNoise.noise(x, y, seed=seed, table_dim=table_dim)/freq + image
+        lin = np.linspace(shift, freq + shift, width, endpoint=False)
+        lin2 = np.linspace(shift, freq + shift, height, endpoint=False)
+        x, y = np.meshgrid(
+            lin, lin2
+        )  # FIX3: I thought I had to invert x and y here but it was a mistake
+        image = PerlinNoise.noise(x, y, seed=seed, table_dim=table_dim) / freq + image
 
     # print(np.min(image), np.max(image))
     image = (image + 1) * 128
@@ -111,14 +111,9 @@ def generate_bitmap(out_bitmap_file, width, height, smooth_iterations, seed, tab
         blur_arr_u = blur_arr.reshape((1, 7))
         blur_arr_v = blur_arr.reshape((7, 1))
         for i in range(smooth_iterations):
-            hf = hf.apply_kernel(
-                np.array(blur_arr_u)
-            )
-            hf = hf.apply_kernel(
-                blur_arr_v
-            )
+            hf = hf.apply_kernel(np.array(blur_arr_u))
+            hf = hf.apply_kernel(blur_arr_v)
             image = hf.data
-
 
     from PIL import Image
 
@@ -135,10 +130,23 @@ if __name__ == "__main__":
     parser.add_argument("output_path", help="where to write the bitmap file", type=str)
     parser.add_argument("--width", help="the width pixels", type=int, default=100)
     parser.add_argument("--height", help="the height pixels", type=int, default=100)
-    parser.add_argument("--smooth_iterations", help="smooth the output", type=int, default=0)
+    parser.add_argument(
+        "--smooth_iterations", help="smooth the output", type=int, default=0
+    )
     parser.add_argument("--seed", help="the generator seed", type=int, default=87)
-    parser.add_argument("--table_dim", help="the perlin permutation table", type=int, default=2048)
+    parser.add_argument(
+        "--table_dim", help="the perlin permutation table", type=int, default=2048
+    )
+    parser.add_argument("--shift", help="the shift on the noise", type=float, default=0)
 
     args = parser.parse_args()
 
-    generate_bitmap(args.output_path, args.width, args.height, args.smooth_iterations, args.seed, args.table_dim)
+    generate_bitmap(
+        args.output_path,
+        args.width,
+        args.height,
+        args.smooth_iterations,
+        args.seed,
+        args.table_dim,
+        args.shift,
+    )
