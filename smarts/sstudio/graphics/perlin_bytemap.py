@@ -87,8 +87,8 @@ class PerlinNoise:
         return g[:, :, 0] * x + g[:, :, 1] * y
 
 
-def generate_bitmap(
-    out_bitmap_file, width, height, smooth_iterations, seed, table_dim, shift
+def generate_bytemap(
+    out_bytemap_file, width, height, smooth_iterations, seed, table_dim, shift
 ):
     image = np.zeros((height, width))
     for i in range(0, 20):
@@ -118,16 +118,16 @@ def generate_bitmap(
     from PIL import Image
 
     im = Image.fromarray(image.squeeze(), "L")
-    im.save(out_bitmap_file)
+    im.save(out_bytemap_file)
     im.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "perlinbitmap.py",
-        description="Utility to export mesh files to bitmap.",
+        "perlinbytemap.py",
+        description="Utility to export mesh files to bytemap.",
     )
-    parser.add_argument("output_path", help="where to write the bitmap file", type=str)
+    parser.add_argument("output_path", help="where to write the bytemap file", type=str)
     parser.add_argument("--width", help="the width pixels", type=int, default=100)
     parser.add_argument("--height", help="the height pixels", type=int, default=100)
     parser.add_argument(
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    generate_bitmap(
+    generate_bytemap(
         args.output_path,
         args.width,
         args.height,

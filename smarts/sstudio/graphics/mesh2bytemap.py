@@ -27,7 +27,7 @@ from smarts.core.vehicle_state import VehicleState
 from smarts.p3d.renderer import Renderer
 
 
-def generate_bitmap_from_glb_file(glb_file: str, out_bitmap_file: str, padding: int):
+def generate_bytemap_from_glb_file(glb_file: str, out_bytemap_file: str, padding: int):
     """Creates a geometry file from a sumo map file."""
     renderer = Renderer("r")
     bounds = renderer.load_road_map(glb_file)
@@ -50,18 +50,18 @@ def generate_bitmap_from_glb_file(glb_file: str, out_bitmap_file: str, padding: 
     from PIL import Image
 
     im = Image.fromarray(image.data.squeeze(), "L")
-    im.save(out_bitmap_file)
+    im.save(out_bytemap_file)
     im.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "mesh2bitmap.py",
-        description="Utility to export mesh files to bitmap.",
+        "mesh2bytemap.py",
+        description="Utility to export mesh files to bytemap.",
     )
     parser.add_argument("mesh", help="mesh file (*.glb)", type=str)
-    parser.add_argument("output_path", help="where to write the bitmap file", type=str)
+    parser.add_argument("output_path", help="where to write the bytemap file", type=str)
     parser.add_argument("--padding", help="the padding pixels", type=int, default=0)
     args = parser.parse_args()
 
-    generate_bitmap_from_glb_file(args.mesh, args.output_path, padding=args.padding)
+    generate_bytemap_from_glb_file(args.mesh, args.output_path, padding=args.padding)

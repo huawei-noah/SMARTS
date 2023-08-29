@@ -24,8 +24,8 @@ import numpy as np
 from smarts.sstudio.graphics.heightfield import HeightField
 
 
-def generate_edge_bitmap_from_bitmap(bitmap_file, out_edge_bitmap_file):
-    hf = HeightField.load_image(bitmap_file)
+def generate_edge_bytemap_from_bytemap(bytemap_file, out_edge_bytemap_file):
+    hf = HeightField.load_image(bytemap_file)
     bhf = hf.apply_kernel(
         kernel=np.array(
             [
@@ -41,18 +41,18 @@ def generate_edge_bitmap_from_bitmap(bitmap_file, out_edge_bitmap_file):
         min_val=0,
         max_val=255,
     )
-    bhf.write_image(out_edge_bitmap_file)
+    bhf.write_image(out_edge_bytemap_file)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "bitmap2edge.py",
-        description="Utility to convert a bitmap to an edge bitmap.",
+        "bytemap2edge.py",
+        description="Utility to convert a bytemap to an edge bytemap.",
     )
-    parser.add_argument("bitmap", help="bitmap file (*.bmp)", type=str)
+    parser.add_argument("bytemap", help="bytemap file (*.bmp)", type=str)
     parser.add_argument(
-        "output_path", help="where to write the edge bitmap file", type=str
+        "output_path", help="where to write the edge bytemap file", type=str
     )
     args = parser.parse_args()
 
-    generate_edge_bitmap_from_bitmap(args.bitmap, args.output_path)
+    generate_edge_bytemap_from_bytemap(args.bytemap, args.output_path)
