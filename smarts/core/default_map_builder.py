@@ -20,6 +20,7 @@
 
 import os
 import sys
+import warnings
 from enum import IntEnum
 from typing import NamedTuple, Optional, Tuple
 
@@ -151,6 +152,10 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
             return None, None
         map_class = ArgoverseMap
     else:
+        warnings.warn(
+            f"A map source for road surface generation can not be resolved from the given reference: `{map_spec.source}`.",
+            category=UserWarning,
+        )
         return None, None
 
     if _existing_map:
