@@ -189,7 +189,7 @@ def gen_scenario(
     obj_hash = pickle_hash(scenario.map_spec, True)
     if _needs_build(db_conn, scenario.map_spec, artifact_paths, obj_hash):
         with timeit("map_spec", logger.info):
-            gen_map(scenario_dir, scenario.map_spec)
+            gen_map_spec_artifact(scenario_dir, scenario.map_spec)
             _update_artifacts(db_conn, artifact_paths, obj_hash)
         map_spec = scenario.map_spec
     else:
@@ -358,7 +358,9 @@ def gen_scenario(
             )
 
 
-def gen_map(scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None):
+def gen_map_spec_artifact(
+    scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None
+):
     """Saves a map spec to file."""
     _check_if_called_externally()
     build_dir = os.path.join(scenario, "build")
