@@ -847,6 +847,11 @@ class Waypoint:
             type(h)
         )
         return self.heading.relative_to(h)
+    
+    @property
+    def position(self):
+        """The position of the waypoint."""
+        return self.pos
 
     def signed_lateral_error(self, p) -> float:
         """Returns the signed lateral distance from the given point to the

@@ -542,22 +542,22 @@ class RoadWaypointsSensor(Sensor):
             start_offset = lane.length + overflow_offset
 
         incoming_lanes = lane.incoming_lanes
+        paths = []
         if start_offset < 0 and len(incoming_lanes) > 0:
-            paths = []
             for lane in incoming_lanes:
                 paths += self._paths_for_lane(lane, vehicle_state, plan, start_offset)
-            return paths
-        else:
-            start_offset = max(0, start_offset)
-            wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
-            adj_pose = Pose.from_center(wp_start, vehicle_state.pose.heading)
-            wps_to_lookahead = self._horizon * 2
-            paths = lane.waypoint_paths_for_pose(
-                pose=adj_pose,
-                lookahead=wps_to_lookahead,
-                route=plan.route,
-            )
-            return paths
+        
+        start_offset = max(0, start_offset)
+        wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
+        adj_pose = Pose.from_center(wp_start, vehicle_state.pose.heading)
+        wps_to_lookahead = self._horizon * 2
+        paths += lane.waypoint_paths_for_pose(
+            pose=adj_pose,
+            lookahead=wps_to_lookahead,
+            route=plan.route,
+        )
+        return paths
+
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, RoadWaypoints) and self._horizon == __value._horizon

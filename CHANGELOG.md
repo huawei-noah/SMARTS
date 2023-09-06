@@ -11,8 +11,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased] - XXXX-XX-XX
 ### Added
 ### Changed
+- Waypoints now have a `position` property (which will eventually replace `pos`).
 ### Deprecated
 ### Fixed
+- Resolved issue with road waypoints not showing waypoints if the horizon was larger than the start of the lane.
 ### Removed
 ### Security
 
