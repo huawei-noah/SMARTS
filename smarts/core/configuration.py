@@ -22,11 +22,14 @@
 import ast
 import configparser
 import functools
+import logging
 import os
 import pathlib
 from typing import Any, Callable, Optional, Union
 
 _UNSET = object()
+
+logger = logging.getLogger(__name__)
 
 
 def _convert_truthy(t: str) -> bool:
@@ -72,7 +75,7 @@ class Config:
             raise FileNotFoundError(f"Configuration file not found at {config_file}")
 
         self._config.read(str(config_file.absolute()))
-        print(f"Using configuration from: {config_file.absolute()}")
+        logger.info(msg=f"Using engine configuration from: {config_file.absolute()}")
 
     @property
     def environment_prefix(self):

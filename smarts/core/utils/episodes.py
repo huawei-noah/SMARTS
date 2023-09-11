@@ -51,7 +51,7 @@ class EpisodeLogs:
         assert isinstance(self._current_episode, EpisodeLog)
         e = self._current_episode
         row = (
-            f"{e.index}/{self._total_episodes}",
+            f"{e.index + 1}/{self._total_episodes}",
             f"{e.sim2wall_ratio:.2f}",
             e.steps,
             f"{e.steps_per_second:.2f}",
@@ -159,6 +159,9 @@ class EpisodeLog:
         if terminateds.get("__all__", False) and infos is not None:
             for agent, score in infos.items():
                 self.scores[agent] = score["score"]
+        else:
+            for id in (_id for _id, t in terminateds.items() if t):
+                self.scores[id] = infos[id]["score"]
 
     def _convert_to_dict(self, observations, rewards, terminateds, truncateds, infos):
         observations, rewards, infos = [
@@ -200,16 +203,16 @@ class Episode:
     def __init__(self, episodes: Episodes):
         self._episodes = episodes
 
-    def continues(self, observation, reward, done, info) -> bool:
+    def continues(self, observation, reward, terminated, truncated, info) -> bool:
         """Determine if the current episode can continue."""
 
         self._episodes.current_step += 1
 
         if self._episodes.current_step >= self._episodes.max_steps:
             return False
-        if isinstance(done, dict):
-            return not done.get("__all__", all(done.values()))
-        return not done
+        if isinstance(terminated, dict):
+            return not terminated.get("__all__", all(terminated.values()))
+        return not terminated
 
 
 def episode_range(max_steps):

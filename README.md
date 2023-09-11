@@ -17,37 +17,38 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/) . :bell: :rotating_light:
 
 # Examples 
-### Egoless
-Simulate a SMARTS environment without any ego agents, but with only background traffic.
-1. [Egoless](examples/egoless.py) example.
+### Primitive
+1. [Egoless](examples/e1_egoless.py) example.
+   + Run a SMARTS simulation without any ego agents, but with only background traffic.
+1. [Single-Agent](examples/e2_single_agent.py) example.
+   + Run a SMARTS simulation with a single ego agent.
+1. [Multi-Agent](examples/e3_multi_agent.py) example.
+   + Run a SMARTS simulation with multiple ego agents.
+1. [Environment Config](examples/e4_environment_config.py) example.
+   + Demonstrate the main observation/action configuration of the environment.
+1. [Agent Zoo](examples/e5_agent_zoo.py) example.
+   + Demonstrate how the agent zoo works.
+1. [Agent interface example](examples/6_agent_interface.py)
+   + TODO demonstrate how the agent interface works.
 
-### Control Theory
-Several agent control policies and agent [action types](smarts/core/controllers/__init__.py) are demonstrated.
+### Integration examples
+A few more complex integrations are demonstrated.
 
-1. Chase Via Points
-   + script: [control/chase_via_points.py](examples/control/chase_via_points.py)
-   + Multi agent
-   + ActionSpaceType: LaneWithContinuousSpeed
-1. Trajectory Tracking
-   + script: [control/trajectory_tracking.py](examples/control/trajectory_tracking.py)
-   + ActionSpaceType: Trajectory
-1. OpEn Adaptive Control
-   + script: [control/ego_open_agent.py](examples/control/ego_open_agent.py)
-   + ActionSpaceType: MPC
-1. Laner
-   + script: [control/laner.py](examples/control/laner.py)
-   + Multi agent
-   + ActionSpaceType: Lane
+1. Configurable example
+   + script: [examples/e7_experiment_base.py](examples/e7_experiment_base.py)
+   + Configurable agent number.
+   + Configurable agent type.
+   + Configurable environment.
 1. Parallel environments
-   + script: [control/parallel_environment.py](examples/control/parallel_environment.py)
+   + script: [examples/e8_parallel_environment.py](examples/e8_parallel_environment.py)
    + Multiple SMARTS environments in parallel
    + ActionSpaceType: LaneWithContinuousSpeed
 
-### RL Model
-1. [Drive](examples/rl/drive). See [Driving SMARTS 2023.1 & 2023.2](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_1.html) for more info.
-1. [VehicleFollowing](examples/rl/platoon). See [Driving SMARTS 2023.3](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_3.html) for more info.
-1. [PG](examples/rl/rllib/pg_example.py). See [RLlib](https://smarts.readthedocs.io/en/latest/ecosystem/rllib.html) for more info.
-1. [PG Population Based Training](examples/rl/rllib/pg_pbt_example.py). See [RLlib](https://smarts.readthedocs.io/en/latest/ecosystem/rllib.html) for more info.
+### RL Examples
+1. [Drive](examples/e10_drive). See [Driving SMARTS 2023.1 & 2023.2](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_1.html) for more info.
+1. [VehicleFollowing](examples/e11_platoon). See [Driving SMARTS 2023.3](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_3.html) for more info.
+1. [PG](examples/e12_rllib/pg_example.py). See [RLlib](https://smarts.readthedocs.io/en/latest/ecosystem/rllib.html) for more info.
+1. [PG Population Based Training](examples/e12_rllib/pg_pbt_example.py). See [RLlib](https://smarts.readthedocs.io/en/latest/ecosystem/rllib.html) for more info.
 
 ### RL Environment
 1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.

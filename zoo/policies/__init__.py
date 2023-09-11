@@ -250,3 +250,16 @@ def keyboard_entry_point(**kwargs):
 
 
 register(locator="keyboard-agent-v0", entry_point=keyboard_entry_point)
+
+
+def open_entrypoint(*, debug: bool = False, aggressiveness: int = 3) -> AgentSpec:
+    try:
+        open_agent = importlib.import_module("open_agent")
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            f"Ensure that the open-agent has been installed with `pip install open-agent"
+        )
+    return open_agent.entrypoint(debug=debug, aggressiveness=aggressiveness)
+
+
+register(locator="open-agent-v0", entry_point=open_entrypoint)

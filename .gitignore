@@ -73,7 +73,7 @@ target/
 celerybeat-schedule
 
 # Environments
-.venv
+.venv*
 venv
 .bugtest
 
@@ -151,6 +151,9 @@ collected_observations/
 
 # Benchmark
 **/diagnostic/reports/*
+
+# Experiments
+outputs/
 
 # Temp
 driving-smarts-2.competition-scenarios

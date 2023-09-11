@@ -21,21 +21,10 @@
 # THE SOFTWARE.
 import logging
 import os
-from enum import IntEnum, auto
+from dataclasses import asdict, is_dataclass
 from functools import partial
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Set,
-    SupportsFloat,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Sequence, Set, SupportsFloat, Tuple, Union
 
 import gymnasium as gym
 import numpy as np
@@ -51,34 +40,16 @@ from smarts.core import seed as smarts_seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
+from smarts.env.configs.hiway_env_configs import (
+    EnvReturnMode,
+    ScenarioOrder,
+    SumoOptions,
+)
 from smarts.env.utils.action_conversion import ActionOptions, ActionSpacesFormatter
 from smarts.env.utils.observation_conversion import (
     ObservationOptions,
     ObservationSpacesFormatter,
 )
-
-
-class ScenarioOrder(IntEnum):
-    """Determines the order in which scenarios are served over successive resets."""
-
-    Sequential = 0
-    """Scenarios are served in order initially provided."""
-    Scrambled = 1
-    """Scenarios are served in random order."""
-
-
-class SumoOptions(NamedTuple):
-    """Contains options used to configure sumo."""
-
-    num_external_clients: int = 0
-    """Number of SUMO clients beyond SMARTS. Defaults to 0."""
-    auto_start: bool = True
-    """Automatic starting of SUMO. Defaults to True."""
-    headless: bool = True
-    """If True, disables visualization in SUMO GUI. Defaults to True."""
-    port: Optional[str] = None
-    """SUMO port. Defaults to None."""
-
 
 DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
     Envision,
@@ -87,19 +58,6 @@ DEFAULT_VISUALIZATION_CLIENT_BUILDER = partial(
     headless=False,
     data_formatter_args=EnvisionDataFormatterArgs("base", enable_reduction=False),
 )
-
-
-class EnvReturnMode(IntEnum):
-    """Configuration to determine the interface type of the step function.
-
-    This configures between the environment status return (i.e. reward means the environment reward) and the per-agent
-    status return (i.e. rewards means reward per agent).
-    """
-
-    per_agent = auto()
-    """Generate per-agent mode step returns in the form ``(rewards({id: float}), terminateds({id: bool}), truncateds ({id: bool}), info)``."""
-    environment = auto()
-    """Generate environment mode step returns in the form ``(reward (float), terminated (bool), truncated (bool), info)``."""
 
 
 class HiWayEnvV1(gym.Env):
@@ -112,7 +70,7 @@ class HiWayEnvV1(gym.Env):
             needs that will be used to configure the environment.
         sim_name (str, optional): Simulation name. Defaults to None.
         scenarios_order (ScenarioOrder, optional): Configures the order of
-            scenarios provided over successive resets.
+            scenarios provided over successive resets. See :class:`~smarts.env.configs.hiway_env_configs.ScenarioOrder`.
         headless (bool, optional): If True, disables visualization in
             Envision. Defaults to False.
         visdom (bool): Deprecated. Use SMARTS_VISDOM_ENABLED.
@@ -122,7 +80,7 @@ class HiWayEnvV1(gym.Env):
         seed (int, optional): Random number generator seed. Defaults to 42.
         sumo_options (SumoOptions, Dict[str, Any]): The configuration for the
             sumo instance. A dictionary with the fields can be used instead.
-            See :class:`SumoOptions`.
+            See :class:`~smarts.env.configs.hiway_env_configs.SumoOptions`.
         visualization_client_builder: A method that must must construct an
             object that follows the Envision interface. Allows tapping into a
             direct data stream from the simulation.
@@ -137,10 +95,12 @@ class HiWayEnvV1(gym.Env):
         environment_return_mode (EnvReturnMode, str): This configures between the environment
             step return information (i.e. reward means the environment reward) and the per-agent
             step return information (i.e. reward means rewards as key-value per agent). Defaults to
-            :attr:`~smarts.env.gymnasium.hiway_env_v1.EnvReturnMode.per_agent`.
+            :attr:`~smarts.env.configs.hiway_env_configs.EnvReturnMode.per_agent`.
     """
 
-    metadata = {"render_modes": ["human"]}
+    metadata = {
+        "render_modes": ["rgb_array"],
+    }
     """Metadata for gym's use."""
 
     # define render_mode if your environment supports rendering
@@ -158,9 +118,9 @@ class HiWayEnvV1(gym.Env):
     def __init__(
         self,
         scenarios: Sequence[str],
-        agent_interfaces: Dict[str, AgentInterface],
+        agent_interfaces: Dict[str, Union[Dict[str, Any], AgentInterface]],
         sim_name: Optional[str] = None,
-        scenarios_order: ScenarioOrder = ScenarioOrder.Scrambled,
+        scenarios_order: ScenarioOrder = ScenarioOrder.default,
         headless: bool = False,
         visdom: bool = False,
         fixed_timestep_sec: float = 0.1,
@@ -171,18 +131,26 @@ class HiWayEnvV1(gym.Env):
             ObservationOptions, str
         ] = ObservationOptions.default,
         action_options: Union[ActionOptions, str] = ActionOptions.default,
-        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.per_agent,
+        environment_return_mode: Union[EnvReturnMode, str] = EnvReturnMode.default,
+        render_mode: Optional[str] = None,
     ):
         self._log = logging.getLogger(self.__class__.__name__)
         smarts_seed(seed)
-        self._agent_interfaces = agent_interfaces
+        self._agent_interfaces: Dict[str, AgentInterface] = {
+            a_id: (
+                a_interface
+                if isinstance(a_interface, AgentInterface)
+                else AgentInterface(**a_interface)
+            )
+            for a_id, a_interface in agent_interfaces.items()
+        }
         self._dones_registered = 0
 
         scenarios = [str(Path(scenario).resolve()) for scenario in scenarios]
         self._scenarios_iterator = Scenario.scenario_variations(
             scenarios,
             list(agent_interfaces.keys()),
-            shuffle_scenarios=scenarios_order == ScenarioOrder.Scrambled,
+            shuffle_scenarios=scenarios_order == ScenarioOrder.scrambled,
         )
 
         visualization_client = None
@@ -195,13 +163,14 @@ class HiWayEnvV1(gym.Env):
             visualization_client.send(preamble)
 
         self._env_renderer = None
+        self.render_mode = render_mode
 
         traffic_sims = []
         if Scenario.any_support_sumo_traffic(scenarios):
             from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
-            if isinstance(sumo_options, tuple):
-                sumo_options = sumo_options._asdict()
+            if is_dataclass(sumo_options):
+                sumo_options = asdict(sumo_options)
             sumo_traffic = SumoTrafficSimulation(
                 headless=sumo_options["headless"],
                 time_resolution=fixed_timestep_sec,
@@ -428,7 +397,7 @@ class HiWayEnvV1(gym.Env):
         Note:
             Make sure that your class's :attr:`metadata` ``"render_modes"`` key includes the list of supported modes.
         """
-        if "rgb_array" in self.metadata["render_modes"]:
+        if self.render_mode == "rgb_array":
             if self._env_renderer is None:
                 from smarts.env.utils.record import AgentCameraRGBRender
 
@@ -471,14 +440,11 @@ class HiWayEnvV1(gym.Env):
         Returns:
             A string identifying the environment.
         """
-        if self.spec is None:
-            return f"<{type(self).__name__} instance>"
-        else:
-            return f"<{type(self).__name__}<{self.spec.id}>>"
+        return super().__str__()
 
     def __enter__(self):
         """Support with-statement for the environment."""
-        return self
+        return super().__enter__()
 
     def __exit__(self, *args: Any):
         """Support with-statement for the environment and closes the environment."""

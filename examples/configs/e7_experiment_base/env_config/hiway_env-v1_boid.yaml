@@ -1,0 +1,6 @@
+defaults:
+  - hiway_env-v1_default # env_config/hiway_env-v1_default
+
+observation_options: full
+action_options: full
+environment_return_mode: environment

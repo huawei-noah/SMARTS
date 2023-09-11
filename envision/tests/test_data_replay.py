@@ -81,6 +81,7 @@ def fake_websocket_app_class():
             self._on_error = on_error
             self._on_close = on_close
             self._on_open = on_open
+            self.url = "localhost:0000"
 
         def send(self, data):
             sent.put(data)

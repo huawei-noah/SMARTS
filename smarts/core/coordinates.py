@@ -146,9 +146,12 @@ class RefLinePoint(NamedTuple):
     Also known as the Frenet coordinate system.
     """
 
-    s: float  # offset along lane from start of lane
-    t: Optional[float] = 0  # horizontal displacement from center of lane
-    h: Optional[float] = 0  # vertical displacement from surface of lane
+    s: float
+    """The offset along lane from start of lane."""
+    t: Optional[float] = 0
+    """The horizontal displacement from center of lane."""
+    h: Optional[float] = 0
+    """The vertical displacement from surface of lane."""
 
 
 @dataclass(frozen=True)

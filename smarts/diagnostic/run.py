@@ -52,7 +52,7 @@ def _compute(scenario_dir, ep_per_scenario=10, max_episode_steps=_MAX_EPISODE_ST
     env = gym.make(
         "smarts.env:hiway-v1",
         scenarios=scenario_dir,
-        scenarios_order=ScenarioOrder.Sequential,
+        scenarios_order=ScenarioOrder.sequential,
         sim_name="Diagnostic",
         agent_interfaces={},
         headless=True,

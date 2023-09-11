@@ -31,7 +31,8 @@ jobs:
           pip install --upgrade pip
           pip install wheel==0.38.4
           pip install -e .[camera_obs,opendrive,test,test_notebook,torch,train,gif_recorder,gymnasium,argoverse,envision,sumo]
-          if echo ${{matrix.tests}} | grep -q -e "test_rllib_hiway_env.py" -e "test_examples.py"; then pip install -e .[rllib]; fi
+          if echo ${{matrix.tests}} | grep -q -e "test_rllib_hiway_env.py"; then pip install -e .[rllib]; fi
+          if echo ${{matrix.tests}} | grep -q -e "test_examples.py"; then pip install -e .[examples,rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "/smarts/ray"; then pip install -e .[ray]; fi
       - name: Build scenarios
         run: |
@@ -71,23 +72,23 @@ jobs:
     strategy:
       matrix:
         tests:
-          - drive
-          - platoon
+          - e10_drive
+          - e11_platoon
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install dependencies
         run: |
-          cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          cd ${GITHUB_WORKSPACE}/examples/${{matrix.tests}}
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install -e ./../../../.[camera_obs,argoverse,sumo,test]
+          pip install -e ./../../.[camera_obs,argoverse,sumo,test]
           pip install -e ./inference/
       - name: Run smoke tests
         run: |
-          cd ${GITHUB_WORKSPACE}/examples/rl/${{matrix.tests}}
+          cd ${GITHUB_WORKSPACE}/examples/${{matrix.tests}}
           . ${{env.venv_dir}}/bin/activate
           PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
@@ -103,8 +104,8 @@ jobs:
     strategy:
       matrix:
         tests:
-          - drive
-          - platoon
+          - e10_drive
+          - e11_platoon
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -116,7 +117,7 @@ jobs:
           pip install --upgrade pip
           pip install wheel==0.38.4
           pip install -e .[camera_obs,argoverse,test,ray,sumo]
-          scl zoo install examples/rl/${{matrix.tests}}/inference
+          scl zoo install examples/${{matrix.tests}}/inference
       - name: Run smoke tests
         run: |
           cd ${GITHUB_WORKSPACE}

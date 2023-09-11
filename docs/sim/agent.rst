@@ -59,7 +59,7 @@ Next, a minimal example of how to create and register an agent is illustrated.
 
     # Register the agent.
     register(
-        locator="follow-waypoints-v0",
+        "follow-waypoints-v0",
         entry_point=entry_point,
     )
 
