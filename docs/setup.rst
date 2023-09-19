@@ -62,6 +62,7 @@ Run the following commands to setup the SMARTS simulator.
     # `camera_obs` - needed for rendering camera observations, and for testing.
     # `sumo` - needed for using SUMO scenarios.
     # `test` - needed for testing.
+    # `example` - needed for running examples.
     $ pip install -e .[camera_obs,sumo,test,example]
 
     # Run sanity-test and verify they are passing.
