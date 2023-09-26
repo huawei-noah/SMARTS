@@ -546,7 +546,7 @@ class RoadWaypointsSensor(Sensor):
         if start_offset < 0 and len(incoming_lanes) > 0:
             for lane in incoming_lanes:
                 paths += self._paths_for_lane(lane, vehicle_state, plan, start_offset)
-        
+
         start_offset = max(0, start_offset)
         wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
         adj_pose = Pose.from_center(wp_start, vehicle_state.pose.heading)
@@ -557,7 +557,6 @@ class RoadWaypointsSensor(Sensor):
             route=plan.route,
         )
         return paths
-
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, RoadWaypoints) and self._horizon == __value._horizon

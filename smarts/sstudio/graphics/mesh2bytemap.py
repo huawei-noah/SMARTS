@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
+import os
 
 import numpy as np
 
@@ -25,9 +26,12 @@ from smarts.core.coordinates import Dimensions, Pose
 from smarts.core.sensor import DrivableAreaGridMapSensor
 from smarts.core.vehicle_state import VehicleState
 from smarts.p3d.renderer import Renderer
+from smarts.sstudio.graphics.heightfield import HeightField
 
 
-def generate_bytemap_from_glb_file(glb_file: str, out_bytemap_file: str, padding: int):
+def generate_bytemap_from_glb_file(
+    glb_file: str, out_bytemap_file: str, padding: int, inverted=False
+):
     """Creates a geometry file from a sumo map file."""
     renderer = Renderer("r")
     bounds = renderer.load_road_map(glb_file)
@@ -46,22 +50,31 @@ def generate_bytemap_from_glb_file(glb_file: str, out_bytemap_file: str, padding
     )
     renderer.render()
     image = camera(renderer)
+    data = image.data
+    if inverted:
+        hf = HeightField(data, (1, 1))
+        data = hf.inverted().data
 
     from PIL import Image
 
-    im = Image.fromarray(image.data.squeeze(), "L")
+    im = Image.fromarray(data.squeeze(), "L")
     im.save(out_bytemap_file)
     im.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "mesh2bytemap.py",
+        os.path.basename(__file__),
         description="Utility to export mesh files to bytemap.",
     )
     parser.add_argument("mesh", help="mesh file (*.glb)", type=str)
     parser.add_argument("output_path", help="where to write the bytemap file", type=str)
     parser.add_argument("--padding", help="the padding pixels", type=int, default=0)
+    parser.add_argument(
+        "--inverted", help="invert the map surface", action="store_true"
+    )
     args = parser.parse_args()
 
-    generate_bytemap_from_glb_file(args.mesh, args.output_path, padding=args.padding)
+    generate_bytemap_from_glb_file(
+        args.mesh, args.output_path, padding=args.padding, inverted=args.inverted
+    )

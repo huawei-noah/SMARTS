@@ -21,7 +21,7 @@ import math
 from dataclasses import dataclass
 from itertools import chain, permutations, product, repeat
 from math import factorial
-from typing import Callable, List, Sequence, Tuple, Union
+from typing import Callable, Generator, List, Sequence, Tuple, Union
 
 
 @dataclass(frozen=True)
@@ -225,6 +225,8 @@ def safe_division(n: float, d: float, default=math.inf):
     True and # == #
     False and NaN == False
     """
+    if n == 0:
+        return 0
     return d and n / d or default
 
 
@@ -287,6 +289,10 @@ def vec_to_radians(v) -> float:
     elif y < 0:
         return (1.5 * math.pi - r) % (2 * math.pi)  # quad 4
     return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
+
+
+def vec_to_slope(direction_vector):
+    return direction_vector[1] / (direction_vector[0] or 1e-10)
 
 
 def circular_mean(vectors: Sequence[np.ndarray]) -> float:
@@ -660,3 +666,24 @@ def combination_pairs_with_unique_indices(
     if len_first <= len_second:
         return _unique_element_combination(first_group, second_group)
     return []
+
+
+def slope(horizontal, vertical):
+    return safe_division(vertical, horizontal, default=math.inf)
+
+
+def line_of_sight_test(
+    viewer_altitude: float,
+    target_altitude: float,
+    horizontal_dist: float,
+    intermediary_altitude_iterator: Generator[Tuple[float, float], None, None],
+):
+    slope_to_target = slope(horizontal_dist, target_altitude - viewer_altitude)
+    for (
+        intermediary_altitude,
+        intermediary_horizontal_dist,
+    ) in intermediary_altitude_iterator:
+        s = slope(intermediary_horizontal_dist, intermediary_altitude - viewer_altitude)
+        if slope_to_target < s:
+            return False
+    return True

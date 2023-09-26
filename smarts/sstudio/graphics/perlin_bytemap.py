@@ -18,7 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
+import os
 from functools import lru_cache
+from typing import Tuple
 
 import numpy as np
 
@@ -31,6 +33,11 @@ def table_cache(table_dim, seed):
     np.random.shuffle(p)
     p = np.stack([p, p]).flatten()
     return p
+
+
+def get_image_dimensions(image_file):
+    hf = HeightField.load_image(image_file)
+    return hf.resolution
 
 
 class PerlinNoise:
@@ -66,8 +73,8 @@ class PerlinNoise:
         n10 = cls.gradient(p[p[xi + 1] + yi], xf - 1, yf)
         # combine noises
         x1 = cls.lerp(n00, n10, u)
-        x2 = cls.lerp(n01, n11, u)  # FIX1: I was using n10 instead of n01
-        return cls.lerp(x1, x2, v)  # FIX2: I also had to reverse x1 and x2 here
+        x2 = cls.lerp(n01, n11, u)
+        return cls.lerp(x1, x2, v)
 
     @staticmethod
     def fade(t: float) -> float:
@@ -87,33 +94,77 @@ class PerlinNoise:
         return g[:, :, 0] * x + g[:, :, 1] * y
 
 
-def generate_bytemap(
-    out_bytemap_file, width, height, smooth_iterations, seed, table_dim, shift
+def generate_perlin(
+    width: int,
+    height: int,
+    smooth_iterations: int,
+    seed: int,
+    table_dim: int,
+    shift: Tuple[float, float],
+    octaves: int = 20,
 ):
     image = np.zeros((height, width))
-    for i in range(0, 20):
+    for i in range(0, octaves):
         freq = 2**i
-        lin = np.linspace(shift, freq + shift, width, endpoint=False)
-        lin2 = np.linspace(shift, freq + shift, height, endpoint=False)
-        x, y = np.meshgrid(
-            lin, lin2
-        )  # FIX3: I thought I had to invert x and y here but it was a mistake
+        lin = np.linspace(shift[0], freq + shift[0], width, endpoint=False)
+        lin2 = np.linspace(shift[1], freq + shift[1], height, endpoint=False)
+        x, y = np.meshgrid(lin, lin2)
         image = PerlinNoise.noise(x, y, seed=seed, table_dim=table_dim) / freq + image
 
-    # print(np.min(image), np.max(image))
     image = (image + 1) * 128
-    # print(np.min(image), np.max(image))
     image = image.astype(np.uint8)
 
+    hf = HeightField(image, (width, height))
     if smooth_iterations:
-        hf = HeightField(image, (width, height))
         blur_arr = np.array([0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006])
         blur_arr_u = blur_arr.reshape((1, 7))
         blur_arr_v = blur_arr.reshape((7, 1))
         for i in range(smooth_iterations):
             hf = hf.apply_kernel(np.array(blur_arr_u))
             hf = hf.apply_kernel(blur_arr_v)
-            image = hf.data
+
+    return hf
+
+
+def generate_simplex(
+    width,
+    height,
+    seed,
+    shift: Tuple[float, float],
+    octaves: float = 2,
+    granularity=0.02,
+    amplitude=4,
+):
+    import noise
+
+    assert amplitude < 256
+    half_amp = amplitude / 2
+    noise_map = np.empty((width, height), dtype=np.uint8)
+    for x in range(width):
+        for y in range(height):
+            nx = x * granularity
+            ny = y * granularity
+            noise_value = noise.snoise2(
+                nx + shift[0],
+                ny + shift[1],
+                octaves=octaves,
+                persistence=0.5,
+                lacunarity=2.0,
+                repeatx=800,
+                repeaty=800,
+            )
+            noise_map[y][x] = np.floor(half_amp * (1 + noise_value))
+
+    return HeightField(noise_map, size=(width, height))
+
+
+def generate_perlin_file(
+    out_bytemap_file, width, height, smooth_iterations, seed, table_dim, shift
+):
+    hf = generate_perlin(
+        width, height, smooth_iterations, seed, table_dim, (shift, shift)
+    )
+    image = hf.data
 
     from PIL import Image
 
@@ -124,7 +175,7 @@ def generate_bytemap(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        "perlinbytemap.py",
+        os.path.basename(__file__),
         description="Utility to export mesh files to bytemap.",
     )
     parser.add_argument("output_path", help="where to write the bytemap file", type=str)
@@ -138,13 +189,23 @@ if __name__ == "__main__":
         "--table_dim", help="the perlin permutation table", type=int, default=2048
     )
     parser.add_argument("--shift", help="the shift on the noise", type=float, default=0)
+    parser.add_argument(
+        "--match_file_dimensions",
+        help="uses an image file as the base for dimensions",
+        type=str,
+        default="",
+    )
 
     args = parser.parse_args()
 
-    generate_bytemap(
+    width, height = args.width, args.height
+    if args.match_file_dimensions != "":
+        width, height = get_image_dimensions(args.match_file_dimensions)
+
+    generate_perlin_file(
         args.output_path,
-        args.width,
-        args.height,
+        width,
+        height,
         args.smooth_iterations,
         args.seed,
         args.table_dim,

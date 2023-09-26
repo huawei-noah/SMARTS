@@ -19,26 +19,48 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import enum
+import math
 from abc import ABC
-from typing import Callable, Tuple
+from enum import IntEnum
+from functools import cached_property
+from typing import Callable, Dict, Optional, Tuple
 
 import numpy as np
 
+from smarts.core.utils.logging import timeit
+from smarts.core.utils.math import line_of_sight_test, squared_dist
+
+
+class CoordinateSampleMode(IntEnum):
+    POINT = enum.auto()
+    FOUR_POINTS = enum.auto()
+
 
 class HeightField(ABC):
-    def __init__(self, data: np.ndarray, size: Tuple[int, int]) -> None:
+    def __init__(
+        self, data: np.ndarray, size: Tuple[int, int], metadata: Optional[Dict] = None
+    ) -> None:
+        assert isinstance(data, np.ndarray), "Image must be a numpy array."
         assert data.dtype == np.uint8 and (
             len(data.shape) == 2 or (len(data.shape) == 3 and data.shape[-1] == 1)
-        ), f"Image is not greyscale format."
+        ), f"Image with {data.dtype} and shape {data.shape} is not greyscale format."
         if len(data.shape) == 3:
             data = np.squeeze(data, axis=2)
         self._data = data
-        self._size = size
-        self._resolution = data.shape
+        self._size = np.array(size, dtype=np.uint64)
+        self._resolution = np.array(list(reversed(data.shape)), dtype=np.int64)
+        self._reciprocal_resolution = np.reciprocal(self._resolution)
+        self._inverse_size = np.reciprocal(self._size, dtype=np.float64)
+        self._metadata = metadata or {}
 
     @property
     def data(self):
         return self._data
+
+    @property
+    def dtype(self):
+        return self._data.dtype
 
     @property
     def size(self):
@@ -47,6 +69,195 @@ class HeightField(ABC):
     @property
     def resolution(self):
         return self._resolution
+
+    @property
+    def metadata(self):
+        return self._metadata
+
+    def _check_match(self, other: "HeightField"):
+        return np.all(self._resolution == other._resolution) and np.all(
+            self._size == other._size
+        )
+
+    def add(self, other: "HeightField"):
+        assert self._check_match(other)
+        return HeightField(np.add(self._data, other._data), self._size)
+
+    def subtract(self, other: "HeightField"):
+        assert self._check_match(other)
+        data = np.subtract(self._data, other._data)
+        return HeightField(data, self.size)
+
+    def scale_by(self, other: "HeightField"):
+        assert self._check_match(other)
+        inplace_array = np.multiply(
+            other._data,
+            np.reciprocal(np.invert(other._data.dtype.type(0)), dtype=np.float64),
+        )
+        np.multiply(self._data, inplace_array, out=inplace_array)
+        if self.dtype.type in {"u", "i"}:
+            inplace_array.round(out=inplace_array)
+        return HeightField(inplace_array.astype(self.dtype), self.size)
+
+    def multiply(self, other: "HeightField"):
+        assert self._check_match(other)
+        return HeightField(np.multiply(self._data, other._data), self.size)
+
+    def max(self, other: "HeightField"):
+        assert self._check_match(other)
+        return HeightField(np.max([self._data, other._data], axis=0), self.size)
+
+    def inverted(self):
+        data = np.invert(self._data)
+        return HeightField(data, self._size, self._metadata)
+
+    def convert_to_data_coordinate(self, coordinate):
+        return np.array(
+            (
+                (coordinate[0] * self._inverse_size[0] + 0.5)
+                * (self._resolution[0] - 1),
+                (coordinate[1] * self._inverse_size[1] + 0.5)
+                * (self._resolution[1] - 1),
+            ),
+            dtype=np.float64,
+        )
+
+    def _direct_coordinate_sample(self, coordinate):
+        # average the nearest 3 pixel coordinates
+        u, v = coordinate
+        return self._data[int(v)][int(u)]
+
+    def _direct_4_point_coordinate_sample(self, coordinate):
+        u1 = int(coordinate[0])
+        v1 = int(coordinate[1])
+
+        ur = coordinate[0] - u1
+        vr = coordinate[1] - v1
+
+        u2 = min(u1 + 1, int(self._resolution[0] - 1))
+        v2 = min(v1 + 1, int(self._resolution[1] - 1))
+
+        bottom_left = self._data[v1][u1]
+        blw = (1 - ur) * (1 - vr)
+        bottom_right = self._data[v1][u2]
+        brw = (ur) * (1 - vr)
+        top_left = self._data[v2][u1]
+        tlw = (1 - ur) * (vr)
+        top_right = self._data[v2][u2]
+        trw = (ur) * (vr)
+
+        return bottom_left * blw + bottom_right * brw + top_left * tlw + top_right * trw
+
+    def _get_sample_averaging_function(
+        self, coordinate_sample_mode: CoordinateSampleMode
+    ):
+        if coordinate_sample_mode is CoordinateSampleMode.POINT:
+            return self._direct_coordinate_sample
+        if coordinate_sample_mode is CoordinateSampleMode.FOUR_POINTS:
+            return self._direct_4_point_coordinate_sample
+
+        return self._direct_4_point_coordinate_sample
+
+    def _sample_line(
+        self,
+        change_normalized,
+        resolution,
+        magnitude,
+        sample_function,
+        viewer_coordinate,
+        factor,
+    ):
+        inverse_resolution = 1 / resolution
+        dist = int(magnitude * inverse_resolution)
+        for i in range(1, dist):
+            intermediary_coordinate = change_normalized * i + viewer_coordinate
+            yield sample_function(intermediary_coordinate), i * factor
+
+    def data_line_of_sight(
+        self,
+        data_viewer_coordinate: Tuple[float, float],
+        data_target_coordinate: Tuple[float, float],
+        altitude_mod: float,
+        resolution: float = 1,
+        coordinate_sample_mode=CoordinateSampleMode.POINT,
+    ):
+        # assert np.all(viewer_coordinate < self._resolution / 2) and np.all(
+        #     viewer_coordinate > self._resolution / -2
+        # ), f"{viewer_coordinate=} is not within bounds."
+        # assert np.all(target_coordinate < self._resolution / 2) and np.all(
+        #     target_coordinate > self._resolution / -2
+        # ), f"{target_coordinate=} is not within bounds."
+
+        sample_function = self._get_sample_averaging_function(coordinate_sample_mode)
+
+        viewer_height = sample_function(data_viewer_coordinate) + altitude_mod
+        target_height = sample_function(data_target_coordinate)
+
+        change = np.subtract(data_target_coordinate, data_viewer_coordinate)
+        magnitude = np.linalg.norm(change)
+        if magnitude == 0:
+            return True
+        factor = resolution / magnitude
+
+        uv_slope_normalized = np.multiply(change, factor)
+        return line_of_sight_test(
+            viewer_height,
+            target_height,
+            magnitude,
+            self._sample_line(
+                uv_slope_normalized,
+                resolution,
+                magnitude,
+                sample_function,
+                data_viewer_coordinate,
+                factor,
+            ),
+        )
+
+    def line_of_sight(
+        self,
+        viewer_coordinate: Tuple[float, float],
+        target_coordinate: Tuple[float, float],
+        altitude_mod: float,
+        resolution: float = 1,
+        coordinate_sample_mode=CoordinateSampleMode.POINT,
+    ):
+        viewer_coordinate = self.convert_to_data_coordinate(viewer_coordinate)
+        target_coordinate = self.convert_to_data_coordinate(target_coordinate)
+
+        return self.data_line_of_sight(
+            viewer_coordinate,
+            target_coordinate,
+            altitude_mod,
+            resolution,
+            coordinate_sample_mode,
+        )
+
+    def to_line_of_sight(
+        self,
+        viewer_coordinate: Tuple[float, float],
+        altitude_mod: float,
+        resolution: float = 1,
+        coordinate_sample_mode=CoordinateSampleMode.FOUR_POINTS,
+    ):
+
+        viewer_coordinate = self.convert_to_data_coordinate(viewer_coordinate)
+        assert np.all(
+            self.data.shape == tuple(reversed(self.size))
+        ), f"Only currently works for images that are the same size as resolution. {self.data.shape=} and {self.size=}"
+
+        out = np.empty(self.data.shape, self.data.dtype)
+        for v in range(self.resolution[1]):
+            for u in range(self.resolution[0]):
+                test = self.data_line_of_sight(
+                    viewer_coordinate,
+                    (u, v),
+                    altitude_mod,
+                    resolution,
+                    coordinate_sample_mode,
+                )
+                out[v][u] = np.uint8(test * 255)
+        return HeightField(out, self.size)
 
     def apply_kernel(
         self, kernel: np.ndarray, min_val=-np.inf, max_val=np.inf, pad_mode="edge"
@@ -103,3 +314,8 @@ class HeightField(ABC):
             data = np.asarray(im)
             assert len(data.shape) == 2
         return cls(data, data.shape[:2])
+
+    @classmethod
+    def from_rgb(cls, data: np.ndarray):
+        d = np.min(data, axis=2)
+        return HeightField(d, size=(data.shape[1], data.shape[0]))

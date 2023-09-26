@@ -96,9 +96,10 @@ class _ShowBaseInstance(ShowBase):
             )
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
-            loadPrcFileData("", "aux-display pandagles")
-            loadPrcFileData("", "aux-display pandagles2")
-            loadPrcFileData("", "aux-display p3headlessgl")
+            loadPrcFileData("", "aux-display pandadx8")
+            # loadPrcFileData("", "aux-display pandagles")
+            # loadPrcFileData("", "aux-display pandagles2")
+            # loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display p3tinydisplay")
 
             # disable vsync otherwise we are limited to refresh-rate of screen
@@ -369,6 +370,7 @@ class Renderer(RendererBase):
         np.hide(RenderMasks.OCCUPANCY_HIDE)
         np.setColor(SceneColors.Road.value)
         self._road_map_np = np
+        self._is_setup = True
         return map_np.getBounds()
 
     def setup(self, scenario: Scenario):
@@ -519,6 +521,8 @@ class Renderer(RendererBase):
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
+        if color in (Colors.Red, SceneColors.Agent):
+            node_path.hide(RenderMasks.OCCUPANCY_HIDE)
         self._vehicle_nodes[vid] = node_path
         return True
 

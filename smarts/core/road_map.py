@@ -847,7 +847,7 @@ class Waypoint:
             type(h)
         )
         return self.heading.relative_to(h)
-    
+
     @property
     def position(self):
         """The position of the waypoint."""
