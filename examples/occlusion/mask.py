@@ -527,14 +527,14 @@ class VectorAgentWrapper(Agent):
 
     @lru_cache(1)
     def _get_perlin(
-        self, width, height, smooth_iterations, seed, table_dim, shift, amplitude=5
+        self, width, height, smooth_iterations, seed, table_dim, shift, amplitude=5, granularity=0.02
     ):
         # from smarts.sstudio.graphics.perlin_bytemap import generate_perlin
 
         # return generate_perlin(width, height, smooth_iterations, seed, table_dim, shift)
         from smarts.sstudio.graphics.perlin_bytemap import generate_simplex
 
-        return generate_simplex(width, height, seed, shift, octaves=2, amplitude=amplitude)
+        return generate_simplex(width, height, seed, shift, octaves=2, amplitude=amplitude, granularity=granularity)
 
     def _rotate_image(self, heightfield: HeightField, heading: float):
         image = Image.fromarray(heightfield.data, "L")
@@ -579,11 +579,12 @@ class VectorAgentWrapper(Agent):
 
         vehicle_hf = HeightField.from_rgb(obs.occupancy_grid_map.data)
         height_scaling = 5
+        drivable_hf = HeightField(obs.drivable_area_grid_map.data, (img_width, img_height))
         edge_hf = generate_edge_from_heightfield(
-            HeightField(obs.drivable_area_grid_map.data, (img_width, img_height)),
+            drivable_hf,
             far_kernel(),
             0 * height_scaling,
-            0.8 * height_scaling,
+            0.2 * height_scaling,
         )
         perlin_hf = self._get_perlin(
             img_width,
@@ -595,11 +596,25 @@ class VectorAgentWrapper(Agent):
                 _observation_center[0] / self._observation_radius,
                 _observation_center[1] / -self._observation_radius,
             ),
-            amplitude=int(3 * height_scaling),
+            amplitude=int(1 * height_scaling),
         )
         perlin_hf = self._rotate_image(perlin_hf, -ego_heading)
-        hf = edge_hf.add(perlin_hf)
-        hf = hf.max(vehicle_hf)
+        offroad_perlin = self._get_perlin(
+            img_width,
+            img_height,
+            0,
+            42,
+            2048,
+            (
+                _observation_center[0] / self._observation_radius,
+                _observation_center[1] / -self._observation_radius,
+            ),
+            amplitude=int(2 * height_scaling),
+            granularity=0.5,
+        )
+        offroad_hf = self._rotate_image(offroad_perlin, -ego_heading).scale_by(drivable_hf.inverted())
+        hf = edge_hf.add(perlin_hf).max(vehicle_hf).max(offroad_hf)
+
         los = hf.to_line_of_sight(
             (0, 0),
             1 * height_scaling,
@@ -621,6 +636,7 @@ class VectorAgentWrapper(Agent):
         image_data = obs.drivable_area_grid_map.data
         image_data = hf.data * 10
         image_data = los.data
+        # image_data = offroad_hf.data
         ax.imshow(
             image_data,
             cmap="gray",
