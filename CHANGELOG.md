@@ -16,6 +16,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 ### Security
 
+## [1.2.1] # 2023-09-28
+### Fixed
+- Fixed issue where `SumoTrafficSimulation` could get locked up on reset if a scenario had only 1 map but multiple scenario variations.
+
 ## [1.2.0] # 2023-06-14
 ### Added
 - `visdom` can now be configured through the engine.ini configuration file `visdom:enabled`, `visdom:hostname`, and `visdom:port` (environment variables `SMARTS_VISDOM_ENABLED`, `SMARTS_VISDOM_HOSTNAME`, `SMARTS_VISDOM_PORT`.)
