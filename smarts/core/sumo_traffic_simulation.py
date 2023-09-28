@@ -430,8 +430,7 @@ class SumoTrafficSimulation(TrafficProvider):
             except traci.exceptions.FatalTraCIError:
                 pass
 
-        if self._allow_reload:
-            self._cumulative_sim_seconds = 0
+        self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
         self._sumo_vehicle_ids = set()
         self._hijacked = set()
