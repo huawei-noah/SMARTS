@@ -527,14 +527,30 @@ class VectorAgentWrapper(Agent):
 
     @lru_cache(1)
     def _get_perlin(
-        self, width, height, smooth_iterations, seed, table_dim, shift, amplitude=5, granularity=0.02
+        self,
+        width,
+        height,
+        smooth_iterations,
+        seed,
+        table_dim,
+        shift,
+        amplitude=5,
+        granularity=0.02,
     ):
         # from smarts.sstudio.graphics.perlin_bytemap import generate_perlin
 
         # return generate_perlin(width, height, smooth_iterations, seed, table_dim, shift)
         from smarts.sstudio.graphics.perlin_bytemap import generate_simplex
 
-        return generate_simplex(width, height, seed, shift, octaves=2, amplitude=amplitude, granularity=granularity)
+        return generate_simplex(
+            width,
+            height,
+            seed,
+            shift,
+            octaves=2,
+            amplitude=amplitude,
+            granularity=granularity,
+        )
 
     def _rotate_image(self, heightfield: HeightField, heading: float):
         image = Image.fromarray(heightfield.data, "L")
@@ -546,7 +562,6 @@ class VectorAgentWrapper(Agent):
         )
 
     def act(self, obs: Optional[Observation], **configs):
-
         img_width, img_height = (
             obs.drivable_area_grid_map.metadata.width,
             obs.drivable_area_grid_map.metadata.height,
@@ -579,7 +594,9 @@ class VectorAgentWrapper(Agent):
 
         vehicle_hf = HeightField.from_rgb(obs.occupancy_grid_map.data)
         height_scaling = 5
-        drivable_hf = HeightField(obs.drivable_area_grid_map.data, (img_width, img_height))
+        drivable_hf = HeightField(
+            obs.drivable_area_grid_map.data, (img_width, img_height)
+        )
         edge_hf = generate_edge_from_heightfield(
             drivable_hf,
             far_kernel(),
@@ -612,7 +629,9 @@ class VectorAgentWrapper(Agent):
             amplitude=int(2 * height_scaling),
             granularity=0.5,
         )
-        offroad_hf = self._rotate_image(offroad_perlin, -ego_heading).scale_by(drivable_hf.inverted())
+        offroad_hf = self._rotate_image(offroad_perlin, -ego_heading).scale_by(
+            drivable_hf.inverted()
+        )
         hf = edge_hf.add(perlin_hf).max(vehicle_hf).max(offroad_hf)
 
         los = hf.to_line_of_sight(
@@ -860,7 +879,6 @@ def consume(video_source_pattern="A1_%d.jpg", video_name="sd_obs.mp4"):
 
 
 def dummy_main(output_file):
-
     import gymnasium as gym
 
     from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1

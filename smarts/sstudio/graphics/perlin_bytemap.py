@@ -18,6 +18,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import argparse
+import importlib.resources as pkg_resources
 import os
 from functools import lru_cache
 from typing import Tuple
@@ -126,9 +127,52 @@ def generate_perlin(
     return hf
 
 
+def generate_simplex_p3d_gpu(
+    width: int,
+    height: int,
+    seed,
+    shift: Tuple[float, float],
+    octaves: float = 2,
+    granularity=0.02,
+    amplitude=4,
+    transformation_matrix: np.ndarray = np.identity(4),
+):
+    assert height % 16 == 0
+    assert width % 16 == 0
+
+    from panda3d.core import ComputeNode, Shader, ShaderAttrib, Texture
+
+    from smarts.core import glsl
+    from smarts.p3d.renderer import DEBUG_MODE, Renderer
+
+    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR)
+    renderer._ensure_root()
+
+    toNoiseTex = Texture("noise-texture")
+    toNoiseTex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_r8i)
+    toNoiseTex.set_clear_color((0, 0, 0, 0))
+
+    node = ComputeNode("simplex")
+    node.add_dispatch(width // 16, height // 16, 1)
+    node_path = renderer._root_np.attach_new_node(node)
+
+    with pkg_resources.path(glsl, "simplex.comp") as simplex_shader:
+        shader = Shader.load_compute(Shader.SL_GLSL, str(simplex_shader.absolute()))
+        node_path.set_shader(shader)
+    node_path.set_shader_input("toNoise", toNoiseTex)
+
+    sattr = node_path.getAttrib(ShaderAttrib)
+    # renderer.render()
+    gsg = renderer._showbase_instance.win.get_gsg()
+    assert gsg.get_supports_compute_shaders(), f"renderer {gsg.get_class_type().name}"
+    renderer._showbase_instance.graphics_engine.dispatch_compute(
+        (32, 32, 1), sattr, gsg
+    )
+
+
 def generate_simplex(
-    width,
-    height,
+    width: int,
+    height: int,
     seed,
     shift: Tuple[float, float],
     octaves: float = 2,
@@ -179,8 +223,8 @@ if __name__ == "__main__":
         description="Utility to export mesh files to bytemap.",
     )
     parser.add_argument("output_path", help="where to write the bytemap file", type=str)
-    parser.add_argument("--width", help="the width pixels", type=int, default=100)
-    parser.add_argument("--height", help="the height pixels", type=int, default=100)
+    parser.add_argument("--width", help="the width pixels", type=int, default=256)
+    parser.add_argument("--height", help="the height pixels", type=int, default=256)
     parser.add_argument(
         "--smooth_iterations", help="smooth the output", type=int, default=0
     )
@@ -202,12 +246,19 @@ if __name__ == "__main__":
     if args.match_file_dimensions != "":
         width, height = get_image_dimensions(args.match_file_dimensions)
 
-    generate_perlin_file(
-        args.output_path,
+    # generate_perlin_file(
+    #     args.output_path,
+    #     width,
+    #     height,
+    #     args.smooth_iterations,
+    #     args.seed,
+    #     args.table_dim,
+    #     args.shift,
+    # )
+
+    generate_simplex_p3d_gpu(
         width,
         height,
-        args.smooth_iterations,
         args.seed,
-        args.table_dim,
         args.shift,
     )

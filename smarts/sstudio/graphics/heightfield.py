@@ -158,7 +158,7 @@ class HeightField(ABC):
 
         return self._direct_4_point_coordinate_sample
 
-    def _sample_line(
+    def _data_sample_line(
         self,
         change_normalized,
         resolution,
@@ -167,9 +167,9 @@ class HeightField(ABC):
         viewer_coordinate,
         factor,
     ):
-        inverse_resolution = 1 / resolution
-        dist = int(magnitude * inverse_resolution)
-        for i in range(1, dist):
+        """Generates samples on the line between `viewer_coordinate`(excluded) and the end point `viewer_coordinate*magnitude*change_normalized`(excluded)"""
+        dist = int(magnitude * np.reciprocal(resolution))
+        for i in range(1, dist - 1):
             intermediary_coordinate = change_normalized * i + viewer_coordinate
             yield sample_function(intermediary_coordinate), i * factor
 
@@ -200,11 +200,13 @@ class HeightField(ABC):
         factor = resolution / magnitude
 
         uv_slope_normalized = np.multiply(change, factor)
+        # MTA TODO: reverse iteration
+        # Cull opposite facing surfaces (on target surface) to short circuit ray marching
         return line_of_sight_test(
             viewer_height,
             target_height,
             magnitude,
-            self._sample_line(
+            self._data_sample_line(
                 uv_slope_normalized,
                 resolution,
                 magnitude,
