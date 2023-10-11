@@ -15,11 +15,31 @@ Demo Video
 Prerequisites
 -------------
 
-+ ``python3 (3.8 or 3.9)``
++ ``python3 (3.8, 3.9, 3.10, 3.11)``
 + ``ubuntu (>=16.04)``
 
 Installation
 ------------
+
+Package
+^^^^^^^
+
+This includes SMARTS but none of the examples.
+
+.. code-block:: bash
+
+    # For Mac OS X users, ensure XQuartz is pre-installed.
+    # Install the system requirements. You may use the `-y` option to enable
+    # automatic assumption of "yes" to all prompts to avoid timeout from 
+    # waiting for user input. 
+    $ bash utils/setup/install_deps.sh
+
+    # This should install the latest version of SMARTS from package index (generally PyPI).
+    $ pip install 'smarts[camera_obs,sumo,example]'
+
+
+Development
+^^^^^^^^^^^
 
 Run the following commands to setup the SMARTS simulator.
 
@@ -61,9 +81,11 @@ Run the following commands to setup the SMARTS simulator.
     # Install smarts with extras as needed. Extras include the following: 
     # `camera_obs` - needed for rendering camera observations, and for testing.
     # `sumo` - needed for using SUMO scenarios.
-    # `test` - needed for testing.
+    # `test` - needed for running tests.
     # `example` - needed for running examples.
-    $ pip install -e .[camera_obs,sumo,test,example]
+    # `--config-settings editable_mode=strict` - may be needed depending on version of setuptools. 
+    #      See https://github.com/huawei-noah/SMARTS/issues/2090.
+    $ pip install -e '.[camera_obs,sumo,test,example]' --config-settings editable_mode=strict
 
     # Run sanity-test and verify they are passing.
     # If tests fail, check './sanity_test_result.xml' for test report. 
