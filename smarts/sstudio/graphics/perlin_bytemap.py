@@ -126,6 +126,56 @@ def generate_perlin(
 
     return hf
 
+def generate_red(
+    width: int,
+    height: int,
+    seed,
+    shift: Tuple[float, float],
+    octaves: float = 2,
+    granularity=0.02,
+    amplitude=4,
+    transformation_matrix: np.ndarray = np.identity(4),
+):
+    assert height % 16 == 0
+    assert width % 16 == 0
+
+    from panda3d.core import ComputeNode, Shader, ShaderAttrib, Texture, NodePath
+    from direct.filter.FilterManager import FilterManager
+
+    from smarts.core import glsl
+    from smarts.p3d.renderer import DEBUG_MODE, Renderer
+
+    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR)
+    renderer._ensure_root()
+
+    toNoiseTex = Texture("noise-texture")
+    toNoiseTex.setup_2d_texture(512, 512, Texture.T_unsigned_byte, Texture.F_rgb8)
+    toNoiseTex.set_clear_color((0, 0, 0, 0))
+
+    with pkg_resources.path(
+            glsl, "unlit_shader.vert"
+        ) as vshader_path, pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
+        manager = FilterManager(renderer._showbase_instance.win, renderer._showbase_instance.cam)
+        interquad = manager.renderQuadInto(colortex=toNoiseTex)
+        interquad.setShader(Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=simplex_shader))
+        interquad.setShaderInput("toNoiseTex", toNoiseTex)
+        interquad.setShaderInput("iResolution", n1=512, n2=512)
+
+    renderer._showbase_instance.render_node(renderer._showbase_instance.cam)
+    # import time
+
+    # time.sleep(4)
+
+    ram_image = toNoiseTex.getRamImageAs("RGB")
+    mem_view = memoryview(ram_image)
+    with np.printoptions(threshold=np.inf):
+        image: np.ndarray = np.frombuffer(mem_view, np.uint8)
+        breakpoint()
+        image = np.reshape(image, (width, height))
+
+        assert np.any(image > 0), image
+
+        return HeightField(image, size=(width, height))
 
 def generate_simplex_p3d_gpu(
     width: int,
@@ -159,7 +209,7 @@ def generate_simplex_p3d_gpu(
     with pkg_resources.path(glsl, "simplex.comp") as simplex_shader:
         shader = Shader.load_compute(Shader.SL_GLSL, str(simplex_shader.absolute()))
         node_path.set_shader(shader)
-    node_path.set_shader_input("toNoise", toNoiseTex)
+    node_path.set_shader_input("toNoiseTex", toNoiseTex)
 
     sattr = node_path.getAttrib(ShaderAttrib)
     # renderer.render()
@@ -168,6 +218,19 @@ def generate_simplex_p3d_gpu(
     renderer._showbase_instance.graphics_engine.dispatch_compute(
         (32, 32, 1), sattr, gsg
     )
+
+    import time
+
+    time.sleep(4)
+
+    ram_image = toNoiseTex.getRamImageAs("1")
+    mem_view = memoryview(ram_image)
+    image: np.ndarray = np.frombuffer(mem_view, np.uint8)
+    image = np.reshape(image, (width, height))
+
+    assert np.any(image > 0), image
+
+    return HeightField(image, size=(width, height))
 
 
 def generate_simplex(
@@ -256,9 +319,17 @@ if __name__ == "__main__":
     #     args.shift,
     # )
 
-    generate_simplex_p3d_gpu(
+    hf = generate_red(
         width,
         height,
         args.seed,
         args.shift,
     )
+
+    image = hf.data
+
+    from PIL import Image
+
+    im = Image.fromarray(image.squeeze(), "L")
+    im.save(args.output_path)
+    im.close()

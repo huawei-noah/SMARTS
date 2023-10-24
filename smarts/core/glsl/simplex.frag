@@ -1,3 +1,13 @@
+#version 330 core
+#define DEVICE_HEIGHT 0.8
+#define TOPOLOGY_SCALING_FACTOR 1.0
+#define CENTER vec2(0.5)
+//#define SHADERTOY
+//#define SPOT_CHECK
+
+#define DENSITY_U 1.6 * 0.1
+#define DENSITY_V 1.2 * 0.1
+
 // The MIT License
 // Copyright © 2013 Inigo Quilez
 // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -12,15 +22,12 @@
 // All noise functions here:
 //
 // https://www.shadertoy.com/playlist/fXlXzf&from=0&num=12
-#version 430
 
-#define WIDTH 16
-#define HEIGHT 16
 
-layout (local_size_x = WIDTH, local_size_y = HEIGHT) in;
+// -----------------------------------------------
+#ifdef SHADERTOY
 
-uniform writeonly image2D toNoiseTex;
-
+#else
 vec2 hash( vec2 p ) // replace this by something better
 {
 	p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) );
@@ -43,25 +50,50 @@ float noise( in vec2 p )
     return dot( n, vec3(70.0) );
 }
 
-void main() {
-    // get the coordinates
-    ivec2 texelCoords = ivec2(gl_GlobalInvocationID.xy);
-
-    ivec2 dimensions = ivec2(256, 256);
-    vec2 rec_res = 1.0 / dimensions;
-    vec2 p = texelCoords * rec_res;
-    vec2 uv = p*vec2(dimensions.y/dimensions.x,1.0);
-
+float noise_with_octaves( in vec2 uv, in mat2 m ){
+	float f = 0.0;
     uv *= 5.0;
-    mat2 m = mat2( 1.6,  1.2, -1.2,  1.6 );
-    float f  = 0.5000*noise( uv ); uv = m*uv;
+
+    f  = 0.5000*noise( uv ); uv = m*uv;
     f += 0.2500*noise( uv ); uv = m*uv;
     f += 0.1250*noise( uv ); uv = m*uv;
     f += 0.0625*noise( uv ); uv = m*uv;
-
-	f = 0.5 + 0.5*f;
-    f *= 255.0;
-    
-
-    imageStore(toNoiseTex, texelCoords, ivec4(255));
+    return f;
 }
+
+// Output color
+out vec4 p3d_Color;
+
+// inputs
+uniform vec2 iResolution;
+
+#endif
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+    vec2 rec_res = 1.0 / iResolution.xy;
+    vec2 p = fragCoord.xy * rec_res;
+    float aspect = iResolution.x/iResolution.y;
+
+    #ifdef SHADERTOY
+	vec2 uv = p*vec2(aspect,1.0) + vec2(iTime * 0.1);
+    #else
+    vec2 uv = p*vec2(aspect,1.0);
+    #endif
+	
+	float f = 0.0;
+    float x, y, z;
+    mat2 m = mat2( DENSITY_U,  DENSITY_V, -DENSITY_V,  DENSITY_U );
+
+    f = noise_with_octaves(uv, m);
+
+    //f = 0.5 + 0.5*f;
+    //f *= 0.3 + f;
+
+    fragColor = vec4( f, f, f, 1.0 );
+}
+
+#ifndef SHADERTOY
+void main(){
+    mainImage(p3d_Color, gl_FragCoord.xy);
+}
+#endif
