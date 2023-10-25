@@ -10,7 +10,7 @@ from functools import cached_property, lru_cache, partial
 from itertools import cycle, islice
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypeVar, Union
+from typing import Any, Dict, Final, List, Optional, Sequence, Tuple, TypeVar, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -22,6 +22,8 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
 from shapely.geometry import box as shapely_box
 from shapely.ops import unary_union
+from shapely import prepared
+from shapely.prepared import PreparedGeometry
 
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import (
@@ -41,7 +43,8 @@ from smarts.sstudio.graphics.bytemap2edge import (
 from smarts.sstudio.graphics.heightfield import CoordinateSampleMode, HeightField
 
 T = TypeVar("T")
-
+VIDEO_PREFIX: Final[str] = "A1_"
+IMAGE_SUFFIX: Final[str] = "jpg"
 
 class Mode(IntEnum):
     UNFORMATTED = enum.auto()
@@ -200,7 +203,8 @@ def generate_shadow_mask_polygons(
         else:
             out_shapes.append(poly)
     else:
-        pass
+        from shapely.validation import explain_validity
+        print(explain_validity(poly))
         # breakpoint()
 
     return out_shapes
@@ -669,6 +673,7 @@ class VectorAgentWrapper(Agent):
         observation_inverse_mask: Polygon = generate_circle_polygon(
             _observation_center, _observation_radius
         )
+        prep_observation_inverse_mask: PreparedGeometry = prepared.prep(observation_inverse_mask)
 
         v_geom = generate_vehicle_polygon(
             pos_accessor(ego_state),
@@ -679,15 +684,14 @@ class VectorAgentWrapper(Agent):
         ax.plot(*v_geom.exterior.xy, color="y")
 
         # draw vehicle center points
-        for vs in nvs_accessor(obs):
-            ax.plot(*PointGenerator.generate(*pos_accessor(vs)).xy, "y+")
+        for v in nvs_accessor(obs):
+            ax.plot(*PointGenerator.generate(*pos_accessor(v)).xy, "y+")
 
+        vehicles = [v for v in nvs_accessor(obs)]
         vehicles_to_downgrade: List[VehicleObservation] = [
             v
-            for v in nvs_accessor(obs)
-            if observation_inverse_mask.contains(
-                PointGenerator.generate(*pos_accessor(v))
-            )
+            for v in vehicles
+            if prep_observation_inverse_mask.contains(PointGenerator.generate(*pos_accessor(v)))
         ]
         occlusion_masks: List[Polygon] = gen_shadow_masks(
             _observation_center, vehicles_to_downgrade, _observation_radius, self._mode
@@ -697,6 +701,7 @@ class VectorAgentWrapper(Agent):
             # if not hasattr(poly, "exterior"):
             #     continue
             observation_inverse_mask = observation_inverse_mask.difference(poly)
+        prep_observation_inverse_mask = prepared.prep(observation_inverse_mask)
 
         if isinstance(observation_inverse_mask, (MultiPolygon, GeometryCollection)):
             for g in observation_inverse_mask.geoms:
@@ -734,7 +739,7 @@ class VectorAgentWrapper(Agent):
             [
                 wp
                 for wp in l
-                if observation_inverse_mask.contains(
+                if prep_observation_inverse_mask.contains(
                     PointGenerator.generate(*wp.position)
                 )
             ]
@@ -746,7 +751,7 @@ class VectorAgentWrapper(Agent):
             [
                 wp
                 for wp in path
-                if observation_inverse_mask.contains(
+                if prep_observation_inverse_mask.contains(
                     PointGenerator.generate(*wp.position)
                 )
             ]
@@ -789,7 +794,7 @@ class VectorAgentWrapper(Agent):
         if not obs.steps_completed % 1:
             ax.axis("off")
 
-            plt.savefig(record_dir / f"A1_{obs.steps_completed}.jpg")
+            plt.savefig(record_dir / f"{VIDEO_PREFIX}{obs.steps_completed}.{IMAGE_SUFFIX}")
         plt.close("all")
         plt.cla()
         dowgraded_obs = obs._replace(
@@ -848,10 +853,11 @@ def obscure_main(vehicle_states, mode=Mode.FORMATTED):
     plt.plot([_observation_center[0]], [_observation_center[1]], "r+")
 
     plt.axis("equal")
-    plt.savefig("occlusion.jpg")
+    plt.savefig(f"occlusion.{IMAGE_SUFFIX}")
 
 
-def consume(video_source_pattern="A1_%d.jpg", video_name="sd_obs.mp4"):
+def consume(video_source_pattern="%d", video_name="sd_obs.mp4"):
+    full_video_source_pattern = VIDEO_PREFIX + video_source_pattern + f".{IMAGE_SUFFIX}"
     os.chdir(record_dir)
     subprocess.call(
         [
@@ -860,7 +866,7 @@ def consume(video_source_pattern="A1_%d.jpg", video_name="sd_obs.mp4"):
             "8",
             "-y",
             "-i",
-            video_source_pattern,
+            full_video_source_pattern,
             "-r",
             "30",
             "-pix_fmt",
@@ -872,7 +878,7 @@ def consume(video_source_pattern="A1_%d.jpg", video_name="sd_obs.mp4"):
     subprocess.call(
         [
             "rm",
-            f"./{video_source_pattern[0]}*",
+            f"./{VIDEO_PREFIX}*",
         ]
     )
     os.chdir("../..")
