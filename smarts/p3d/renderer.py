@@ -99,7 +99,7 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "aux-display pandadx8")
             # loadPrcFileData("", "aux-display pandagles")
             # loadPrcFileData("", "aux-display pandagles2")
-            # loadPrcFileData("", "aux-display p3headlessgl")
+            loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display p3tinydisplay")
 
             # disable vsync otherwise we are limited to refresh-rate of screen
