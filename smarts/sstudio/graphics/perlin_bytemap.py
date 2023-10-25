@@ -145,11 +145,17 @@ def generate_red(
     from smarts.core import glsl
     from smarts.p3d.renderer import DEBUG_MODE, Renderer
 
-    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR)
+    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR, rendering_backend="p3headlessgl")
     renderer._ensure_root()
+    offscreen_camera = renderer.build_offscreen_camera("simplex", 
+            0,
+            width,
+            height,
+            1,
+        )
 
     toNoiseTex = Texture("noise-texture")
-    toNoiseTex.setup_2d_texture(512, 512, Texture.T_unsigned_byte, Texture.F_rgb8)
+    toNoiseTex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_rgb8)
     toNoiseTex.set_clear_color((0, 0, 0, 0))
 
     with pkg_resources.path(
@@ -159,7 +165,7 @@ def generate_red(
         interquad = manager.renderQuadInto(colortex=toNoiseTex)
         interquad.setShader(Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=simplex_shader))
         interquad.setShaderInput("toNoiseTex", toNoiseTex)
-        interquad.setShaderInput("iResolution", n1=512, n2=512)
+        interquad.setShaderInput("iResolution", n1=width, n2=height)
 
     renderer._showbase_instance.render_node(renderer._showbase_instance.cam)
     # import time
