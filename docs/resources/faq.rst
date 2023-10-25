@@ -21,6 +21,9 @@ This is a list of frequently asked questions.  Feel free to suggest new entries!
         $ export DISPLAY=":1"
         $ source ~/.bashrc
 
+        # Install x11 dummy
+        $ sudo apt-get install -y xserver-xorg-video-dummy x11-apps
+
         # Set xorg server
         $ sudo wget -O /etc/X11/xorg.conf http://xpra.org/xorg.conf
-        $ sudo /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf $DISPLAY & 0
+        $ sudo /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf $DISPLAY &
