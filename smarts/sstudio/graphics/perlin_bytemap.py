@@ -126,62 +126,25 @@ def generate_perlin(
 
     return hf
 
-def generate_red(
-    width: int,
-    height: int,
-    seed,
-    shift: Tuple[float, float],
-    octaves: float = 2,
-    granularity=0.02,
-    amplitude=4,
-    transformation_matrix: np.ndarray = np.identity(4),
-):
-    assert height % 16 == 0
-    assert width % 16 == 0
+def _make_quad_cam():
+    from panda3d.core import NodePath
+    from panda3d.core import CardMaker
+    from panda3d.core import Camera
+    from panda3d.core import OrthographicLens
+    cm = CardMaker("filter-stage-quad")
+    cm.setFrameFullscreenQuad()
+    quad = NodePath(cm.generate())
+    quad.setDepthTest(0)
+    quad.setDepthWrite(0)
+    quad.setColor(1, 0.5, 0.5, 1)
 
-    from panda3d.core import ComputeNode, Shader, ShaderAttrib, Texture, NodePath
-    from direct.filter.FilterManager import FilterManager
-
-    from smarts.core import glsl
-    from smarts.p3d.renderer import DEBUG_MODE, Renderer
-
-    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR, rendering_backend="p3headlessgl")
-    renderer._ensure_root()
-    offscreen_camera = renderer.build_offscreen_camera("simplex", 
-            0,
-            width,
-            height,
-            1,
-        )
-
-    toNoiseTex = Texture("noise-texture")
-    toNoiseTex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_rgb8)
-    toNoiseTex.set_clear_color((0, 0, 0, 0))
-
-    with pkg_resources.path(
-            glsl, "unlit_shader.vert"
-        ) as vshader_path, pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
-        manager = FilterManager(renderer._showbase_instance.win, renderer._showbase_instance.cam)
-        interquad = manager.renderQuadInto(colortex=toNoiseTex)
-        interquad.setShader(Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=simplex_shader))
-        interquad.setShaderInput("toNoiseTex", toNoiseTex)
-        interquad.setShaderInput("iResolution", n1=width, n2=height)
-
-    renderer._showbase_instance.render_node(renderer._showbase_instance.cam)
-    # import time
-
-    # time.sleep(4)
-
-    ram_image = toNoiseTex.getRamImageAs("RGB")
-    mem_view = memoryview(ram_image)
-    with np.printoptions(threshold=np.inf):
-        image: np.ndarray = np.frombuffer(mem_view, np.uint8)
-        breakpoint()
-        image = np.reshape(image, (width, height))
-
-        assert np.any(image > 0), image
-
-        return HeightField(image, size=(width, height))
+    quadcamnode = Camera("filter-quad-cam")
+    lens = OrthographicLens()
+    lens.setFilmSize(2, 2)
+    lens.setFilmOffset(0, 0)
+    lens.setNearFar(-1000, 1000)
+    quadcamnode.setLens(lens)
+    quadcam = quad.attachNewNode(quadcamnode)
 
 def generate_simplex_p3d_gpu(
     width: int,
@@ -196,47 +159,38 @@ def generate_simplex_p3d_gpu(
     assert height % 16 == 0
     assert width % 16 == 0
 
-    from panda3d.core import ComputeNode, Shader, ShaderAttrib, Texture
+    from panda3d.core import ComputeNode, Shader, ShaderAttrib, Texture, NodePath
 
     from smarts.core import glsl
     from smarts.p3d.renderer import DEBUG_MODE, Renderer
 
-    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR)
+    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR, rendering_backend="p3headlessgl")
     renderer._ensure_root()
 
-    toNoiseTex = Texture("noise-texture")
-    toNoiseTex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_r8i)
-    toNoiseTex.set_clear_color((0, 0, 0, 0))
+    with pkg_resources.path(
+            glsl, "unlit_shader.vert"
+        ) as vshader_path, pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
+        camera_id, interquad = renderer.build_fullscreen_quad_camera("simplex_camera", width, height)
+        interquad.setShader(Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=simplex_shader))
+        # interquad.setShaderInput("toNoiseTex", toNoiseTex)
+        interquad.setShaderInput("iResolution", n1=width, n2=height)
+        interquad.setShaderInput("iHeading", 0.0)
+        camera = renderer.camera_for_id(camera_id)
 
-    node = ComputeNode("simplex")
-    node.add_dispatch(width // 16, height // 16, 1)
-    node_path = renderer._root_np.attach_new_node(node)
+    renderer._showbase_instance.render_node(camera.camera_np)
+    # import time
 
-    with pkg_resources.path(glsl, "simplex.comp") as simplex_shader:
-        shader = Shader.load_compute(Shader.SL_GLSL, str(simplex_shader.absolute()))
-        node_path.set_shader(shader)
-    node_path.set_shader_input("toNoiseTex", toNoiseTex)
+    # time.sleep(4)
 
-    sattr = node_path.getAttrib(ShaderAttrib)
-    # renderer.render()
-    gsg = renderer._showbase_instance.win.get_gsg()
-    assert gsg.get_supports_compute_shaders(), f"renderer {gsg.get_class_type().name}"
-    renderer._showbase_instance.graphics_engine.dispatch_compute(
-        (32, 32, 1), sattr, gsg
-    )
-
-    import time
-
-    time.sleep(4)
-
-    ram_image = toNoiseTex.getRamImageAs("1")
+    ram_image = camera.tex.getRamImageAs("RGB")
     mem_view = memoryview(ram_image)
-    image: np.ndarray = np.frombuffer(mem_view, np.uint8)
-    image = np.reshape(image, (width, height))
+    with np.printoptions(threshold=np.inf):
+        image: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
+        image = np.reshape(image, (width, height))
 
-    assert np.any(image > 0), image
+        assert np.any(image > 0), image
 
-    return HeightField(image, size=(width, height))
+        return HeightField(image, size=(width, height))
 
 
 def generate_simplex(
@@ -325,7 +279,7 @@ if __name__ == "__main__":
     #     args.shift,
     # )
 
-    hf = generate_red(
+    hf = generate_simplex_p3d_gpu(
         width,
         height,
         args.seed,

@@ -39,6 +39,8 @@ from direct.showbase.ShowBase import ShowBase
 
 # pytype: disable=import-error
 from panda3d.core import (
+    Camera,
+    CardMaker,
     FrameBufferProperties,
     Geom,
     GeomLinestrips,
@@ -630,6 +632,76 @@ class Renderer(RendererBase):
             camera is not None
         ), f"Camera {camera_id} does not exist, have you created this camera?"
         return camera
+
+    def build_fullscreen_quad_camera(
+        self,
+        name: str,
+        width: int,
+        height: int,
+    ):
+        """Generates a new off-screen camera."""
+        # setup buffer
+        win_props = WindowProperties.size(width, height)
+        fb_props = FrameBufferProperties()
+        fb_props.setRgbColor(True)
+        fb_props.setRgbaBits(8, 8, 8, 0)
+        # XXX: Though we don't need the depth buffer returned, setting this to 0
+        #      causes undefined behavior where the ordering of meshes is random.
+        fb_props.setDepthBits(0)
+
+        buffer = self._showbase_instance.win.engine.makeOutput(
+            self._showbase_instance.pipe,
+            "{}-buffer".format(name),
+            -100,
+            fb_props,
+            win_props,
+            GraphicsPipe.BFRefuseWindow,
+            self._showbase_instance.win.getGsg(),
+            self._showbase_instance.win,
+        )
+
+        cm = CardMaker("filter-stage-quad")
+        cm.setFrameFullscreenQuad()
+        quad = NodePath(cm.generate())
+        quad.setDepthTest(0)
+        quad.setDepthWrite(0)
+        quad.setColor(1, 0.5, 0.5, 1)
+
+        # setup texture
+        tex = Texture()
+        tex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_r8i)
+        region = buffer.getDisplayRegion(0)
+        region.window.addRenderTexture(
+            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
+        )
+
+        # setup camera
+        lens = OrthographicLens()
+        lens.setFilmSize(width, height)
+        lens.setFilmSize(2, 2)
+        lens.setFilmOffset(0, 0)
+        lens.setNearFar(-1000, 1000)
+
+        quadcamnode = Camera(name)
+        quadcamnode.setLens(lens)
+        quadcam = quad.attachNewNode(quadcamnode)
+
+        dr = buffer.makeDisplayRegion((0, 1, 0, 1))
+        dr.disableClears()
+        dr.setCamera(quadcam)
+        dr.setActive(True)
+        dr.setScissorEnabled(False)
+
+        # buffer clearing
+        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
+        buffer.setClearColorActive(True)
+
+        camera = P3dOffscreenCamera(self, quadcamnode, buffer, tex)
+        self._camera_nodes[name] = camera
+
+        assert tex.getExpectedRamImageSize() == width * height * (3)
+
+        return name, quad
 
     def build_offscreen_camera(
         self,

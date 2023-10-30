@@ -25,9 +25,7 @@
 
 
 // -----------------------------------------------
-#ifdef SHADERTOY
-
-#else
+#ifndef SHADERTOY
 vec2 hash( vec2 p ) // replace this by something better
 {
 	p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) );
@@ -66,19 +64,26 @@ out vec4 p3d_Color;
 
 // inputs
 uniform vec2 iResolution;
+uniform float iHeading;
+uniform vec2 iTranslation;
 
 #endif
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 rec_res = 1.0 / iResolution.xy;
-    vec2 p = fragCoord.xy * rec_res;
-    float aspect = iResolution.x/iResolution.y;
+    vec2 uv = ( gl_FragCoord.xy - .5 * iResolution.xy ) / iResolution.y;
 
     #ifdef SHADERTOY
-	vec2 uv = p*vec2(aspect,1.0) + vec2(iTime * 0.1);
+    float rotation = iTime;
+    vec2 translation = iMouse.xy;
     #else
-    vec2 uv = p*vec2(aspect,1.0);
+    float rotation = iHeading;
+    vec2 translation = iTranslation;
     #endif
+
+    float time = rotation/2.;
+    float s = sin(time);
+    float c = cos(time);
+    uv = uv * mat2(c, s, -s, c) + translation / iResolution.y;
 	
 	float f = 0.0;
     float x, y, z;
