@@ -42,11 +42,13 @@ MAX_STEPS = 100
 TIMESTEP_SEC = 0.1
 
 
+class KeepLaneAgent(Agent):
+    def act(self, obs):
+        return "keep_lane"
+
+
 @pytest.fixture
 def agent_spec():
-    class KeepLaneAgent(Agent):
-        def act(self, obs):
-            return "keep_lane"
 
     return AgentSpec(
         interface=AgentInterface.from_type(
