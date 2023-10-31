@@ -74,8 +74,10 @@ _sequence_formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], Non
 
 _primitives = {int, float, str, VehicleType, TrafficActorType}
 
+
 def _passthrough_method_1_arg(v):
     return v
+
 
 class ReductionContext:
     """Mappings between an object and its reduction to an ID."""
