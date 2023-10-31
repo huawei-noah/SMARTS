@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import importlib.resources as pkg_resources
 import logging
 import sys
 from collections import deque
@@ -28,6 +29,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
+from smarts.core import glsl
 from smarts.core.coordinates import Pose, RefLinePoint
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
@@ -42,7 +44,7 @@ from smarts.core.observations import (
     ViaPoint,
 )
 from smarts.core.plan import Plan
-from smarts.core.renderer_base import RendererBase
+from smarts.core.renderer_base import RendererBase, ShaderStepDependency
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
 from smarts.core.utils.math import squared_dist
@@ -134,6 +136,11 @@ class CameraSensor(Sensor):
         camera.update(vehicle_state.pose, vehicle_state.dimensions.height + 10)
 
     @property
+    def camera_name(self) -> str:
+        """The name of the camera this sensor is using."""
+        return self._camera_name
+
+    @property
     def serializable(self) -> bool:
         return False
 
@@ -191,6 +198,7 @@ class OGMSensor(CameraSensor):
         height: int,
         resolution: float,
         renderer: RendererBase,
+        occluded: bool = True,
     ):
         super().__init__(
             vehicle_state,
@@ -202,6 +210,45 @@ class OGMSensor(CameraSensor):
             resolution,
         )
         self._resolution = resolution
+
+        if occluded:
+            # generate simplex camera
+            with pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
+                simplex_camera_name = renderer.build_shader_step(
+                    name=f"simplex:{vehicle_state.actor_id}",
+                    fshader_path=simplex_shader,
+                    camera_dependencies=[],
+                    priority=10,
+                    width=width,
+                    height=height,
+                )
+            with pkg_resources.path(glsl, "surface_facing.frag") as facing_shader:
+                surface_facing_camera_name = renderer.build_shader_step(
+                    name=f"surface:{vehicle_state.actor_id}",
+                    fshader_path=facing_shader,
+                    camera_dependencies=[
+                        ShaderStepDependency(self._camera_name, "iChannel0"),
+                        ShaderStepDependency(simplex_camera_name, "iChannel1"),
+                    ],
+                    priority=20,
+                    width=width,
+                    height=height,
+                )
+            # feed simplex and ogm to composite
+            with pkg_resources.path(glsl, "occlusion.frag") as composite_shader:
+                composite_camera_name = renderer.build_shader_step(
+                    name=f"occlusion:{vehicle_state.actor_id}",
+                    fshader_path=composite_shader,
+                    camera_dependencies=[
+                        ShaderStepDependency(self._camera_name, "iChannel0"),
+                        ShaderStepDependency(simplex_camera_name, "iChannel1"),
+                        ShaderStepDependency(surface_facing_camera_name, "iChannel2"),
+                    ],
+                    priority=30,
+                    width=width,
+                    height=height,
+                )
+            self._camera_name = composite_camera_name
 
     def __call__(self, renderer: RendererBase) -> OccupancyGridMap:
         camera = renderer.camera_for_id(self._camera_name)

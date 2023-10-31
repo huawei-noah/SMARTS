@@ -25,6 +25,8 @@ from typing import Tuple
 
 import numpy as np
 
+from smarts.core.coordinates import Heading, Pose
+from smarts.core.renderer_base import ShaderStep
 from smarts.sstudio.graphics.heightfield import HeightField
 
 
@@ -126,25 +128,6 @@ def generate_perlin(
 
     return hf
 
-def _make_quad_cam():
-    from panda3d.core import NodePath
-    from panda3d.core import CardMaker
-    from panda3d.core import Camera
-    from panda3d.core import OrthographicLens
-    cm = CardMaker("filter-stage-quad")
-    cm.setFrameFullscreenQuad()
-    quad = NodePath(cm.generate())
-    quad.setDepthTest(0)
-    quad.setDepthWrite(0)
-    quad.setColor(1, 0.5, 0.5, 1)
-
-    quadcamnode = Camera("filter-quad-cam")
-    lens = OrthographicLens()
-    lens.setFilmSize(2, 2)
-    lens.setFilmOffset(0, 0)
-    lens.setNearFar(-1000, 1000)
-    quadcamnode.setLens(lens)
-    quadcam = quad.attachNewNode(quadcamnode)
 
 def generate_simplex_p3d_gpu(
     width: int,
@@ -159,28 +142,28 @@ def generate_simplex_p3d_gpu(
     assert height % 16 == 0
     assert width % 16 == 0
 
-    from panda3d.core import ComputeNode, Shader, ShaderAttrib, Texture, NodePath
+    from panda3d.core import ComputeNode, NodePath, Shader, ShaderAttrib, Texture
 
     from smarts.core import glsl
     from smarts.p3d.renderer import DEBUG_MODE, Renderer
 
-    renderer = Renderer("noise renderer", debug_mode=DEBUG_MODE.ERROR, rendering_backend="p3headlessgl")
-    renderer._ensure_root()
+    renderer = Renderer(
+        "noise renderer", debug_mode=DEBUG_MODE.ERROR, rendering_backend="p3headlessgl"
+    )
 
-    with pkg_resources.path(
-            glsl, "unlit_shader.vert"
-        ) as vshader_path, pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
-        camera_id, interquad = renderer.build_fullscreen_quad_camera("simplex_camera", width, height)
-        interquad.setShader(Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=simplex_shader))
-        # interquad.setShaderInput("toNoiseTex", toNoiseTex)
-        interquad.setShaderInput("iResolution", n1=width, n2=height)
-        interquad.setShaderInput("iHeading", 0.0)
+    with pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
+        camera_id = renderer.build_shader_step(
+            "simplex_camera",
+            simplex_shader,
+            camera_dependencies=(),
+            priority=10,
+            width=width,
+            height=height,
+        )
         camera = renderer.camera_for_id(camera_id)
+        camera.update(Pose.from_center(np.array([0, 0, 0]), Heading(0)), 10)
 
-    renderer._showbase_instance.render_node(camera.camera_np)
-    # import time
-
-    # time.sleep(4)
+    renderer.render()
 
     ram_image = camera.tex.getRamImageAs("RGB")
     mem_view = memoryview(ram_image)
@@ -265,9 +248,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    width, height = args.width, args.height
+    a_width, a_height = args.width, args.height
     if args.match_file_dimensions != "":
-        width, height = get_image_dimensions(args.match_file_dimensions)
+        a_width, a_height = get_image_dimensions(args.match_file_dimensions)
 
     # generate_perlin_file(
     #     args.output_path,
@@ -279,17 +262,17 @@ if __name__ == "__main__":
     #     args.shift,
     # )
 
-    hf = generate_simplex_p3d_gpu(
-        width,
-        height,
+    f_hf = generate_simplex_p3d_gpu(
+        a_width,
+        a_height,
         args.seed,
         args.shift,
     )
 
-    image = hf.data
+    image_data = f_hf.data
 
     from PIL import Image
 
-    im = Image.fromarray(image.squeeze(), "L")
-    im.save(args.output_path)
-    im.close()
+    f_im = Image.fromarray(image_data.squeeze(), "L")
+    f_im.save(args.output_path)
+    f_im.close()

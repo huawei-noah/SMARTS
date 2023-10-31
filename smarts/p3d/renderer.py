@@ -64,7 +64,14 @@ from smarts.core import glsl, models
 from smarts.core.colors import Colors, SceneColors
 from smarts.core.coordinates import Point, Pose
 from smarts.core.masks import RenderMasks
-from smarts.core.renderer_base import DEBUG_MODE, OffscreenCamera, RendererBase
+from smarts.core.renderer_base import (
+    DEBUG_MODE,
+    OffscreenCamera,
+    RendererBase,
+    RendererNotSetUpWarning,
+    ShaderStep,
+    ShaderStepDependency,
+)
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalState, signal_state_to_color
 from smarts.core.vehicle_state import VehicleState
@@ -205,8 +212,7 @@ class _ShowBaseInstance(ShowBase):
 
 
 @dataclass
-class P3dOffscreenCamera(OffscreenCamera):
-    """A camera used for rendering images to a graphics buffer."""
+class _P3dCameraMixin:
 
     camera_np: NodePath
     buffer: GraphicsOutput
@@ -236,19 +242,6 @@ class P3dOffscreenCamera(OffscreenCamera):
         assert ram_image is not None
         return ram_image
 
-    def update(self, pose: Pose, height: float):
-        """Update the location of the camera.
-        Args:
-            pose:
-                The pose of the camera target.
-            height:
-                The height of the camera above the camera target.
-        """
-        pos, heading = pose.as_panda3d()
-        self.camera_np.setPos(pos[0], pos[1], height)
-        self.camera_np.lookAt(*pos)
-        self.camera_np.setH(heading)
-
     @property
     def image_dimensions(self):
         return (self.tex.getXSize(), self.tex.getYSize())
@@ -268,6 +261,49 @@ class P3dOffscreenCamera(OffscreenCamera):
         region.window.clearRenderTextures()
         self.buffer.removeAllDisplayRegions()
         self.renderer.remove_buffer(self.buffer)
+
+
+@dataclass
+class P3dOffscreenCamera(_P3dCameraMixin, OffscreenCamera):
+    """A camera used for rendering images to a graphics buffer."""
+
+    def update(self, pose: Pose, height: float):
+        """Update the location of the camera.
+        Args:
+            pose:
+                The pose of the camera target.
+            height:
+                The height of the camera above the camera target.
+        """
+        pos, heading = pose.as_panda3d()
+        self.camera_np.setPos(pos[0], pos[1], height)
+        self.camera_np.lookAt(*pos)
+        self.camera_np.setH(heading)
+
+
+@dataclass
+class P3dShaderStep(_P3dCameraMixin, ShaderStep):
+    """A camera used for rendering images using a shader and a fullscreen quad."""
+
+    fullscreen_quad_node: NodePath
+
+    def update(self, pose: Pose, height: float):
+        """Update the location of the base camera. This passes through.
+        Args:
+            pose:
+                The pose of the camera target.
+            height:
+                The height of the camera above the camera target.
+        """
+        self.fullscreen_quad_node.setShaderInput("iHeading", pose.heading)
+        self.fullscreen_quad_node.setShaderInput(
+            "iTranslation", n1=pose.point.x, n2=pose.point.y
+        )
+        self.fullscreen_quad_node.setShaderInput(
+            "iElevation", height
+        )
+        for ss_dep in self.dependents:
+            ss_dep.update(pose, height)
 
 
 class Renderer(RendererBase):
@@ -431,7 +467,12 @@ class Renderer(RendererBase):
 
     def render(self):
         """Render the scene graph of the simulation."""
-        assert self._is_setup
+        if not self._is_setup:
+            self._ensure_root()
+            warnings.warn(
+                "Renderer is not setup. Rendering before scene setup may be unintentional.",
+                RendererNotSetUpWarning,
+            )
         self._showbase_instance.render_node(self._root_np)
 
     def reset(self):
@@ -633,75 +674,6 @@ class Renderer(RendererBase):
         ), f"Camera {camera_id} does not exist, have you created this camera?"
         return camera
 
-    def build_fullscreen_quad_camera(
-        self,
-        name: str,
-        width: int,
-        height: int,
-    ):
-        """Generates a new off-screen camera."""
-        # setup buffer
-        win_props = WindowProperties.size(width, height)
-        fb_props = FrameBufferProperties()
-        fb_props.setRgbColor(True)
-        fb_props.setRgbaBits(8, 8, 8, 0)
-        # XXX: Though we don't need the depth buffer returned, setting this to 0
-        #      causes undefined behavior where the ordering of meshes is random.
-        fb_props.setDepthBits(0)
-
-        buffer = self._showbase_instance.win.engine.makeOutput(
-            self._showbase_instance.pipe,
-            "{}-buffer".format(name),
-            -100,
-            fb_props,
-            win_props,
-            GraphicsPipe.BFRefuseWindow,
-            self._showbase_instance.win.getGsg(),
-            self._showbase_instance.win,
-        )
-
-        cm = CardMaker("filter-stage-quad")
-        cm.setFrameFullscreenQuad()
-        quad = NodePath(cm.generate())
-        quad.setDepthTest(0)
-        quad.setDepthWrite(0)
-        quad.setColor(1, 0.5, 0.5, 1)
-
-        # setup texture
-        tex = Texture()
-        tex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_r8i)
-        region = buffer.getDisplayRegion(0)
-        region.window.addRenderTexture(
-            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
-        )
-
-        # setup camera
-        lens = OrthographicLens()
-        lens.setFilmSize(width, height)
-        lens.setFilmSize(2, 2)
-        lens.setFilmOffset(0, 0)
-        lens.setNearFar(-1000, 1000)
-
-        quadcamnode = Camera(name)
-        quadcamnode.setLens(lens)
-        quadcam = quad.attachNewNode(quadcamnode)
-
-        dr = buffer.makeDisplayRegion((0, 1, 0, 1))
-        dr.disableClears()
-        dr.setCamera(quadcam)
-        dr.setActive(True)
-        dr.setScissorEnabled(False)
-
-        # buffer clearing
-        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
-        buffer.setClearColorActive(True)
-
-        camera = P3dOffscreenCamera(self, quadcamnode, buffer, tex)
-        self._camera_nodes[name] = camera
-
-        assert tex.getExpectedRamImageSize() == width * height * (3)
-
-        return name, quad
 
     def build_offscreen_camera(
         self,
@@ -760,5 +732,108 @@ class Renderer(RendererBase):
 
         camera = P3dOffscreenCamera(self, camera_np, buffer, tex)
         self._camera_nodes[name] = camera
+
+        return name
+
+    def build_shader_step(
+        self,
+        name: str,
+        fshader_path: str,
+        camera_dependencies: Tuple[ShaderStepDependency],
+        priority: int,
+        height: int,
+        width: int,
+    ) -> str:
+
+        assert height % 16 == 0
+        assert width % 16 == 0
+
+        from panda3d.core import ComputeNode, NodePath, Shader, ShaderAttrib, Texture
+
+        from smarts.core import glsl
+
+        # setup buffer
+        win_props = WindowProperties.size(width, height)
+        fb_props = FrameBufferProperties()
+        fb_props.setRgbColor(True)
+        fb_props.setRgbaBits(8, 8, 8, 0)
+        # XXX: Though we don't need the depth buffer returned, setting this to 0
+        #      causes undefined behavior where the ordering of meshes is random.
+        fb_props.setDepthBits(0)
+
+        buffer = self._showbase_instance.win.engine.makeOutput(
+            self._showbase_instance.pipe,
+            "{}-buffer".format(name),
+            priority,
+            fb_props,
+            win_props,
+            GraphicsPipe.BFRefuseWindow,
+            self._showbase_instance.win.getGsg(),
+            self._showbase_instance.win,
+        )
+
+        cm = CardMaker("filter-stage-quad")
+        cm.setFrameFullscreenQuad()
+        quad = NodePath(cm.generate())
+        quad.setDepthTest(0)
+        quad.setDepthWrite(0)
+        quad.setColor(1, 0.5, 0.5, 1)
+
+        # setup texture
+        tex = Texture()
+        # tex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_r8i)
+        region = buffer.getDisplayRegion(0)
+        region.window.addRenderTexture(
+            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
+        )
+
+        # setup camera
+        lens = OrthographicLens()
+        lens.setFilmSize(width, height)
+        lens.setFilmSize(2, 2)
+        lens.setFilmOffset(0, 0)
+        lens.setNearFar(-1000, 1000)
+
+        quadcamnode = Camera(name)
+        quadcamnode.setLens(lens)
+        quadcam = quad.attachNewNode(quadcamnode)
+
+        dr = buffer.makeDisplayRegion((0, 1, 0, 1))
+        dr.disableClears()
+        dr.setCamera(quadcam)
+        dr.setActive(True)
+        dr.setScissorEnabled(False)
+
+        # buffer clearing
+        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
+        buffer.setClearColorActive(True)
+
+        assert tex.getExpectedRamImageSize() == width * height * (3), f"{tex.getExpectedRamImageSize()} != {width * height * (3)}"
+
+        with pkg_resources.path(glsl, "unlit_shader.vert") as vshader_path:
+            quad.setShader(
+                Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=fshader_path)
+            )
+            cameras = tuple(
+                self.camera_for_id(c.camera_id) for c in camera_dependencies
+            )
+            for dep, dep_cam in zip(camera_dependencies, cameras):
+                quad.setShaderInput(dep.script_variable_name, dep_cam.tex)
+            quad.setShaderInput("iResolution", n1=width, n2=height)
+            quad.setShaderInput("iTranslation", n1=0, n2=0)
+            quad.setShaderInput("iHeading", 0.0)
+            quad.setShaderInput("iElevation", 0.0)
+            camera = P3dShaderStep(
+                self,
+                shader_file=fshader_path,
+                dependents=tuple(
+                    self.camera_for_id(c.camera_id) for c in camera_dependencies
+                ),
+                camera_np=quadcamnode,
+                buffer=buffer,
+                tex=tex,
+                fullscreen_quad_node=quad,
+            )
+            self._camera_nodes[name] = camera
 
         return name

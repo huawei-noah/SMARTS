@@ -25,7 +25,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 
@@ -40,6 +40,12 @@ class DEBUG_MODE(IntEnum):
     INFO = 3
     WARNING = 4
     ERROR = 5
+
+
+class RendererNotSetUpWarning(UserWarning):
+    """This occurs if a renderer is used without being set up."""
+
+    pass
 
 
 @dataclass
@@ -88,6 +94,22 @@ class OffscreenCamera:
     def teardown(self):
         """Clean up internal resources."""
         raise NotImplementedError
+
+
+@dataclass
+class ShaderStepDependency:
+    """Forwards the texture from a given camera to the"""
+
+    camera_id: str
+    script_variable_name: str
+
+
+@dataclass
+class ShaderStep(OffscreenCamera):
+    """A camera used for rendering images using a shader and a fullscreen quad."""
+
+    shader_file: str
+    dependents: List[OffscreenCamera]
 
 
 class RendererBase:
@@ -173,4 +195,16 @@ class RendererBase:
         resolution: float,
     ) -> str:
         """Generates a new off-screen camera."""
+        raise NotImplementedError
+
+    def build_shader_step(
+        self,
+        name: str,
+        fshader_path: str,
+        camera_dependencies: Tuple[ShaderStepDependency],
+        priority: int,
+        height: int,
+        width: int,
+    ) -> str:
+        """Generates a new shader camera."""
         raise NotImplementedError
