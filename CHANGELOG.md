@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Fixed
 - Fixed issue where `SumoTrafficSimulation` could get locked up on reset if a scenario had only 1 map but multiple scenario variations.
 - Fixed an issue where an out-of-scope method reference caused a pickling error.
+- Fixed an issue where the `EnvisionDataFormatterArgs` default would use a locally defined lambda and cause a serialization failure.
 ### Removed
 ### Security
 
