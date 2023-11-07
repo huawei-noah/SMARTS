@@ -695,6 +695,7 @@ class ROSDriver:
                     rospy.logerr(f"SMARTS raised exception:  {e}")
                     rospy.logerr(traceback.format_exc())
                     rospy.logerr("Will wait for next reset...")
+                    self._smarts.destroy()
                     self._smarts = None
                     self._reset_smarts()
                     self.setup_smarts()
