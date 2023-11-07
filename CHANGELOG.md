@@ -16,6 +16,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed issue where `SumoTrafficSimulation` could get locked up on reset if a scenario had only 1 map but multiple scenario variations.
 - Fixed an issue where an out-of-scope method reference caused a pickling error.
 - Fixed an issue where the `EnvisionDataFormatterArgs` default would use a locally defined lambda and cause a serialization failure.
+- Fixed an issue where user configuration was being overridden.
+- Fixed a `pkg_resources` deprecation warning in `python3.10` and up.
 ### Removed
 ### Security
 

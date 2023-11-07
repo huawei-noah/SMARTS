@@ -21,8 +21,6 @@ import logging
 import warnings
 from typing import Any, Callable
 
-warnings.simplefilter("once")
-
 logger = logging.getLogger(__name__)
 
 

@@ -1,10 +1,16 @@
 """This example shows how you might run a SMARTS environment for single-agent work. SMARTS is
 natively multi-agent so a single-agent wrapper is used."""
 import argparse
+import logging
 import random
 import sys
+import warnings
 from pathlib import Path
 from typing import Final
+
+logging.basicConfig(level=logging.ERROR)
+warnings.filterwarnings("ignore")
+
 
 import gymnasium as gym
 
