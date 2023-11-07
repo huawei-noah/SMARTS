@@ -684,18 +684,17 @@ class ROSDriver:
 
                     self._publish_state()
                     self._publish_agents(observations, dones)
-                except Exception as e:
-                    if isinstance(e, rospy.ROSInterruptException):
-                        raise e
+                except Exception as ex:
+                    if isinstance(ex, rospy.ROSInterruptException):
+                        raise ex
                     batch_mode = rospy.get_param("~batch_mode", False)
                     if not batch_mode:
-                        raise e
+                        raise ex
                     import traceback
 
-                    rospy.logerr(f"SMARTS raised exception:  {e}")
+                    rospy.logerr(f"SMARTS raised exception:  {ex}")
                     rospy.logerr(traceback.format_exc())
                     rospy.logerr("Will wait for next reset...")
-                    self._smarts.destroy()
                     self._smarts = None
                     self._reset_smarts()
                     self.setup_smarts()
@@ -713,8 +712,8 @@ class ROSDriver:
 
         except rospy.ROSInterruptException:
             rospy.loginfo("ROS interrupted.  exiting...")
-
-        self._reset()  # cleans up the SMARTS instance...
+        finally:
+            self._reset()  # cleans up the SMARTS instance...
 
 
 if __name__ == "__main__":
