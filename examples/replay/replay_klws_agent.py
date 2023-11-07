@@ -14,8 +14,6 @@ from smarts.core.utils.episodes import episodes
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.zoo.registry import make as zoo_make
 
-logging.basicConfig(level=logging.INFO)
-
 AGENT_ID = "Agent-007"
 
 
@@ -116,6 +114,7 @@ def main(scenarios, sim_name, headless, seed, speed, max_steps, save_dir, write)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     parser = default_argument_parser("klws-agent-example")
     parser.add_argument(
         "--speed",

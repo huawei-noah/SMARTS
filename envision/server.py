@@ -50,9 +50,6 @@ import smarts.core.models
 from envision.web import dist as web_dist
 from smarts.core.utils.file import path2hash
 
-logging.basicConfig(level=logging.WARNING)
-
-
 # Mapping of simulation IDs to a set of web client run loops
 WEB_CLIENT_RUN_LOOPS = {}
 
