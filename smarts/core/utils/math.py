@@ -687,3 +687,8 @@ def line_of_sight_test(
         if slope_to_target < s:
             return False
     return True
+
+
+def is_power_of_2(value: int) -> bool:
+    """Test if the given value is a power of 2 greater than 2**0. (e.g. 2**4)"""
+    return (value & (value - 1) == 0) and value != 0

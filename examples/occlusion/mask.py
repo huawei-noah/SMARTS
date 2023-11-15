@@ -18,11 +18,11 @@ import numpy as np
 import shapely
 from matplotlib import transforms
 from PIL import Image
+from shapely import prepared
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import GeometryCollection, MultiPolygon, Point, Polygon
 from shapely.geometry import box as shapely_box
 from shapely.ops import unary_union
-from shapely import prepared
 from shapely.prepared import PreparedGeometry
 
 from smarts.core.agent import Agent
@@ -45,6 +45,7 @@ from smarts.sstudio.graphics.heightfield import CoordinateSampleMode, HeightFiel
 T = TypeVar("T")
 VIDEO_PREFIX: Final[str] = "A1_"
 IMAGE_SUFFIX: Final[str] = "jpg"
+
 
 class Mode(IntEnum):
     UNFORMATTED = enum.auto()
@@ -204,6 +205,7 @@ def generate_shadow_mask_polygons(
             out_shapes.append(poly)
     else:
         from shapely.validation import explain_validity
+
         print(explain_validity(poly))
         # breakpoint()
 
@@ -673,7 +675,9 @@ class VectorAgentWrapper(Agent):
         observation_inverse_mask: Polygon = generate_circle_polygon(
             _observation_center, _observation_radius
         )
-        prep_observation_inverse_mask: PreparedGeometry = prepared.prep(observation_inverse_mask)
+        prep_observation_inverse_mask: PreparedGeometry = prepared.prep(
+            observation_inverse_mask
+        )
 
         v_geom = generate_vehicle_polygon(
             pos_accessor(ego_state),
@@ -691,7 +695,9 @@ class VectorAgentWrapper(Agent):
         vehicles_to_downgrade: List[VehicleObservation] = [
             v
             for v in vehicles
-            if prep_observation_inverse_mask.contains(PointGenerator.generate(*pos_accessor(v)))
+            if prep_observation_inverse_mask.contains(
+                PointGenerator.generate(*pos_accessor(v))
+            )
         ]
         occlusion_masks: List[Polygon] = gen_shadow_masks(
             _observation_center, vehicles_to_downgrade, _observation_radius, self._mode
@@ -794,7 +800,9 @@ class VectorAgentWrapper(Agent):
         if not obs.steps_completed % 1:
             ax.axis("off")
 
-            plt.savefig(record_dir / f"{VIDEO_PREFIX}{obs.steps_completed}.{IMAGE_SUFFIX}")
+            plt.savefig(
+                record_dir / f"{VIDEO_PREFIX}{obs.steps_completed}.{IMAGE_SUFFIX}"
+            )
         plt.close("all")
         plt.cla()
         dowgraded_obs = obs._replace(

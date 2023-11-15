@@ -4,6 +4,9 @@
 // -----------------------------------------------
 #define STEP_LENGTH 0.2
 #define CENTER_COORD iResolution.xy * 0.5
+#define DEVICE_HEIGHT 0.8
+#define TOPOLOGY_SCALING_FACTOR 1.0
+#define CENTER vec2(0.5)
 //#define SHADERTOY
 
 #ifdef SHADERTOY
@@ -33,7 +36,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 offset_norm = normalize(offset);
     float offset_dist = length(offset);
     
-    if (texture(iChannel2, vec2(0.5)).x <= 0.0){
+    if (texture(iChannel2, p).x <= 0.0){
         fragColor = vec4(0.0, 0.0, 0.0, 1.0);
         return;
     }

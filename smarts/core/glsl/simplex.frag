@@ -74,13 +74,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float rotation = iTime;
     vec2 translation = iMouse.xy;
     #else
-    float rotation = iHeading;
+    float rotation = -iHeading; // Turn opposite the rotation of the object
     vec2 translation = iTranslation;
     #endif
 
-    float time = rotation/2.;
-    float s = sin(time);
-    float c = cos(time);
+    float s = sin(rotation);
+    float c = cos(rotation);
     uv = uv * mat2(c, s, -s, c) + translation / iResolution.y;
 	
 	float f = 0.0;
@@ -92,7 +91,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     //f = 0.5 + 0.5*f;
     //f *= 0.3 + f;
 
-    fragColor = vec4( f, f, f, 1.0 );
+    fragColor = vec4( f, f, f, f );
 }
 
 #ifndef SHADERTOY
