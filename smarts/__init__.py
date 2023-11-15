@@ -18,8 +18,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+try:
+    from importlib.metadata import version
 
-import pkg_resources
+    VERSION = version("smarts")
+except:
+    # This is now deprecated `https://setuptools.pypa.io/en/latest/pkg_resources.html`
+    import pkg_resources
 
-# The full version, including alpha/beta/rc tags
-VERSION = pkg_resources.get_distribution("smarts").version
+    # The full version, including alpha/beta/rc tags
+    VERSION = pkg_resources.get_distribution("smarts").version
