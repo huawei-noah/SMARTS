@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import cloudpickle
+import numpy as np
 import yaml
 
 import smarts.core
@@ -245,8 +246,9 @@ def gen_scenario(
         db_conn, scenario.traffic, artifact_paths, obj_hash, map_needs_rebuild
     ):
         with timeit("traffic", logger.info):
-            for name, traffic in scenario.traffic.items():
-                derived_seed = random.randint(-0b111111111111111, 0b111111111111111)
+
+            for iteration, (name, traffic) in enumerate(scenario.traffic.items()):
+                derived_seed = seed + iteration
                 gen_traffic(
                     scenario=scenario_dir,
                     traffic=traffic,

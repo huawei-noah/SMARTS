@@ -30,10 +30,12 @@ import subprocess
 import tempfile
 from typing import Optional
 
+import numpy as np
 from yattag import Doc, indent
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import make_dir_in_smarts_log_dir, replace
+from smarts.core.utils.math import wrap_value
 
 from . import types
 
@@ -184,6 +186,7 @@ class TrafficGenerator:
 
             from smarts.core.utils.sumo import sumolib
 
+            int32_limits = np.iinfo(np.int32)
             duarouter_path = sumolib.checkBinary("duarouter")
             subprocess.check_call(
                 [
@@ -197,7 +200,7 @@ class TrafficGenerator:
                     "--output-file",
                     route_path,
                     "--seed",
-                    str(seed),
+                    str(wrap_value(seed, int32_limits.min, int32_limits.max)),
                     "--ignore-errors",
                     "false",
                     "--no-step-log",
