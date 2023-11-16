@@ -34,13 +34,6 @@ except:
 from smarts.core.utils.file import read_tfrecord_file
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 
-
-class WaymoDatasetError(Exception):
-    """Represents an error related to the data in a Waymo dataset scenario."""
-
-    pass
-
-
 MAP_HANDLES = [
     Line2D([0], [0], linestyle=":", color="gray", label="Lane Polyline"),
     Line2D([0], [0], linestyle="-", color="yellow", label="Single Road Line"),

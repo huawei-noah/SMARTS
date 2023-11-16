@@ -49,6 +49,7 @@ from smarts.core.utils.math import (
     vec_2d,
 )
 from smarts.sstudio.types import MapSpec
+from smarts.waymo.exceptions import WaymoDatasetError
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (
     Crosswalk,
@@ -57,7 +58,6 @@ from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (
     SpeedBump,
     StopSign,
 )
-from smarts.waymo.waymo_utils import WaymoDatasetError
 
 try:
     import rtree
