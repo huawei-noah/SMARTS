@@ -13,6 +13,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 ### Deprecated
 ### Fixed
+- Fixed an issue where `RandomRoute` would always give the same route across traffic groups in scenario studio.
 - Fixed an issue where `SMARTS` might not be explicitly destroyed in the `ros_driver`.
 - Fixed issue where `SumoTrafficSimulation` could get locked up on reset if a scenario had only 1 map but multiple scenario variations.
 - Fixed an issue where an out-of-scope method reference caused a pickling error.

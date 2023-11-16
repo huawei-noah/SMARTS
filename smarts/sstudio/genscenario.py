@@ -35,6 +35,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import cloudpickle
 import yaml
 
+import smarts.core
 from smarts.core.default_map_builder import find_mapfile_in_dir
 from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
 from smarts.core.utils.logging import timeit
@@ -164,6 +165,7 @@ def gen_scenario(
     """
     # XXX: For now this simply coalesces the sub-calls but in the future this allows
     #      us to simplify our serialization between SStudio and SMARTS.
+    smarts.core.seed(seed)
 
     scenario_dir = os.path.abspath(str(output_dir))
     build_dir = os.path.join(scenario_dir, "build")
@@ -242,12 +244,14 @@ def gen_scenario(
         db_conn, scenario.traffic, artifact_paths, obj_hash, map_needs_rebuild
     ):
         with timeit("traffic", logger.info):
-            for name, traffic in scenario.traffic.items():
+
+            for iteration, (name, traffic) in enumerate(scenario.traffic.items()):
+                derived_seed = seed + iteration
                 gen_traffic(
                     scenario=scenario_dir,
                     traffic=traffic,
                     name=name,
-                    seed=seed,
+                    seed=derived_seed,
                     map_spec=map_spec,
                 )
             _update_artifacts(db_conn, artifact_paths, obj_hash)

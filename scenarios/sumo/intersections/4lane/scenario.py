@@ -74,18 +74,20 @@ ego_missions = [
     ),
 ]
 
+variations = 40
 scenario = Scenario(
     traffic={
-        "basic": Traffic(
+        f"t{i}": Traffic(
             flows=[
                 Flow(
                     route=RandomRoute(),
-                    repeat_route=True,
                     rate=3600,
+                    randomly_spaced=True,
                     actors={TrafficActor(name="car"): 1.0},
                 )
             ]
         )
+        for i in range(variations)
     },
     ego_missions=ego_missions,
     map_spec=MapSpec(
