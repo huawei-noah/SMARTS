@@ -121,10 +121,10 @@ export default class Client {
               value === "NaN"
                 ? Nan
                 : value === "Infinity"
-                ? Infinity
-                : value === "-Infinity"
-                ? -Infinity
-                : value,
+                  ? Infinity
+                  : value === "-Infinity"
+                    ? -Infinity
+                    : value,
             );
             if (
               stateQueue.length > 0 &&
