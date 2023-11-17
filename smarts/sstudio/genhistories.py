@@ -42,9 +42,7 @@ from smarts.core.utils.math import (
     vec_to_radians,
 )
 from smarts.sstudio import types
-from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
-from smarts.waymo.waymo_open_dataset.protos.map_pb2 import TrafficSignalLaneState
-from smarts.waymo.waymo_utils import WaymoDatasetError
+from smarts.waymo.exceptions import WaymoDatasetError
 
 METERS_PER_FOOT = 0.3048
 DEFAULT_LANE_WIDTH = 3.7  # a typical US highway lane is 12ft ~= 3.7m wide
@@ -800,6 +798,9 @@ class Waymo(_TrajectoryDataset):
         # Loop over the scenarios in the TFRecord and check its ID for a match
         scenario = None
         dataset = read_tfrecord_file(self._dataset_spec["input_path"])
+
+        from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
+
         for record in dataset:
             parsed_scenario = scenario_pb2.Scenario()
             parsed_scenario.ParseFromString(bytes(record))
@@ -931,6 +932,10 @@ class Waymo(_TrajectoryDataset):
                 yield rows[j]
 
     def _encode_tl_state(self, waymo_state) -> SignalLightState:
+        from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (
+            TrafficSignalLaneState,
+        )
+
         if waymo_state == TrafficSignalLaneState.LANE_STATE_STOP:
             return SignalLightState.STOP
         if waymo_state == TrafficSignalLaneState.LANE_STATE_CAUTION:

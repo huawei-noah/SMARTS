@@ -20,6 +20,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where the `EnvisionDataFormatterArgs` default would use a locally defined lambda and cause a serialization failure.
 - Fixed an issue where user configuration was being overridden.
 - Fixed a `pkg_resources` deprecation warning in `python3.10` and up.
+- Fixed the envision camera to center on the map which was broken due to a change in the `gltf` metadata hierarchy.
+- Fixed an issue where you would need to install `waymo` in order to use any kind of dataset histories.
 ### Removed
 ### Security
 
