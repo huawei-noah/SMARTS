@@ -1198,7 +1198,7 @@ class SMARTS(ProviderManager):
         """The current providers controlling actors within the simulation."""
         return self._provider_suite.instances
 
-    def get_provider_by_type(self, requested_type) -> Optional[Provider]:
+    def get_provider_by_type(self, requested_type: type) -> Optional[Provider]:
         """Get The first provider that matches the requested type."""
         self._check_valid()
         for provider in self.providers:
