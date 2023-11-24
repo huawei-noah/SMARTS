@@ -24,7 +24,7 @@ import sys
 from collections import deque
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 import numpy as np
 
@@ -715,8 +715,9 @@ class ViaSensor(Sensor):
 class SignalsSensor(Sensor):
     """Reports state of traffic signals (lights) in the lanes ahead of vehicle."""
 
-    def __init__(self, lookahead: float):
+    def __init__(self, lookahead: float, include_foes: bool):
         self._lookahead = lookahead
+        self._include_foes = include_foes
 
     def __eq__(self, __value: object) -> bool:
         return (
@@ -741,6 +742,7 @@ class SignalsSensor(Sensor):
         result = []
         if not lane:
             return result
+        used_features = set()
         upcoming_signals = []
         for feat in lane.features:
             if not self._is_signal_type(feat):
@@ -752,8 +754,18 @@ class SignalsSensor(Sensor):
                 if lane.offset_along_lane(pt) >= lane_pos.s:
                     upcoming_signals.append(feat)
                     break
+        if self._include_foes:
+            self._find_foe_signals(lane, used_features, upcoming_signals)
+
         lookahead = self._lookahead - lane.length + lane_pos.s
-        self._find_signals_ahead(lane, lookahead, plan.route, upcoming_signals)
+        self._find_signals_ahead(
+            lane,
+            lookahead,
+            plan.route,
+            self._include_foes,
+            used_features,
+            upcoming_signals,
+        )
 
         for signal in upcoming_signals:
             for actor_state in provider_state.actors:
@@ -782,11 +794,38 @@ class SignalsSensor(Sensor):
 
         return result
 
+    def _find_foe_signals(
+        self,
+        lane: RoadMap.Lane,
+        used_features: Set[str],
+        upcoming_signals: List[RoadMap.Feature],
+    ):
+        foes = lane.foes
+        for foe in foes:
+            # Features of lanes leading into the foe lanes
+            foes_incoming_lanes_features = [
+                foe_incoming_feature
+                for incoming_lane in foe.incoming_lanes
+                for foe_incoming_feature in incoming_lane.features
+            ]
+            for feat in [
+                *foe.features,
+                *foes_incoming_lanes_features,
+            ]:
+                if not self._is_signal_type(feat):
+                    continue
+                if feat.feature_id in used_features:
+                    continue
+                used_features.add(feat.feature_id)
+                upcoming_signals.append(feat)
+
     def _find_signals_ahead(
         self,
         lane: RoadMap.Lane,
         lookahead: float,
         route: Optional[RoadMap.Route],
+        include_foes: bool,
+        used_features: Set[str],
         upcoming_signals: List[RoadMap.Feature],
     ):
         if lookahead <= 0:
@@ -794,11 +833,21 @@ class SignalsSensor(Sensor):
         for ogl in lane.outgoing_lanes:
             if route and route.road_length > 0 and ogl.road not in route.roads:
                 continue
-            upcoming_signals += [
-                feat for feat in ogl.features if self._is_signal_type(feat)
+            new_signals = [
+                feat
+                for feat in ogl.features
+                if self._is_signal_type(feat) and feat.feature_id not in used_features
             ]
+            upcoming_signals += new_signals
+            used_features.update(f.feature_id for f in new_signals)
+            self._find_foe_signals(ogl, used_features, upcoming_signals)
             self._find_signals_ahead(
-                ogl, lookahead - lane.length, route, upcoming_signals
+                ogl,
+                lookahead - lane.length,
+                route,
+                include_foes,
+                used_features,
+                upcoming_signals,
             )
 
     def teardown(self, **kwargs):

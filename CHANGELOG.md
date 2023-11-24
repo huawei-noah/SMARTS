@@ -160,6 +160,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Documented the challenge objective, desired inference code structure, and use of baseline example, for Driving SMARTS 2023.1 (i.e., basic motion planning) and 2023.2 (i.e, turns) benchmarks.
 - Added an env wrapper for constraining the relative target pose action range.
 - Added a specialised metric formula module for Driving SMARTS 2023.1 and 2023.2 benchmark.
+- Traffic light signals can now be configured through `Signals.include_foes` to include foe signals (signals of lanes that cross the current lane.)
 ### Changed
 - The trap manager, `TrapManager`, is now a subclass of `ActorCaptureManager`.
 - Considering lane-change time ranges between 3s and 6s, assuming a speed of 13.89m/s, the via sensor lane acquisition range was increased from 40m to 80m, for better driving ability.

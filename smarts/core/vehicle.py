@@ -457,7 +457,8 @@ class Vehicle:
 
         if agent_interface.signals:
             lookahead = agent_interface.signals.lookahead
-            sensor = SignalsSensor(lookahead=lookahead)
+            include_foes = agent_interface.signals.include_foes
+            sensor = SignalsSensor(lookahead=lookahead, include_foes=include_foes)
             vehicle.attach_signals_sensor(sensor)
 
         for sensor_name, sensor in vehicle.sensors.items():

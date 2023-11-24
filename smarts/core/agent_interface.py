@@ -123,6 +123,9 @@ class Signals:
     lookahead: float = 100.0
     """The distance in meters to look ahead of the vehicle's current position."""
 
+    include_foes: bool = False
+    """If signals should include lanes that cross the current lane."""
+
 
 class AgentType(IntEnum):
     """Used to select a standard configured agent interface."""
