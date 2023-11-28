@@ -249,9 +249,21 @@ class Vehicle:
 
     @staticmethod
     @lru_cache(maxsize=None)
-    def vehicle_urdf_path(vehicle_type: str, default_path: Optional[str]) -> str:
-        if (default_path is not None) and os.path.exists(default_path):
-            return default_path
+    def vehicle_urdf_path(vehicle_type: str, override_path: Optional[str]) -> str:
+        """Resolve the physics model filepath.
+
+        Args:
+            vehicle_type (str): The type of the vehicle.
+            override_path (Optional[str]): The override.
+
+        Raises:
+            ValueError: The vehicle type is valid.
+
+        Returns:
+            str: The path to the model `.urdf`.
+        """
+        if (override_path is not None) and os.path.exists(override_path):
+            return override_path
 
         if vehicle_type == "sedan":
             vehicle_type = "passenger"
@@ -268,7 +280,7 @@ class Vehicle:
         }:
             urdf_name = vehicle_type
         else:
-            raise Exception(f"Vehicle type `{vehicle_type}` does not exist!!!")
+            raise ValueError(f"Vehicle type `{vehicle_type}` does not exist!!!")
 
         with pkg_resources.path(models, urdf_name + ".urdf") as path:
             vehicle_filepath = str(path.absolute())
@@ -317,7 +329,7 @@ class Vehicle:
         ego agent.
         """
         urdf_file = cls.vehicle_urdf_path(
-            agent_interface.vehicle_type, vehicle_filepath
+            vehicle_type=agent_interface.vehicle_type, override_path=vehicle_filepath
         )
 
         mission = plan.mission

@@ -464,7 +464,7 @@ class VehicleIndex:
                 bullet_client=sim.bc,
                 vehicle_filepath=Vehicle.vehicle_urdf_path(
                     vehicle_type=agent_interface.vehicle_type,
-                    default_path=sim.scenario.vehicle_filepath,
+                    override_path=sim.scenario.vehicle_filepath,
                 ),
                 tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
                 friction_map=sim.scenario.surface_patches,
@@ -627,7 +627,7 @@ class VehicleIndex:
             plan,
             Vehicle.vehicle_urdf_path(
                 vehicle_type=agent_interface.vehicle_type,
-                default_path=sim.scenario.vehicle_filepath,
+                override_path=sim.scenario.vehicle_filepath,
             ),
             sim.scenario.tire_parameters_filepath,
             not hijacking,
@@ -691,7 +691,7 @@ class VehicleIndex:
             plan=plan,
             vehicle_filepath=Vehicle.vehicle_urdf_path(
                 vehicle_type=agent_interface.vehicle_type,
-                default_path=sim.scenario.vehicle_filepath,
+                override_path=sim.scenario.vehicle_filepath,
             ),
             tire_filepath=tire_filepath,
             trainable=trainable,
