@@ -459,7 +459,17 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         chassis = None
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
-            chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
+            chassis = AckermannChassis(
+                pose=vehicle.pose,
+                bullet_client=sim.bc,
+                vehicle_filepath=sim.scenario.vehicle_filepath,
+                tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
+                friction_map=sim.scenario.surface_patches,
+                controller_parameters=self.controller_params_for_vehicle_type(
+                    agent_interface.vehicle_type
+                ),
+                initial_speed=vehicle.speed,
+            )
         else:
             chassis = BoxChassis(
                 pose=vehicle.pose,
@@ -666,7 +676,7 @@ class VehicleIndex:
         surface_patches,
         initial_speed=None,
         boid=False,
-        *,
+        /,
         vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""

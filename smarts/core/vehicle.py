@@ -29,7 +29,7 @@ import numpy as np
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
-from . import models
+from . import config, models
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
@@ -246,24 +246,27 @@ class Vehicle:
         return self._initialized
 
     @staticmethod
-    def agent_vehicle_dims(mission: Mission) -> Dimensions:
+    def agent_vehicle_dims(
+        mission: Mission, default: Optional[str] = None
+    ) -> Dimensions:
         """Get the vehicle dimensions from the mission requirements.
         Args:
             A mission for the agent.
         Returns:
             The mission vehicle spec dimensions XOR the default "passenger" vehicle dimensions.
         """
+        default_type = default or config().get_setting(
+            "resources", "default_agent_vehicle", default="passenger"
+        )
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
             vehicle_config_type = mission.vehicle_spec.veh_config_type
             return Dimensions.copy_with_defaults(
                 mission.vehicle_spec.dimensions,
-                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type or default_type].dimensions,
             )
-        # non-history agents can currently only control passenger vehicles.
-        vehicle_config_type = "passenger"
-        return VEHICLE_CONFIGS[vehicle_config_type].dimensions
+        return VEHICLE_CONFIGS[default_type].dimensions
 
     @classmethod
     def build_agent_vehicle(
@@ -281,9 +284,26 @@ class Vehicle:
         """Create a new vehicle and set up sensors and planning information as required by the
         ego agent.
         """
-        mission = plan.mission
+        smarts_vehicle_type = agent_interface.vehicle_type
+        if smarts_vehicle_type == "sedan":
+            smarts_vehicle_type = "passenger"
 
-        chassis_dims = cls.agent_vehicle_dims(mission)
+        if smarts_vehicle_type == "passenger":
+            urdf_name = "vehicle"
+        elif smarts_vehicle_type in {
+            "bus",
+            "coach",
+            "motorcycle",
+            "pedestrian",
+            "trailer",
+            "truck",
+        }:
+            urdf_name = smarts_vehicle_type
+        else:
+            raise Exception("Vehicle type does not exist!!!")
+
+        mission = plan.mission
+        chassis_dims = cls.agent_vehicle_dims(mission, default=smarts_vehicle_type)
 
         start = mission.start
         if start.from_front_bumper:
@@ -296,13 +316,6 @@ class Vehicle:
             start_pose = Pose.from_center(start.position, start.heading)
 
         vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
-
-        if agent_interface.vehicle_type == "sedan":
-            urdf_name = "vehicle"
-        elif agent_interface.vehicle_type == "bus":
-            urdf_name = "bus"
-        else:
-            raise Exception("Vehicle type does not exist!!!")
 
         if (vehicle_filepath is None) or not os.path.exists(vehicle_filepath):
             with pkg_resources.path(models, urdf_name + ".urdf") as path:
@@ -340,6 +353,7 @@ class Vehicle:
             id=vehicle_id,
             chassis=chassis,
             color=vehicle_color,
+            vehicle_config_type=agent_interface.vehicle_type,
         )
 
         return vehicle
