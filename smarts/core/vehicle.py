@@ -252,7 +252,7 @@ class Vehicle:
     def vehicle_urdf_path(vehicle_type: str, default_path: Optional[str]) -> str:
         if (default_path is not None) and os.path.exists(default_path):
             return default_path
-        
+
         if vehicle_type == "sedan":
             vehicle_type = "passenger"
 
@@ -316,10 +316,14 @@ class Vehicle:
         """Create a new vehicle and set up sensors and planning information as required by the
         ego agent.
         """
-        urdf_file = cls.vehicle_urdf_path(agent_interface.vehicle_type, vehicle_filepath)
+        urdf_file = cls.vehicle_urdf_path(
+            agent_interface.vehicle_type, vehicle_filepath
+        )
 
         mission = plan.mission
-        chassis_dims = cls.agent_vehicle_dims(mission, default=agent_interface.vehicle_type)
+        chassis_dims = cls.agent_vehicle_dims(
+            mission, default=agent_interface.vehicle_type
+        )
 
         start = mission.start
         if start.from_front_bumper:

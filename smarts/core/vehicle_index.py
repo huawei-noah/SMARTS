@@ -678,8 +678,8 @@ class VehicleIndex:
         plan,
         tire_filepath,
         trainable: bool,
-        initial_speed: Optional[float]=None,
-        boid: bool=False,
+        initial_speed: Optional[float] = None,
+        boid: bool = False,
         *,
         vehicle_id=None,
     ):
