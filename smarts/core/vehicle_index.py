@@ -462,7 +462,10 @@ class VehicleIndex:
             chassis = AckermannChassis(
                 pose=vehicle.pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=sim.scenario.vehicle_filepath,
+                vehicle_filepath=Vehicle.vehicle_urdf_path(
+                    vehicle_type=agent_interface.vehicle_type,
+                    default_path=sim.scenario.vehicle_filepath,
+                ),
                 tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
                 friction_map=sim.scenario.surface_patches,
                 controller_parameters=self.controller_params_for_vehicle_type(
@@ -622,7 +625,10 @@ class VehicleIndex:
             vehicle.id,
             agent_interface,
             plan,
-            sim.scenario.vehicle_filepath,
+            Vehicle.vehicle_urdf_path(
+                vehicle_type=agent_interface.vehicle_type,
+                default_path=sim.scenario.vehicle_filepath,
+            ),
             sim.scenario.tire_parameters_filepath,
             not hijacking,
             sim.scenario.surface_patches,
@@ -670,13 +676,11 @@ class VehicleIndex:
         agent_id,
         agent_interface,
         plan,
-        filepath,
         tire_filepath,
-        trainable,
-        surface_patches,
-        initial_speed=None,
-        boid=False,
-        /,
+        trainable: bool,
+        initial_speed: Optional[float]=None,
+        boid: bool=False,
+        *,
         vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""
@@ -685,10 +689,13 @@ class VehicleIndex:
             vehicle_id=vehicle_id or agent_id,
             agent_interface=agent_interface,
             plan=plan,
-            vehicle_filepath=filepath,
+            vehicle_filepath=Vehicle.vehicle_urdf_path(
+                vehicle_type=agent_interface.vehicle_type,
+                default_path=sim.scenario.vehicle_filepath,
+            ),
             tire_filepath=tire_filepath,
             trainable=trainable,
-            surface_patches=surface_patches,
+            surface_patches=sim.scenario.surface_patches,
             initial_speed=initial_speed,
         )
 
