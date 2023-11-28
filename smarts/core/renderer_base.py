@@ -97,11 +97,16 @@ class OffscreenCamera:
 
 
 @dataclass
-class ShaderStepDependency:
+class ShaderStepCameraDependency:
     """Forwards the texture from a given camera to the"""
 
     camera_id: str
     script_variable_name: str
+
+    def __post_init__(self):
+        assert (
+            self.camera_id
+        ), f"Camera id for {self.script_variable_name} cannot be None or empty."
 
 
 @dataclass
@@ -193,7 +198,7 @@ class RendererBase:
         width: int,
         height: int,
         resolution: float,
-    ) -> str:
+    ) -> None:
         """Generates a new off-screen camera."""
         raise NotImplementedError
 
@@ -201,10 +206,10 @@ class RendererBase:
         self,
         name: str,
         fshader_path: str,
-        camera_dependencies: Tuple[ShaderStepDependency],
+        dependencies: Tuple[ShaderStepCameraDependency, ...],
         priority: int,
         height: int,
         width: int,
-    ) -> str:
+    ) -> None:
         """Generates a new shader camera."""
         raise NotImplementedError

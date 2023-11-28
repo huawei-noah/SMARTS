@@ -238,12 +238,12 @@ class Sensors:
             lidar_sensor.follow_vehicle(vehicle_state)
             lidar = lidar_sensor(bullet_client)
 
-        def get_camera_sensor_result(sensors, sensor_name, renderer):
-            return (
-                sensors[sensor_name](renderer=renderer)
-                if renderer and sensors.get(sensor_name)
-                else None
-            )
+        def get_camera_sensor_result(sensors: Dict[str, Sensor], sensor_name, renderer):
+            if renderer is None:
+                return None
+            if (sensor := sensors.get(sensor_name)) is not None:
+                return sensor(renderer=renderer)
+            return None
 
         updated_sensors = {
             sensor_name: sensor
@@ -261,6 +261,9 @@ class Sensors:
                 ),
                 top_down_rgb=get_camera_sensor_result(
                     vehicle_sensors, "rgb_sensor", renderer
+                ),
+                obfuscation_grid_map=get_camera_sensor_result(
+                    vehicle_sensors, "occlusion_sensor", renderer
                 ),
                 lidar_point_cloud=lidar,
             ),

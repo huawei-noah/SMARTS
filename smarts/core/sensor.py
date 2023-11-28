@@ -24,19 +24,23 @@ import logging
 import sys
 from collections import deque
 from dataclasses import dataclass
+from enum import Enum
 from functools import lru_cache
 from typing import List, Optional, Tuple
 
 import numpy as np
 
 from smarts.core import glsl
+from smarts.core.agent_interface import ConfigurableRenderDependency
 from smarts.core.coordinates import Pose, RefLinePoint
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
 from smarts.core.observations import (
+    ConfigurableRenderData,
     DrivableAreaGridMap,
     GridMapMetadata,
+    ObfuscationGridMap,
     OccupancyGridMap,
     RoadWaypoints,
     SignalObservation,
@@ -44,11 +48,29 @@ from smarts.core.observations import (
     ViaPoint,
 )
 from smarts.core.plan import Plan
-from smarts.core.renderer_base import RendererBase, ShaderStepDependency
+from smarts.core.renderer_base import RendererBase, ShaderStepCameraDependency
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
+from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
+
+
+class CameraSensorName(Enum):
+    """Describes default names for camera configuration."""
+
+    DRIVABLE_AREA_GRID_MAP = "dagm"
+    TOP_DOWN_RGB = "top_down_rgb"
+    OCCUPANCY_GRID_MAP = "ogm"
+    OCCLUSION = "occlusion"
+
+
+def _gen_sensor_name(base_name: str, vehicle_state: VehicleState):
+    return _gen_sensor_name(base_name, vehicle_state.actor_id)
+
+
+def _gen_sensor_name(base_name: str, actor_id: str):
+    return f"{base_name}_{actor_id}"
 
 
 class Sensor:
@@ -85,20 +107,24 @@ class CameraSensor(Sensor):
         width: int,
         height: int,
         resolution: float,
+        build_camera: bool = True,
     ):
         assert renderer
         self._log = logging.getLogger(self.__class__.__name__)
-        self._camera_name = renderer.build_offscreen_camera(
-            f"{name}_{vehicle_state.actor_id}",
-            mask,
-            width,
-            height,
-            resolution,
-        )
+        self._name = name
+        self._camera_name = _gen_sensor_name(name, vehicle_state)
+        if build_camera:
+            renderer.build_offscreen_camera(
+                self._camera_name,
+                mask,
+                width,
+                height,
+                resolution,
+            )
+            self._follow_actor(
+                vehicle_state, renderer
+            )  # ensure we have a correct initial camera position
         self._target_actor = vehicle_state.actor_id
-        self._follow_actor(
-            vehicle_state, renderer
-        )  # ensure we have a correct initial camera position
         self._mask = mask
         self._width = width
         self._height = height
@@ -122,7 +148,7 @@ class CameraSensor(Sensor):
         camera = renderer.camera_for_id(self._camera_name)
         camera.teardown()
 
-    def step(self, sim_frame, **kwargs):
+    def step(self, sim_frame: SimulationFrame, **kwargs):
         if not self._target_actor in sim_frame.actor_states_by_id:
             return
         self._follow_actor(
@@ -139,6 +165,11 @@ class CameraSensor(Sensor):
     def camera_name(self) -> str:
         """The name of the camera this sensor is using."""
         return self._camera_name
+
+    @property
+    def name(self) -> str:
+        """The name of this sensor."""
+        return self._name
 
     @property
     def serializable(self) -> bool:
@@ -159,7 +190,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            "drivable_area_grid_map",
+            CameraSensorName.DRIVABLE_AREA_GRID_MAP.value,
             RenderMasks.DRIVABLE_AREA_HIDE,
             width,
             height,
@@ -198,66 +229,25 @@ class OGMSensor(CameraSensor):
         height: int,
         resolution: float,
         renderer: RendererBase,
-        occluded: bool = True,
     ):
         super().__init__(
             vehicle_state,
             renderer,
-            "ogm",
+            CameraSensorName.OCCUPANCY_GRID_MAP.value,
             RenderMasks.OCCUPANCY_HIDE,
             width,
             height,
             resolution,
         )
-        self._resolution = resolution
-
-        if occluded:
-            # generate simplex camera
-            with pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
-                simplex_camera_name = renderer.build_shader_step(
-                    name=f"simplex:{vehicle_state.actor_id}",
-                    fshader_path=simplex_shader,
-                    camera_dependencies=[],
-                    priority=10,
-                    width=width,
-                    height=height,
-                )
-            with pkg_resources.path(glsl, "surface_facing.frag") as facing_shader:
-                surface_facing_camera_name = renderer.build_shader_step(
-                    name=f"surface:{vehicle_state.actor_id}",
-                    fshader_path=facing_shader,
-                    camera_dependencies=[
-                        ShaderStepDependency(self._camera_name, "iChannel0"),
-                        ShaderStepDependency(simplex_camera_name, "iChannel1"),
-                    ],
-                    priority=20,
-                    width=width,
-                    height=height,
-                )
-            # feed simplex and ogm to composite
-            with pkg_resources.path(glsl, "occlusion.frag") as composite_shader:
-                composite_camera_name = renderer.build_shader_step(
-                    name=f"occlusion:{vehicle_state.actor_id}",
-                    fshader_path=composite_shader,
-                    camera_dependencies=[
-                        ShaderStepDependency(self._camera_name, "iChannel0"),
-                        ShaderStepDependency(simplex_camera_name, "iChannel1"),
-                        ShaderStepDependency(surface_facing_camera_name, "iChannel2"),
-                    ],
-                    priority=30,
-                    width=width,
-                    height=height,
-                )
-            self._camera_name = composite_camera_name
 
     def __call__(self, renderer: RendererBase) -> OccupancyGridMap:
-        camera = renderer.camera_for_id(self._camera_name)
-        assert camera is not None, "OGM has not been initialized"
+        base_camera = renderer.camera_for_id(self._camera_name)
+        assert base_camera is not None, "OGM has not been initialized"
 
-        ram_image = camera.wait_for_ram_image(img_format="A")
+        ram_image = base_camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         grid: np.ndarray = np.frombuffer(mem_view, np.uint8)
-        width, height = camera.image_dimensions
+        width, height = base_camera.image_dimensions
         grid.shape = (height, width, 1)
         grid = np.flipud(grid)
 
@@ -265,8 +255,8 @@ class OGMSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_position=camera.position,
-            camera_heading=camera.heading,
+            camera_position=base_camera.position,
+            camera_heading=base_camera.heading,
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
 
@@ -285,7 +275,7 @@ class RGBSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            "top_down_rgb",
+            CameraSensorName.TOP_DOWN_RGB.value,
             RenderMasks.RGB_HIDE,
             width,
             height,
@@ -312,6 +302,201 @@ class RGBSensor(CameraSensor):
             camera_heading=camera.heading,
         )
         return TopDownRGB(data=image, metadata=metadata)
+
+
+class OcclusionSensor(CameraSensor):
+    """A sensor that demonstrates only the areas that can be seen by the vehicle."""
+
+    def __init__(
+        self,
+        vehicle_state: VehicleState,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: RendererBase,
+        ogm_sensor: OGMSensor,
+        add_surface_noise: bool,
+    ):
+        self._effect_cameras = []
+        super().__init__(
+            vehicle_state,
+            renderer,
+            CameraSensorName.OCCLUSION.value,
+            RenderMasks.NONE,
+            width,
+            height,
+            resolution,
+            build_camera=False,
+        )
+
+        occlusion_camera0 = ogm_sensor.camera_name
+        occlusion_camera1 = occlusion_camera0
+
+        if add_surface_noise:
+            # generate simplex camera
+            with pkg_resources.path(glsl, "simplex.frag") as simplex_shader_path:
+                simplex_camera_name = f"simplex:{vehicle_state.actor_id}"
+                renderer.build_shader_step(
+                    name=simplex_camera_name,
+                    fshader_path=simplex_shader_path,
+                    dependencies=[],
+                    priority=10,
+                    width=width,
+                    height=height,
+                )
+            self._effect_cameras.append(simplex_camera_name)
+            occlusion_camera1 = simplex_camera_name
+
+        # feed simplex and ogm to composite
+        with pkg_resources.path(glsl, "occlusion.frag") as composite_shader_path:
+            composite_camera_name = f"occlusion:{vehicle_state.actor_id}"
+            renderer.build_shader_step(
+                name=composite_camera_name,
+                fshader_path=composite_shader_path,
+                dependencies=[
+                    ShaderStepCameraDependency(occlusion_camera0, "iChannel0"),
+                    ShaderStepCameraDependency(occlusion_camera1, "iChannel1"),
+                ],
+                priority=30,
+                width=width,
+                height=height,
+            )
+        self._effect_cameras.append(composite_camera_name)
+
+    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
+        if not renderer:
+            return
+        for effect_name in self._effect_cameras:
+            camera = renderer.camera_for_id(effect_name)
+            camera.update(vehicle_state.pose, vehicle_state.dimensions.height)
+
+    def teardown(self, **kwargs):
+        renderer: Optional[RendererBase] = kwargs.get("renderer")
+        if not renderer:
+            return
+        for effect_name in self._effect_cameras:
+            camera = renderer.camera_for_id(effect_name)
+            camera.teardown()
+
+    def __call__(self, renderer: RendererBase) -> ObfuscationGridMap:
+        effect_camera = renderer.camera_for_id(self._effect_cameras[-1])
+
+        ram_image = effect_camera.tex.getRamImageAs("RGB")
+        mem_view = memoryview(ram_image)
+        grid: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
+        grid.shape = effect_camera.image_dimensions
+        grid = np.flipud(grid)
+
+        metadata = GridMapMetadata(
+            resolution=self._resolution,
+            height=grid.shape[0],
+            width=grid.shape[1],
+            camera_position=-1,
+            camera_heading=-1,
+        )
+        return ObfuscationGridMap(data=grid, metadata=metadata)
+
+
+class ConfigurableRenderSensor(CameraSensor):
+    """Defines a configurable image sensor."""
+
+    def __init__(
+        self,
+        vehicle_state: VehicleState,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: RendererBase,
+        fragment_shader_path: str,
+        render_dependencies: Tuple[ConfigurableRenderDependency, ...],
+        ogm_sensor: Optional[OGMSensor],
+        top_down_rgb_sensor: Optional[RGBSensor],
+        dagm_sensor: Optional[DrivableAreaGridMapSensor],
+        name: str,
+    ):
+        super().__init__(
+            vehicle_state,
+            renderer,
+            name,
+            RenderMasks.NONE,
+            width,
+            height,
+            resolution,
+            build_camera=False,
+        )
+
+        dependencies = []
+        named_camera_sensors = (
+            (CameraSensorName.OCCUPANCY_GRID_MAP, ogm_sensor),
+            (CameraSensorName.TOP_DOWN_RGB, top_down_rgb_sensor),
+            (CameraSensorName.DRIVABLE_AREA_GRID_MAP, dagm_sensor),
+        )
+
+        def has_required(dependency_name, required_name, sensor) -> bool:
+            if dependency_name == required_name:
+                if sensor:
+                    return True
+                else:
+                    raise UserWarning(
+                        f"Custom render depency requires `{d.camera_dependency_name}` but the sensor is not attached in the interface."
+                    )
+            return False
+
+        for d in render_dependencies:
+            for csn, sensor in named_camera_sensors:
+                if has_required(d.camera_dependency_name, csn.value, sensor):
+                    break
+
+            camera_id = (
+                _gen_sensor_name(d.camera_dependency_name, vehicle_state)
+                if d.is_self_targetted()
+                else _gen_sensor_name()
+            )
+            sscd = ShaderStepCameraDependency(
+                _gen_sensor_name(d.camera_dependency_name, vehicle_state),
+                d.variable_name,
+            )
+            dependencies.append(sscd)
+
+        renderer.build_shader_step(
+            name=self._camera_name,
+            fshader_path=fragment_shader_path,
+            dependencies=dependencies,
+            priority=40,
+            width=width,
+            height=height,
+        )
+
+    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
+        if not renderer:
+            return
+        camera = renderer.camera_for_id(self._camera_name)
+        camera.update(vehicle_state.pose, vehicle_state.dimensions.height)
+
+    def teardown(self, **kwargs):
+        renderer: Optional[RendererBase] = kwargs.get("renderer")
+        if not renderer:
+            return
+        camera = renderer.camera_for_id(self._camera_name)
+        camera.teardown()
+
+    def __call__(self, renderer: RendererBase) -> ObfuscationGridMap:
+        effect_camera = renderer.camera_for_id(self._camera_name)
+
+        ram_image = effect_camera.tex.getRamImageAs("RGB")
+        mem_view = memoryview(ram_image)
+        grid: np.ndarray = np.frombuffer(mem_view, np.uint8)
+        grid.shape = effect_camera.image_dimensions + (3,)
+        grid = np.flipud(grid)
+
+        metadata = GridMapMetadata(
+            resolution=self._resolution,
+            height=grid.shape[0],
+            width=grid.shape[1],
+            camera_position=-1,
+            camera_heading=-1,
+        )
+        return ConfigurableRenderData(data=grid, metadata=metadata)
 
 
 class LidarSensor(Sensor):

@@ -20,13 +20,18 @@
 import re
 import warnings
 from dataclasses import dataclass, field, replace
-from enum import IntEnum
+from enum import Enum, IntEnum, auto
 from functools import cached_property
-from typing import List, Optional, Tuple, Union
+from typing import Final, List, Literal, Optional, Tuple, Union
 
+from smarts.core import config
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
 from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
+
+
+class _SELF(Enum):
+    default = auto()
 
 
 @dataclass
@@ -46,6 +51,8 @@ class OGM:
     """The width and height are in "pixels" and the resolution is the "size of a
     pixel". E.g. if you wanted 100m x 100m `OGM` but a 64x64 image representation
     you would do `OGM(width=64, height=64, resolution=100/64)`
+
+    "obfuscation" generates an additional binary render that indicates what is in view.
     """
 
     width: int = 256
@@ -63,6 +70,50 @@ class RGB:
     width: int = 256
     height: int = 256
     resolution: float = 50 / 256
+
+
+@dataclass
+class OcclusionMap:
+    """The width and height are in "pixels" and the resolution is the "size of a
+    pixel". E.g. if you wanted 100m x 100m `ObfuscationMap` but a 64x64 image representation
+    you would do `ObfuscationMap(width=64, height=64, resolution=100/64)`
+    """
+
+    width: int = 256
+    height: int = 256
+    resolution: float = 50 / 256
+    surface_noise: bool = True
+
+
+@dataclass
+class ConfigurableRenderDependency:
+
+    camera_dependency_name: str
+    variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]
+    target_actor: Union[str, Literal[_SELF.default]] = _SELF.default
+
+    def is_self_targetted(self):
+        return self.target_actor is _SELF.default
+
+
+@dataclass
+class CustomFragmentProgram:
+    """The width and height are in "pixels" and the resolution is the "size of a
+    pixel". E.g. if you wanted 100m x 100m `ObfuscationMap` but a 64x64 image representation
+    you would do `ObfuscationMap(width=64, height=64, resolution=100/64)`
+    """
+
+    name: str
+    fragment_shader_path: str
+    dependencies: Tuple[ConfigurableRenderDependency, ...]
+    width: int = 256
+    height: int = 256
+    resolution: float = 50 / 256
+
+    def __post_init__(self):
+        assert len(self.dependencies) == len(
+            {d.variable_name for d in self.dependencies}
+        )
 
 
 @dataclass
@@ -90,8 +141,8 @@ class RoadWaypoints:
     that lane.
     """
 
-    # The distance in meters to include waypoints for (both behind and in front of the agent)
     horizon: int = 20
+    """The distance in meters to include waypoints for (both behind and in front of the agent)"""
 
 
 @dataclass
@@ -340,6 +391,14 @@ class AgentInterface:
     Enable the signals sensor.
     """
 
+    occlusion_map: Union[OcclusionMap, bool] = False
+    """Enable ObfuscationMapSensor for the current vehicle. This image represents what the current vehicle can see.
+    """
+
+    custom_fragment_programs: Tuple[CustomFragmentProgram, ...] = tuple()
+    """Add custom renderer outputs
+    """
+
     def __post_init__(self):
         self.neighborhood_vehicle_states = AgentInterface._resolve_config(
             self.neighborhood_vehicle_states, NeighborhoodVehicles
@@ -368,6 +427,24 @@ class AgentInterface:
         )
         self.signals = AgentInterface._resolve_config(self.signals, Signals)
         assert self.vehicle_type in {"sedan", "bus"}
+
+        assert len(self.custom_fragment_programs) <= config()(
+            "core", "max_custom_image_sensors", cast=int
+        )
+
+        if self.occlusion_map:
+            assert (
+                self.occupancy_grid_map
+            ), "Occupancy grid map must also be attached to use occlusion map."
+            self.occlusion_map = AgentInterface._resolve_config(
+                self.occlusion_map, OcclusionMap
+            )
+            assert (
+                self.occupancy_grid_map.width == self.occlusion_map.width
+            ), "Occlusion map width must match occupancy grid map."
+            assert (
+                self.occupancy_grid_map.height == self.occlusion_map.height
+            ), "Occlusion map height must match occupancy grid map."
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):

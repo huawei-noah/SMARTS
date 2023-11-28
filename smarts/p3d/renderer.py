@@ -70,7 +70,7 @@ from smarts.core.renderer_base import (
     RendererBase,
     RendererNotSetUpWarning,
     ShaderStep,
-    ShaderStepDependency,
+    ShaderStepCameraDependency,
 )
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalState, signal_state_to_color
@@ -248,7 +248,12 @@ class _P3dCameraMixin:
 
     @property
     def position(self) -> Tuple[float, float, float]:
-        return self.camera_np.getPos()
+        raise NotImplementedError()
+
+    @property
+    def padding(self) -> Tuple[int, int, int, int]:
+        """The padding on the image. This follows the "css" convention: (top, left, bottom, right)."""
+        return self.tex.getPadYSize(), self.tex.getPadXSize(), 0, 0
 
     @property
     def heading(self) -> float:
@@ -280,6 +285,10 @@ class P3dOffscreenCamera(_P3dCameraMixin, OffscreenCamera):
         self.camera_np.lookAt(*pos)
         self.camera_np.setH(heading)
 
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        return self.camera_np.getPos()
+
 
 @dataclass
 class P3dShaderStep(_P3dCameraMixin, ShaderStep):
@@ -288,7 +297,7 @@ class P3dShaderStep(_P3dCameraMixin, ShaderStep):
     fullscreen_quad_node: NodePath
 
     def update(self, pose: Pose, height: float):
-        """Update the location of the base camera. This passes through.
+        """Update the location of the shader directional values.
         Args:
             pose:
                 The pose of the camera target.
@@ -299,11 +308,11 @@ class P3dShaderStep(_P3dCameraMixin, ShaderStep):
         self.fullscreen_quad_node.setShaderInput(
             "iTranslation", n1=pose.point.x, n2=pose.point.y
         )
-        self.fullscreen_quad_node.setShaderInput(
-            "iElevation", height
-        )
-        for ss_dep in self.dependents:
-            ss_dep.update(pose, height)
+        self.fullscreen_quad_node.setShaderInput("iElevation", height)
+
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        raise ValueError("Shader step does not have a position.")
 
 
 class Renderer(RendererBase):
@@ -674,7 +683,6 @@ class Renderer(RendererBase):
         ), f"Camera {camera_id} does not exist, have you created this camera?"
         return camera
 
-
     def build_offscreen_camera(
         self,
         name: str,
@@ -682,7 +690,7 @@ class Renderer(RendererBase):
         width: int,
         height: int,
         resolution: float,
-    ) -> str:
+    ) -> None:
         """Generates a new off-screen camera."""
         # setup buffer
         win_props = WindowProperties.size(width, height)
@@ -733,22 +741,16 @@ class Renderer(RendererBase):
         camera = P3dOffscreenCamera(self, camera_np, buffer, tex)
         self._camera_nodes[name] = camera
 
-        return name
-
     def build_shader_step(
         self,
         name: str,
         fshader_path: str,
-        camera_dependencies: Tuple[ShaderStepDependency],
+        dependencies: Tuple[ShaderStepCameraDependency, ...],
         priority: int,
         height: int,
         width: int,
-    ) -> str:
-
-        assert height % 16 == 0
-        assert width % 16 == 0
-
-        from panda3d.core import ComputeNode, NodePath, Shader, ShaderAttrib, Texture
+    ) -> None:
+        from panda3d.core import NodePath, Shader, Texture
 
         from smarts.core import glsl
 
@@ -796,7 +798,7 @@ class Renderer(RendererBase):
 
         quadcamnode = Camera(name)
         quadcamnode.setLens(lens)
-        quadcam = quad.attachNewNode(quadcamnode)
+        quadcam: NodePath = quad.attachNewNode(quadcamnode)
 
         dr = buffer.makeDisplayRegion((0, 1, 0, 1))
         dr.disableClears()
@@ -808,17 +810,19 @@ class Renderer(RendererBase):
         buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
         buffer.setClearColorActive(True)
 
-        assert tex.getExpectedRamImageSize() == width * height * (3), f"{tex.getExpectedRamImageSize()} != {width * height * (3)}"
+        assert tex.getExpectedRamImageSize() == tex.getXSize() * tex.getYSize() * 3
 
         with pkg_resources.path(glsl, "unlit_shader.vert") as vshader_path:
             quad.setShader(
                 Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=fshader_path)
             )
-            cameras = tuple(
-                self.camera_for_id(c.camera_id) for c in camera_dependencies
-            )
-            for dep, dep_cam in zip(camera_dependencies, cameras):
+            cameras = tuple(self.camera_for_id(c.camera_id) for c in dependencies)
+            for dep, dep_cam in zip(dependencies, cameras):
                 quad.setShaderInput(dep.script_variable_name, dep_cam.tex)
+                size_x, size_y = dep_cam.image_dimensions
+                quad.setShaderInput(
+                    f"{dep.script_variable_name}Resolution", n1=size_x, n2=size_y
+                )
             quad.setShaderInput("iResolution", n1=width, n2=height)
             quad.setShaderInput("iTranslation", n1=0, n2=0)
             quad.setShaderInput("iHeading", 0.0)
@@ -826,14 +830,10 @@ class Renderer(RendererBase):
             camera = P3dShaderStep(
                 self,
                 shader_file=fshader_path,
-                dependents=tuple(
-                    self.camera_for_id(c.camera_id) for c in camera_dependencies
-                ),
-                camera_np=quadcamnode,
+                dependents=tuple(self.camera_for_id(c.camera_id) for c in dependencies),
+                camera_np=quadcam,
                 buffer=buffer,
                 tex=tex,
                 fullscreen_quad_node=quad,
             )
             self._camera_nodes[name] = camera
-
-        return name

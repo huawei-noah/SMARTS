@@ -271,7 +271,7 @@ class SMARTS(ProviderManager):
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
-            if not config()("core", "debug", default=False, cast=bool):
+            if not config()("core", "debug", cast=bool):
                 self.destroy()
             raise  # re-raise the KeyboardInterrupt
         except Exception as e:
@@ -279,7 +279,7 @@ class SMARTS(ProviderManager):
                 "Simulation crashed with exception. Attempting to cleanly shutdown."
             )
             self._log.exception(e)
-            if not config().get_setting("core", "debug", default=False, cast=bool):
+            if not config().get_setting("core", "debug", cast=bool):
                 self.destroy()
             raise  # re-raise
 
@@ -456,7 +456,7 @@ class SMARTS(ProviderManager):
                 - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
-        tries = config()("core", "reset_retries", 0, cast=int) + 1
+        tries = config()("core", "reset_retries", cast=int) + 1
         first_exception = None
         for _ in range(tries):
             try:

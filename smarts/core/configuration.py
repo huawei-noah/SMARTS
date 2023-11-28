@@ -25,7 +25,7 @@ import functools
 import logging
 import os
 import pathlib
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Final, Optional, Union
 
 _UNSET = object()
 
@@ -46,6 +46,19 @@ def _convert_truthy(t: str) -> bool:
     out = ast.literal_eval(t.strip().title())
     assert isinstance(out, (bool, int))
     return bool(out)
+
+
+_config_defaults: Final = {
+    ("core", "observation_workers"): 0,
+    ("core", "max_custom_image_sensors"): 4,
+    ("core", "sensor_parallelization"): "mp",
+    ("core", "debug"): False,
+    ("core", "reset_retries"): 0,
+    # ("physics", "max_pybullet_freq"): 240,
+    ("ray", "num_gpus"): 0,
+    ("ray", "num_cpus"): None,
+    ("ray", "log_to_driver"): False,
+}
 
 
 class Config:
@@ -120,6 +133,8 @@ class Config:
             value = self._config[section][option]
         except (configparser.NoSectionError, KeyError) as exc:
             if default is _UNSET:
+                if value := _config_defaults.get((section, option)):
+                    return value
                 raise EnvironmentError(
                     f"Setting `${env_variable}` cannot be found in environment or configuration."
                 ) from exc
@@ -130,6 +145,7 @@ class Config:
         self,
         section: str,
         option: str,
+        /,
         default: Any = _UNSET,
         cast: Callable[[str], Any] = str,
     ) -> Optional[Any]:

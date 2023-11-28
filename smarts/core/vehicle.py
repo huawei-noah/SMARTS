@@ -20,16 +20,16 @@
 import importlib.resources as pkg_resources
 import logging
 import os
-from dataclasses import dataclass
-from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+import warnings
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
+from smarts.core.sensor import ConfigurableRenderSensor, OcclusionSensor
 
-from . import models
+from . import config, models
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
@@ -368,7 +368,7 @@ class Vehicle:
         sensor_manager,
         sim,
         vehicle: "Vehicle",
-        agent_interface,
+        agent_interface: AgentInterface,
     ):
         """Attach sensors as required to satisfy the agent interface's requirements"""
         # The distance travelled sensor is not optional b/c it is used for the score
@@ -408,39 +408,77 @@ class Vehicle:
             )
             vehicle.attach_road_waypoints_sensor(sensor)
 
+        dagm_sensor: Optional[Sensor] = None
         if agent_interface.drivable_area_grid_map:
             if not sim.renderer:
                 raise RendererException.required_to("add a drivable_area_grid_map")
-            sensor = DrivableAreaGridMapSensor(
+            dagm_sensor = DrivableAreaGridMapSensor(
                 vehicle_state=vehicle_state,
                 width=agent_interface.drivable_area_grid_map.width,
                 height=agent_interface.drivable_area_grid_map.height,
                 resolution=agent_interface.drivable_area_grid_map.resolution,
                 renderer=sim.renderer,
             )
-            vehicle.attach_drivable_area_grid_map_sensor(sensor)
+            vehicle.attach_drivable_area_grid_map_sensor(dagm_sensor)
+        ogm_sensor: Optional[Sensor] = None
         if agent_interface.occupancy_grid_map:
             if not sim.renderer:
                 raise RendererException.required_to("add an OGM")
-            sensor = OGMSensor(
+            ogm_sensor = OGMSensor(
                 vehicle_state=vehicle_state,
                 width=agent_interface.occupancy_grid_map.width,
                 height=agent_interface.occupancy_grid_map.height,
                 resolution=agent_interface.occupancy_grid_map.resolution,
                 renderer=sim.renderer,
             )
-            vehicle.attach_ogm_sensor(sensor)
+            vehicle.attach_ogm_sensor(ogm_sensor)
+        if agent_interface.occlusion_map:
+            if ogm_sensor is None:
+                warnings.warn(
+                    "Occupancy grid map sensor must be attached to use obfuscation sensor.",
+                    category=UserWarning,
+                )
+            else:
+                occ_sensor = OcclusionSensor(
+                    vehicle_state=vehicle_state,
+                    width=agent_interface.occlusion_map.width,
+                    height=agent_interface.occlusion_map.height,
+                    resolution=agent_interface.occlusion_map.resolution,
+                    renderer=sim.renderer,
+                    ogm_sensor=ogm_sensor,
+                    add_surface_noise=agent_interface.occlusion_map.surface_noise,
+                )
+                vehicle.attach_occlusion_sensor(occ_sensor)
+        top_down_rgb_sensor: Optional[Sensor] = None
         if agent_interface.top_down_rgb:
             if not sim.renderer:
                 raise RendererException.required_to("add an RGB camera")
-            sensor = RGBSensor(
+            top_down_rgb_sensor = RGBSensor(
                 vehicle_state=vehicle_state,
                 width=agent_interface.top_down_rgb.width,
                 height=agent_interface.top_down_rgb.height,
                 resolution=agent_interface.top_down_rgb.resolution,
                 renderer=sim.renderer,
             )
-            vehicle.attach_rgb_sensor(sensor)
+            vehicle.attach_rgb_sensor(top_down_rgb_sensor)
+        if len(agent_interface.custom_fragment_programs):
+            if not sim.renderer:
+                raise RendererException.required_to("add a fragment program.")
+            for i, program in enumerate(agent_interface.custom_fragment_programs):
+                sensor = ConfigurableRenderSensor(
+                    vehicle_state=vehicle_state,
+                    width=program.width,
+                    height=program.height,
+                    resolution=program.resolution,
+                    renderer=sim.renderer,
+                    fragment_shader_path=program.fragment_shader_path,
+                    render_dependencies=program.dependencies,
+                    ogm_sensor=ogm_sensor,
+                    top_down_rgb_sensor=top_down_rgb_sensor,
+                    dagm_sensor=dagm_sensor,
+                    name=program.name,
+                )
+                getattr(vehicle, f"attach_configurable_render_{i}")()
         if agent_interface.lidar_point_cloud:
             sensor = LidarSensor(
                 vehicle_state=vehicle_state,
@@ -544,6 +582,7 @@ class Vehicle:
         # Bit of metaprogramming to make sensor creation more DRY
         sensor_names = [
             "ogm_sensor",
+            "occlusion_sensor",
             "rgb_sensor",
             "lidar_sensor",
             "driven_path_sensor",
@@ -556,7 +595,11 @@ class Vehicle:
             "lane_position_sensor",
             "via_sensor",
             "signals_sensor",
+        ] + [
+            f"configurable_render_{i}"
+            for i in range(config()("core", "max_custom_image_sensors", cast=int))
         ]
+
         for sensor_name in sensor_names:
 
             def attach_sensor(self, sensor, sensor_name=sensor_name):

@@ -142,8 +142,6 @@ def generate_simplex_p3d_gpu(
     assert height % 16 == 0
     assert width % 16 == 0
 
-    from panda3d.core import ComputeNode, NodePath, Shader, ShaderAttrib, Texture
-
     from smarts.core import glsl
     from smarts.p3d.renderer import DEBUG_MODE, Renderer
 
@@ -155,7 +153,7 @@ def generate_simplex_p3d_gpu(
         camera_id = renderer.build_shader_step(
             "simplex_camera",
             simplex_shader,
-            camera_dependencies=(),
+            dependencies=(),
             priority=10,
             width=width,
             height=height,
@@ -167,13 +165,12 @@ def generate_simplex_p3d_gpu(
 
     ram_image = camera.tex.getRamImageAs("RGB")
     mem_view = memoryview(ram_image)
-    with np.printoptions(threshold=np.inf):
-        image: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
-        image = np.reshape(image, (width, height))
+    image: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
+    image = np.reshape(image, (width, height))
 
-        assert np.any(image > 0), image
+    assert np.any(image > 0), image
 
-        return HeightField(image, size=(width, height))
+    return HeightField(image, size=(width, height))
 
 
 def generate_simplex(

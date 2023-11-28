@@ -30,12 +30,14 @@ from smarts.core.agent_interface import (
     OGM,
     DoneCriteria,
     DrivableAreaGridMap,
+    OcclusionMap,
     RoadWaypoints,
     Waypoints,
 )
 from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.road_map import Waypoint, interpolate_waypoints
 from smarts.core.utils.math import squared_dist, vec_to_slope
+from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.graphics.bytemap2edge import (
     far_kernel,
     generate_edge_from_heightfield,
@@ -47,10 +49,24 @@ VIDEO_PREFIX: Final[str] = "A1_"
 IMAGE_SUFFIX: Final[str] = "jpg"
 
 
-class Mode(IntEnum):
-    UNFORMATTED = enum.auto()
-    FORMATTED = enum.auto()
-    DEFAULT = UNFORMATTED
+class PropertyAccessorUtil:
+    def __init__(self, mode: ObservationOptions) -> None:
+        if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
+            self.pos_accessor = lambda o: o["position"]
+            self.len_accessor = lambda o: o["box"][0]
+            self.width_accessor = lambda o: o["box"][1]
+            self.heading_accessor = lambda o: o["heading"]
+            self.ego_accessor = lambda o: o["ego_vehicle_state"]
+            self.nvs_accessor = lambda o: o["neighborhood_vehicle_states"]
+            self.wpp_accessor = lambda o: o["waypoint_paths"]
+        else:
+            self.pos_accessor = lambda o: o.position
+            self.len_accessor = lambda o: o.bounding_box.length
+            self.width_accessor = lambda o: o.bounding_box.width
+            self.heading_accessor = lambda o: o.heading
+            self.ego_accessor = lambda o: o.ego_vehicle_state
+            self.nvs_accessor = lambda o: o.neighborhood_vehicle_states
+            self.wpp_accessor = lambda o: o.waypoint_paths
 
 
 class PointGenerator:
@@ -207,7 +223,6 @@ def generate_shadow_mask_polygons(
         from shapely.validation import explain_validity
 
         print(explain_validity(poly))
-        # breakpoint()
 
     return out_shapes
 
@@ -262,8 +277,10 @@ def gen_circle_mask(center, radius):
     return circle_area
 
 
-def gen_shadow_masks(center, vehicle_states, radius, mode=Mode.FORMATTED):
-    if mode == Mode.FORMATTED:
+def gen_shadow_masks(
+    center, vehicle_states, radius, mode=ObservationOptions.multi_agent
+):
+    if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
         accessor = lambda v: (
             v["position"],
             *v["dimensions"][:2],  # length, width
@@ -283,13 +300,15 @@ def gen_shadow_masks(center, vehicle_states, radius, mode=Mode.FORMATTED):
     return masks
 
 
-def apply_masks(center, vehicle_states: T, radius, mode=Mode.FORMATTED) -> T:
+def apply_masks(
+    center, vehicle_states: T, radius, mode=ObservationOptions.multi_agent
+) -> T:
     # Test that vehicles are within visible range
     observation_area = gen_circle_mask(center, radius)
     remaining_vehicle_states = []
     remaining_vehicle_points = []
 
-    if mode == Mode.FORMATTED:
+    if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
         gen = lambda vs: PointGenerator.generate(vs["position"])
     else:
         gen = lambda vs: PointGenerator.generate(vs.position)
@@ -492,7 +511,7 @@ def downgrade_waypoints(
 def downgrade_vehicles(
     center: Tuple[float, float],
     neighborhood_vehicle_states: List[VehicleObservation],
-    mode=Mode.FORMATTED,
+    mode=ObservationOptions.multi_agent,
 ):
     if mode:
         pos_accessor = lambda o: o.position
@@ -520,16 +539,79 @@ def downgrade_vehicles(
     ]
 
 
-record_dir = Path("./vaw/vaw")
+output_dir = Path("./vaw/vaw")
 
 
-class VectorAgentWrapper(Agent):
-    def __init__(self, inner_agent, mode, observation_radius=40) -> None:
+class AugmentationWrapper(Agent):
+    def __init__(self, mode) -> None:
+        self._mode = mode
+        self._pa = PropertyAccessorUtil(self._mode)
+        super().__init__()
+
+    def add_video_image(self, ax, obs: Observation):
+        ego_state = self._pa.ego_accessor(obs)
+        _observation_center = self._pa.pos_accessor(ego_state)[:2]
+        ax.plot(*PointGenerator.generate(*_observation_center).xy, "r+")
+        xlim = self._observation_radius + 15
+        ylim = xlim
+        ax.set_xlim(-xlim + _observation_center[0], xlim + _observation_center[0])
+        ax.set_ylim(-ylim + _observation_center[1], ylim + _observation_center[1])
+        if obs.steps_completed % 1 == 0:
+            ax.axis("off")
+
+            plt.savefig(
+                self._output_dir
+                / f"{self._agent_name}_{obs.steps_completed}.{IMAGE_SUFFIX}"
+            )
+        plt.close("all")
+        plt.cla()
+
+    def to_video(self, video_source_pattern="%d"):
+        full_video_source_pattern = (
+            f"{self._agent_name}_{video_source_pattern}.{IMAGE_SUFFIX}"
+        )
+        video_name = f"{self._agent_name}.mp4"
+        os.chdir(output_dir)
+        subprocess.call(
+            [
+                "ffmpeg",
+                "-framerate",
+                "8",
+                "-y",
+                "-i",
+                full_video_source_pattern,
+                "-r",
+                "30",
+                "-pix_fmt",
+                "yuv420p",
+                video_name,
+            ]
+        )
+        subprocess.call(["mv", video_name, f"../{video_name}"])
+        subprocess.call(
+            [
+                "rm",
+                f"./{VIDEO_PREFIX}*",
+            ]
+        )
+        os.chdir("../..")
+
+
+class VectorAgentWrapper(AugmentationWrapper):
+    def __init__(
+        self,
+        inner_agent,
+        mode,
+        agent_name,
+        observation_radius=40,
+        output_dir=output_dir,
+    ) -> None:
         self._inner_agent = inner_agent
         self._observation_radius = observation_radius
-        self._mode = mode
-        os.makedirs(record_dir, exist_ok=True)
-        super().__init__()
+        self._output_dir = output_dir
+        self._agent_name = agent_name
+        os.makedirs(output_dir, exist_ok=True)
+        super().__init__(mode=mode)
 
     @lru_cache(1)
     def _get_perlin(
@@ -573,32 +655,15 @@ class VectorAgentWrapper(Agent):
             obs.drivable_area_grid_map.metadata.height,
         )
 
-        if self._mode == Mode.FORMATTED:
-            pos_accessor = lambda o: o["position"]
-            len_accessor = lambda o: o["box"][0]
-            width_accessor = lambda o: o["box"][1]
-            heading_accessor = lambda o: o["heading"]
-            ego_accessor = lambda o: o["ego_vehicle_state"]
-            nvs_accessor = lambda o: o["neighborhood_vehicle_states"]
-            wpp_accessor = lambda o: o["waypoint_paths"]
-        else:
-            pos_accessor = lambda o: o.position
-            len_accessor = lambda o: o.bounding_box.length
-            width_accessor = lambda o: o.bounding_box.width
-            heading_accessor = lambda o: o.heading
-            ego_accessor = lambda o: o.ego_vehicle_state
-            nvs_accessor = lambda o: o.neighborhood_vehicle_states
-            wpp_accessor = lambda o: o.waypoint_paths
-
         fig, ax = plt.subplots(subplot_kw=dict(aspect="equal"))
         ax: plt.Axes
         if obs is None:
             return None
-        ego_state = ego_accessor(obs)
-        ego_heading = heading_accessor(ego_state)
-        _observation_center = pos_accessor(ego_state)[:2]
+        ego_state = self._pa.ego_accessor(obs)
+        ego_heading = self._pa.heading_accessor(ego_state)
+        _observation_center = self._pa.pos_accessor(ego_state)[:2]
 
-        vehicle_hf = HeightField.from_rgb(obs.occupancy_grid_map.data)
+        vehicle_hf = HeightField(obs.occupancy_grid_map.data, (img_width, img_height))
         height_scaling = 5
         drivable_hf = HeightField(
             obs.drivable_area_grid_map.data, (img_width, img_height)
@@ -661,7 +726,8 @@ class VectorAgentWrapper(Agent):
         image_data = obs.drivable_area_grid_map.data
         image_data = hf.data * 10
         image_data = los.data
-        # image_data = offroad_hf.data
+        vehicle_hf = HeightField(obs.obfuscation_grid_map.data, (img_width, img_height))
+        image_data = vehicle_hf.data
         ax.imshow(
             image_data,
             cmap="gray",
@@ -671,36 +737,38 @@ class VectorAgentWrapper(Agent):
             extent=extent,
         )
 
-        _observation_radius = self._observation_radius
         observation_inverse_mask: Polygon = generate_circle_polygon(
-            _observation_center, _observation_radius
+            _observation_center, self._observation_radius
         )
         prep_observation_inverse_mask: PreparedGeometry = prepared.prep(
             observation_inverse_mask
         )
 
         v_geom = generate_vehicle_polygon(
-            pos_accessor(ego_state),
-            len_accessor(ego_state),
-            width_accessor(ego_state),
-            heading_accessor(ego_state),
+            self._pa.pos_accessor(ego_state),
+            self._pa.len_accessor(ego_state),
+            self._pa.width_accessor(ego_state),
+            self._pa.heading_accessor(ego_state),
         )
         ax.plot(*v_geom.exterior.xy, color="y")
 
         # draw vehicle center points
-        for v in nvs_accessor(obs):
-            ax.plot(*PointGenerator.generate(*pos_accessor(v)).xy, "y+")
+        for v in self._pa.nvs_accessor(obs):
+            ax.plot(*PointGenerator.generate(*self._pa.pos_accessor(v)).xy, "y+")
 
-        vehicles = [v for v in nvs_accessor(obs)]
+        vehicles = [v for v in self._pa.nvs_accessor(obs)]
         vehicles_to_downgrade: List[VehicleObservation] = [
             v
             for v in vehicles
             if prep_observation_inverse_mask.contains(
-                PointGenerator.generate(*pos_accessor(v))
+                PointGenerator.generate(*self._pa.pos_accessor(v))
             )
         ]
         occlusion_masks: List[Polygon] = gen_shadow_masks(
-            _observation_center, vehicles_to_downgrade, _observation_radius, self._mode
+            _observation_center,
+            vehicles_to_downgrade,
+            self._observation_radius,
+            self._mode,
         )
 
         for poly in occlusion_masks:
@@ -720,7 +788,10 @@ class VectorAgentWrapper(Agent):
         final_vehicle_states = []
         for vehicle_state, position_point in zip(
             vehicles_to_downgrade,
-            (PointGenerator.generate(*pos_accessor(v)) for v in vehicles_to_downgrade),
+            (
+                PointGenerator.generate(*self._pa.pos_accessor(v))
+                for v in vehicles_to_downgrade
+            ),
         ):
             # discard any vehicle state that is not included
             for shadow_polygon in occlusion_masks:
@@ -731,14 +802,14 @@ class VectorAgentWrapper(Agent):
                 final_vehicle_states.append(vehicle_state)
 
         downgraded_vehicles = downgrade_vehicles(
-            pos_accessor(ego_state), vehicles_to_downgrade, mode=self._mode
+            self._pa.pos_accessor(ego_state), vehicles_to_downgrade, mode=self._mode
         )
 
         wp_downgrading_fn = partial(
             downgrade_waypoints,
-            center=pos_accessor(ego_state),
+            center=self._pa.pos_accessor(ego_state),
             wp_space_resolution=2,
-            max_observable_radius=_observation_radius * 0.5,
+            max_observable_radius=self._observation_radius * 0.5,
             waypoint_displacement_factor=0.6,
         )
         waypoints_to_downgrade = [
@@ -749,7 +820,7 @@ class VectorAgentWrapper(Agent):
                     PointGenerator.generate(*wp.position)
                 )
             ]
-            for l in wpp_accessor(obs)
+            for l in self._pa.wpp_accessor(obs)
         ]
         downgraded_waypoints = wp_downgrading_fn(waypoints=waypoints_to_downgrade)
 
@@ -768,43 +839,35 @@ class VectorAgentWrapper(Agent):
             waypoints=road_waypoints_to_downgrade
         )
 
-        for vehicle in nvs_accessor(obs):
+        for vehicle in self._pa.nvs_accessor(obs):
             v_geom = generate_vehicle_polygon(
-                pos_accessor(vehicle),
-                len_accessor(vehicle),
-                width_accessor(vehicle),
-                heading_accessor(vehicle),
+                self._pa.pos_accessor(vehicle),
+                self._pa.len_accessor(vehicle),
+                self._pa.width_accessor(vehicle),
+                self._pa.heading_accessor(vehicle),
             )
             ax.plot(*v_geom.exterior.xy, color="b")
         for vehicle in downgraded_vehicles:
             v_geom = generate_vehicle_polygon(
-                pos_accessor(vehicle),
-                len_accessor(vehicle),
-                width_accessor(vehicle),
-                heading_accessor(vehicle),
+                self._pa.pos_accessor(vehicle),
+                self._pa.len_accessor(vehicle),
+                self._pa.width_accessor(vehicle),
+                self._pa.heading_accessor(vehicle),
             )
             ax.plot(*v_geom.exterior.xy, color="r")
 
-        self.draw_waypoints(road_waypoints_to_downgrade, pos_accessor, ax, color="y")
-        self.draw_waypoints(downgraded_road_waypoints, pos_accessor, ax, color="g")
-        self.draw_waypoints(wpp_accessor(obs), pos_accessor, ax, color="b")
-        self.draw_waypoints(downgraded_waypoints, pos_accessor, ax, color="r")
+        self.draw_waypoints(
+            road_waypoints_to_downgrade, self._pa.pos_accessor, ax, color="y"
+        )
+        self.draw_waypoints(
+            downgraded_road_waypoints, self._pa.pos_accessor, ax, color="g"
+        )
+        self.draw_waypoints(
+            self._pa.wpp_accessor(obs), self._pa.pos_accessor, ax, color="b"
+        )
+        self.draw_waypoints(downgraded_waypoints, self._pa.pos_accessor, ax, color="r")
 
-        # Ego vehicle center
-        ax.plot(*PointGenerator.generate(*_observation_center).xy, "r+")
-        xlim = _observation_radius + 15
-        ylim = xlim
-        ax.set_xlim(-xlim + _observation_center[0], xlim + _observation_center[0])
-        ax.set_ylim(-ylim + _observation_center[1], ylim + _observation_center[1])
-
-        if not obs.steps_completed % 1:
-            ax.axis("off")
-
-            plt.savefig(
-                record_dir / f"{VIDEO_PREFIX}{obs.steps_completed}.{IMAGE_SUFFIX}"
-            )
-        plt.close("all")
-        plt.cla()
+        self.add_video_image(ax, obs)
         dowgraded_obs = obs._replace(
             neighborhood_vehicle_states=_vehicle_states,
             waypoint_paths=downgraded_waypoints,
@@ -821,91 +884,92 @@ class VectorAgentWrapper(Agent):
             ax.plot(*ls.coords.xy, color=color)
 
 
-def obscure_main(vehicle_states, mode=Mode.FORMATTED):
-    _observation_center = np.array((-1, 5))
-    _observation_radius = 10
+class OcclusionAgentWrapper(AugmentationWrapper):
+    def __init__(
+        self,
+        inner_agent,
+        mode: ObservationOptions,
+        agent_name,
+        observation_radius: float = 40.0,
+        output_dir: Path = output_dir,
+    ) -> None:
+        self._inner_agent = inner_agent
+        self._observation_radius = observation_radius
+        self._output_dir = output_dir
+        self._agent_name = agent_name
+        os.makedirs(output_dir, exist_ok=True)
+        super().__init__(mode=mode)
 
-    # This mask will include any geometry that intersects it (exclude geometry that does not intersect)
-    observation_inverse_mask = generate_circle_polygon(
-        _observation_center, _observation_radius
-    )
-    x, y = observation_inverse_mask.exterior.xy
-    plt.plot(x, y)
-
-    if mode == Mode.FORMATTED:
-        gen = lambda vs: PointGenerator.generate(*vs["position"])
-    else:
-        gen = lambda vs: PointGenerator.generate(*vs.position)
-
-    # draw vehicle center points
-    for vs in vehicle_states:
-        vehicle_center = gen(vs)
-        plt.plot(*vehicle_center.xy, "ro")
-
-    vehicle_states = apply_masks(
-        _observation_center, vehicle_states, _observation_radius, mode=Mode.FORMATTED
-    )
-    for vs in vehicle_states:
-        v_geom = generate_vehicle_polygon(
-            vs["position"], vs["dimensions"][0], vs["dimensions"][1], vs["heading"]
+    def act(self, obs: Optional[Observation], **configs):
+        img_width, img_height = (
+            obs.drivable_area_grid_map.metadata.width,
+            obs.drivable_area_grid_map.metadata.height,
         )
-        plt.plot(*v_geom.exterior.xy, color="r")
 
-        masks = generate_shadow_mask_polygons(
-            _observation_center, v_geom, _observation_radius
+        fig, ax = plt.subplots(subplot_kw=dict(aspect="equal"))
+        ax: plt.Axes
+        if obs is None:
+            return None
+        ego_state = self._pa.ego_accessor(obs)
+        ego_heading = self._pa.heading_accessor(ego_state)
+        _observation_center = self._pa.pos_accessor(ego_state)[:2]
+        extent = [
+            -img_width * 0.5,
+            img_width * 0.5,
+            -img_height * 0.5,
+            img_height * 0.5,
+        ]
+        tr = (
+            transforms.Affine2D()
+            .rotate_deg(math.degrees(ego_heading))
+            .translate(*_observation_center)
         )
-        for mask in masks:
-            plt.plot(*mask.exterior.xy, color="g")
 
-    # Ego vehicle center
-    plt.plot([_observation_center[0]], [_observation_center[1]], "r+")
+        vehicle_hf = HeightField(obs.obfuscation_grid_map.data, (img_width, img_height))
+        image_data = vehicle_hf.data
+        ax.imshow(
+            image_data,
+            cmap="gray",
+            vmin=0,
+            vmax=255,
+            transform=tr + ax.transData,
+            extent=extent,
+        )
 
-    plt.axis("equal")
-    plt.savefig(f"occlusion.{IMAGE_SUFFIX}")
+        for vehicle in self._pa.nvs_accessor(obs):
+            v_geom = generate_vehicle_polygon(
+                self._pa.pos_accessor(vehicle),
+                self._pa.len_accessor(vehicle),
+                self._pa.width_accessor(vehicle),
+                self._pa.heading_accessor(vehicle),
+            )
+            ax.plot(*v_geom.exterior.xy, color="b")
 
+        self.add_video_image(ax, obs)
 
-def consume(video_source_pattern="%d", video_name="sd_obs.mp4"):
-    full_video_source_pattern = VIDEO_PREFIX + video_source_pattern + f".{IMAGE_SUFFIX}"
-    os.chdir(record_dir)
-    subprocess.call(
-        [
-            "ffmpeg",
-            "-framerate",
-            "8",
-            "-y",
-            "-i",
-            full_video_source_pattern,
-            "-r",
-            "30",
-            "-pix_fmt",
-            "yuv420p",
-            video_name,
-        ]
-    )
-    subprocess.call(["mv", video_name, f"../{video_name}"])
-    subprocess.call(
-        [
-            "rm",
-            f"./{VIDEO_PREFIX}*",
-        ]
-    )
-    os.chdir("../..")
+        dowgraded_obs = obs._replace()
+        return self._inner_agent.act(dowgraded_obs, **configs)
 
 
-def dummy_main(output_file):
+def occlusion_main():
     import gymnasium as gym
 
     from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
     from smarts.zoo.registry import make
 
+    observation_formatting = ObservationOptions.unformatted
+
     agent_spec = make("zoo.policies:keep-lane-agent-v0")
     observation_radius = 40
-    agents = {
-        "A1": VectorAgentWrapper(
+    agent_count = 1
+    agents: Dict[str, OcclusionAgentWrapper] = {
+        f"A{c}": OcclusionAgentWrapper(
             agent_spec.build_agent(),
-            Mode.UNFORMATTED,
+            observation_formatting,
             observation_radius=observation_radius,
+            agent_name=f"A{c}",
         )
+        for c in range(1, agent_count + 1)
     }
 
     env = HiWayEnvV1(
@@ -917,7 +981,7 @@ def dummy_main(output_file):
             # "./scenarios/argoverse/turn/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1/",
             # "./scenarios/argoverse/turn/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1/",
         ],
-        observation_options="unformatted",
+        observation_options=observation_formatting,
         action_options="unformatted",
         agent_interfaces={
             "A1": replace(
@@ -932,6 +996,12 @@ def dummy_main(output_file):
                     width=observation_radius * 2,
                     height=observation_radius * 2,
                     resolution=1,
+                ),
+                occlusion_map=OcclusionMap(
+                    width=observation_radius * 2,
+                    height=observation_radius * 2,
+                    resolution=1,
+                    surface_noise=False,
                 ),
                 road_waypoints=RoadWaypoints(horizon=50),
                 waypoint_paths=Waypoints(lookahead=50),
@@ -952,17 +1022,14 @@ def dummy_main(output_file):
 
             obs, rewards, terms, truncs, infos = env.step(acts)
 
-    consume(video_name=output_file)
+    for _, a in agents.items():
+        a.to_video()
 
 
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser("Downgrader")
-    parser.add_argument("mode", nargs=1, default=0, type=int)
     args = parser.parse_args()
 
-    if args.mode[0] == 0:
-        dummy_main("trial.mp4")
-    elif args.mode[0] == 1:
-        obscure_main(_vehicle_states)
+    occlusion_main()

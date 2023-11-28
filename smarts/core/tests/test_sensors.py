@@ -19,17 +19,34 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import importlib.resources as pkg_resources
+import math
+import warnings
+from functools import partial
 from unittest import mock
 
 import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
-from smarts.core.coordinates import Heading, Pose
+from smarts.core import glsl
+from smarts.core.agent_interface import ConfigurableRenderDependency
+from smarts.core.coordinates import Heading, Pose, RefLinePoint
+from smarts.core.observations import ConfigurableRenderData
 from smarts.core.plan import Plan
 from smarts.core.scenario import Scenario
-from smarts.core.sensors import DrivenPathSensor, TripMeterSensor, WaypointsSensor
-from smarts.core.utils.math import squared_dist
+from smarts.core.sensor import (
+    ConfigurableRenderSensor,
+    LanePositionSensor,
+    RoadWaypointsSensor,
+)
+from smarts.core.sensors import (
+    AccelerometerSensor,
+    DrivenPathSensor,
+    TripMeterSensor,
+    ViaSensor,
+    WaypointsSensor,
+)
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import types as t
 
@@ -62,7 +79,7 @@ def test_driven_path_sensor():
 
 
 @pytest.fixture
-def scenarios():
+def scenario():
     with temp_scenario(name="straight", map="maps/6lane.net.xml") as scenario_root:
         ego_missions = [
             t.Mission(
@@ -77,13 +94,12 @@ def scenarios():
             output_dir=scenario_root,
         )
 
-        yield Scenario.variations_for_all_scenario_roots(
-            [str(scenario_root)], [AGENT_ID]
+        return next(
+            Scenario.variations_for_all_scenario_roots([str(scenario_root)], [AGENT_ID])
         )
 
 
-def test_trip_meter_sensor(scenarios):
-    scenario: Scenario = next(scenarios)
+def test_trip_meter_sensor(scenario):
 
     sim = mock.Mock()
     vehicle_state = mock.Mock()
@@ -123,8 +139,7 @@ def test_trip_meter_sensor(scenarios):
     sensor.teardown()
 
 
-def test_waypoints_sensor(scenarios):
-    scenario = next(scenarios)
+def test_waypoints_sensor(scenario):
     vehicle_state = mock.Mock()
     vehicle_state.pose = Pose(
         position=np.array([33, -65, 0]),
@@ -141,3 +156,142 @@ def test_waypoints_sensor(scenarios):
     assert len(waypoints) == 3
 
     sensor.teardown()
+
+
+def test_road_waypoints_sensor(scenario):
+    assert isinstance(scenario, Scenario)
+    assert scenario.road_map.map_spec
+    assert scenario.road_map.map_spec.lanepoint_spacing == 1.0
+
+    vehicle_state = mock.Mock()
+    vehicle_state.pose = Pose(
+        position=np.array([33, -65, 0]),
+        orientation=np.array([0, 0, 0, 0]),
+        heading_=Heading(0),
+    )
+
+    mission = scenario.missions[AGENT_ID]
+    plan = Plan(scenario.road_map, mission)
+
+    sensor = RoadWaypointsSensor(4)
+    road_waypoints = sensor(vehicle_state, plan, scenario.road_map)
+
+    expected_lanes = {
+        "edge-west-WE_0",
+        "edge-west-WE_1",
+        "edge-west-WE_2",
+        "edge-west-EW_0",
+        "edge-west-EW_1",
+        "edge-west-EW_2",
+    }
+
+    assert len(road_waypoints) == 1
+
+    lanes = road_waypoints[-1]
+    assert len(expected_lanes ^ lanes.keys()) == 0
+    assert len(lanes["edge-west-WE_0"][-1]) == 9
+
+    sensor.teardown()
+
+
+def test_accelerometer_sensor():
+    dt = 0.1
+    v_per_step = 15.0
+    sensor = AccelerometerSensor()
+
+    def _get_next(step, a_sensor):
+        l_velocity = np.array((0, v_per_step * dt * step))
+        a_velocity = np.array((0, v_per_step * dt * step))
+        return sensor(l_velocity, a_velocity, dt=0.1)
+
+    step = 1
+    (linear_acc, angular_acc, linear_jerk, angular_jerk) = _get_next(step, sensor)
+
+    assert np.all(linear_acc == np.array([0.0, 0.0, 0.0]))
+    assert np.all(angular_acc == np.array([0.0, 0.0, 0.0]))
+    assert np.all(linear_jerk == np.array([0.0, 0.0, 0.0]))
+    assert np.all(angular_jerk == np.array([0.0, 0.0, 0.0]))
+
+    step = 2
+    (linear_acc, angular_acc, linear_jerk, angular_jerk) = _get_next(step, sensor)
+
+    assert np.all(linear_acc == (0, v_per_step))
+    assert np.all(angular_acc == (0, v_per_step))
+    assert np.all(linear_jerk == np.array([0.0, 0.0, 0.0]))
+    assert np.all(angular_jerk == np.array([0.0, 0.0, 0.0]))
+
+    step = 3
+    (linear_acc, angular_acc, linear_jerk, angular_jerk) = _get_next(step, sensor)
+
+    assert np.all(linear_acc == (0, v_per_step))
+    assert np.all(angular_acc == (0, v_per_step))
+    assert np.all(linear_jerk == (0, 0))
+    assert np.all(angular_jerk == (0, 0))
+
+    sensor.teardown()
+
+
+def test_lane_position_sensor(scenario):
+    sensor = LanePositionSensor()
+
+    vehicle_state = mock.Mock()
+    vehicle_state.actor_id = "dummy"
+    vehicle_state.pose = Pose(
+        position=np.array([143.0, -11, 0.1]),
+        orientation=np.array([0, 0, 0, 0]),
+        heading_=Heading(0),
+    )
+
+    off = sensor(scenario.road_map.lane_by_id("edge-north-NS_0"), vehicle_state)
+
+    assert off == RefLinePoint(20.999999999999996, 1.004987562112089, 0)
+    sensor.teardown()
+
+
+def test_signals_sensor():
+    pass
+
+
+def test_configurable_render_sensor():
+    from smarts.p3d.renderer import Renderer
+
+    renderer = Renderer("R1")
+
+    vehicle_state = mock.Mock()
+    vehicle_state.actor_id = "dummy"
+    vehicle_state.pose = Pose(
+        position=np.array([33, -65, 0]),
+        orientation=np.array([0, 0, 0, 0]),
+        heading_=Heading(0),
+    )
+
+    with pkg_resources.path(glsl, "simplex.frag") as frag_shader:
+
+        sensor_gen = partial(
+            ConfigurableRenderSensor,
+            vehicle_state=vehicle_state,
+            width=256,
+            height=256,
+            resolution=1,
+            fragment_shader_path=frag_shader,
+            renderer=renderer,
+            render_dependencies=(),
+            ogm_sensor=None,
+            top_down_rgb_sensor=None,
+            dagm_sensor=None,
+        )
+        sensor = sensor_gen(name="simplex")
+        sensor2 = sensor_gen(
+            name="2nd",
+            render_dependencies=(
+                ConfigurableRenderDependency(sensor.name, "iChannel0"),
+            ),
+        )
+
+    renderer.render()
+
+    image: ConfigurableRenderData = sensor2(renderer)
+    assert image.data.shape == (256, 256, 3)
+
+    sensor.teardown()
+    renderer.destroy()

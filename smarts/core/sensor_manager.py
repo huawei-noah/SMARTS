@@ -56,13 +56,9 @@ class SensorManager:
         self._sensor_references = Counter()
         # {sensor_id, ...}
         self._scheduled_sensors: List[Sensor] = []
-        observation_workers = config()(
-            "core", "observation_workers", default=0, cast=int
-        )
+        observation_workers = config()("core", "observation_workers", cast=int)
         parallel_resolver = ParallelSensorResolver
-        if (
-            backing := config()("core", "sensor_parallelization", default="mp")
-        ) == "ray":
+        if (backing := config()("core", "sensor_parallelization")) == "ray":
             try:
                 import ray
 

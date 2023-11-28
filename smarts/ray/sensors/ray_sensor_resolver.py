@@ -60,8 +60,8 @@ class RaySensorResolver(SensorResolver):
         if not ray.is_initialized():
             ray.init(
                 num_cpus=self._num_observation_workers,
-                num_gpus=conf("ray", "num_gpus", default=None, cast=int),
-                log_to_driver=conf("ray", "log_to_driver", default=False, cast=bool),
+                num_gpus=conf("ray", "num_gpus", cast=int),
+                log_to_driver=conf("ray", "log_to_driver", cast=bool),
             )
         self._sim_local_constants: SimulationLocalConstants = None
         self._current_workers = []

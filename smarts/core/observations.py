@@ -141,6 +141,15 @@ class OccupancyGridMap(NamedTuple):
     See https://en.wikipedia.org/wiki/Occupancy_grid_mapping."""
 
 
+class ObfuscationGridMap(NamedTuple):
+    """Obfuscation map."""
+
+    metadata: GridMapMetadata
+    """Map metadata."""
+    data: np.ndarray
+    """A map showing what is visible from the ego vehicle"""
+
+
 class DrivableAreaGridMap(NamedTuple):
     """Drivable area map."""
 
@@ -148,6 +157,15 @@ class DrivableAreaGridMap(NamedTuple):
     """Map metadata."""
     data: np.ndarray
     """A grid map that shows the static drivable area around the ego vehicle."""
+
+
+class ConfigurableRenderData(NamedTuple):
+    """Describes information about a custom render."""
+
+    metadata: GridMapMetadata
+    """Render metadata."""
+    data: np.ndarray
+    """The image data from the render."""
 
 
 class ViaPoint(NamedTuple):
@@ -228,3 +246,5 @@ class Observation(NamedTuple):
     """RGB camera observation."""
     signals: Optional[List[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this time-step."""
+    obfuscation_grid_map: Optional[ObfuscationGridMap] = None
+    """Observable area map."""
