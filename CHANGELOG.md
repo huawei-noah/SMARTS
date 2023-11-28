@@ -11,8 +11,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ## [Unreleased] - XXXX-XX-XX
 ### Added
 ### Changed
+- `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 ### Deprecated
 ### Fixed
+- Fixed an issue where `AgentInterface.vehicle_type` would not affect agent vehicles when attempting to take over an existing vehicle.
+- Fixed a case where newly created agent vehicles would have a constant `"sedan"` size instead of the size of `AgentInterface.vehicle_type`.
+- Fixed a case where if vehicles are replaced they would not respect controller and vehicle parameters.
 - Fixed an issue where `RandomRoute` would always give the same route across traffic groups in scenario studio.
 - Fixed an issue where `SMARTS` might not be explicitly destroyed in the `ros_driver`.
 - Fixed issue where `SumoTrafficSimulation` could get locked up on reset if a scenario had only 1 map but multiple scenario variations.
