@@ -81,10 +81,8 @@ from .simulation_frame import SimulationFrame
 from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
-from .utils import pybullet
 from .utils.id import Id
 from .utils.math import rounder_for_dt
-from .utils.pybullet import bullet_client as bc
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex
 from .vehicle_state import Collision, VehicleState, neighborhood_vehicles_around_vehicle
@@ -211,12 +209,9 @@ class SMARTS(ProviderManager):
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
 
-        # For macOS GUI. See our `BulletClient` docstring for details.
-        # from .utils.bullet import BulletClient
-        # self._bullet_client = BulletClient(pybullet.GUI)
-        self._bullet_client = pybullet.SafeBulletClient(
-            pybullet.DIRECT
-        )  # pylint: disable=no-member
+        from smarts.bullet.bullet_simulation import BulletSimulation
+
+        self._physics_simulation = BulletSimulation()
 
         # Set up indices
         self._sensor_manager = SensorManager()
@@ -233,9 +228,6 @@ class SMARTS(ProviderManager):
             self._trap_manager,
             IdActorCaptureManager(),
         ]
-
-        self._ground_bullet_id = None
-        self._map_bb = None
 
     def step(
         self,
@@ -535,7 +527,10 @@ class SMARTS(ProviderManager):
 
         if self._renderer:
             self._renderer.setup(scenario)
-        self._setup_bullet_client(self._bullet_client)
+        self._physics_simulation.initialize(self._fixed_timestep_sec)
+        self._physics_simulation.initialize_ground(
+            self._scenario.plane_filepath, self.road_map.bounding_box
+        )
         provider_state = self._setup_providers(self._scenario)
         self._vehicle_index.load_controller_params(
             scenario.controller_parameters_filepath
@@ -799,73 +794,6 @@ class SMARTS(ProviderManager):
         # when it notices a social vehicle has exited the simulation.
         self._teardown_vehicles([actor_id])
 
-    def _setup_bullet_client(self, client: bc.BulletClient):
-        client.resetSimulation()
-        client.configureDebugVisualizer(
-            pybullet.COV_ENABLE_GUI, 0
-        )  # pylint: disable=no-member
-        max_pybullet_freq = config()(
-            "physics", "max_pybullet_freq", default=MAX_PYBULLET_FREQ, cast=int
-        )
-        # PyBullet defaults the timestep to 240Hz. Several parameters are tuned with
-        # this value in mind. For example the number of solver iterations and the error
-        # reduction parameters (erp) for contact, friction and non-contact joints.
-        # Attempting to get around this we set the number of substeps so that
-        # timestep * substeps = 240Hz. Bullet (C++) does something to this effect as
-        # well (https://git.io/Jvf0M), but PyBullet does not expose it.
-        # But if our timestep is variable (due to being externally driven)
-        # then we will step pybullet multiple times ourselves as necessary
-        # to account for the time delta on each SMARTS step.
-        self._pybullet_period = (
-            self._fixed_timestep_sec
-            if self._fixed_timestep_sec
-            else 1 / max_pybullet_freq
-        )
-        client.setPhysicsEngineParameter(
-            fixedTimeStep=self._pybullet_period,
-            numSubSteps=int(self._pybullet_period * max_pybullet_freq),
-            numSolverIterations=10,
-            solverResidualThreshold=0.001,
-            # warmStartingFactor=0.99
-        )
-
-        client.setGravity(0, 0, -9.8)
-        self._map_bb = None
-        self._setup_pybullet_ground_plane(client)
-
-    def _setup_pybullet_ground_plane(self, client: bc.BulletClient):
-        plane_path = self._scenario.plane_filepath
-        if not os.path.exists(plane_path):
-            with pkg_resources.path(models, "plane.urdf") as path:
-                plane_path = str(path.absolute())
-
-        if not self._map_bb:
-            self._map_bb = self.road_map.bounding_box
-
-        if self._map_bb:
-            # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
-            DEFAULT_PLANE_DIM = 1e6
-            ground_plane_scale = (
-                2.2 * max(self._map_bb.length, self._map_bb.width) / DEFAULT_PLANE_DIM
-            )
-            ground_plane_center = self._map_bb.center
-        else:
-            # first step on undefined map, just use a big scale (1e6).
-            # it should get updated as soon as vehicles are added...
-            ground_plane_scale = 1.0
-            ground_plane_center = (0, 0, 0)
-
-        if self._ground_bullet_id is not None:
-            client.removeBody(self._ground_bullet_id)
-            self._ground_bullet_id = None
-
-        self._ground_bullet_id = client.loadURDF(
-            plane_path,
-            useFixedBase=True,
-            basePosition=ground_plane_center,
-            globalScaling=ground_plane_scale,
-        )
-
     def teardown(self):
         """Clean up episode resources."""
         if self._agent_manager is not None:
@@ -875,8 +803,8 @@ class SMARTS(ProviderManager):
         if self._sensor_manager is not None:
             self._sensor_manager.teardown(self.renderer_ref)
 
-        if self._bullet_client is not None:
-            self._bullet_client.resetSimulation()
+        if self._physics_simulation is not None:
+            self._physics_simulation.reset_simulation()
         if self._renderer is not None:
             self._renderer.teardown()
         self._teardown_providers()
@@ -889,7 +817,6 @@ class SMARTS(ProviderManager):
         if self._trap_manager is not None:
             self._trap_manager = None
 
-        self._ground_bullet_id = None
         self._is_setup = False
 
     def destroy(self):
@@ -916,9 +843,9 @@ class SMARTS(ProviderManager):
         if self._renderer is not None:
             self._renderer.destroy()
             self._renderer = None
-        if self._bullet_client is not None:
-            self._bullet_client.disconnect()
-            self._bullet_client = None
+        if self._physics_simulation is not None:
+            self._physics_simulation.teardown()
+            self._physics_simulation = None
         self._is_destroyed = True
 
     def _check_valid(self):
@@ -1019,7 +946,9 @@ class SMARTS(ProviderManager):
     @property
     def road_stiffness(self) -> Any:
         """The stiffness of the road."""
-        return self._bullet_client.getDynamicsInfo(self._ground_bullet_id, -1)[9]
+        return self._physics_simulation.client.getDynamicsInfo(
+            self._physics_simulation._ground_bullet_id, -1
+        )[9]
 
     @property
     def dynamic_action_spaces(self) -> Set[ActionSpaceType]:
@@ -1049,7 +978,7 @@ class SMARTS(ProviderManager):
     @property
     def bc(self):
         """The bullet physics client instance."""
-        return self._bullet_client
+        return self._physics_simulation.client
 
     @property
     def envision(self) -> Optional[EnvisionClient]:
@@ -1135,13 +1064,13 @@ class SMARTS(ProviderManager):
         # XXX: don't remove vehicle from its (traffic) Provider here, as it may be being teleported
         # (and needs to remain registered in Traci during this step).
 
-    def _pybullet_provider_sync(self, provider_state: ProviderState):
+    def _provider_sync(self, provider_state: ProviderState):
         current_actor_ids = {v.actor_id for v in provider_state.actors}
         previous_sv_ids = self._vehicle_index.social_vehicle_ids()
         exited_actors = previous_sv_ids - current_actor_ids
         self._teardown_vehicles_and_agents(exited_actors)
 
-        # Update our pybullet world given this provider state
+        # Update our simulation given this provider state
         dt = provider_state.dt or self._last_dt
         for vehicle in provider_state.actors:
             if not isinstance(vehicle, VehicleState):
@@ -1165,18 +1094,8 @@ class SMARTS(ProviderManager):
                     )
 
                 if not vehicle.updated:
-                    # Note: update_state() happens *after* pybullet has been stepped.
+                    # Note: update_state() happens *after* physics has been stepped.
                     social_vehicle.update_state(vehicle, dt=dt)
-
-    def _step_pybullet(self):
-        self._bullet_client.stepSimulation()
-        pybullet_substeps = max(1, round(self._last_dt / self._pybullet_period)) - 1
-        for _ in range(pybullet_substeps):
-            for vehicle in self._vehicle_index.vehicles:
-                vehicle.chassis.reapply_last_control()
-            self._bullet_client.stepSimulation()
-        for vehicle in self._vehicle_index.vehicles:
-            vehicle.step(self._elapsed_sim_time)
 
     @property
     def vehicle_index(self) -> VehicleIndex:
@@ -1242,7 +1161,7 @@ class SMARTS(ProviderManager):
                 provider.sync(provider_state)
             except Exception as provider_error:
                 self._handle_provider(provider, provider_error)
-        self._pybullet_provider_sync(provider_state)
+        self._provider_sync(provider_state)
 
     def _reset_providers(self):
         for provider in self.providers:
@@ -1333,7 +1252,11 @@ class SMARTS(ProviderManager):
                 provider.perform_agent_actions(agent_actions)
 
         self._check_ground_plane()
-        self._step_pybullet()
+        self._physics_simulation.step(
+            self._last_dt, self.cached_frame, self._vehicle_index
+        )
+        for vehicle in self._vehicle_index.vehicles:
+            vehicle.step(self._elapsed_sim_time)
         self._process_collisions()
 
         accumulated_provider_state = ProviderState()
@@ -1400,7 +1323,7 @@ class SMARTS(ProviderManager):
         else:
             self._rounder = rounder_for_dt(fixed_timestep_sec)
         self._fixed_timestep_sec = fixed_timestep_sec
-        self._is_setup = False  # need to re-setup pybullet
+        self._is_setup = False  # need to re-initialize
 
     @property
     def last_dt(self) -> float:
@@ -1429,7 +1352,7 @@ class SMARTS(ProviderManager):
         return {
             p.bullet_id
             for p in vehicle.chassis.contact_points
-            if p.bullet_id != self._ground_bullet_id
+            if p.bullet_id != self._physics_simulation._ground_bullet_id
         }
 
     def _process_collisions(self):
@@ -1466,11 +1389,12 @@ class SMARTS(ProviderManager):
 
     def _check_ground_plane(self):
         rescale_plane = False
-        map_min = np.array(self._map_bb.min_pt)[:2] if self._map_bb else np.array([])
-        map_max = np.array(self._map_bb.max_pt)[:2] if self._map_bb else np.array([])
+        map_bb = self._physics_simulation.simulation_bounding_box
+        map_min = np.array(map_bb.min_pt)[:2] if map_bb else np.array([])
+        map_max = np.array(map_bb.max_pt)[:2] if map_bb else np.array([])
         for vehicle_id in self._vehicle_index.agent_vehicle_ids():
             vehicle = self._vehicle_index.vehicle_by_id(vehicle_id)
-            map_spot = vehicle.pose.point.as_np_array[:2]
+            map_spot = vehicle.pose.point.as_np_array[:2].copy()
             if len(map_min) == 0:
                 map_min = map_spot
                 rescale_plane = True
@@ -1491,11 +1415,15 @@ class SMARTS(ProviderManager):
             if map_max[1] - map_min[1] < MIN_DIM:
                 map_min[1] -= MIN_DIM
                 map_max[1] += MIN_DIM
-            self._map_bb = BoundingBox(Point(*map_min), Point(*map_max))
+            map_bb = BoundingBox(Point(*map_min), Point(*map_max))
             self._log.info(
-                f"rescaling pybullet ground plane to at least {map_min} and {map_max}"
+                "rescaling pybullet ground plane to at least %s and %s",
+                map_min,
+                map_max,
             )
-            self._setup_pybullet_ground_plane(self._bullet_client)
+            self._physics_simulation.initialize_ground(
+                self._scenario.plane_filepath, map_bb
+            )
 
     def _try_emit_envision_state(self, provider_state: ProviderState, obs, scores):
         if not self._envision:
@@ -1717,4 +1645,5 @@ class SMARTS(ProviderManager):
             interest_filter=re.compile(
                 self.scenario.metadata.get("actor_of_interest_re_filter", "")
             ),
+            _collision_filter=frozenset((self._physics_simulation._ground_bullet_id,)),
         )

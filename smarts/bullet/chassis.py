@@ -30,24 +30,25 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from smarts.core import models
-from smarts.core.coordinates import Dimensions, Heading, Pose
-from smarts.core.tire_models import TireForces
-from smarts.core.utils import pybullet
-from smarts.core.utils.bullet import (
+from smarts.bullet import pybullet
+from smarts.bullet.bullet import (
     BulletBoxShape,
     BulletPositionConstraint,
     ContactPoint,
     JointInfo,
     JointState,
 )
+from smarts.bullet.pybullet import bullet_client as bc
+from smarts.core import models
+from smarts.core.coordinates import Dimensions, Heading, Pose
+from smarts.core.physics.chassis import AckermannChassis, BoxChassis, Chassis
+from smarts.core.tire_models import TireForces
 from smarts.core.utils.math import (
     min_angles_difference_signed,
     radians_to_vec,
     vec_to_radians,
     yaw_from_quaternion,
 )
-from smarts.core.utils.pybullet import bullet_client as bc
 
 with pkg_resources.path(models, "vehicle.urdf") as path:
     DEFAULT_VEHICLE_FILEPATH = str(path.absolute())
@@ -85,111 +86,7 @@ def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
     return contact_points
 
 
-class Chassis:
-    """Represents a vehicle chassis."""
-
-    def control(self, *args, **kwargs):
-        """Apply control values to the chassis."""
-        raise NotImplementedError
-
-    def reapply_last_control(self):
-        """Re-apply the last given control given to the chassis."""
-        raise NotImplementedError
-
-    def teardown(self):
-        """Clean up resources."""
-        raise NotImplementedError
-
-    @property
-    def dimensions(self) -> Dimensions:
-        """The fitted front aligned dimensions of the chassis."""
-        raise NotImplementedError
-
-    @property
-    def contact_points(self) -> Sequence:
-        """The contact point of the chassis."""
-        raise NotImplementedError
-
-    @property
-    def bullet_id(self) -> str:
-        """The physics id of the chassis physics body."""
-        raise NotImplementedError
-
-    @property
-    def velocity_vectors(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Returns linear velocity vector in m/s and angular velocity in rad/sec."""
-        raise NotImplementedError
-
-    @property
-    def speed(self) -> float:
-        """The speed of the chassis in the facing direction of the chassis."""
-        raise NotImplementedError
-
-    def set_pose(self, pose: Pose):
-        """Use with caution since it disrupts the physics simulation. Sets the pose of the
-        chassis.
-        """
-        raise NotImplementedError
-
-    @speed.setter
-    def speed(self, speed: float):
-        """Apply GCD from front-end."""
-        raise NotImplementedError
-
-    @property
-    def pose(self) -> Pose:
-        """The pose of the chassis."""
-        raise NotImplementedError
-
-    @property
-    def steering(self) -> float:
-        """The steering value of the chassis in radians [-math.pi, math.pi]."""
-        raise NotImplementedError
-
-    @property
-    def yaw_rate(self) -> float:
-        """The turning rate of the chassis in radians."""
-        raise NotImplementedError
-
-    def inherit_physical_values(self, other: "Chassis"):
-        """Apply GCD between the two chassis."""
-        raise NotImplementedError
-
-    @property
-    def to_polygon(self) -> Polygon:
-        """Convert the chassis to a 2D shape."""
-        p = self.pose.as_position2d()
-        d = self.dimensions
-        poly = shapely_box(
-            p[0] - d.width * 0.5,
-            p[1] - d.length * 0.5,
-            p[0] + d.width * 0.5,
-            p[1] + d.length * 0.5,
-        )
-        return shapely_rotate(poly, self.pose.heading, use_radians=True)
-
-    def step(self, current_simulation_time):
-        """Update the chassis state."""
-        raise NotImplementedError
-
-    def state_override(
-        self,
-        dt: float,
-        force_pose: Pose,
-        linear_velocity: Optional[np.ndarray] = None,
-        angular_velocity: Optional[np.ndarray] = None,
-    ):
-        """Use with care!  In essence, this is tinkering with the physics of the world,
-        and may have unintended behavioral or performance consequences."""
-        raise NotImplementedError
-
-    def set_pose(self, pose: Pose):
-        """Use with caution since it disrupts the physics simulation. Sets the pose of the
-        chassis."""
-        raise NotImplementedError
-
-
-class BoxChassis(Chassis):
+class BulletBoxChassis(BoxChassis):
     """Control a vehicle by setting its absolute position and heading. The collision
     shape of the vehicle is a box of the provided dimensions.
     """
@@ -325,7 +222,7 @@ class BoxChassis(Chassis):
         self._bullet_body.teardown()
 
 
-class AckermannChassis(Chassis):
+class BulletAckermannChassis(AckermannChassis):
     """Control a vehicle by applying forces on its joints. The joints and links are
     defined by a URDF file.
     """

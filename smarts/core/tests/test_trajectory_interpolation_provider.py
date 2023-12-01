@@ -25,9 +25,10 @@ import numpy as np
 import pytest
 
 import smarts.sstudio.types as t
+from smarts.bullet.bullet_simulation import BulletSimulation
+from smarts.bullet.chassis import BulletBoxChassis
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.chassis import BoxChassis
 from smarts.core.controllers.trajectory_interpolation_controller import (
     TrajectoryField,
     TrajectoryInterpolationController,
@@ -36,8 +37,6 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.tests.helpers.scenario import temp_scenario
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle
 from smarts.sstudio import gen_scenario
 from smarts.zoo.agent_spec import AgentSpec
@@ -151,13 +150,15 @@ def scenario():
 
 
 @pytest.fixture
-def bullet_client():
-    client = bc.BulletClient(pybullet.DIRECT)
-    yield client
-    client.disconnect()
+def bullet_simulation():
+    simulation = BulletSimulation()
+    yield simulation
+    simulation.teardown()
 
 
-def test_trajectory_interpolation_controller(controller_actions, bullet_client):
+def test_trajectory_interpolation_controller(
+    controller_actions, bullet_simulation: BulletSimulation
+):
     dt = 0.1
     i, j = np.ix_([TrajectoryField.X_INDEX, TrajectoryField.Y_INDEX], [0])
 
@@ -165,11 +166,11 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
         original_position = trajectory[i, j].reshape(2)
         original_heading = Heading(trajectory[TrajectoryField.THETA_INDEX][0])
         initial_speed = trajectory[TrajectoryField.VEL_INDEX][0]
-        chassis = BoxChassis(
+        chassis = BulletBoxChassis(
             pose=Pose.from_center(original_position, original_heading),
             speed=initial_speed,
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
-            bullet_client=bullet_client,
+            bullet_client=bullet_simulation.client,
         )
         vehicle = Vehicle(vehicle_id, chassis)
 

@@ -24,23 +24,22 @@ import math
 import numpy as np
 import pytest
 
-from smarts.core.chassis import AckermannChassis
+from smarts.bullet.bullet_simulation import BulletSimulation
+from smarts.bullet.chassis import BulletAckermannChassis
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 
 
 @pytest.fixture
-def bullet_client():
-    client = bc.BulletClient(pybullet.DIRECT)
-    yield client
-    client.disconnect()
+def bullet_simulation():
+    simulation = BulletSimulation()
+    yield simulation
+    simulation.teardown()
 
 
 @pytest.fixture
-def chassis(bullet_client):
-    return AckermannChassis(
-        Pose.from_center([0, 0, 0], Heading(math.pi * 0.5)), bullet_client
+def chassis(bullet_simulation: BulletSimulation):
+    return BulletAckermannChassis(
+        Pose.from_center([0, 0, 0], Heading(math.pi * 0.5)), bullet_simulation.client
     )
 
 

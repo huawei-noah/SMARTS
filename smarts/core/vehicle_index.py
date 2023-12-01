@@ -41,13 +41,13 @@ from typing import (
 import numpy as np
 import tableprint as tp
 
+from smarts.bullet.chassis import BulletAckermannChassis, BulletBoxChassis
 from smarts.core import gen_id
 from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
 
 from .actor import ActorRole
-from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
 from .sensors import SensorState
@@ -459,9 +459,9 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         chassis = None
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
-            chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
+            chassis = BulletAckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
         else:
-            chassis = BoxChassis(
+            chassis = BulletBoxChassis(
                 pose=vehicle.pose,
                 speed=vehicle.speed,
                 dimensions=vehicle.state.dimensions,
@@ -537,7 +537,7 @@ class VehicleIndex:
         # pytype: enable=attribute-error
 
         vehicle = self._vehicles[v_id]
-        box_chassis = BoxChassis(
+        box_chassis = BulletBoxChassis(
             pose=vehicle.chassis.pose,
             speed=vehicle.chassis.speed,
             dimensions=vehicle.chassis.dimensions,

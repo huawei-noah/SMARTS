@@ -23,7 +23,7 @@ import logging
 import re
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, FrozenSet, List, Optional, Set
 
 from smarts.core.actor import ActorState
 from smarts.core.agent_interface import AgentInterface
@@ -58,7 +58,7 @@ class SimulationFrame:
     interest_filter: re.Pattern
     # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None
-    _ground_bullet_id: Optional[str] = None
+    _collision_filter: FrozenSet[str] = frozenset()
 
     @cached_property
     def agent_ids(self) -> Set[str]:
@@ -116,7 +116,7 @@ class SimulationFrame:
         """Test if the given vehicle had any collisions in the last physics update."""
         vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
         for c in vehicle_collisions:
-            if c.collidee_id != self._ground_bullet_id:
+            if c.collidee_id not in self._collision_filter:
                 return True
         return False
 
@@ -126,7 +126,7 @@ class SimulationFrame:
         """
         vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
         return [
-            c for c in vehicle_collisions if c.collidee_id != self._ground_bullet_id
+            c for c in vehicle_collisions if c.collidee_id != self._collision_filter
         ]
 
     @cached_property

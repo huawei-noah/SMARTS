@@ -22,8 +22,8 @@ from typing import Tuple, Union
 
 import numpy as np
 
-from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Pose
+from smarts.core.physics.chassis import AckermannChassis, BoxChassis
 from smarts.core.utils.math import fast_quaternion_from_angle, radians_to_vec
 
 
@@ -67,7 +67,7 @@ class DirectController:
         target_heading = (vehicle.heading + angular_velocity * dt) % (2 * math.pi)
 
         if isinstance(chassis, BoxChassis):
-            # Since BoxChassis does not use pybullet for force-to-motion computations (only collision detection),
+            # Since BoxChassis does not use the physics simulation for force-to-motion computations (only collision detection),
             # we have to update the position and other state here (instead of pybullet.stepSimulation()).
             heading_vec = radians_to_vec(vehicle.heading)
             dpos = heading_vec * vehicle.speed * dt

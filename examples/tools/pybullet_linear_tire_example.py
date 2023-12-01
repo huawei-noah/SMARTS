@@ -4,14 +4,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from smarts.core.chassis import AckermannChassis
+from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240
@@ -165,7 +165,7 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
 
         client.stepSimulation()
 
-        frictions_ = frictions(sliders)
+        frictions_ = frictions(client, sliders)
 
         if prev_friction_sum is not None and not math.isclose(
             sum(frictions_.values()), prev_friction_sum
@@ -188,7 +188,7 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
         )
 
 
-def frictions(sliders):
+def frictions(client, sliders):
     return dict(
         lateralFriction=client.readUserDebugParameter(sliders["lateral_friction"]),
         spinningFriction=client.readUserDebugParameter(sliders["spinning_friction"]),
@@ -201,7 +201,7 @@ def frictions(sliders):
     )
 
 
-if __name__ == "__main__":
+def main():
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
@@ -242,12 +242,12 @@ if __name__ == "__main__":
             path = str(path.absolute())
             plane_body_id = client.loadURDF(path, useFixedBase=True)
 
-            client.changeDynamics(plane_body_id, -1, **frictions(sliders))
+            client.changeDynamics(plane_body_id, -1, **frictions(client, sliders))
 
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
             vehicle = Vehicle(
                 "hello",
-                chassis=AckermannChassis(
+                chassis=BulletAckermannChassis(
                     pose=pose,
                     bullet_client=client,
                     tire_parameters_filepath="../../smarts/core/models/tire_parameters.yaml",
@@ -311,3 +311,7 @@ if __name__ == "__main__":
         plt.plot(time, yaw)
 
         plt.show()
+
+
+if __name__ == "__main__":
+    main()

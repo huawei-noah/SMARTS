@@ -1,14 +1,14 @@
 import math
 from pathlib import Path
 
-from smarts.core.chassis import AckermannChassis
+from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
     ActuatorDynamicControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240
@@ -90,7 +90,7 @@ def frictions(sliders, client):
     )
 
 
-if __name__ == "__main__":
+def main():
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         pose = pose = Pose.from_center((0, 0, 0), Heading(0))
         vehicle = Vehicle(
             id="vehicle",
-            chassis=AckermannChassis(
+            chassis=BulletAckermannChassis(
                 pose=pose,
                 bullet_client=client,
             ),
@@ -149,3 +149,7 @@ if __name__ == "__main__":
             sliders,
             n_steps=int(1e6),
         )
+
+
+if __name__ == "__main__":
+    main()

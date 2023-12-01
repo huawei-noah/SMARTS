@@ -4,13 +4,13 @@ from typing import Dict
 
 import numpy as np
 
+from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletBoxChassis
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.actor import ActorRole
-from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle
 from smarts.core.vehicle_state import VehicleState
 
@@ -96,7 +96,7 @@ def run(
         current_provider_state = traffic_sim.step(None, 0.01, step * 0.01)
         for pose, i in zip(injected_poses, range(len(injected_poses))):
             converted_to_provider = VehicleState(
-                vehicle_id=f"EGO{i}",
+                actor_id=f"EGO{i}",
                 vehicle_config_type="passenger",
                 pose=pose,
                 dimensions=passenger_dimen,
@@ -115,7 +115,7 @@ def run(
             pose = Pose.from_center([0, 0, 0], Heading(0))
             vehicles[v_id] = Vehicle(
                 id=v_id,
-                chassis=BoxChassis(
+                chassis=BulletBoxChassis(
                     pose=pose,
                     speed=0,
                     dimensions=vehicle_config.dimensions,
@@ -144,7 +144,7 @@ def run(
 # pytype: enable=name-error
 
 
-if __name__ == "__main__":
+def main():
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
@@ -181,3 +181,7 @@ if __name__ == "__main__":
             plane_body_id,
             n_steps=int(1e6),
         )
+
+
+if __name__ == "__main__":
+    main()

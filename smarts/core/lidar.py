@@ -19,15 +19,14 @@
 # THE SOFTWARE.
 import itertools
 import random
-from typing import List, Sequence, Tuple
+from typing import List, Tuple
 
 import numpy as np
 import psutil
 
+from ..bullet import pybullet
 from .lidar_sensor_params import SensorParams
-from .utils import pybullet
 from .utils.math import batches, rotate_quat
-from .utils.pybullet import bullet_client as bc
 
 
 class Lidar:

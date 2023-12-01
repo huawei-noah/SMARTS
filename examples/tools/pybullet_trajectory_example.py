@@ -3,14 +3,14 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from smarts.core.chassis import AckermannChassis
+from smarts.bullet import pybullet
+from smarts.bullet.chassis import BulletAckermannChassis
+from smarts.bullet.pybullet import bullet_client as bc
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 TIMESTEP_SEC = 1 / 240
@@ -79,18 +79,12 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
             vehicle,
             controller_state,
             dt_sec=TIMESTEP_SEC,
-            heading_gain=0.05,
-            lateral_gain=0.65,
-            velocity_gain=1.8,
-            traction_gain=2,
-            derivative_activation=False,
-            speed_reduction_activation=False,
         )
 
         client.stepSimulation()
         vehicle.sync_chassis()
 
-        frictions_ = frictions(sliders)
+        frictions_ = frictions(client, sliders)
 
         if prev_friction_sum is not None and not math.isclose(
             sum(frictions_.values()), prev_friction_sum
@@ -112,7 +106,7 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
         ydes.append(trajectory[1][0])
 
 
-def frictions(sliders):
+def frictions(client, sliders):
     return dict(
         throttle=client.addUserDebugParameter("Throttle", 0, 1, 0.0),
         brake=client.addUserDebugParameter("Brake", 0, 1, 0),
@@ -128,7 +122,7 @@ def frictions(sliders):
     )
 
 
-if __name__ == "__main__":
+def main():
     # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
     # mp.set_start_method('spawn', force=True)
 
@@ -166,12 +160,12 @@ if __name__ == "__main__":
             path = str(path.absolute())
             plane_body_id = client.loadURDF(path, useFixedBase=True)
 
-            client.changeDynamics(plane_body_id, -1, **frictions(sliders))
+            client.changeDynamics(plane_body_id, -1, **frictions(client, sliders))
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
 
             vehicle = Vehicle(
                 id="vehicle",
-                chassis=AckermannChassis(
+                chassis=BulletAckermannChassis(
                     pose=pose,
                     bullet_client=client,
                 ),
@@ -200,3 +194,7 @@ if __name__ == "__main__":
         plt.plot(xdes, ydes)
         plt.plot(xx, yy)
         plt.show()
+
+
+if __name__ == "__main__":
+    main()

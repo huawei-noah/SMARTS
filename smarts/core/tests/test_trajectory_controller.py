@@ -27,15 +27,14 @@ import numpy as np
 import pytest
 import yaml
 
+from smarts.bullet.bullet_simulation import BulletSimulation
+from smarts.bullet.chassis import BulletAckermannChassis
 from smarts.core import models
-from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
     TrajectoryTrackingControllerState,
 )
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import Vehicle
 
 time_step = 0.1
@@ -58,29 +57,26 @@ def vehicle_controller_file(request):
 
 
 @pytest.fixture
-def bullet_client(fixed_timestep_sec=time_step):
-    client = bc.BulletClient(pybullet.DIRECT)
-    client.resetSimulation()
-    client.setGravity(0, 0, -9.8)
-    client.setPhysicsEngineParameter(
-        fixedTimeStep=fixed_timestep_sec,
-        numSubSteps=int(fixed_timestep_sec / (1 / 240)),
-    )
-    path = Path(__file__).parent / "../models/plane.urdf"
-    path = str(path.absolute())
-    plane_body_id = client.loadURDF(path, useFixedBase=True)
-    yield client
-    client.disconnect()
+def bullet_simulation(fixed_timestep_sec=time_step):
+    simulation = BulletSimulation()
+    simulation.initialize(fixed_timestep_sec)
+    simulation.initialize_ground(None, None)
+    yield simulation
+    simulation.teardown()
 
 
 @pytest.fixture
-def vehicle(bullet_client, vehicle_controller_file, fixed_timestep_sec=time_step):
+def vehicle(
+    bullet_simulation: BulletSimulation,
+    vehicle_controller_file,
+    fixed_timestep_sec=time_step,
+):
     pose = Pose.from_center((0, 0, 0), Heading(0))
     vehicle1 = Vehicle(
         id="vehicle",
-        chassis=AckermannChassis(
+        chassis=BulletAckermannChassis(
             pose=pose,
-            bullet_client=bullet_client,
+            bullet_client=bullet_simulation.client,
             vehicle_filepath=vehicle_controller_file[0],
             controller_parameters=vehicle_controller_file[1],
         ),
@@ -132,7 +128,11 @@ def build_trajectory(radius, omega, step_num, fixed_timestep_sec=time_step):
 
 
 def step_with_vehicle_commands(
-    bullet_client, vehicle, radius, omega, fixed_timestep_sec=time_step
+    bullet_simulation: BulletSimulation,
+    vehicle,
+    radius,
+    omega,
+    fixed_timestep_sec=time_step,
 ):
     prev_friction_sum = None
     # Proceed till the end of half of the circle.
@@ -150,7 +150,7 @@ def step_with_vehicle_commands(
             dt_sec=fixed_timestep_sec,
         )
 
-        bullet_client.stepSimulation()
+        bullet_simulation.client.stepSimulation()
 
     final_error = math.sqrt(
         (vehicle.position[0] - desired_trajectory[0][0]) ** 2
@@ -159,6 +159,8 @@ def step_with_vehicle_commands(
     return final_error
 
 
-def test_trajectory_tracking(bullet_client, vehicle, radius, omega):
-    final_error = step_with_vehicle_commands(bullet_client, vehicle, radius, omega)
+def test_trajectory_tracking(
+    bullet_simulation: BulletSimulation, vehicle, radius, omega
+):
+    final_error = step_with_vehicle_commands(bullet_simulation, vehicle, radius, omega)
     assert final_error <= 10
