@@ -1,7 +1,7 @@
 .. _rl_model:
 
 RL Models
-========
+=========
 
 See the :ref:`RLlib integration <rllib>` for additional examples.
 
