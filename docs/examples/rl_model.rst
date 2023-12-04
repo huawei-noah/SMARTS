@@ -3,7 +3,7 @@
 RL Models
 =========
 
-These examples demontrate some ways to use SMARTS to generate RL models.
+These examples demonstrate some ways to use SMARTS to generate RL models.
 
 
 #. Driving SMARTS Drive
