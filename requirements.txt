@@ -17,7 +17,7 @@ execnet==2.0.2
 filelock==3.13.1
 flatbuffers==23.5.26
 frozenlist==1.4.0
-fsspec==2023.10.0
+fsspec==2023.12.0
 future==0.18.3
 gast==0.4.0
 google-auth==2.24.0
@@ -30,7 +30,7 @@ h5py==3.10.0
 hyperlink==21.0.0
 idna==3.6
 imageio==2.33.0
-importlib-metadata==6.9.0
+importlib-metadata==7.0.0
 importlib-resources==6.1.1
 incremental==22.10.0
 iniconfig==2.0.0
