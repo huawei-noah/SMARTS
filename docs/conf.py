@@ -150,8 +150,8 @@ nitpick_ignore_regex = {
 
 # -- Options for broken link checks ------------------------------------------
 linkcheck_ignore = [
-    r'http://localhost:\d+/?',
-    r'https://localhost:\d+/?',
+    r"http://localhost:\d+/?",
+    r"https://localhost:\d+/?",
 ]
 
 linkcheck_anchors = False
