@@ -145,4 +145,4 @@ Things inevitably become slow, when this happens, Flame Graph is a great tool to
     $ mkdir -p flamegraph_dir
     $ curl https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl > ./utils/third_party/tools/flamegraph.pl
     $ chmod 777 {$flamegraph_dir}/flamegraph.pl
-    $ make flamegraph scenario=./scenarios/sumo/loop script=./examples/control/chase_via_points.py
+    $ make flamegraph scenario=./scenarios/sumo/loop script=./examples/e2_single_agent.py
