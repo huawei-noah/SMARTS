@@ -533,7 +533,8 @@ class TrajectoryTrackingController:
     ):
         """Implementation of MPC, please see the following ref:
         Convex Optimization – Boyd and Vandenberghe
-        https://markcannon.github.io/assets/downloads/teaching/C21_Model_Predictive_Control/mpc_notes.pdf
+        https://github.com/markcannon/markcannon.github.io/blob/c3344814c9c79d5f0d5f3cf8fc2e7ef14cb4fad3/assets/downloads/teaching/C21_Model_Predictive_Control/mpc_notes.pdf
+        https://markcannon.github.io/teaching/
         """
         matrix_A = np.eye(state_matrix.shape[0]) + dt * state_matrix
         matrix_B = dt * input_matrix

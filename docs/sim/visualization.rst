@@ -7,7 +7,7 @@ Envision
 --------
 
 SMARTS includes a front-end visualization tool called *Envision* that provides real-time view of the environment state.
-Envision is built on web-technologies (including `React <https://reactjs.org/>`_, `WebGL <https://www.khronos.org/webgl/>`_, and `websockets <https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API>`_) allowing it to run easily in the browser. 
+Envision is built on web-technologies (including `React <https://react.dev/>`_, `WebGL <https://www.khronos.org/webgl/>`_, and `websockets <https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API>`_) allowing it to run easily in the browser. 
 It is composed of a few parts: a client which SMARTS uses directly; a server used for state broadcasting; and the web application where all the visualization and rendering happens.
 
 Run
@@ -90,7 +90,7 @@ Save an updated distribution if any changes were made to the Envision web applic
 Visdom
 ------
 
-Use the `visdom <https://github.com/facebookresearch/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
+Use the `visdom <https://github.com/fossasia/visdom>`_ integration to easily see the image-based observation outputs in real-time. 
 Start the visdom server before running the scenario and open the server URL in your browser `http://localhost:8097 <http://localhost:8097>`_.
 
 .. code-block:: bash

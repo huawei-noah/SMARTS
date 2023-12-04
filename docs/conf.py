@@ -148,6 +148,14 @@ nitpick_ignore_regex = {
     (r"py:class", r".*\.?S"),
 }
 
+# -- Options for broken link checks ------------------------------------------
+linkcheck_ignore = [
+    r'http://localhost:\d+/?',
+    r'https://localhost:\d+/?',
+]
+
+linkcheck_anchors = False
+
 # -- Options for spelling ----------------------------------------------------
 spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]
 spelling_ignore_pypi_package_names = True

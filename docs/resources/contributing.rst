@@ -78,7 +78,7 @@ You are encouraged to review other people's pull requests and tag in relevant re
 Code Format
 -----------
 
-The project follows a strict format requirement for python code. We made a decision early on in the project to use `Black <https://github.com/psf/black>`_. This makes formatting consistent while eliminating `bike shedding <http://bikeshed.com/>`_.
+The project follows a strict format requirement for python code. We made a decision early on in the project to use `Black <https://github.com/psf/black>`_. This makes formatting consistent while eliminating `bike shedding <https://bikeshed.com/>`_.
 If you do not already have it please install it via ``pip install black``.
 
 Formatting guarantees that your code will pass the CI formatting test case.
