@@ -149,12 +149,12 @@ nitpick_ignore_regex = {
 }
 
 # -- Options for broken link checks ------------------------------------------
-linkcheck_ignore = [
-    r"http://localhost:\d+/?",
-    r"https://localhost:\d+/?",
-]
-
 linkcheck_anchors = False
+linkcheck_ignore = [
+    r"https?://localhost:\d+/?",
+    r"https?://ops.fhwa.dot.gov.*", # The ngsim domain (us government) appears to go down sometimes.
+]
+linkcheck_retries = 2
 
 # -- Options for spelling ----------------------------------------------------
 spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]
