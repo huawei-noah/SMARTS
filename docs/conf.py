@@ -152,7 +152,7 @@ nitpick_ignore_regex = {
 linkcheck_anchors = False
 linkcheck_ignore = [
     r"https?://localhost:\d+/?",
-    r"https?://ops.fhwa.dot.gov.*", # The ngsim domain (us government) appears to go down sometimes.
+    r"https?://ops.fhwa.dot.gov.*",  # The ngsim domain (us government) appears to go down sometimes.
 ]
 linkcheck_retries = 2
 
