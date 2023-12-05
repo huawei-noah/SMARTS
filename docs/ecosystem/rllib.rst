@@ -38,4 +38,4 @@ Resume training
 With respect to ``SMARTS/examples/e12_rllib`` examples, if you want to continue an aborted experiment, you can set ``resume_training=True``. But note that ``resume_training=True`` will continue to use the same configuration as was set in the original experiment.
 To make changes to a started experiment, you can edit the latest experiment file in ``./results``.
 
-Or if you want to start a new experiment but train from an existing checkpoint, you will need to look into `How to Save and Load Trial Checkpoints <https://docs.ray.io/en/latest/tune/tutorials/tune-trial-checkpoints>`_.
+Or if you want to start a new experiment but train from an existing checkpoint, you will need to look into `How to Save and Load Trial Checkpoints <https://docs.ray.io/en/latest/tune/tutorials/tune-trial-checkpoints.html#how-to-save-and-load-trial-checkpoints>`_.

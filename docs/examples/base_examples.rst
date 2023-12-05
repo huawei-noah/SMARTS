@@ -51,5 +51,5 @@ Several examples are made available to help you get started with SMARTS.
 
 #. Jupyter Notebook
 
-    + script: :examples:`e9_notebook.py`
+    + script: :examples:`e9_notebook.ipynb`
     + A primitive use of SMARTS in a Jupyter Notebook.
