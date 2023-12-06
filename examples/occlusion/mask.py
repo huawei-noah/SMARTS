@@ -161,6 +161,7 @@ def generate_shadow_mask_polygons(
 
     last_tangent_intersection = None
     intersections = []
+    point_a, point_b = None, None
     for point_a, point_b in reversed(facing_away_edges):
         ## If the intention is to generate a quadrilateral shadow cast towards the edge of the circle,
         # the center point of the line must cast through to generate a tangential line at the circle edge to guarentee
@@ -189,7 +190,7 @@ def generate_shadow_mask_polygons(
         )
         last_tangent_intersection = a2edge_intersection
 
-    if len(facing_away_edges) > 0:
+    if point_a is not None and point_b is not None:
         midpoint = get_midpoint(point_a, point_b)
         point_on_tangent = find_point_past_target(center, midpoint, radius)
         tangent_slope = perpendicular_slope(
@@ -309,9 +310,9 @@ def apply_masks(
     remaining_vehicle_points = []
 
     if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
-        gen = lambda vs: PointGenerator.generate(vs["position"])
+        gen = lambda vs: PointGenerator.generate(*vs["position"])
     else:
-        gen = lambda vs: PointGenerator.generate(vs.position)
+        gen = lambda vs: PointGenerator.generate(*vs.position)
 
     for vehicle_state in vehicle_states:
         position_point = gen(vehicle_state)
@@ -543,7 +544,10 @@ output_dir = Path("./vaw/vaw")
 
 
 class AugmentationWrapper(Agent):
-    def __init__(self, mode) -> None:
+    def __init__(self, mode, observation_radius, output_dir, agent_name) -> None:
+        self._observation_radius = observation_radius
+        self._output_dir = output_dir
+        self._agent_name = agent_name
         self._mode = mode
         self._pa = PropertyAccessorUtil(self._mode)
         super().__init__()
@@ -607,11 +611,13 @@ class VectorAgentWrapper(AugmentationWrapper):
         output_dir=output_dir,
     ) -> None:
         self._inner_agent = inner_agent
-        self._observation_radius = observation_radius
-        self._output_dir = output_dir
-        self._agent_name = agent_name
         os.makedirs(output_dir, exist_ok=True)
-        super().__init__(mode=mode)
+        super().__init__(
+            mode=mode,
+            output_dir=output_dir,
+            agent_name=agent_name,
+            observation_radius=observation_radius,
+        )
 
     @lru_cache(1)
     def _get_perlin(
@@ -894,11 +900,13 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         output_dir: Path = output_dir,
     ) -> None:
         self._inner_agent = inner_agent
-        self._observation_radius = observation_radius
-        self._output_dir = output_dir
-        self._agent_name = agent_name
         os.makedirs(output_dir, exist_ok=True)
-        super().__init__(mode=mode)
+        super().__init__(
+            mode=mode,
+            agent_name=agent_name,
+            output_dir=output_dir,
+            observation_radius=observation_radius,
+        )
 
     def act(self, obs: Optional[Observation], **configs):
         img_width, img_height = (
