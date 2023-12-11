@@ -24,18 +24,16 @@ from __future__ import annotations
 import math
 import random
 import sys
-import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
 from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
+from smarts.primatives.constants import MISSING
 from smarts.sstudio.types import EntryTactic, TrapEntryTactic
-
-MISSING = sys.maxsize
 
 
 class PlanningError(Exception):
@@ -44,9 +42,18 @@ class PlanningError(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class StartBase:
+    """The base type for Start objects."""
+
+    def resolve(self, scenario, vehicle) -> "Start":
+        """Converts an abstract start into a concrete one."""
+        raise NotImplementedError()
+
+
 # XXX: consider using smarts.core.coordinates.Pose for this
 @dataclass(frozen=True)
-class Start:
+class Start(StartBase):
     """A starting state for a route or mission."""
 
     position: np.ndarray
@@ -68,6 +75,11 @@ class Start:
         )
 
 
+@dataclass(frozen=True)
+class InheritedStart(StartBase):
+    """A starting state that inherits from the original vehicle."""
+
+
 @dataclass(frozen=True, unsafe_hash=True)
 class Goal:
     """Describes an expected end state for a route or mission."""
@@ -79,6 +91,20 @@ class Goal:
     def is_reached(self, vehicle_state) -> bool:
         """If the goal has been completed."""
         return False
+
+
+@dataclass(frozen=True)
+class InheritedGoal(Goal):
+    """Describes a goal that is inherited from the vehicle (or original dataset)."""
+
+    pass
+
+
+@dataclass(frozen=True, unsafe_hash=True)
+class AutomaticGoal(Goal):
+    """A goal that determines an end result from pre-existing vehicle and mission values."""
+
+    pass
 
 
 @dataclass(frozen=True, unsafe_hash=True)
@@ -213,7 +239,7 @@ class Mission:
     # An optional list of road IDs between the start and end goal that we want to
     # ensure the mission includes
     route_vias: Tuple[str, ...] = field(default_factory=tuple)
-    start_time: float = MISSING
+    start_time: Union[float, Literal[MISSING]] = MISSING
     entry_tactic: Optional[EntryTactic] = None
     via: Tuple[Via, ...] = ()
     # if specified, will use vehicle_spec to build the vehicle (for histories)

@@ -31,8 +31,8 @@ from smarts.sstudio.types.bubble_limits import BubbleLimits
 
 @dataclass(frozen=True)
 class SocialAgentActor(Actor):
-    """Used as a description/spec for zoo traffic actors. These actors use a
-    pre-trained model to understand how to act in the environment.
+    """Used as a description/spec for zoo traffic actors. These actors are controlled by a
+    pre-trained model that understands how to behave in the environment.
     """
 
     # A pre-registered zoo identifying tag you provide to help SMARTS identify the
@@ -40,7 +40,7 @@ class SocialAgentActor(Actor):
     agent_locator: str
     """The locator reference to the zoo registration call. Expects a string in the format
     of 'path.to.file:locator-name' where the path to the registration call is in the form
-    `{PYTHONPATH}[n]/path/to/file.py`
+    ``{PYTHONPATH}[n]/path/to/file.py``.
     """
     policy_kwargs: Dict[str, Any] = field(default_factory=dict)
     """Additional keyword arguments to be passed to the constructed class overriding the

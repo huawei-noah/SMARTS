@@ -232,26 +232,25 @@ def complex_data():
 
 
 def test_covered_data_format(covered_data):
-    for item in covered_data:
+    for unformatted, formatted in covered_data:
         es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
-        vt = item[0]
-        _formatter_map[type(vt)](vt, es)
+        _formatter_map[type(unformatted)](unformatted, es)
 
         data = es.resolve()
 
-        assert data == item[1]
+        assert data == formatted
         assert data == unpack(data)
 
 
 def test_primitive_data_format(primitive_data):
-    for item in primitive_data:
-        vt = item[0]
+    for unformatted, formatted in primitive_data:
+
         es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
-        es.add_any(vt)
+        es.add_any(unformatted)
 
         data = es.resolve()
 
-        assert data == item[1]
+        assert data == formatted
         assert data == unpack(data)
 
 
@@ -275,14 +274,13 @@ def test_layer():
 
 
 def test_complex_data(complex_data):
-    for item in complex_data:
-        vt = item[0]
+    for unformatted, formatted in complex_data:
         es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
-        es.add_any(vt)
+        es.add_any(unformatted)
 
         data = es.resolve()
 
-        assert data == item[1]
+        assert data == formatted
         assert data == unpack(data)
 
 

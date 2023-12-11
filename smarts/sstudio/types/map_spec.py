@@ -29,10 +29,11 @@
 # The idea here is that anything in SMARTS that needs to use a RoadMap
 # can call this builder to get or create one as necessary.
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Literal, Optional, Tuple, Union
 
 from smarts.core.default_map_builder import get_road_map
 from smarts.core.road_map import RoadMap
+from smarts.primatives.constants import AUTO
 
 MapBuilder = Callable[[Any], Tuple[Optional[RoadMap], Optional[str]]]
 
@@ -45,7 +46,7 @@ class MapSpec:
     """A path or URL or name uniquely designating the map source."""
     lanepoint_spacing: float = 1.0
     """The default distance between pre-generated Lane Points (Waypoints)."""
-    default_lane_width: Optional[float] = None
+    default_lane_width: Union[float, Literal[AUTO]] = AUTO
     """If specified, the default width (in meters) of lanes on this map."""
     shift_to_origin: bool = False
     """If True, upon creation a map whose bounding-box does not intersect with

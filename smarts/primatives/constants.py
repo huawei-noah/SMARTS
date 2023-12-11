@@ -1,4 +1,6 @@
-# Copyright (C) 2020. Huawei Technologies Co., Ltd. All rights reserved.
+# MIT License
+#
+# Copyright (C) 2023. Huawei Technologies Co., Ltd. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -17,20 +19,25 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.primatives.constants import *
-from smarts.sstudio.types.actor.social_agent_actor import *
-from smarts.sstudio.types.actor.traffic_actor import *
-from smarts.sstudio.types.actor.traffic_engine_actor import *
-from smarts.sstudio.types.bubble import *
-from smarts.sstudio.types.bubble_limits import *
-from smarts.sstudio.types.condition import *
-from smarts.sstudio.types.dataset import *
-from smarts.sstudio.types.distribution import *
-from smarts.sstudio.types.entry_tactic import *
-from smarts.sstudio.types.map_spec import *
-from smarts.sstudio.types.mission import *
-from smarts.sstudio.types.route import *
-from smarts.sstudio.types.scenario import *
-from smarts.sstudio.types.traffic import *
-from smarts.sstudio.types.traffic_model import *
-from smarts.sstudio.types.zone import *
+
+from enum import Enum
+from typing import Final
+
+
+class SmartsLiteral(Enum):
+    """Constants that SMARTS uses. This is intended to constant type the
+    values.
+    """
+
+    AUTO = "auto"
+    INHERIT = ...
+    MAX = 9223372036854775807
+    MISSING = MAX
+    NONE = None
+
+
+AUTO: Final = SmartsLiteral.AUTO
+INHERIT: Final = SmartsLiteral.INHERIT
+MAX: Final = SmartsLiteral.MAX
+MISSING = SmartsLiteral.MISSING
+NONE: Final = SmartsLiteral.NONE
