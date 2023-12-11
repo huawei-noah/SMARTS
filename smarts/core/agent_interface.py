@@ -86,10 +86,11 @@ class OcclusionMap:
 
 
 @dataclass
-class ConfigurableRenderDependency:
+class CustomRenderCameraDependency:
 
     camera_dependency_name: str
     variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]
+
     target_actor: Union[str, Literal[_SELF.default]] = _SELF.default
 
     def is_self_targetted(self):
@@ -97,23 +98,32 @@ class ConfigurableRenderDependency:
 
 
 @dataclass
-class CustomFragmentProgram:
-    """The width and height are in "pixels" and the resolution is the "size of a
+class CustomRender:
+    """Utility render option that allows for a custom render output.
+
+    The width and height are in "pixels" and the resolution is the "size of a
     pixel". E.g. if you wanted 100m x 100m `ObfuscationMap` but a 64x64 image representation
     you would do `ObfuscationMap(width=64, height=64, resolution=100/64)`
     """
 
     name: str
+    """The name used to generate the camera."""
     fragment_shader_path: str
-    dependencies: Tuple[ConfigurableRenderDependency, ...]
+    """The path string to the fragment shader."""
+    dependencies: Tuple[CustomRenderCameraDependency, ...]
+    """Inputs used by the fragment program."""
     width: int = 256
+    """The number of pixels for the range of u."""
     height: int = 256
+    """The number of pixels for the range of v."""
     resolution: float = 50 / 256
+    """Scales the resolution to the given size. Resolution 1 matches width and height."""
 
     def __post_init__(self):
         assert len(self.dependencies) == len(
             {d.variable_name for d in self.dependencies}
         )
+        assert self.resolution > 0, "Resolution must result in at least 1 pixel."
 
 
 @dataclass
@@ -392,11 +402,11 @@ class AgentInterface:
     """
 
     occlusion_map: Union[OcclusionMap, bool] = False
-    """Enable ObfuscationMapSensor for the current vehicle. This image represents what the current vehicle can see.
+    """Enable the `OcclusionMap` for the current vehicle. This image represents what the current vehicle can see.
     """
 
-    custom_fragment_programs: Tuple[CustomFragmentProgram, ...] = tuple()
-    """Add custom renderer outputs
+    custom_fragment_programs: Tuple[CustomRender, ...] = tuple()
+    """Add custom renderer outputs.
     """
 
     def __post_init__(self):

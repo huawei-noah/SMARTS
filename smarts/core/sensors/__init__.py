@@ -222,10 +222,10 @@ class Sensors:
     def process_serialization_unsafe_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
-        interface,
-        sensor_state,
-        vehicle_id,
-        renderer,
+        interface: AgentInterface,
+        sensor_state: SensorState,
+        vehicle_id: str,
+        renderer: RendererBase,
         bullet_client,
     ):
         """Run observations that can only be done on the main thread."""
@@ -238,7 +238,9 @@ class Sensors:
             lidar_sensor.follow_vehicle(vehicle_state)
             lidar = lidar_sensor(bullet_client)
 
-        def get_camera_sensor_result(sensors: Dict[str, Sensor], sensor_name, renderer):
+        def get_camera_sensor_result(
+            sensors: Dict[str, Sensor], sensor_name: str, renderer: RendererBase
+        ):
             if renderer is None:
                 return None
             if (sensor := sensors.get(sensor_name)) is not None:
@@ -265,6 +267,12 @@ class Sensors:
                 obfuscation_grid_map=get_camera_sensor_result(
                     vehicle_sensors, "occlusion_sensor", renderer
                 ),
+                custom_renders=(
+                    get_camera_sensor_result(
+                        vehicle_sensors, f"custom_render_{i}_sensor", renderer
+                    )
+                    for i, _ in enumerate(interface.custom_fragment_programs)
+                ),
                 lidar_point_cloud=lidar,
             ),
             updated_sensors,
@@ -275,9 +283,9 @@ class Sensors:
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         interface: AgentInterface,
-        sensor_state,
-        vehicle_id,
-        agent_id=None,
+        sensor_state: SensorState,
+        vehicle_id: str,
+        agent_id: Optional[str] = None,
     ):
         """Observations that can be done on any thread."""
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
@@ -433,7 +441,6 @@ class Sensors:
             vehicle_state,
             sensor_state,
             plan,
-            vehicle_sensors,
         )
 
         if done and sensor_state.steps_completed == 1:
@@ -485,11 +492,11 @@ class Sensors:
     def observe_vehicle(
         cls,
         sim_frame: SimulationFrame,
-        sim_local_constants,
-        interface,
-        sensor_state,
+        sim_local_constants: SimulationLocalConstants,
+        interface: AgentInterface,
+        sensor_state: SensorState,
         vehicle,
-        renderer,
+        renderer: RendererBase,
         bullet_client,
     ) -> Tuple[Observation, bool, Dict[str, "Sensor"]]:
         """Generate observations for the given agent around the given vehicle."""
@@ -570,9 +577,8 @@ class Sensors:
         sim_local_constants: SimulationLocalConstants,
         interface: AgentInterface,
         vehicle_state: VehicleState,
-        sensor_state,
-        plan,
-        vehicle_sensors,
+        sensor_state: SensorState,
+        plan: Plan,
     ):
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_state.actor_id]
         done_criteria = interface.done_criteria
@@ -653,7 +659,11 @@ class Sensors:
 
     @classmethod
     def _agent_reached_goal(
-        cls, sensor_state, plan, vehicle_state: VehicleState, trip_meter_sensor
+        cls,
+        sensor_state,
+        plan: Plan,
+        vehicle_state: VehicleState,
+        trip_meter_sensor: TripMeterSensor,
     ):
         if not trip_meter_sensor:
             return False
@@ -664,7 +674,7 @@ class Sensors:
     @classmethod
     def _vehicle_is_off_road(
         cls,
-        road_map,
+        road_map: RoadMap,
         vehicle_state: VehicleState,
         nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
     ):
@@ -675,7 +685,7 @@ class Sensors:
     @classmethod
     def _vehicle_is_on_shoulder(
         cls,
-        road_map,
+        road_map: RoadMap,
         vehicle_state: VehicleState,
         nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
     ):
@@ -712,7 +722,7 @@ class Sensors:
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         vehicle_state: VehicleState,
-        plan,
+        plan: Plan,
         nearest_lanes: Optional[Sequence[Tuple[RoadMap.Lane, float]]] = None,
     ):
         """Determines if the agent is on route and on the correct side of the road.
@@ -783,7 +793,7 @@ class Sensors:
         return (True, is_wrong_way)
 
     @staticmethod
-    def _vehicle_is_wrong_way(vehicle_state: VehicleState, closest_lane):
+    def _vehicle_is_wrong_way(vehicle_state: VehicleState, closest_lane: RoadMap.Lane):
         target_pose = closest_lane.center_pose_at_point(vehicle_state.pose.point)
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
@@ -792,7 +802,9 @@ class Sensors:
         )
 
     @classmethod
-    def _check_wrong_way_event(cls, lane_to_check, vehicle_state):
+    def _check_wrong_way_event(
+        cls, lane_to_check: RoadMap.Lane, vehicle_state: VehicleState
+    ):
         # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
         # false positive `wrong way` events.
         if lane_to_check.in_junction:

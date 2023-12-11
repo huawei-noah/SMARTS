@@ -30,13 +30,13 @@ import pytest
 from helpers.scenario import temp_scenario
 
 from smarts.core import glsl
-from smarts.core.agent_interface import ConfigurableRenderDependency
+from smarts.core.agent_interface import CustomRenderCameraDependency
 from smarts.core.coordinates import Heading, Pose, RefLinePoint
-from smarts.core.observations import ConfigurableRenderData
+from smarts.core.observations import CustomRenderData
 from smarts.core.plan import Plan
 from smarts.core.scenario import Scenario
 from smarts.core.sensor import (
-    ConfigurableRenderSensor,
+    CustomRenderSensor,
     LanePositionSensor,
     RoadWaypointsSensor,
 )
@@ -252,7 +252,7 @@ def test_signals_sensor():
     pass
 
 
-def test_configurable_render_sensor():
+def test_custom_render_sensor():
     from smarts.p3d.renderer import Renderer
 
     renderer = Renderer("R1")
@@ -268,7 +268,7 @@ def test_configurable_render_sensor():
     with pkg_resources.path(glsl, "simplex.frag") as frag_shader:
 
         sensor_gen = partial(
-            ConfigurableRenderSensor,
+            CustomRenderSensor,
             vehicle_state=vehicle_state,
             width=256,
             height=256,
@@ -284,13 +284,13 @@ def test_configurable_render_sensor():
         sensor2 = sensor_gen(
             name="2nd",
             render_dependencies=(
-                ConfigurableRenderDependency(sensor.name, "iChannel0"),
+                CustomRenderCameraDependency(sensor.name, "iChannel0"),
             ),
         )
 
     renderer.render()
 
-    image: ConfigurableRenderData = sensor2(renderer)
+    image: CustomRenderData = sensor2(renderer)
     assert image.data.shape == (256, 256, 3)
 
     sensor.teardown()

@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import logging
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Tuple
@@ -49,11 +50,12 @@ class RendererNotSetUpWarning(UserWarning):
 
 
 @dataclass
-class OffscreenCamera:
+class OffscreenCamera(metaclass=ABCMeta):
     """A camera used for rendering images to a graphics buffer."""
 
     renderer: RendererBase
 
+    @abstractmethod
     def wait_for_ram_image(self, img_format: str, retries=100):
         """Attempt to acquire a graphics buffer."""
         # Rarely, we see dropped frames where an image is not available
@@ -66,6 +68,7 @@ class OffscreenCamera:
         # we are fairly certain we have an image in ram to return to the user
         raise NotImplementedError
 
+    @abstractmethod
     def update(self, pose: Pose, height: float):
         """Update the location of the camera.
         Args:
@@ -77,26 +80,30 @@ class OffscreenCamera:
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def image_dimensions(self) -> Tuple[int, int]:
         """The dimensions of the output camera image."""
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def position(self) -> Tuple[float, float, float]:
         """The position of the camera."""
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def heading(self) -> float:
         """The heading of this camera."""
         raise NotImplementedError
 
+    @abstractmethod
     def teardown(self):
         """Clean up internal resources."""
         raise NotImplementedError
 
 
-@dataclass
+@dataclass(frozen=True)
 class ShaderStepCameraDependency:
     """Forwards the texture from a given camera to the"""
 
@@ -110,14 +117,14 @@ class ShaderStepCameraDependency:
 
 
 @dataclass
-class ShaderStep(OffscreenCamera):
+class ShaderStep(OffscreenCamera, metaclass=ABCMeta):
     """A camera used for rendering images using a shader and a fullscreen quad."""
 
     shader_file: str
     dependents: List[OffscreenCamera]
 
 
-class RendererBase:
+class RendererBase(metaclass=ABCMeta):
     """The base class for rendering
 
     Returns:
@@ -125,72 +132,89 @@ class RendererBase:
     """
 
     @property
+    @abstractmethod
     def id(self):
         """The id of the simulation rendered."""
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def is_setup(self) -> bool:
         """If the renderer has been fully initialized."""
         raise NotImplementedError
 
     @property
+    @abstractmethod
     def log(self) -> logging.Logger:
         """The rendering logger."""
         raise NotImplementedError
 
+    @abstractmethod
     def remove_buffer(self, buffer):
         """Remove the rendering buffer."""
         raise NotImplementedError
 
+    @abstractmethod
     def setup(self, scenario):
         """Initialize this renderer."""
         raise NotImplementedError
 
+    @abstractmethod
     def render(self):
         """Render the scene graph of the simulation."""
         raise NotImplementedError
 
+    @abstractmethod
     def reset(self):
         """Reset the render back to initialized state."""
         raise NotImplementedError
 
+    @abstractmethod
     def step(self):
         """provided for non-SMARTS uses; normally not used by SMARTS."""
         raise NotImplementedError
 
+    @abstractmethod
     def sync(self, sim_frame):
         """Update the current state of the vehicles within the renderer."""
         raise NotImplementedError
 
+    @abstractmethod
     def teardown(self):
         """Clean up internal resources."""
         raise NotImplementedError
 
+    @abstractmethod
     def destroy(self):
         """Destroy the renderer. Cleans up all remaining renderer resources."""
         raise NotImplementedError
 
+    @abstractmethod
     def create_vehicle_node(self, glb_model: str, vid: str, color, pose: Pose):
         """Create a vehicle node."""
         raise NotImplementedError
 
+    @abstractmethod
     def begin_rendering_vehicle(self, vid: str, is_agent: bool):
         """Add the vehicle node to the scene graph"""
         raise NotImplementedError
 
+    @abstractmethod
     def update_vehicle_node(self, vid: str, pose: Pose):
         """Move the specified vehicle node."""
         raise NotImplementedError
 
+    @abstractmethod
     def remove_vehicle_node(self, vid: str):
         """Remove a vehicle node"""
         raise NotImplementedError
 
+    @abstractmethod
     def camera_for_id(self, camera_id) -> OffscreenCamera:
         """Get a camera by its id."""
         raise NotImplementedError
 
+    @abstractmethod
     def build_offscreen_camera(
         self,
         name: str,
@@ -202,6 +226,7 @@ class RendererBase:
         """Generates a new off-screen camera."""
         raise NotImplementedError
 
+    @abstractmethod
     def build_shader_step(
         self,
         name: str,

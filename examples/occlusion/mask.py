@@ -49,6 +49,9 @@ VIDEO_PREFIX: Final[str] = "A1_"
 IMAGE_SUFFIX: Final[str] = "jpg"
 
 
+OUTPUT_DIR: Final[Path] = Path("./vaw/vaw")
+
+
 class PropertyAccessorUtil:
     def __init__(self, mode: ObservationOptions) -> None:
         if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
@@ -540,19 +543,19 @@ def downgrade_vehicles(
     ]
 
 
-output_dir = Path("./vaw/vaw")
-
-
 class AugmentationWrapper(Agent):
-    def __init__(self, mode, observation_radius, output_dir, agent_name) -> None:
+    def __init__(
+        self, mode, observation_radius, output_dir, agent_name, record: bool
+    ) -> None:
         self._observation_radius = observation_radius
         self._output_dir = output_dir
         self._agent_name = agent_name
         self._mode = mode
         self._pa = PropertyAccessorUtil(self._mode)
+        self._record = record
         super().__init__()
 
-    def add_video_image(self, ax, obs: Observation):
+    def export_video_image(self, ax, obs: Observation):
         ego_state = self._pa.ego_accessor(obs)
         _observation_center = self._pa.pos_accessor(ego_state)[:2]
         ax.plot(*PointGenerator.generate(*_observation_center).xy, "r+")
@@ -570,12 +573,14 @@ class AugmentationWrapper(Agent):
         plt.close("all")
         plt.cla()
 
-    def to_video(self, video_source_pattern="%d"):
+    def generate_video(self, video_source_pattern="%d"):
+        if not self._record:
+            return
         full_video_source_pattern = (
             f"{self._agent_name}_{video_source_pattern}.{IMAGE_SUFFIX}"
         )
         video_name = f"{self._agent_name}.mp4"
-        os.chdir(output_dir)
+        os.chdir(self._output_dir)
         subprocess.call(
             [
                 "ffmpeg",
@@ -608,7 +613,8 @@ class VectorAgentWrapper(AugmentationWrapper):
         mode,
         agent_name,
         observation_radius=40,
-        output_dir=output_dir,
+        record: bool = True,
+        output_dir=OUTPUT_DIR,
     ) -> None:
         self._inner_agent = inner_agent
         os.makedirs(output_dir, exist_ok=True)
@@ -617,6 +623,7 @@ class VectorAgentWrapper(AugmentationWrapper):
             output_dir=output_dir,
             agent_name=agent_name,
             observation_radius=observation_radius,
+            record=record,
         )
 
     @lru_cache(1)
@@ -873,7 +880,7 @@ class VectorAgentWrapper(AugmentationWrapper):
         )
         self.draw_waypoints(downgraded_waypoints, self._pa.pos_accessor, ax, color="r")
 
-        self.add_video_image(ax, obs)
+        self.export_video_image(ax, obs)
         dowgraded_obs = obs._replace(
             neighborhood_vehicle_states=_vehicle_states,
             waypoint_paths=downgraded_waypoints,
@@ -897,7 +904,8 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         mode: ObservationOptions,
         agent_name,
         observation_radius: float = 40.0,
-        output_dir: Path = output_dir,
+        record: bool = True,
+        output_dir: Path = OUTPUT_DIR,
     ) -> None:
         self._inner_agent = inner_agent
         os.makedirs(output_dir, exist_ok=True)
@@ -906,6 +914,7 @@ class OcclusionAgentWrapper(AugmentationWrapper):
             agent_name=agent_name,
             output_dir=output_dir,
             observation_radius=observation_radius,
+            record=record,
         )
 
     def act(self, obs: Optional[Observation], **configs):
@@ -927,41 +936,41 @@ class OcclusionAgentWrapper(AugmentationWrapper):
             -img_height * 0.5,
             img_height * 0.5,
         ]
-        tr = (
-            transforms.Affine2D()
-            .rotate_deg(math.degrees(ego_heading))
-            .translate(*_observation_center)
-        )
 
         vehicle_hf = HeightField(obs.obfuscation_grid_map.data, (img_width, img_height))
-        image_data = vehicle_hf.data
-        ax.imshow(
-            image_data,
-            cmap="gray",
-            vmin=0,
-            vmax=255,
-            transform=tr + ax.transData,
-            extent=extent,
-        )
 
-        for vehicle in self._pa.nvs_accessor(obs):
-            v_geom = generate_vehicle_polygon(
-                self._pa.pos_accessor(vehicle),
-                self._pa.len_accessor(vehicle),
-                self._pa.width_accessor(vehicle),
-                self._pa.heading_accessor(vehicle),
+        if self._record:
+            tr = (
+                transforms.Affine2D()
+                .rotate_deg(math.degrees(ego_heading))
+                .translate(*_observation_center)
             )
-            ax.plot(*v_geom.exterior.xy, color="b")
+            image_data = vehicle_hf.data
+            ax.imshow(
+                image_data,
+                cmap="gray",
+                vmin=0,
+                vmax=255,
+                transform=tr + ax.transData,
+                extent=extent,
+            )
 
-        self.add_video_image(ax, obs)
+            for vehicle in self._pa.nvs_accessor(obs):
+                v_geom = generate_vehicle_polygon(
+                    self._pa.pos_accessor(vehicle),
+                    self._pa.len_accessor(vehicle),
+                    self._pa.width_accessor(vehicle),
+                    self._pa.heading_accessor(vehicle),
+                )
+                ax.plot(*v_geom.exterior.xy, color="b")
+
+            self.export_video_image(ax, obs)
 
         dowgraded_obs = obs._replace()
         return self._inner_agent.act(dowgraded_obs, **configs)
 
 
 def occlusion_main():
-    import gymnasium as gym
-
     from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
     from smarts.zoo.registry import make
 
@@ -1009,7 +1018,7 @@ def occlusion_main():
                     width=observation_radius * 2,
                     height=observation_radius * 2,
                     resolution=1,
-                    surface_noise=False,
+                    surface_noise=True,
                 ),
                 road_waypoints=RoadWaypoints(horizon=50),
                 waypoint_paths=Waypoints(lookahead=50),
@@ -1031,7 +1040,7 @@ def occlusion_main():
             obs, rewards, terms, truncs, infos = env.step(acts)
 
     for _, a in agents.items():
-        a.to_video()
+        a.generate_video()
 
 
 if __name__ == "__main__":

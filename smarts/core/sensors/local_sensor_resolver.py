@@ -64,7 +64,7 @@ class LocalSensorResolver(SensorResolver):
                     ) = Sensors.process_serialization_unsafe_sensors(
                         sim_frame,
                         sim_local_constants,
-                        agent_id,
+                        sim_frame.agent_interfaces[agent_id],
                         sim_frame.sensor_states[vehicle_id],
                         vehicle_id,
                         renderer,

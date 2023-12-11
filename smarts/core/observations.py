@@ -159,7 +159,7 @@ class DrivableAreaGridMap(NamedTuple):
     """A grid map that shows the static drivable area around the ego vehicle."""
 
 
-class ConfigurableRenderData(NamedTuple):
+class CustomRenderData(NamedTuple):
     """Describes information about a custom render."""
 
     metadata: GridMapMetadata
@@ -248,3 +248,5 @@ class Observation(NamedTuple):
     """List of nearby traffic signal (light) states on this time-step."""
     obfuscation_grid_map: Optional[ObfuscationGridMap] = None
     """Observable area map."""
+    custom_renders: Tuple[CustomRenderData, ...] = tuple()
+    """Custom renders."""

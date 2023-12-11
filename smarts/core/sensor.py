@@ -31,13 +31,13 @@ from typing import List, Optional, Tuple
 import numpy as np
 
 from smarts.core import glsl
-from smarts.core.agent_interface import ConfigurableRenderDependency
+from smarts.core.agent_interface import CustomRenderCameraDependency
 from smarts.core.coordinates import Pose, RefLinePoint
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
 from smarts.core.observations import (
-    ConfigurableRenderData,
+    CustomRenderData,
     DrivableAreaGridMap,
     GridMapMetadata,
     ObfuscationGridMap,
@@ -66,10 +66,10 @@ class CameraSensorName(Enum):
 
 
 def _gen_sensor_name(base_name: str, vehicle_state: VehicleState):
-    return _gen_sensor_name(base_name, vehicle_state.actor_id)
+    return _gen_base_sensor_name(base_name, vehicle_state.actor_id)
 
 
-def _gen_sensor_name(base_name: str, actor_id: str):
+def _gen_base_sensor_name(base_name: str, actor_id: str):
     return f"{base_name}_{actor_id}"
 
 
@@ -304,7 +304,7 @@ class RGBSensor(CameraSensor):
         return TopDownRGB(data=image, metadata=metadata)
 
 
-class OcclusionSensor(CameraSensor):
+class OcclusionMapSensor(CameraSensor):
     """A sensor that demonstrates only the areas that can be seen by the vehicle."""
 
     def __init__(
@@ -397,7 +397,7 @@ class OcclusionSensor(CameraSensor):
         return ObfuscationGridMap(data=grid, metadata=metadata)
 
 
-class ConfigurableRenderSensor(CameraSensor):
+class CustomRenderSensor(CameraSensor):
     """Defines a configurable image sensor."""
 
     def __init__(
@@ -408,10 +408,10 @@ class ConfigurableRenderSensor(CameraSensor):
         resolution: float,
         renderer: RendererBase,
         fragment_shader_path: str,
-        render_dependencies: Tuple[ConfigurableRenderDependency, ...],
+        render_dependencies: Tuple[CustomRenderCameraDependency, ...],
         ogm_sensor: Optional[OGMSensor],
         top_down_rgb_sensor: Optional[RGBSensor],
-        dagm_sensor: Optional[DrivableAreaGridMapSensor],
+        drivable_area_grid_map_sensor: Optional[DrivableAreaGridMapSensor],
         name: str,
     ):
         super().__init__(
@@ -429,17 +429,16 @@ class ConfigurableRenderSensor(CameraSensor):
         named_camera_sensors = (
             (CameraSensorName.OCCUPANCY_GRID_MAP, ogm_sensor),
             (CameraSensorName.TOP_DOWN_RGB, top_down_rgb_sensor),
-            (CameraSensorName.DRIVABLE_AREA_GRID_MAP, dagm_sensor),
+            (CameraSensorName.DRIVABLE_AREA_GRID_MAP, drivable_area_grid_map_sensor),
         )
 
         def has_required(dependency_name, required_name, sensor) -> bool:
             if dependency_name == required_name:
                 if sensor:
                     return True
-                else:
-                    raise UserWarning(
-                        f"Custom render depency requires `{d.camera_dependency_name}` but the sensor is not attached in the interface."
-                    )
+                raise UserWarning(
+                    f"Custom render depency requires `{d.camera_dependency_name}` but the sensor is not attached in the interface."
+                )
             return False
 
         for d in render_dependencies:
@@ -450,13 +449,13 @@ class ConfigurableRenderSensor(CameraSensor):
             camera_id = (
                 _gen_sensor_name(d.camera_dependency_name, vehicle_state)
                 if d.is_self_targetted()
-                else _gen_sensor_name()
+                else _gen_base_sensor_name(d.camera_dependency_name, d.target_actor)
             )
-            sscd = ShaderStepCameraDependency(
-                _gen_sensor_name(d.camera_dependency_name, vehicle_state),
+            shader_step_camera_dependency = ShaderStepCameraDependency(
+                camera_id,
                 d.variable_name,
             )
-            dependencies.append(sscd)
+            dependencies.append(shader_step_camera_dependency)
 
         renderer.build_shader_step(
             name=self._camera_name,
@@ -496,7 +495,7 @@ class ConfigurableRenderSensor(CameraSensor):
             camera_position=-1,
             camera_heading=-1,
         )
-        return ConfigurableRenderData(data=grid, metadata=metadata)
+        return CustomRenderData(data=grid, metadata=metadata)
 
 
 class LidarSensor(Sensor):

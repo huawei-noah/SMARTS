@@ -27,7 +27,7 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
-from smarts.core.sensor import ConfigurableRenderSensor, OcclusionSensor
+from smarts.core.sensor import CustomRenderSensor, OcclusionMapSensor
 
 from . import config, models
 from .actor import ActorRole
@@ -439,7 +439,7 @@ class Vehicle:
                     category=UserWarning,
                 )
             else:
-                occ_sensor = OcclusionSensor(
+                occ_sensor = OcclusionMapSensor(
                     vehicle_state=vehicle_state,
                     width=agent_interface.occlusion_map.width,
                     height=agent_interface.occlusion_map.height,
@@ -465,7 +465,7 @@ class Vehicle:
             if not sim.renderer:
                 raise RendererException.required_to("add a fragment program.")
             for i, program in enumerate(agent_interface.custom_fragment_programs):
-                sensor = ConfigurableRenderSensor(
+                sensor = CustomRenderSensor(
                     vehicle_state=vehicle_state,
                     width=program.width,
                     height=program.height,
@@ -475,10 +475,10 @@ class Vehicle:
                     render_dependencies=program.dependencies,
                     ogm_sensor=ogm_sensor,
                     top_down_rgb_sensor=top_down_rgb_sensor,
-                    dagm_sensor=dagm_sensor,
+                    drivable_area_grid_map_sensor=dagm_sensor,
                     name=program.name,
                 )
-                getattr(vehicle, f"attach_configurable_render_{i}")()
+                getattr(vehicle, f"attach_custom_render_{i}_sensor")()
         if agent_interface.lidar_point_cloud:
             sensor = LidarSensor(
                 vehicle_state=vehicle_state,
@@ -596,7 +596,7 @@ class Vehicle:
             "via_sensor",
             "signals_sensor",
         ] + [
-            f"configurable_render_{i}"
+            f"custom_render{i}_sensor"
             for i in range(config()("core", "max_custom_image_sensors", cast=int))
         ]
 
