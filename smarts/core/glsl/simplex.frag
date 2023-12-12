@@ -22,8 +22,10 @@
 #define DENSITY_U 1.6 * 0.1
 #define DENSITY_V 1.2 * 0.1
 
+#ifdef SHADERTOY
+#define scale 1.0
 
-#ifndef SHADERTOY
+#else
 vec2 hash( vec2 p ) // replace this by something better
 {
 	p = vec2( dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)) );
@@ -64,6 +66,7 @@ out vec4 p3d_Color;
 uniform vec2 iResolution;
 uniform float iHeading;
 uniform vec2 iTranslation;
+uniform float scale;
 #endif
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -75,7 +78,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec2 translation = iMouse.xy;
     #else
     float rotation = -iHeading; // Turn opposite the rotation of the object
-    vec2 translation = iTranslation;
+    vec2 translation = iTranslation * scale;
     #endif
 
     float s = sin(rotation);
@@ -84,7 +87,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	
 	float f = 0.0;
     float x, y, z;
-    mat2 m = mat2( DENSITY_U,  DENSITY_V, -DENSITY_V,  DENSITY_U );
+    mat2 m = mat2( DENSITY_U * scale,  DENSITY_V * scale, -DENSITY_V * scale,  DENSITY_U * scale );
 
     f = noise_with_octaves(uv, m);
 

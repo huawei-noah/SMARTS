@@ -31,7 +31,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 
 from smarts.core import glsl
-from smarts.core.agent_interface import CustomRenderCameraDependency
+from smarts.core.agent_interface import CameraSensorName, CustomRenderCameraDependency
 from smarts.core.coordinates import Pose, RefLinePoint
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
@@ -48,21 +48,16 @@ from smarts.core.observations import (
     ViaPoint,
 )
 from smarts.core.plan import Plan
-from smarts.core.renderer_base import RendererBase, ShaderStepCameraDependency
+from smarts.core.renderer_base import (
+    RendererBase,
+    ShaderStepCameraDependency,
+    ShaderStepVariableDependency,
+)
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.utils.math import squared_dist
 from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
-
-
-class CameraSensorName(Enum):
-    """Describes default names for camera configuration."""
-
-    DRIVABLE_AREA_GRID_MAP = "dagm"
-    TOP_DOWN_RGB = "top_down_rgb"
-    OCCUPANCY_GRID_MAP = "ogm"
-    OCCLUSION = "occlusion"
 
 
 def _gen_sensor_name(base_name: str, vehicle_state: VehicleState):
@@ -335,11 +330,16 @@ class OcclusionMapSensor(CameraSensor):
         if add_surface_noise:
             # generate simplex camera
             with pkg_resources.path(glsl, "simplex.frag") as simplex_shader_path:
-                simplex_camera_name = f"simplex:{vehicle_state.actor_id}"
+                simplex_camera_name = _gen_sensor_name("simplex", vehicle_state)
                 renderer.build_shader_step(
                     name=simplex_camera_name,
                     fshader_path=simplex_shader_path,
-                    dependencies=[],
+                    dependencies=[
+                        ShaderStepVariableDependency(
+                            value=resolution,
+                            script_variable_name="scale",
+                        )
+                    ],
                     priority=10,
                     width=width,
                     height=height,
@@ -349,7 +349,9 @@ class OcclusionMapSensor(CameraSensor):
 
         # feed simplex and ogm to composite
         with pkg_resources.path(glsl, "occlusion.frag") as composite_shader_path:
-            composite_camera_name = f"occlusion:{vehicle_state.actor_id}"
+            composite_camera_name = _gen_sensor_name(
+                CameraSensorName.OCCLUSION.value, vehicle_state
+            )
             renderer.build_shader_step(
                 name=composite_camera_name,
                 fshader_path=composite_shader_path,

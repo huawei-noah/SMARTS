@@ -461,10 +461,10 @@ class Vehicle:
                 renderer=sim.renderer,
             )
             vehicle.attach_rgb_sensor(top_down_rgb_sensor)
-        if len(agent_interface.custom_fragment_programs):
+        if len(agent_interface.custom_renders):
             if not sim.renderer:
                 raise RendererException.required_to("add a fragment program.")
-            for i, program in enumerate(agent_interface.custom_fragment_programs):
+            for i, program in enumerate(agent_interface.custom_renders):
                 sensor = CustomRenderSensor(
                     vehicle_state=vehicle_state,
                     width=program.width,
@@ -478,7 +478,7 @@ class Vehicle:
                     drivable_area_grid_map_sensor=dagm_sensor,
                     name=program.name,
                 )
-                getattr(vehicle, f"attach_custom_render_{i}_sensor")()
+                getattr(vehicle, f"attach_custom_render{i}_sensor")(sensor)
         if agent_interface.lidar_point_cloud:
             sensor = LidarSensor(
                 vehicle_state=vehicle_state,

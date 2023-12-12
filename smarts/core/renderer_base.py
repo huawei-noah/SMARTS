@@ -26,7 +26,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 
@@ -104,7 +104,24 @@ class OffscreenCamera(metaclass=ABCMeta):
 
 
 @dataclass(frozen=True)
-class ShaderStepCameraDependency:
+class ShaderStepDependencyBase:
+    """The base for shader dependencies."""
+
+
+@dataclass(frozen=True)
+class ShaderStepVariableDependency(ShaderStepDependencyBase):
+    """The base for shader dependencies."""
+
+    value: Union[int, float, bool, np.ndarray]
+    script_variable_name: str
+
+    def __post_init__(self):
+        assert self.value, f"`{self.script_variable_name=}` cannot be None or empty."
+        assert self.script_variable_name
+
+
+@dataclass(frozen=True)
+class ShaderStepCameraDependency(ShaderStepDependencyBase):
     """Forwards the texture from a given camera to the"""
 
     camera_id: str
@@ -114,6 +131,7 @@ class ShaderStepCameraDependency:
         assert (
             self.camera_id
         ), f"Camera id for {self.script_variable_name} cannot be None or empty."
+        assert self.script_variable_name
 
 
 @dataclass

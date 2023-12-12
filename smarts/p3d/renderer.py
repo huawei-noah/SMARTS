@@ -71,6 +71,8 @@ from smarts.core.renderer_base import (
     RendererNotSetUpWarning,
     ShaderStep,
     ShaderStepCameraDependency,
+    ShaderStepDependencyBase,
+    ShaderStepVariableDependency,
 )
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalState, signal_state_to_color
@@ -461,7 +463,7 @@ class Renderer(RendererBase):
                 )
                 dashed_lines_np.setShader(dashed_line_shader, priority=20)
                 dashed_lines_np.setShaderInput(
-                    "Resolution", self._showbase_instance.getSize()
+                    "iResolution", self._showbase_instance.getSize()
                 )
             self._dashed_lines_np = dashed_lines_np
         if scenario_metadata := scenario.metadata:
@@ -716,7 +718,7 @@ class Renderer(RendererBase):
         # Necessary for the lane lines to be in the proper proportions
         if self._dashed_lines_np is not None:
             self._dashed_lines_np.setShaderInput(
-                "Resolution", (buffer.size.x, buffer.size.y)
+                "iResolution", (buffer.size.x, buffer.size.y)
             )
 
         # setup texture
@@ -745,7 +747,7 @@ class Renderer(RendererBase):
         self,
         name: str,
         fshader_path: str,
-        dependencies: Tuple[ShaderStepCameraDependency, ...],
+        dependencies: Tuple[ShaderStepDependencyBase, ...],
         priority: int,
         height: int,
         width: int,
@@ -816,12 +818,27 @@ class Renderer(RendererBase):
             quad.setShader(
                 Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=fshader_path)
             )
-            cameras = tuple(self.camera_for_id(c.camera_id) for c in dependencies)
-            for dep, dep_cam in zip(dependencies, cameras):
+            camera_dependencies = tuple(
+                c for c in dependencies if isinstance(c, ShaderStepCameraDependency)
+            )
+            cameras = tuple(
+                self.camera_for_id(c.camera_id)
+                for c in camera_dependencies
+                if isinstance(c, ShaderStepCameraDependency)
+            )
+            for dep, dep_cam in zip(camera_dependencies, cameras):
                 quad.setShaderInput(dep.script_variable_name, dep_cam.tex)
                 size_x, size_y = dep_cam.image_dimensions
                 quad.setShaderInput(
                     f"{dep.script_variable_name}Resolution", n1=size_x, n2=size_y
+                )
+            variable_dependencies = tuple(
+                v for v in dependencies if isinstance(v, ShaderStepVariableDependency)
+            )
+            for dep in variable_dependencies:
+                quad.setShaderInput(
+                    dep.script_variable_name,
+                    dep.value,
                 )
             quad.setShaderInput("iResolution", n1=width, n2=height)
             quad.setShaderInput("iTranslation", n1=0, n2=0)
@@ -830,7 +847,7 @@ class Renderer(RendererBase):
             camera = P3dShaderStep(
                 self,
                 shader_file=fshader_path,
-                dependents=tuple(self.camera_for_id(c.camera_id) for c in dependencies),
+                dependents=cameras,
                 camera_np=quadcam,
                 buffer=buffer,
                 tex=tex,

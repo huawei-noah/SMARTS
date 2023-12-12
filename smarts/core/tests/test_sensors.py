@@ -284,7 +284,9 @@ def test_custom_render_sensor():
         sensor2 = sensor_gen(
             name="2nd",
             render_dependencies=(
-                CustomRenderCameraDependency(sensor.name, "iChannel0"),
+                CustomRenderCameraDependency(
+                    camera_dependency_name=sensor.name, variable_name="iChannel0"
+                ),
             ),
         )
 

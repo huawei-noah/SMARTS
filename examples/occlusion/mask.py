@@ -1,4 +1,5 @@
 import enum
+import importlib.resources as pkg_resources
 import math
 import os
 import random
@@ -25,18 +26,25 @@ from shapely.geometry import box as shapely_box
 from shapely.ops import unary_union
 from shapely.prepared import PreparedGeometry
 
+from smarts.core import glsl
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import (
     OGM,
+    RGB,
+    CameraSensorName,
+    CustomRender,
+    CustomRenderCameraDependency,
     DoneCriteria,
     DrivableAreaGridMap,
     OcclusionMap,
     RoadWaypoints,
     Waypoints,
 )
+from smarts.core.colors import Colors
 from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.road_map import Waypoint, interpolate_waypoints
 from smarts.core.utils.math import squared_dist, vec_to_slope
+from smarts.core.utils.observations import points_to_pixels
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.graphics.bytemap2edge import (
     far_kernel,
@@ -55,21 +63,33 @@ OUTPUT_DIR: Final[Path] = Path("./vaw/vaw")
 class PropertyAccessorUtil:
     def __init__(self, mode: ObservationOptions) -> None:
         if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
-            self.pos_accessor = lambda o: o["position"]
+            self.position_accessor = lambda o: o["position"]
             self.len_accessor = lambda o: o["box"][0]
             self.width_accessor = lambda o: o["box"][1]
             self.heading_accessor = lambda o: o["heading"]
             self.ego_accessor = lambda o: o["ego_vehicle_state"]
             self.nvs_accessor = lambda o: o["neighborhood_vehicle_states"]
             self.wpp_accessor = lambda o: o["waypoint_paths"]
+            self.waypoint_position_accessor = lambda o: self.position_accessor(
+                self.wpp_accessor(o)
+            )
         else:
-            self.pos_accessor = lambda o: o.position
+            self.position_accessor = lambda o: o.position
             self.len_accessor = lambda o: o.bounding_box.length
             self.width_accessor = lambda o: o.bounding_box.width
             self.heading_accessor = lambda o: o.heading
             self.ego_accessor = lambda o: o.ego_vehicle_state
             self.nvs_accessor = lambda o: o.neighborhood_vehicle_states
             self.wpp_accessor = lambda o: o.waypoint_paths
+            self.waypoint_position_accessor = lambda o: [
+                np.pad(
+                    [wp.position for wp in wps][:50],
+                    ((0, max(0, 50 - len(wps))), (0, 1)),
+                    mode="constant",
+                    constant_values=0,
+                )
+                for wps in self.wpp_accessor(o)
+            ]
 
 
 class PointGenerator:
@@ -557,7 +577,7 @@ class AugmentationWrapper(Agent):
 
     def export_video_image(self, ax, obs: Observation):
         ego_state = self._pa.ego_accessor(obs)
-        _observation_center = self._pa.pos_accessor(ego_state)[:2]
+        _observation_center = self._pa.position_accessor(ego_state)[:2]
         ax.plot(*PointGenerator.generate(*_observation_center).xy, "r+")
         xlim = self._observation_radius + 15
         ylim = xlim
@@ -674,7 +694,7 @@ class VectorAgentWrapper(AugmentationWrapper):
             return None
         ego_state = self._pa.ego_accessor(obs)
         ego_heading = self._pa.heading_accessor(ego_state)
-        _observation_center = self._pa.pos_accessor(ego_state)[:2]
+        _observation_center = self._pa.position_accessor(ego_state)[:2]
 
         vehicle_hf = HeightField(obs.occupancy_grid_map.data, (img_width, img_height))
         height_scaling = 5
@@ -758,7 +778,7 @@ class VectorAgentWrapper(AugmentationWrapper):
         )
 
         v_geom = generate_vehicle_polygon(
-            self._pa.pos_accessor(ego_state),
+            self._pa.position_accessor(ego_state),
             self._pa.len_accessor(ego_state),
             self._pa.width_accessor(ego_state),
             self._pa.heading_accessor(ego_state),
@@ -767,14 +787,14 @@ class VectorAgentWrapper(AugmentationWrapper):
 
         # draw vehicle center points
         for v in self._pa.nvs_accessor(obs):
-            ax.plot(*PointGenerator.generate(*self._pa.pos_accessor(v)).xy, "y+")
+            ax.plot(*PointGenerator.generate(*self._pa.position_accessor(v)).xy, "y+")
 
         vehicles = [v for v in self._pa.nvs_accessor(obs)]
         vehicles_to_downgrade: List[VehicleObservation] = [
             v
             for v in vehicles
             if prep_observation_inverse_mask.contains(
-                PointGenerator.generate(*self._pa.pos_accessor(v))
+                PointGenerator.generate(*self._pa.position_accessor(v))
             )
         ]
         occlusion_masks: List[Polygon] = gen_shadow_masks(
@@ -802,7 +822,7 @@ class VectorAgentWrapper(AugmentationWrapper):
         for vehicle_state, position_point in zip(
             vehicles_to_downgrade,
             (
-                PointGenerator.generate(*self._pa.pos_accessor(v))
+                PointGenerator.generate(*self._pa.position_accessor(v))
                 for v in vehicles_to_downgrade
             ),
         ):
@@ -815,12 +835,14 @@ class VectorAgentWrapper(AugmentationWrapper):
                 final_vehicle_states.append(vehicle_state)
 
         downgraded_vehicles = downgrade_vehicles(
-            self._pa.pos_accessor(ego_state), vehicles_to_downgrade, mode=self._mode
+            self._pa.position_accessor(ego_state),
+            vehicles_to_downgrade,
+            mode=self._mode,
         )
 
         wp_downgrading_fn = partial(
             downgrade_waypoints,
-            center=self._pa.pos_accessor(ego_state),
+            center=self._pa.position_accessor(ego_state),
             wp_space_resolution=2,
             max_observable_radius=self._observation_radius * 0.5,
             waypoint_displacement_factor=0.6,
@@ -854,7 +876,7 @@ class VectorAgentWrapper(AugmentationWrapper):
 
         for vehicle in self._pa.nvs_accessor(obs):
             v_geom = generate_vehicle_polygon(
-                self._pa.pos_accessor(vehicle),
+                self._pa.position_accessor(vehicle),
                 self._pa.len_accessor(vehicle),
                 self._pa.width_accessor(vehicle),
                 self._pa.heading_accessor(vehicle),
@@ -862,7 +884,7 @@ class VectorAgentWrapper(AugmentationWrapper):
             ax.plot(*v_geom.exterior.xy, color="b")
         for vehicle in downgraded_vehicles:
             v_geom = generate_vehicle_polygon(
-                self._pa.pos_accessor(vehicle),
+                self._pa.position_accessor(vehicle),
                 self._pa.len_accessor(vehicle),
                 self._pa.width_accessor(vehicle),
                 self._pa.heading_accessor(vehicle),
@@ -870,15 +892,17 @@ class VectorAgentWrapper(AugmentationWrapper):
             ax.plot(*v_geom.exterior.xy, color="r")
 
         self.draw_waypoints(
-            road_waypoints_to_downgrade, self._pa.pos_accessor, ax, color="y"
+            road_waypoints_to_downgrade, self._pa.position_accessor, ax, color="y"
         )
         self.draw_waypoints(
-            downgraded_road_waypoints, self._pa.pos_accessor, ax, color="g"
+            downgraded_road_waypoints, self._pa.position_accessor, ax, color="g"
         )
         self.draw_waypoints(
-            self._pa.wpp_accessor(obs), self._pa.pos_accessor, ax, color="b"
+            self._pa.wpp_accessor(obs), self._pa.position_accessor, ax, color="b"
         )
-        self.draw_waypoints(downgraded_waypoints, self._pa.pos_accessor, ax, color="r")
+        self.draw_waypoints(
+            downgraded_waypoints, self._pa.position_accessor, ax, color="r"
+        )
 
         self.export_video_image(ax, obs)
         dowgraded_obs = obs._replace(
@@ -908,6 +932,8 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         output_dir: Path = OUTPUT_DIR,
     ) -> None:
         self._inner_agent = inner_agent
+        self._wps_color = np.array(Colors.Green.value[:3]) * 255
+        self._no_color = np.zeros(shape=(3,))
         os.makedirs(output_dir, exist_ok=True)
         super().__init__(
             mode=mode,
@@ -918,6 +944,7 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         )
 
     def act(self, obs: Optional[Observation], **configs):
+
         img_width, img_height = (
             obs.drivable_area_grid_map.metadata.width,
             obs.drivable_area_grid_map.metadata.height,
@@ -929,7 +956,7 @@ class OcclusionAgentWrapper(AugmentationWrapper):
             return None
         ego_state = self._pa.ego_accessor(obs)
         ego_heading = self._pa.heading_accessor(ego_state)
-        _observation_center = self._pa.pos_accessor(ego_state)[:2]
+        _observation_center = self._pa.position_accessor(ego_state)[:2]
         extent = [
             -img_width * 0.5,
             img_width * 0.5,
@@ -939,6 +966,25 @@ class OcclusionAgentWrapper(AugmentationWrapper):
 
         vehicle_hf = HeightField(obs.obfuscation_grid_map.data, (img_width, img_height))
 
+        rgb_ego = obs.custom_renders[0].data.copy()
+        waypoint_paths = np.array(self._pa.waypoint_position_accessor(obs))
+
+        position = self._pa.position_accessor(ego_state)
+        heading = self._pa.heading_accessor(ego_state)
+        for path in waypoint_paths[0:11, 3:35, 0:3]:
+            wps_valid = points_to_pixels(
+                points=path,
+                center_position=position,
+                heading=heading,
+                width=obs.obfuscation_grid_map.metadata.width,
+                height=obs.obfuscation_grid_map.metadata.height,
+                resolution=obs.obfuscation_grid_map.metadata.resolution,
+            )
+            for point in wps_valid:
+                img_x, img_y = point[0], point[1]
+                # if all(rgb_ego[img_y, img_x, :] == self._no_color):
+                rgb_ego[img_y, img_x, :] = self._wps_color
+
         if self._record:
             tr = (
                 transforms.Affine2D()
@@ -946,9 +992,17 @@ class OcclusionAgentWrapper(AugmentationWrapper):
                 .translate(*_observation_center)
             )
             image_data = vehicle_hf.data
+            # ax.imshow(
+            #     image_data,
+            #     cmap="gray",
+            #     vmin=0,
+            #     vmax=255,
+            #     transform=tr + ax.transData,
+            #     extent=extent,
+            # )
             ax.imshow(
-                image_data,
-                cmap="gray",
+                rgb_ego,
+                # cmap="gray",
                 vmin=0,
                 vmax=255,
                 transform=tr + ax.transData,
@@ -957,7 +1011,7 @@ class OcclusionAgentWrapper(AugmentationWrapper):
 
             for vehicle in self._pa.nvs_accessor(obs):
                 v_geom = generate_vehicle_polygon(
-                    self._pa.pos_accessor(vehicle),
+                    self._pa.position_accessor(vehicle),
                     self._pa.len_accessor(vehicle),
                     self._pa.width_accessor(vehicle),
                     self._pa.heading_accessor(vehicle),
@@ -977,7 +1031,7 @@ def occlusion_main():
     observation_formatting = ObservationOptions.unformatted
 
     agent_spec = make("zoo.policies:keep-lane-agent-v0")
-    observation_radius = 40
+    observation_radius = 60
     agent_count = 1
     agents: Dict[str, OcclusionAgentWrapper] = {
         f"A{c}": OcclusionAgentWrapper(
@@ -989,45 +1043,72 @@ def occlusion_main():
         for c in range(1, agent_count + 1)
     }
 
-    env = HiWayEnvV1(
-        scenarios=[
-            # "./scenarios/sumo/intersections/4lane_t",
-            # "./smarts/diagnostic/n_sumo_actors/200_actors",
-            # "./scenarios/argoverse/straight/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1/",
-            "./scenarios/argoverse/turn/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1/",
-            # "./scenarios/argoverse/turn/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1/",
-            # "./scenarios/argoverse/turn/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1/",
-        ],
-        observation_options=observation_formatting,
-        action_options="unformatted",
-        agent_interfaces={
-            "A1": replace(
-                agent_spec.interface,
-                neighborhood_vehicle_states=True,
-                drivable_area_grid_map=DrivableAreaGridMap(
-                    width=observation_radius * 2,
-                    height=observation_radius * 2,
-                    resolution=1,
-                ),
-                occupancy_grid_map=OGM(
-                    width=observation_radius * 2,
-                    height=observation_radius * 2,
-                    resolution=1,
-                ),
-                occlusion_map=OcclusionMap(
-                    width=observation_radius * 2,
-                    height=observation_radius * 2,
-                    resolution=1,
-                    surface_noise=True,
-                ),
-                road_waypoints=RoadWaypoints(horizon=50),
-                waypoint_paths=Waypoints(lookahead=50),
-                done_criteria=DoneCriteria(
-                    collision=False, off_road=False, off_route=False
-                ),
-            )
-        },
-    )
+    w, h = observation_radius * 2, observation_radius * 2
+    resolution = 1
+    with pkg_resources.path(glsl, "map_values.frag") as frag_shader:
+        env = HiWayEnvV1(
+            scenarios=[
+                # "./scenarios/sumo/intersections/4lane_t",
+                # "./smarts/diagnostic/n_sumo_actors/200_actors",
+                # "./scenarios/argoverse/straight/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1/",
+                "./scenarios/argoverse/turn/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1/",
+                # "./scenarios/argoverse/turn/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1/",
+                # "./scenarios/argoverse/turn/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1/",
+            ],
+            observation_options=observation_formatting,
+            action_options="unformatted",
+            agent_interfaces={
+                "A1": replace(
+                    agent_spec.interface,
+                    neighborhood_vehicle_states=True,
+                    drivable_area_grid_map=DrivableAreaGridMap(
+                        width=w,
+                        height=h,
+                        resolution=resolution,
+                    ),
+                    occupancy_grid_map=OGM(
+                        width=w,
+                        height=h,
+                        resolution=resolution,
+                    ),
+                    top_down_rgb=RGB(
+                        width=w,
+                        height=h,
+                        resolution=resolution,
+                    ),
+                    occlusion_map=OcclusionMap(
+                        width=w,
+                        height=h,
+                        resolution=resolution,
+                        surface_noise=True,
+                    ),
+                    road_waypoints=RoadWaypoints(horizon=50),
+                    waypoint_paths=Waypoints(lookahead=50),
+                    done_criteria=DoneCriteria(
+                        collision=False, off_road=False, off_route=False
+                    ),
+                    custom_renders=(
+                        CustomRender(
+                            name="noc",
+                            fragment_shader_path=frag_shader,
+                            dependencies=(
+                                CustomRenderCameraDependency(
+                                    camera_dependency_name=CameraSensorName.OCCLUSION,
+                                    variable_name="iChannel0",
+                                ),
+                                CustomRenderCameraDependency(
+                                    camera_dependency_name=CameraSensorName.TOP_DOWN_RGB,
+                                    variable_name="iChannel1",
+                                ),
+                            ),
+                            width=w,
+                            height=h,
+                            resolution=resolution,
+                        ),
+                    ),
+                )
+            },
+        )
 
     terms = {"__all__": False}
     obs, info = env.reset()

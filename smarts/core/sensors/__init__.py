@@ -267,11 +267,11 @@ class Sensors:
                 obfuscation_grid_map=get_camera_sensor_result(
                     vehicle_sensors, "occlusion_sensor", renderer
                 ),
-                custom_renders=(
+                custom_renders=tuple(
                     get_camera_sensor_result(
-                        vehicle_sensors, f"custom_render_{i}_sensor", renderer
+                        vehicle_sensors, f"custom_render{i}_sensor", renderer
                     )
-                    for i, _ in enumerate(interface.custom_fragment_programs)
+                    for i, _ in enumerate(interface.custom_renders)
                 ),
                 lidar_point_cloud=lidar,
             ),

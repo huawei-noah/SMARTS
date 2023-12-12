@@ -36,8 +36,7 @@ sanity-test: build-sanity-scenarios
 		./smarts/core/tests/test_dynamics_backend.py::test_set_pose \
 		./smarts/core/tests/test_sensors.py::test_waypoints_sensor \
 		./smarts/core/tests/test_smarts.py::test_smarts_doesnt_leak_tasks_after_reset \
-		./examples/tests/test_examples.py::test_examples[hiway_v1] \
-		./examples/tests/test_examples.py::test_examples[laner] \
+		./examples/tests/test_examples.py::test_examples \
 		./smarts/env/tests/test_social_agent.py::test_social_agents_not_in_env_obs_keys
 
 .PHONY: test-learning

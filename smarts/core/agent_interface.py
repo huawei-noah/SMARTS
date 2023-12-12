@@ -85,16 +85,38 @@ class OcclusionMap:
     surface_noise: bool = True
 
 
-@dataclass
-class CustomRenderCameraDependency:
+class CameraSensorName(Enum):
+    """Describes default names for camera configuration."""
 
-    camera_dependency_name: str
+    DRIVABLE_AREA_GRID_MAP = "dagm"
+    TOP_DOWN_RGB = "top_down_rgb"
+    OCCUPANCY_GRID_MAP = "ogm"
+    OCCLUSION = "occlusion"
+
+
+@dataclass
+class RenderDependencyBase:
+    """Base for render dependencies"""
+
+    pass
+
+
+@dataclass
+class CustomRenderCameraDependency(RenderDependencyBase):
+
+    camera_dependency_name: Union[str, CameraSensorName]
     variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]
 
     target_actor: Union[str, Literal[_SELF.default]] = _SELF.default
 
     def is_self_targetted(self):
+        """If the dependency is drawing from one of this agent's cameras."""
         return self.target_actor is _SELF.default
+
+    def __post_init__(self):
+        assert self.camera_dependency_name
+        if isinstance(self.camera_dependency_name, CameraSensorName):
+            self.camera_dependency_name = self.camera_dependency_name.value
 
 
 @dataclass
@@ -405,7 +427,7 @@ class AgentInterface:
     """Enable the `OcclusionMap` for the current vehicle. This image represents what the current vehicle can see.
     """
 
-    custom_fragment_programs: Tuple[CustomRender, ...] = tuple()
+    custom_renders: Tuple[CustomRender, ...] = tuple()
     """Add custom renderer outputs.
     """
 
@@ -438,7 +460,7 @@ class AgentInterface:
         self.signals = AgentInterface._resolve_config(self.signals, Signals)
         assert self.vehicle_type in {"sedan", "bus"}
 
-        assert len(self.custom_fragment_programs) <= config()(
+        assert len(self.custom_renders) <= config()(
             "core", "max_custom_image_sensors", cast=int
         )
 
