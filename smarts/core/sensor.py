@@ -26,12 +26,16 @@ from collections import deque
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 
 from smarts.core import glsl
-from smarts.core.agent_interface import CameraSensorName, CustomRenderCameraDependency
+from smarts.core.agent_interface import (
+    CameraSensorName,
+    CustomRenderCameraDependency,
+    CustomRenderVariableDependency,
+)
 from smarts.core.coordinates import Pose, RefLinePoint
 from smarts.core.lidar import Lidar
 from smarts.core.lidar_sensor_params import SensorParams
@@ -336,9 +340,16 @@ class OcclusionMapSensor(CameraSensor):
                     fshader_path=simplex_shader_path,
                     dependencies=[
                         ShaderStepVariableDependency(
-                            value=resolution,
+                            value=1.0 / resolution,
                             script_variable_name="scale",
-                        )
+                        ),
+                        ShaderStepCameraDependency(
+                            _gen_sensor_name(
+                                CameraSensorName.DRIVABLE_AREA_GRID_MAP.value,
+                                vehicle_state,
+                            ),
+                            "iChannel0",
+                        ),
                     ],
                     priority=10,
                     width=width,
@@ -410,7 +421,9 @@ class CustomRenderSensor(CameraSensor):
         resolution: float,
         renderer: RendererBase,
         fragment_shader_path: str,
-        render_dependencies: Tuple[CustomRenderCameraDependency, ...],
+        render_dependencies: Tuple[
+            Union[CustomRenderCameraDependency, CustomRenderVariableDependency], ...
+        ],
         ogm_sensor: Optional[OGMSensor],
         top_down_rgb_sensor: Optional[RGBSensor],
         drivable_area_grid_map_sensor: Optional[DrivableAreaGridMapSensor],
@@ -444,20 +457,26 @@ class CustomRenderSensor(CameraSensor):
             return False
 
         for d in render_dependencies:
-            for csn, sensor in named_camera_sensors:
-                if has_required(d.camera_dependency_name, csn.value, sensor):
-                    break
+            if isinstance(d, CustomRenderCameraDependency):
+                for csn, sensor in named_camera_sensors:
+                    if has_required(d.camera_dependency_name, csn.value, sensor):
+                        break
 
-            camera_id = (
-                _gen_sensor_name(d.camera_dependency_name, vehicle_state)
-                if d.is_self_targetted()
-                else _gen_base_sensor_name(d.camera_dependency_name, d.target_actor)
-            )
-            shader_step_camera_dependency = ShaderStepCameraDependency(
-                camera_id,
-                d.variable_name,
-            )
-            dependencies.append(shader_step_camera_dependency)
+                camera_id = (
+                    _gen_sensor_name(d.camera_dependency_name, vehicle_state)
+                    if d.is_self_targetted()
+                    else _gen_base_sensor_name(d.camera_dependency_name, d.target_actor)
+                )
+                dependency = ShaderStepCameraDependency(
+                    camera_id,
+                    d.variable_name,
+                )
+            elif isinstance(d, CustomRenderVariableDependency):
+                dependency = ShaderStepVariableDependency(
+                    value=d.value,
+                    script_variable_name=d.variable_name,
+                )
+            dependencies.append(dependency)
 
         renderer.build_shader_step(
             name=self._camera_name,

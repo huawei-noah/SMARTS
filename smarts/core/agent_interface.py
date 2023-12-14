@@ -24,6 +24,8 @@ from enum import Enum, IntEnum, auto
 from functools import cached_property
 from typing import Final, List, Literal, Optional, Tuple, Union
 
+import numpy as np
+
 from smarts.core import config
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
@@ -102,7 +104,25 @@ class RenderDependencyBase:
 
 
 @dataclass
+class CustomRenderVariableDependency:
+    """Base for renderer variable dependencies."""
+
+    value: Union[int, float, bool, np.ndarray, list, tuple]
+    variable_name: str
+
+    def __post_init__(self):
+        assert self.value, f"`{self.variable_name=}` cannot be None or empty."
+        assert self.variable_name
+        assert (
+            0 < len(self.value) < 5
+            if isinstance(self.value, (np.ndarray, list, tuple))
+            else True
+        )
+
+
+@dataclass
 class CustomRenderCameraDependency(RenderDependencyBase):
+    """Provides a uniform texture access to an existing camera."""
 
     camera_dependency_name: Union[str, CameraSensorName]
     variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]

@@ -112,12 +112,17 @@ class ShaderStepDependencyBase:
 class ShaderStepVariableDependency(ShaderStepDependencyBase):
     """The base for shader dependencies."""
 
-    value: Union[int, float, bool, np.ndarray]
+    value: Union[int, float, bool, np.ndarray, list, tuple]
     script_variable_name: str
 
     def __post_init__(self):
         assert self.value, f"`{self.script_variable_name=}` cannot be None or empty."
         assert self.script_variable_name
+        assert (
+            0 < len(self.value) < 5
+            if isinstance(self.value, (np.ndarray, list, tuple))
+            else True
+        )
 
 
 @dataclass(frozen=True)
@@ -128,10 +133,10 @@ class ShaderStepCameraDependency(ShaderStepDependencyBase):
     script_variable_name: str
 
     def __post_init__(self):
+        assert self.script_variable_name, "Variable name cannot be empty."
         assert (
             self.camera_id
         ), f"Camera id for {self.script_variable_name} cannot be None or empty."
-        assert self.script_variable_name
 
 
 @dataclass

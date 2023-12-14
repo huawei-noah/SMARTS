@@ -55,6 +55,7 @@ from panda3d.core import (
     NodePath,
     OrthographicLens,
     Shader,
+    ShaderInput,
     Texture,
     WindowProperties,
     loadPrcFileData,
@@ -836,10 +837,9 @@ class Renderer(RendererBase):
                 v for v in dependencies if isinstance(v, ShaderStepVariableDependency)
             )
             for dep in variable_dependencies:
-                quad.setShaderInput(
-                    dep.script_variable_name,
-                    dep.value,
-                )
+                shader_input = ShaderInput(dep.script_variable_name, dep.value)
+                quad.setShaderInput(shader_input)
+
             quad.setShaderInput("iResolution", n1=width, n2=height)
             quad.setShaderInput("iTranslation", n1=0, n2=0)
             quad.setShaderInput("iHeading", 0.0)
