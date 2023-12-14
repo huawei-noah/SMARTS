@@ -81,21 +81,21 @@ class PropertyAccessorUtil:
             self.ego_accessor = lambda o: o.ego_vehicle_state
             self.nvs_accessor = lambda o: o.neighborhood_vehicle_states
             self.wpp_accessor = lambda o: o.waypoint_paths
-            self.waypoint_position_accessor = lambda o: [
-                np.pad(
-                    [wp.position for wp in wps][:50],
-                    ((0, max(0, 50 - len(wps))), (0, 1)),
-                    mode="constant",
-                    constant_values=0,
-                )
-                for wps in self.wpp_accessor(o)
-            ]
+            def _pad(waypoints):
+                max_lane_wps = max([len(lane) for lane in waypoints])
+                base = np.zeros((len(waypoints), max_lane_wps, 3), dtype=np.float64)
+
+                for i, lane in enumerate(waypoints):
+                    for j, wp in enumerate(lane):
+                        base[i, j, :2] = self.position_accessor(wp)
+                return base
+            self.waypoint_position_accessor = lambda o: _pad(self.wpp_accessor(o))
 
 
 class PointGenerator:
     @classmethod
     @lru_cache(maxsize=1000)
-    def generate(cls, x, y, *args):
+    def cache_generate(cls, x, y, *args):
         return Point(x, y)
 
 
@@ -268,7 +268,7 @@ def find_tangent_intersection(center, radius, point_a, point_on_tangent, tangent
 
 
 def generate_circle_polygon(center, radius) -> Polygon:
-    return PointGenerator.generate(*center[:2]).buffer(radius)
+    return PointGenerator.cache_generate(*center[:2]).buffer(radius)
 
 
 def find_line_intersection(slope1, slope2, point1, point2):
@@ -333,9 +333,9 @@ def apply_masks(
     remaining_vehicle_points = []
 
     if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
-        gen = lambda vs: PointGenerator.generate(*vs["position"])
+        gen = lambda vs: PointGenerator.cache_generate(*vs["position"])
     else:
-        gen = lambda vs: PointGenerator.generate(*vs.position)
+        gen = lambda vs: PointGenerator.cache_generate(*vs.position)
 
     for vehicle_state in vehicle_states:
         position_point = gen(vehicle_state)
@@ -578,7 +578,7 @@ class AugmentationWrapper(Agent):
     def export_video_image(self, ax, obs: Observation):
         ego_state = self._pa.ego_accessor(obs)
         _observation_center = self._pa.position_accessor(ego_state)[:2]
-        ax.plot(*PointGenerator.generate(*_observation_center).xy, "r+")
+        ax.plot(*PointGenerator.cache_generate(*_observation_center).xy, "r+")
         xlim = self._observation_radius + 15
         ylim = xlim
         ax.set_xlim(-xlim + _observation_center[0], xlim + _observation_center[0])
@@ -789,14 +789,14 @@ class VectorAgentWrapper(AugmentationWrapper):
 
         # draw vehicle center points
         for v in self._pa.nvs_accessor(obs):
-            ax.plot(*PointGenerator.generate(*self._pa.position_accessor(v)).xy, "y+")
+            ax.plot(*PointGenerator.cache_generate(*self._pa.position_accessor(v)).xy, "y+")
 
         vehicles = [v for v in self._pa.nvs_accessor(obs)]
         vehicles_to_downgrade: List[VehicleObservation] = [
             v
             for v in vehicles
             if prep_observation_inverse_mask.contains(
-                PointGenerator.generate(*self._pa.position_accessor(v))
+                PointGenerator.cache_generate(*self._pa.position_accessor(v))
             )
         ]
         occlusion_masks: List[Polygon] = gen_shadow_masks(
@@ -824,7 +824,7 @@ class VectorAgentWrapper(AugmentationWrapper):
         for vehicle_state, position_point in zip(
             vehicles_to_downgrade,
             (
-                PointGenerator.generate(*self._pa.position_accessor(v))
+                PointGenerator.cache_generate(*self._pa.position_accessor(v))
                 for v in vehicles_to_downgrade
             ),
         ):
@@ -854,7 +854,7 @@ class VectorAgentWrapper(AugmentationWrapper):
                 wp
                 for wp in l
                 if prep_observation_inverse_mask.contains(
-                    PointGenerator.generate(*wp.position)
+                    PointGenerator.cache_generate(*wp.position)
                 )
             ]
             for l in self._pa.wpp_accessor(obs)
@@ -866,7 +866,7 @@ class VectorAgentWrapper(AugmentationWrapper):
                 wp
                 for wp in path
                 if prep_observation_inverse_mask.contains(
-                    PointGenerator.generate(*wp.position)
+                    PointGenerator.cache_generate(*wp.position)
                 )
             ]
             for paths in obs.road_waypoints.lanes.values()
