@@ -21,6 +21,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     }
 
     fragColor = texture(iChannel1, p);
+
+    if (fragColor.rgb == vec3(0.0, 0.0, 0.0)) {
+        fragColor = vec4(0.1, 0.5, 0.1, 1.0);
+    }
 }
 
 #ifndef SHADERTOY
