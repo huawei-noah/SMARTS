@@ -67,11 +67,13 @@ uniform vec2 iResolution;
 uniform float iHeading;
 uniform vec2 iTranslation;
 uniform float scale;
+
+uniform sampler2D iChannel0;
 #endif
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
-    vec2 uv = ( gl_FragCoord.xy - .5 * iResolution.xy ) / iResolution.y;
+    vec2 uv = ( fragCoord.xy - .5 * iResolution.xy ) / iResolution.y;
 
     #ifdef SHADERTOY
     float rotation = iTime;
@@ -84,13 +86,16 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float s = sin(rotation);
     float c = cos(rotation);
     uv = uv * mat2(c, s, -s, c) + translation / iResolution.y;
-	
-	float f = 0.0;
-    float x, y, z;
-    mat2 m = mat2( DENSITY_U * scale,  DENSITY_V * scale, -DENSITY_V * scale,  DENSITY_U * scale );
 
+	float f = 0.0;
+    float inv_s = 1.0 / scale;
+    mat2 m = mat2( DENSITY_U,  DENSITY_V, -DENSITY_V,  DENSITY_U ) * inv_s;
     f = noise_with_octaves(uv, m);
 
+    vec2 p = fragCoord.xy * 1.0 / iResolution.xy;
+    if (texture(iChannel0, p).r < .2) {
+        f = f + 2.0 * abs(noise_with_octaves(uv, m * 2.0));
+    }
     //f = 0.5 + 0.5*f;
     //f *= 0.3 + f;
 
