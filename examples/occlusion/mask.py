@@ -614,15 +614,17 @@ class AugmentationWrapper(Agent):
                 "-pix_fmt",
                 "yuv420p",
                 video_name,
-            ]
+            ],
+            stderr=subprocess.DEVNULL,
         )
-        subprocess.call(["mv", video_name, f"../{video_name}"])
         subprocess.call(
             [
                 "rm",
-                f"./{VIDEO_PREFIX}*",
+                "-f",
+                f"{VIDEO_PREFIX}*.jpg",
             ]
         )
+        subprocess.call(["mv", video_name, f"../{video_name}"])
         os.chdir("../..")
 
 
@@ -928,12 +930,14 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         mode: ObservationOptions,
         agent_name,
         observation_radius: float = 40.0,
+        scale: float = 1.0,
         record: bool = True,
         output_dir: Path = OUTPUT_DIR,
     ) -> None:
         self._inner_agent = inner_agent
         self._wps_color = np.array(Colors.Green.value[:3]) * 255
         self._no_color = np.zeros(shape=(3,))
+        self._inverse_scale = 1.0 / scale
         os.makedirs(output_dir, exist_ok=True)
         super().__init__(
             mode=mode,
@@ -982,8 +986,10 @@ class OcclusionAgentWrapper(AugmentationWrapper):
             )
             for point in wps_valid:
                 img_x, img_y = point[0], point[1]
-                # if all(rgb_ego[img_y, img_x, :] == self._no_color):
-                rgb_ego[img_y, img_x, :] = self._wps_color
+                if all(rgb_ego[img_y, img_x, :] != self._no_color):
+                    rgb_ego[img_y, img_x, :] = self._wps_color
+                else:
+                    break
 
         if self._record:
             tr = (
@@ -992,14 +998,6 @@ class OcclusionAgentWrapper(AugmentationWrapper):
                 .translate(*_observation_center)
             )
             image_data = vehicle_hf.data
-            # ax.imshow(
-            #     image_data,
-            #     cmap="gray",
-            #     vmin=0,
-            #     vmax=255,
-            #     transform=tr + ax.transData,
-            #     extent=extent,
-            # )
             ax.imshow(
                 rgb_ego,
                 # cmap="gray",
@@ -1008,12 +1006,22 @@ class OcclusionAgentWrapper(AugmentationWrapper):
                 transform=tr + ax.transData,
                 extent=extent,
             )
+            # ax.imshow(
+            #     image_data,
+            #     cmap="gray",
+            #     vmin=0,
+            #     vmax=255,
+            #     transform=tr + ax.transData,
+            #     extent=extent,
+            # )
 
             for vehicle in self._pa.nvs_accessor(obs):
+                vehicle_pos = np.array(self._pa.position_accessor(vehicle))[:2]
                 v_geom = generate_vehicle_polygon(
-                    self._pa.position_accessor(vehicle),
-                    self._pa.len_accessor(vehicle),
-                    self._pa.width_accessor(vehicle),
+                    _observation_center
+                    + (vehicle_pos - _observation_center) * self._inverse_scale,
+                    self._pa.len_accessor(vehicle) * self._inverse_scale,
+                    self._pa.width_accessor(vehicle) * self._inverse_scale,
                     self._pa.heading_accessor(vehicle),
                 )
                 ax.plot(*v_geom.exterior.xy, color="b")
@@ -1032,88 +1040,88 @@ def occlusion_main():
 
     agent_spec = make("zoo.policies:keep-lane-agent-v0")
     observation_radius = 60
+    resolution = 1
+    w, h = observation_radius * 2, observation_radius * 2
     agent_count = 1
     agents: Dict[str, OcclusionAgentWrapper] = {
         f"A{c}": OcclusionAgentWrapper(
             agent_spec.build_agent(),
             observation_formatting,
             observation_radius=observation_radius,
+            scale=resolution,
             agent_name=f"A{c}",
         )
         for c in range(1, agent_count + 1)
     }
 
-    w, h = observation_radius * 2, observation_radius * 2
-    resolution = 1
     with pkg_resources.path(glsl, "map_values.frag") as frag_shader:
-        env = HiWayEnvV1(
-            scenarios=[
-                # "./scenarios/sumo/intersections/4lane_t",
-                # "./smarts/diagnostic/n_sumo_actors/200_actors",
-                # "./scenarios/argoverse/straight/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1/",
-                "./scenarios/argoverse/turn/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1/",
-                # "./scenarios/argoverse/turn/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1/",
-                # "./scenarios/argoverse/turn/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1/",
-            ],
-            observation_options=observation_formatting,
-            action_options="unformatted",
-            agent_interfaces={
-                "A1": replace(
-                    agent_spec.interface,
-                    neighborhood_vehicle_states=True,
-                    drivable_area_grid_map=DrivableAreaGridMap(
-                        width=w,
-                        height=h,
-                        resolution=resolution,
-                    ),
-                    occupancy_grid_map=OGM(
-                        width=w,
-                        height=h,
-                        resolution=resolution,
-                    ),
-                    top_down_rgb=RGB(
-                        width=w,
-                        height=h,
-                        resolution=resolution,
-                    ),
-                    occlusion_map=OcclusionMap(
-                        width=w,
-                        height=h,
-                        resolution=resolution,
-                        surface_noise=True,
-                    ),
-                    road_waypoints=RoadWaypoints(horizon=50),
-                    waypoint_paths=Waypoints(lookahead=50),
-                    done_criteria=DoneCriteria(
-                        collision=False, off_road=False, off_route=False
-                    ),
-                    custom_renders=(
-                        CustomRender(
-                            name="noc",
-                            fragment_shader_path=frag_shader,
-                            dependencies=(
-                                CustomRenderCameraDependency(
-                                    camera_dependency_name=CameraSensorName.OCCLUSION,
-                                    variable_name="iChannel0",
-                                ),
-                                CustomRenderCameraDependency(
-                                    camera_dependency_name=CameraSensorName.TOP_DOWN_RGB,
-                                    variable_name="iChannel1",
-                                ),
-                            ),
-                            width=w,
-                            height=h,
-                            resolution=resolution,
+        agent_interface = replace(
+            agent_spec.interface,
+            neighborhood_vehicle_states=True,
+            drivable_area_grid_map=DrivableAreaGridMap(
+                width=w,
+                height=h,
+                resolution=resolution,
+            ),
+            occupancy_grid_map=OGM(
+                width=w,
+                height=h,
+                resolution=resolution,
+            ),
+            top_down_rgb=RGB(
+                width=w,
+                height=h,
+                resolution=resolution,
+            ),
+            occlusion_map=OcclusionMap(
+                width=w,
+                height=h,
+                resolution=resolution,
+                surface_noise=True,
+            ),
+            road_waypoints=RoadWaypoints(horizon=50),
+            waypoint_paths=Waypoints(lookahead=50),
+            done_criteria=DoneCriteria(
+                collision=False, off_road=False, off_route=False
+            ),
+            custom_renders=(
+                CustomRender(
+                    name="noc",
+                    fragment_shader_path=frag_shader,
+                    dependencies=(
+                        CustomRenderCameraDependency(
+                            camera_dependency_name=CameraSensorName.OCCLUSION,
+                            variable_name="iChannel0",
+                        ),
+                        CustomRenderCameraDependency(
+                            camera_dependency_name=CameraSensorName.TOP_DOWN_RGB,
+                            variable_name="iChannel1",
                         ),
                     ),
-                )
-            },
+                    width=w,
+                    height=h,
+                    resolution=resolution,
+                ),
+            ),
         )
 
-    terms = {"__all__": False}
-    obs, info = env.reset()
-    with env:
-        for _ in range(50):
+    with HiWayEnvV1(
+        scenarios=[
+            # "./scenarios/sumo/intersections/4lane_t",
+            # "./smarts/diagnostic/n_sumo_actors/200_actors",
+            # "./scenarios/argoverse/straight/00a445fb-7293-4be6-adbc-e30c949b6cf7_agents_1/",
+            "./scenarios/argoverse/turn/0a60b442-56b0-46c3-be45-cf166a182b67_agents_1/",
+            # "./scenarios/argoverse/turn/0a764a82-b44e-481e-97e7-05e1f1f925f6_agents_1/",
+            # "./scenarios/argoverse/turn/0bf054e3-7698-4b86-9c98-626df2dee9f4_agents_1/",
+        ],
+        observation_options=observation_formatting,
+        action_options="unformatted",
+        agent_interfaces={"A1": agent_interface},
+        fixed_timestep_sec=0.1,
+    ) as env:
+        terms = {"__all__": False}
+        obs, info = env.reset()
+        for _ in range(70):
             if terms["__all__"]:
                 break
             acts = {a_id: a.act(obs.get(a_id)) for a_id, a in agents.items()}
