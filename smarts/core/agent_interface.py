@@ -22,7 +22,7 @@ import warnings
 from dataclasses import dataclass, field, replace
 from enum import Enum, IntEnum, auto
 from functools import cached_property
-from typing import Final, List, Literal, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
@@ -98,9 +98,7 @@ class CameraSensorName(Enum):
 
 @dataclass
 class RenderDependencyBase:
-    """Base for render dependencies"""
-
-    pass
+    """Base class for render dependencies"""
 
 
 @dataclass
@@ -209,14 +207,10 @@ class NeighborhoodVehicles:
 class Accelerometer:
     """Requires detection of motion changes within the agents vehicle."""
 
-    pass
-
 
 @dataclass
 class LanePositions:
     """Computation and reporting of lane-relative RefLine (Frenet) coordinates for all vehicles."""
-
-    pass
 
 
 @dataclass
@@ -371,12 +365,10 @@ class AgentInterface:
     debug: bool = False
     """Enable debug information for the various sensors and action spaces."""
 
-    event_configuration: EventConfiguration = field(
-        default_factory=lambda: EventConfiguration()
-    )
+    event_configuration: EventConfiguration = field(default_factory=EventConfiguration)
     """Configurable criteria of when to trigger events"""
 
-    done_criteria: DoneCriteria = field(default_factory=lambda: DoneCriteria())
+    done_criteria: DoneCriteria = field(default_factory=DoneCriteria)
     """Configurable criteria of when to mark this actor as done. Done actors will be
     removed from the environment and may trigger the episode to be done."""
 
@@ -658,10 +650,10 @@ class AgentInterface:
         return self.neighborhood_vehicle_states
 
     @staticmethod
-    def _resolve_config(config, type_):
-        if config is True:
+    def _resolve_config(_config, type_):
+        if _config is True:
             return type_()
-        elif isinstance(config, type_):
-            return config
+        elif isinstance(_config, type_):
+            return _config
         else:
             return False

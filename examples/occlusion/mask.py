@@ -1,19 +1,16 @@
-import enum
 import importlib.resources as pkg_resources
 import math
 import os
 import random
 import subprocess
+from abc import ABCMeta
 from collections import defaultdict, deque
 from dataclasses import replace
-from enum import IntEnum
-from functools import cached_property, lru_cache, partial
+from functools import lru_cache, partial
 from itertools import cycle, islice
-from multiprocessing import Pool
 from pathlib import Path
 from typing import Any, Dict, Final, List, Optional, Sequence, Tuple, TypeVar, Union
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import shapely
@@ -81,6 +78,7 @@ class PropertyAccessorUtil:
             self.ego_accessor = lambda o: o.ego_vehicle_state
             self.nvs_accessor = lambda o: o.neighborhood_vehicle_states
             self.wpp_accessor = lambda o: o.waypoint_paths
+
             def _pad(waypoints):
                 max_lane_wps = max([len(lane) for lane in waypoints])
                 base = np.zeros((len(waypoints), max_lane_wps, 3), dtype=np.float64)
@@ -89,13 +87,14 @@ class PropertyAccessorUtil:
                     for j, wp in enumerate(lane):
                         base[i, j, :2] = self.position_accessor(wp)
                 return base
+
             self.waypoint_position_accessor = lambda o: _pad(self.wpp_accessor(o))
 
 
 class PointGenerator:
     @classmethod
     @lru_cache(maxsize=1000)
-    def cache_generate(cls, x, y, *args):
+    def cache_generate(cls, x, y, *_):
         return Point(x, y)
 
 
@@ -187,7 +186,7 @@ def generate_shadow_mask_polygons(
     point_a, point_b = None, None
     for point_a, point_b in reversed(facing_away_edges):
         ## If the intention is to generate a quadrilateral shadow cast towards the edge of the circle,
-        # the center point of the line must cast through to generate a tangential line at the circle edge to guarentee
+        # the center point of the line must cast through to generate a tangential line at the circle edge to guarantee
         # that each of the intersections from the bounding points of the original line to the tangent fall outside of the circle.
         # Otherwise, the nearest point would need to be used.
         midpoint = get_midpoint(point_a, point_b)
@@ -360,7 +359,7 @@ def apply_masks(
     return final_vehicle_states
 
 
-def one_by_r_attentuation(*, dist2: float, **_):
+def one_by_r_attenuation(*, dist2: float, **_):
     """The crude formula for sound pressure attenuation.
 
     Args:
@@ -370,7 +369,7 @@ def one_by_r_attentuation(*, dist2: float, **_):
     return 1 / max(1, math.sqrt(abs(dist2)))
 
 
-def one_by_r2_attentuation(*, dist2: float, **_):
+def one_by_r2_attenuation(*, dist2: float, **_):
     """The crude formula for sound intensity attenuation.
 
     Args:
@@ -406,12 +405,12 @@ def one_minus_smootherstep(*, dist2: float, max_edge2: float, min_edge2: float =
     return 1 - smootherstep(dist2=dist2, max_edge2=max_edge2, min_edge2=min_edge2)
 
 
-def gauss_noise(base, mu=0, theta=0.15, sigma=0.3):
+def gaussian_noise(base, mu=0, theta=0.15, sigma=0.3):
     noise = theta * (mu - base) + sigma * np.random.randn(1)
     return (base + noise)[0]
 
 
-def gauss_noise2(base, mu=0, sigma=0.078):
+def gaussian_noise2(base, mu=0, sigma=0.078):
     return base + random.gauss(mu, sigma)
 
 
@@ -425,8 +424,8 @@ def certainty_displace(
     center_point: Tuple[float, float],
     target_point: Tuple[float, float],
     perturb_target: Any,
-    certainty_attenuation_fn=one_by_r2_attentuation,
-    uncertainty_noise_fn=gauss_noise2,
+    certainty_attenuation_fn=one_by_r2_attenuation,
+    uncertainty_noise_fn=gaussian_noise2,
     coin_fn=sample_weighted_binary_probability,
     max_sigma=0.073,
     max_observable_radius: float = 10,
@@ -563,7 +562,7 @@ def downgrade_vehicles(
     ]
 
 
-class AugmentationWrapper(Agent):
+class AugmentationWrapper(Agent, metaclass=ABCMeta):
     def __init__(
         self, mode, observation_radius, output_dir, agent_name, record: bool
     ) -> None:
@@ -789,7 +788,9 @@ class VectorAgentWrapper(AugmentationWrapper):
 
         # draw vehicle center points
         for v in self._pa.nvs_accessor(obs):
-            ax.plot(*PointGenerator.cache_generate(*self._pa.position_accessor(v)).xy, "y+")
+            ax.plot(
+                *PointGenerator.cache_generate(*self._pa.position_accessor(v)).xy, "y+"
+            )
 
         vehicles = [v for v in self._pa.nvs_accessor(obs)]
         vehicles_to_downgrade: List[VehicleObservation] = [

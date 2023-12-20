@@ -24,7 +24,6 @@ import logging
 import sys
 from collections import deque
 from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
 from typing import List, Optional, Tuple, Union
 
@@ -77,7 +76,6 @@ class Sensor:
 
     def step(self, sim_frame, **kwargs):
         """Update sensor state."""
-        pass
 
     def teardown(self, **kwargs):
         """Clean up internal resources"""

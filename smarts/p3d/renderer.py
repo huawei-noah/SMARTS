@@ -205,13 +205,13 @@ class _ShowBaseInstance(ShowBase):
         # when we call poll() here.
         hidden = []
         with self._render_lock:
-            for np in self.render.children:
-                if np != sim_root and not np.isHidden():
-                    np.hide()
-                    hidden.append(np)
+            for node_path in self.render.children:
+                if node_path != sim_root and not node_path.isHidden():
+                    node_path.hide()
+                    hidden.append(node_path)
             self.taskMgr.mgr.poll()
-            for np in hidden:
-                np.show()
+            for node_path in hidden:
+                node_path.show()
 
 
 @dataclass
@@ -396,9 +396,9 @@ class Renderer(RendererBase):
         geom = Geom(vdata)
         geom.addPrimitive(prim)
 
-        np = GeomNode(name)
-        np.addGeom(geom)
-        return np
+        node_path = GeomNode(name)
+        node_path.addGeom(geom)
+        return node_path
 
     def _ensure_root(self):
         if self._root_np is None:
@@ -415,11 +415,11 @@ class Renderer(RendererBase):
                 map_path,
             )
         map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
-        np = self._root_np.attachNewNode("road_map")
-        map_np.reparent_to(np)
-        np.hide(RenderMasks.OCCUPANCY_HIDE)
-        np.setColor(SceneColors.Road.value)
-        self._road_map_np = np
+        node_path = self._root_np.attachNewNode("road_map")
+        map_np.reparent_to(node_path)
+        node_path.hide(RenderMasks.OCCUPANCY_HIDE)
+        node_path.setColor(SceneColors.Road.value)
+        self._road_map_np = node_path
         self._is_setup = True
         return map_np.getBounds()
 
@@ -641,13 +641,13 @@ class Renderer(RendererBase):
         geom_node = GeomNode(name)
         geom_node.addGeom(geom)
 
-        np = self._root_np.attachNewNode(geom_node)
-        np.setName(name)
-        np.setColor(color.value)
-        np.setPos(position.x, position.y, 0.01)
-        np.setScale(0.9, 0.9, 1)
-        np.hide(RenderMasks.DRIVABLE_AREA_HIDE)
-        self._signal_nodes[sig_id] = np
+        node_path = self._root_np.attachNewNode(geom_node)
+        node_path.setName(name)
+        node_path.setColor(color.value)
+        node_path.setPos(position.x, position.y, 0.01)
+        node_path.setScale(0.9, 0.9, 1)
+        node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
+        self._signal_nodes[sig_id] = node_path
         return True
 
     def begin_rendering_signal(self, sig_id: str):
@@ -753,10 +753,6 @@ class Renderer(RendererBase):
         height: int,
         width: int,
     ) -> None:
-        from panda3d.core import NodePath, Shader, Texture
-
-        from smarts.core import glsl
-
         # setup buffer
         win_props = WindowProperties.size(width, height)
         fb_props = FrameBufferProperties()

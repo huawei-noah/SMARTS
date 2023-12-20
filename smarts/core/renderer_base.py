@@ -46,8 +46,6 @@ class DEBUG_MODE(IntEnum):
 class RendererNotSetUpWarning(UserWarning):
     """This occurs if a renderer is used without being set up."""
 
-    pass
-
 
 @dataclass
 class OffscreenCamera(metaclass=ABCMeta):

@@ -553,8 +553,6 @@ def welford() -> Tuple[
         Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]: Callable functions to update, get mean, get std, and get steps.
     """
 
-    import math
-
     n = 0  # steps
     M = 0
     S = 0
