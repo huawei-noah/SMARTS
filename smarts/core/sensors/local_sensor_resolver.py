@@ -26,7 +26,7 @@ from smarts.core.sensors import SensorResolver, Sensors
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.file import replace
-from smarts.core.utils.logging import timeit
+from smarts.core.utils.core_logging import timeit
 
 logger = logging.getLogger(__name__)
 

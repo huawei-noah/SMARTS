@@ -46,7 +46,7 @@ from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
-from smarts.core.utils.logging import timeit
+from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
 
 from . import config, models

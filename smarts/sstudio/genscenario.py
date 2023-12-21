@@ -38,7 +38,7 @@ import yaml
 import smarts.core
 from smarts.core.default_map_builder import find_mapfile_in_dir
 from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
-from smarts.core.utils.logging import timeit
+from smarts.core.utils.core_logging import timeit
 
 from . import sstypes
 from .generators import TrafficGenerator

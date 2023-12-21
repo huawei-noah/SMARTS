@@ -20,7 +20,7 @@
 import functools
 import inspect
 
-from smarts.core.utils.logging import suppress_output
+from smarts.core.utils.core_logging import suppress_output
 
 # XXX: Importing pybullet logs an annoying build version tag. There's no "friendly"
 #      way to fix this since they simply use print(...). Disabling logging at the

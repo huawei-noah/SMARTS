@@ -28,7 +28,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from smarts.core.utils.logging import isnotebook
+from smarts.core.utils.core_logging import isnotebook
 
 
 def flatten_obs(sim_obs):
