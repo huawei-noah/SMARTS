@@ -403,7 +403,9 @@ def gen_traffic(
 def gen_social_agent_missions(
     scenario: str,
     missions: Sequence[sstypes.Mission],
-    social_agent_actor: Union[sstypes.SocialAgentActor, Sequence[sstypes.SocialAgentActor]],
+    social_agent_actor: Union[
+        sstypes.SocialAgentActor, Sequence[sstypes.SocialAgentActor]
+    ],
     name: str,
     map_spec: Optional[sstypes.MapSpec] = None,
 ):
@@ -564,7 +566,9 @@ def gen_bubbles(scenario: str, bubbles: Sequence[sstypes.Bubble]):
         pickle.dump(bubbles, f)
 
 
-def gen_friction_map(scenario: str, surface_patches: Sequence[sstypes.RoadSurfacePatch]):
+def gen_friction_map(
+    scenario: str, surface_patches: Sequence[sstypes.RoadSurfacePatch]
+):
     """Generates friction map file according to the surface patches defined in
     scenario file.
     """
