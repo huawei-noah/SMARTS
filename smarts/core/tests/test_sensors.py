@@ -29,7 +29,7 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.plan import Plan
 from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, TripMeterSensor, WaypointsSensor
-from smarts.core.utils.math import squared_dist
+from smarts.core.utils.core_math import squared_dist
 from smarts.sstudio import gen_scenario
 from smarts.sstudio import sstypes as t
 

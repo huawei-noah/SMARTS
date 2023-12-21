@@ -30,7 +30,7 @@ from smarts.core.condition_state import ConditionState
 from smarts.core.coordinates import Point as MapPoint
 from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.file import replace
-from smarts.core.utils.math import clip, squared_dist
+from smarts.core.utils.core_math import clip, squared_dist
 from smarts.core.vehicle import Vehicle
 from smarts.sstudio.sstypes import MapZone, PositionalZone, TrapEntryTactic
 

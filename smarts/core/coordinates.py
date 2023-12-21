@@ -26,7 +26,7 @@ import numpy as np
 from shapely.geometry import Point as SPoint
 from typing_extensions import SupportsIndex
 
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     fast_quaternion_from_angle,
     radians_to_vec,
     yaw_from_quaternion,

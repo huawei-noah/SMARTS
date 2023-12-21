@@ -41,7 +41,7 @@ from smarts.core.route_cache import RouteWithCache
 from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.geometry import buffered_shape
 from smarts.core.utils.glb import make_map_glb, make_road_line_glb
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     inplace_unwrap,
     line_intersect_vectorized,
     radians_to_vec,

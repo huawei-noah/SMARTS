@@ -35,7 +35,7 @@ from mdutils.mdutils import MdUtils
 
 import smarts
 from smarts.core.scenario import Scenario
-from smarts.core.utils.math import welford
+from smarts.core.utils.core_math import welford
 from smarts.env.gymnasium.hiway_env_v1 import ScenarioOrder
 from smarts.sstudio.scenario_construction import build_scenarios
 

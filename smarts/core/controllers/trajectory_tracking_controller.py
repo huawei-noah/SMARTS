@@ -23,7 +23,7 @@ from typing import Sequence, Tuple
 import numpy as np
 from numpy.linalg import matrix_power
 
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     lerp,
     low_pass_filter,
     min_angles_difference_signed,

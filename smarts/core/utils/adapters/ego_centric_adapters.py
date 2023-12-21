@@ -29,7 +29,7 @@ from smarts.core.coordinates import Heading
 from smarts.core.observations import Observation, ViaPoint
 from smarts.core.plan import PositionalGoal, Via
 from smarts.core.utils.file import replace as _replace
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     position_to_ego_frame,
     world_position_from_ego_frame,
     wrap_value,

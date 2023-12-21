@@ -32,7 +32,7 @@ import numpy as np
 
 from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
+from smarts.core.utils.core_math import min_angles_difference_signed, vec_to_radians
 from smarts.sstudio.sstypes import EntryTactic, TrapEntryTactic
 
 MISSING = sys.maxsize

@@ -51,7 +51,7 @@ from .sensors import (
     WaypointsSensor,
 )
 from .utils.custom_exceptions import RendererException
-from .utils.math import rotate_cw_around_point
+from .utils.core_math import rotate_cw_around_point
 from .vehicle_state import VEHICLE_CONFIGS, VehicleConfig, VehicleState
 
 

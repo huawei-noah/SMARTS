@@ -61,7 +61,7 @@ from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     combination_pairs_with_unique_indices,
     radians_to_vec,
     vec_to_radians,

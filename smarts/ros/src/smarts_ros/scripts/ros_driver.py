@@ -53,7 +53,7 @@ from smarts.core.plan import (
 )
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
+from smarts.core.utils.core_math import fast_quaternion_from_angle, vec_to_radians
 from smarts.core.vehicle import VehicleState
 from smarts.ros.logging import log_everything_to_ROS
 from smarts.sstudio.sstypes import MapSpec

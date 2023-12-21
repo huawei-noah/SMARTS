@@ -35,7 +35,7 @@ from yattag import Doc, indent
 
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import make_dir_in_smarts_log_dir, replace
-from smarts.core.utils.math import wrap_value
+from smarts.core.utils.core_math import wrap_value
 
 from . import sstypes
 

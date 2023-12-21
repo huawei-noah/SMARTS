@@ -21,7 +21,7 @@ import math
 from typing import List, Optional, Union
 
 from smarts.core.coordinates import Point
-from smarts.core.utils.math import is_close
+from smarts.core.utils.core_math import is_close
 
 ## Note:  the methods in this file are not efficient / optimized,
 ## so they shouldn't be used on the critical path(s).
