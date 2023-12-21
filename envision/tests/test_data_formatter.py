@@ -398,7 +398,7 @@ def test_client_with_smarts(smarts: SMARTS, scenarios: Iterator[Scenario], sim_d
         es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         assert state.scenario_id is not None
         with mock.patch(
-            "envision.types.State.scenario_id", new_callable=PropertyMock
+            "envision.etypes.State.scenario_id", new_callable=PropertyMock
         ) as state_scenario_id:
             state_scenario_id.return_value = None
             es.add_any(state)
