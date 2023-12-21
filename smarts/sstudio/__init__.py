@@ -38,4 +38,4 @@ elif _hashseed == "random":
 
 from . import sstypes as types
 
-sys.modules["smarts.sstudio.types"] = types
+sys.modules[f"{__name__}.{types=}".partition('=')[0]] = types
