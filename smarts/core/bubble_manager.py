@@ -82,7 +82,7 @@ class BubbleCaptureState(Enum):
 
 
 class Bubble:
-    """Wrapper around `sstudio.types.Bubble` to cache bubble geometry (and does some
+    """Wrapper around `sstudio.sstypes.Bubble` to cache bubble geometry (and does some
     internal Bubble-related business logic).
     """
 
@@ -214,7 +214,7 @@ class Bubble:
         running_cursors: Set["Cursor"],
     ):
         """The vehicle_id we are querying for and the `other_vehicle_ids` _presently in
-        this :class:`~smarts.sstudio.types.bubble.Bubble`.
+        this :class:`~smarts.sstudio.sstypes.bubble.Bubble`.
         """
         for prefix in self.exclusion_prefixes:
             if vehicle_id.startswith(prefix):

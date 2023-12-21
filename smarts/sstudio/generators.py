@@ -409,7 +409,7 @@ class TrafficGenerator:
         Args:
             route: An incomplete route.
         Returns:
-            smarts.sstudio.types.route.Route: A complete route listing all road segments it passes through.
+            smarts.sstudio.sstypes.route.Route: A complete route listing all road segments it passes through.
         """
         if not isinstance(route, sstypes.RandomRoute):
             return self._fill_in_gaps(route) if fill_in_gaps else route

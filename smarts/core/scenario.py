@@ -95,10 +95,10 @@ class Scenario:
         missions:
             agent_id to mission mapping.
         map_spec:
-            If specified, allows specifying a :class:`~smarts.sstudio.types.map_spec.MapSpec` at run-time
+            If specified, allows specifying a :class:`~smarts.sstudio.sstypes.map_spec.MapSpec` at run-time
             to override any spec that may have been pre-specified
             in the scenario folder (or the default if none were).
-            Also see comments around the :class:`~smarts.sstudio.types.map_spec.MapSpec` definition.
+            Also see comments around the :class:`~smarts.sstudio.sstypes.map_spec.MapSpec` definition.
     """
 
     def __init__(
@@ -725,7 +725,7 @@ class Scenario:
 
     @staticmethod
     def _extract_mission(mission, road_map):
-        """Takes a sstudio.types.(Mission, EndlessMission, etc.) and converts it to
+        """Takes a sstudio.sstypes.(Mission, EndlessMission, etc.) and converts it to
         the corresponding SMARTS mission types.
         """
 

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import smarts.sstudio.types as types
+import smarts.sstudio.sstypes as types
 from smarts.sstudio.genscenario import gen_agent_missions, gen_traffic
 
 scenario = str(Path(__file__).parent)

@@ -203,7 +203,7 @@ class VehicleSpec:
 class Mission:
     """A navigation mission describing a desired trip."""
 
-    # XXX: Note that this Mission differs from sstudio.types.Mission in that
+    # XXX: Note that this Mission differs from sstudio.sstypes.Mission in that
     # this can be less specific as to the particular route taken to the goal,
     # whereas sstudio.type.Mission includes a specific, predetermined/static route
     # (which might be random, but is still determined before running the scenario).
@@ -275,7 +275,7 @@ class LapMission(Mission):
 
     num_laps: Optional[int] = None  # None means infinite # of laps
 
-    # If a route was specified in a sstudio.types.LapMission object,
+    # If a route was specified in a sstudio.sstypes.LapMission object,
     # then this should be set to its road length
     route_length: Optional[float] = None
 

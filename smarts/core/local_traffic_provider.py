@@ -484,7 +484,7 @@ class _TrafficActor:
         self._dest_offset = None
         self._wrong_way: bool = False
 
-        # The default values here all attempt to match those in sstudio.types,
+        # The default values here all attempt to match those in sstudio.sstypes,
         # which in turn attempt to match Sumo's defaults.
         self._min_space_cush = float(self._vtype.get("minGap", 2.5))
         speed_factor = float(self._vtype.get("speedFactor", 1.0))
@@ -641,7 +641,7 @@ class _TrafficActor:
 
     def _resolve_flow_speed(self, flow: Dict[str, Any]) -> float:
         depart_speed = flow.get("departSpeed", 0.0)
-        # maxSpeed's default attempts to match the one in sstudio.types,
+        # maxSpeed's default attempts to match the one in sstudio.sstypes,
         # which in turn attempt to match Sumo's default.
         max_speed = float(self._vtype.get("maxSpeed", 55.5))
         if depart_speed == "random":

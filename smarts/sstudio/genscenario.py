@@ -700,7 +700,7 @@ def gen_metadata(scenario: str, scenario_metadata: sstypes.StandardMetadata):
 
     Args:
         scenario (str):The scenario directory
-        scenario_metadata (smarts.sstudio.types.standard_metadata.StandardMetadata): Scenario metadata information.
+        scenario_metadata (smarts.sstudio.sstypes.standard_metadata.StandardMetadata): Scenario metadata information.
     """
     _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "scenario_metadata.yaml")
