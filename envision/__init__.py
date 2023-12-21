@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import sys
+
 from . import etypes as types
 
 sys.modules["envision.types"] = types

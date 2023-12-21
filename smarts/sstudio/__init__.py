@@ -37,4 +37,5 @@ elif _hashseed == "random":
     )
 
 from . import sstypes as types
+
 sys.modules["smarts.sstudio.types"] = types

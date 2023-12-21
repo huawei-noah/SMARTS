@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import sys
+
 from . import core_math as math
 
 sys.modules["smarts.core.utils.math"] = math
