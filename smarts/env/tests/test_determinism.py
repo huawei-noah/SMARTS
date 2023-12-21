@@ -30,8 +30,8 @@ except ImportError:
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.utils.episodes import episodes
 from smarts.core.utils.core_logging import diff_unpackable
+from smarts.core.utils.episodes import episodes
 from smarts.zoo.agent_spec import AgentSpec
 
 

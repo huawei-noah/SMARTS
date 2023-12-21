@@ -36,9 +36,9 @@ from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoint, LanePoints, LinkedLanePoint
 from .road_map import RoadMap, Waypoint
 from .route_cache import RouteWithCache
+from .utils.core_math import inplace_unwrap, radians_to_vec, vec_2d
 from .utils.geometry import buffered_shape
 from .utils.glb import make_map_glb, make_road_line_glb
-from .utils.core_math import inplace_unwrap, radians_to_vec, vec_2d
 
 from smarts.core.utils.sumo import sumolib  # isort:skip
 from sumolib.net.edge import Edge  # isort:skip

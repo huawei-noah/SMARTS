@@ -75,7 +75,6 @@ from shapely.geometry import Polygon
 
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
-from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.core.utils.core_math import (
     CubicPolynomial,
     constrain_angle,
@@ -85,6 +84,7 @@ from smarts.core.utils.core_math import (
     radians_to_vec,
     vec_2d,
 )
+from smarts.core.utils.key_wrapper import KeyWrapper
 from smarts.sstudio.sstypes import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint

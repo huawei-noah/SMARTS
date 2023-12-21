@@ -35,8 +35,8 @@ import numpy as np
 from envision import etypes
 from envision.client_config import EnvisionStateFilter
 from envision.data_formatter import EnvisionDataFormatter, EnvisionDataFormatterArgs
-from smarts.core.utils.file import unpack
 from smarts.core.utils.core_logging import suppress_websocket
+from smarts.core.utils.file import unpack
 
 
 @dataclass

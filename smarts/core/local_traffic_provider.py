@@ -44,13 +44,17 @@ from .route_cache import RouteWithCache
 from .scenario import Scenario
 from .signals import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
+from .utils.core_math import (
+    min_angles_difference_signed,
+    radians_to_vec,
+    vec_to_radians,
+)
 from .utils.kinematics import (
     distance_covered,
     stopping_distance,
     stopping_time,
     time_to_cover,
 )
-from .utils.core_math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 MAX_IMPATIENCE = 3.0

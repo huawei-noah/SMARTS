@@ -31,8 +31,8 @@ import ray
 
 from smarts.benchmark.driving_smarts import load_config
 from smarts.core import config
-from smarts.core.utils.import_utils import import_module_from_file
 from smarts.core.utils.core_logging import suppress_output
+from smarts.core.utils.import_utils import import_module_from_file
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
 from smarts.env.gymnasium.wrappers.metric.metrics import Metrics
 from smarts.env.gymnasium.wrappers.metric.types import Record

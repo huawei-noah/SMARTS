@@ -34,13 +34,13 @@ import numpy as np
 
 from smarts.core.coordinates import BoundingBox, Point
 from smarts.core.signal_provider import SignalLightState
-from smarts.core.utils.file import read_tfrecord_file
 from smarts.core.utils.core_math import (
     circular_mean,
     constrain_angle,
     min_angles_difference_signed,
     vec_to_radians,
 )
+from smarts.core.utils.file import read_tfrecord_file
 from smarts.sstudio import sstypes
 from smarts.waymo.exceptions import WaymoDatasetError
 

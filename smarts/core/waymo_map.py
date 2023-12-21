@@ -38,9 +38,6 @@ from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePo
 from smarts.core.lanepoints import LanePoints, LinkedLanePoint
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
-from smarts.core.utils.file import read_tfrecord_file
-from smarts.core.utils.geometry import buffered_shape
-from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 from smarts.core.utils.core_math import (
     inplace_unwrap,
     line_intersect_vectorized,
@@ -48,6 +45,9 @@ from smarts.core.utils.core_math import (
     ray_boundary_intersect,
     vec_2d,
 )
+from smarts.core.utils.file import read_tfrecord_file
+from smarts.core.utils.geometry import buffered_shape
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
 from smarts.sstudio.sstypes import MapSpec
 from smarts.waymo.exceptions import WaymoDatasetError
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
