@@ -48,7 +48,7 @@ from smarts.core.utils.math import (
     ray_boundary_intersect,
     vec_2d,
 )
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 from smarts.waymo.exceptions import WaymoDatasetError
 from smarts.waymo.waymo_open_dataset.protos import scenario_pb2
 from smarts.waymo.waymo_open_dataset.protos.map_pb2 import (

@@ -25,8 +25,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 from smarts.core import gen_id
-from smarts.sstudio.types.actor import Actor
-from smarts.sstudio.types.bubble_limits import BubbleLimits
+from smarts.sstudio.sstypes.actor import Actor
+from smarts.sstudio.sstypes.bubble_limits import BubbleLimits
 
 
 @dataclass(frozen=True)

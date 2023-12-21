@@ -25,7 +25,7 @@ import math
 
 import numpy as np
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
 from smarts.core.events import Events
 from smarts.core.observations import (

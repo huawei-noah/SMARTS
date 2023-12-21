@@ -22,7 +22,7 @@
 import pytest
 from helpers.scenario import temp_scenario
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario

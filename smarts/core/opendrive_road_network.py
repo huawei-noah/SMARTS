@@ -85,7 +85,7 @@ from smarts.core.utils.math import (
     radians_to_vec,
     vec_2d,
 )
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoints, LinkedLanePoint

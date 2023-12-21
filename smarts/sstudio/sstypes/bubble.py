@@ -27,18 +27,18 @@ from typing import Optional, Tuple, Union
 from smarts.core import gen_id
 from smarts.core.condition_state import ConditionState
 from smarts.core.utils.id import SocialAgentId
-from smarts.sstudio.types.actor.social_agent_actor import (
+from smarts.sstudio.sstypes.actor.social_agent_actor import (
     BoidAgentActor,
     SocialAgentActor,
 )
-from smarts.sstudio.types.actor.traffic_engine_actor import TrafficEngineActor
-from smarts.sstudio.types.bubble_limits import BubbleLimits
-from smarts.sstudio.types.condition import (
+from smarts.sstudio.sstypes.actor.traffic_engine_actor import TrafficEngineActor
+from smarts.sstudio.sstypes.bubble_limits import BubbleLimits
+from smarts.sstudio.sstypes.condition import (
     Condition,
     ConditionRequires,
     LiteralCondition,
 )
-from smarts.sstudio.types.zone import MapZone, Zone
+from smarts.sstudio.sstypes.zone import MapZone, Zone
 
 
 @dataclass(frozen=True)

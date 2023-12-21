@@ -25,7 +25,7 @@ from typing import Dict
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 
 import smarts
-from envision import types as envision_types
+from envision import etypes as envision_types
 from envision.client import Client as Envision
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario

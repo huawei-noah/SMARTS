@@ -41,7 +41,7 @@ from typing import (
 
 import numpy as np
 
-from envision.types import (
+from envision.etypes import (
     SignalLightState,
     SignalState,
     State,

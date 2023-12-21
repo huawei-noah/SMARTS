@@ -12,7 +12,7 @@ from pathlib import Path
 import yaml
 from rich.console import Console
 
-from smarts.sstudio.types import SocialAgentActor
+from smarts.sstudio.sstypes import SocialAgentActor
 
 console = Console()
 

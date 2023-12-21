@@ -41,7 +41,7 @@ from smarts.core.utils.math import (
     min_angles_difference_signed,
     vec_to_radians,
 )
-from smarts.sstudio import types
+from smarts.sstudio import sstypes
 from smarts.waymo.exceptions import WaymoDatasetError
 
 METERS_PER_FOOT = 0.3048
@@ -1084,7 +1084,7 @@ class Argoverse(_TrajectoryDataset):
 
 
 def import_dataset(
-    dataset_spec: types.TrafficHistoryDataset,
+    dataset_spec: sstypes.TrafficHistoryDataset,
     output_path: str,
     map_bbox: Optional[BoundingBox] = None,
 ):

@@ -124,7 +124,7 @@ def _is_scenario_folder_to_build(path: str) -> bool:
         return False
     if os.path.exists(os.path.join(path, "scenario.py")):
         return True
-    from smarts.sstudio.types import MapSpec
+    from smarts.sstudio.sstypes import MapSpec
 
     map_spec = MapSpec(path)
     road_map, _ = map_spec.builder_fn(map_spec)

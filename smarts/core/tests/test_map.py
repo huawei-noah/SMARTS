@@ -33,7 +33,7 @@ from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
 from smarts.core.road_map import RoadMap
 from smarts.core.scenario import Scenario
 from smarts.core.sumo_road_network import SumoRoadNetwork
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 
 
 @pytest.fixture

@@ -31,7 +31,7 @@ _existing_map = None
 
 def _cache_result(map_spec, road_map, road_map_hash: str):
     global _existing_map
-    from smarts.sstudio.types import MapSpec
+    from smarts.sstudio.sstypes import MapSpec
 
     class _RoadMapInfo(NamedTuple):
         map_spec: MapSpec  # pytype: disable=invalid-annotation

@@ -66,9 +66,9 @@ from smarts.core.utils.math import (
     radians_to_vec,
     vec_to_radians,
 )
-from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic, MapSpec
-from smarts.sstudio.types import Via as SSVia
+from smarts.sstudio import sstypes as sstudio_types
+from smarts.sstudio.sstypes import EntryTactic, MapSpec
+from smarts.sstudio.sstypes import Via as SSVia
 
 VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 

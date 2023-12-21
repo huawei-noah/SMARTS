@@ -27,7 +27,7 @@ from unittest.mock import MagicMock, PropertyMock
 import numpy as np
 import pytest
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from envision.client import Client
 from envision.data_formatter import (
     EnvisionDataFormatter,
@@ -35,7 +35,7 @@ from envision.data_formatter import (
     Operation,
     _formatter_map,
 )
-from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
+from envision.etypes import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core import seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType

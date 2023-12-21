@@ -38,7 +38,7 @@ from typing import (
 
 import numpy as np
 
-from envision import types as envision_types
+from envision import etypes as envision_types
 from envision.client import Client as EnvisionClient
 from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager

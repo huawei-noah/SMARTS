@@ -27,14 +27,14 @@ from enum import IntEnum
 from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 from smarts.core.colors import Colors
-from smarts.sstudio.types.actor.social_agent_actor import SocialAgentActor
-from smarts.sstudio.types.bubble import Bubble
-from smarts.sstudio.types.dataset import TrafficHistoryDataset
-from smarts.sstudio.types.map_spec import MapSpec
-from smarts.sstudio.types.mission import EndlessMission, Mission
-from smarts.sstudio.types.standard_metadata import StandardMetadata
-from smarts.sstudio.types.traffic import Traffic
-from smarts.sstudio.types.zone import RoadSurfacePatch
+from smarts.sstudio.sstypes.actor.social_agent_actor import SocialAgentActor
+from smarts.sstudio.sstypes.bubble import Bubble
+from smarts.sstudio.sstypes.dataset import TrafficHistoryDataset
+from smarts.sstudio.sstypes.map_spec import MapSpec
+from smarts.sstudio.sstypes.mission import EndlessMission, Mission
+from smarts.sstudio.sstypes.standard_metadata import StandardMetadata
+from smarts.sstudio.sstypes.traffic import Traffic
+from smarts.sstudio.sstypes.zone import RoadSurfacePatch
 
 
 class ScenarioMetadataFields(IntEnum):

@@ -32,7 +32,7 @@ from smarts.core.plan import Mission, Plan, Start, default_entry_tactic
 from smarts.core.utils.file import replace
 from smarts.core.utils.math import clip, squared_dist
 from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import MapZone, PositionalZone, TrapEntryTactic
+from smarts.sstudio.sstypes import MapZone, PositionalZone, TrapEntryTactic
 
 
 @dataclass

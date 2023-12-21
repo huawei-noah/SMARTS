@@ -31,7 +31,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.sensors import DrivenPathSensor, TripMeterSensor, WaypointsSensor
 from smarts.core.utils.math import squared_dist
 from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+from smarts.sstudio import sstypes as t
 
 AGENT_ID = "Agent-007"
 

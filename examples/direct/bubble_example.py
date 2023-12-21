@@ -16,7 +16,7 @@ from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.utils.logging import timeit
-from smarts.sstudio.types import Bubble, PositionalZone, SocialAgentActor
+from smarts.sstudio.sstypes import Bubble, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 

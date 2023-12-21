@@ -24,8 +24,8 @@ from dataclasses import dataclass, field, replace
 from typing import Dict, Optional, Sequence, Union
 
 from smarts.core.utils.file import pickle_hash_int
-from smarts.sstudio.types.actor.traffic_actor import TrafficActor
-from smarts.sstudio.types.route import RandomRoute, Route
+from smarts.sstudio.sstypes.actor.traffic_actor import TrafficActor
+from smarts.sstudio.sstypes.route import RandomRoute, Route
 
 
 @dataclass(frozen=True)

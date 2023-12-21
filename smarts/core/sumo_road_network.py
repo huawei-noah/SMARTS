@@ -30,7 +30,7 @@ from shapely.geometry import Point as shPoint
 from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap
 
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from .lanepoints import LanePoint, LanePoints, LinkedLanePoint

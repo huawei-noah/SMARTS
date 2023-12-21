@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from smarts.sstudio import types as t
+from smarts.sstudio import sstypes as t
 from smarts.sstudio import gen_scenario
 
 traffic_actor = t.TrafficActor(

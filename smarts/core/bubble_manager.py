@@ -47,11 +47,11 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle
 from smarts.core.vehicle_index import VehicleIndex
-from smarts.sstudio.types import BoidAgentActor
-from smarts.sstudio.types import Bubble as SSBubble
-from smarts.sstudio.types import BubbleLimits, SocialAgentActor
-from smarts.sstudio.types.actor.traffic_engine_actor import TrafficEngineActor
-from smarts.sstudio.types.condition import Condition
+from smarts.sstudio.sstypes import BoidAgentActor
+from smarts.sstudio.sstypes import Bubble as SSBubble
+from smarts.sstudio.sstypes import BubbleLimits, SocialAgentActor
+from smarts.sstudio.sstypes.actor.traffic_engine_actor import TrafficEngineActor
+from smarts.sstudio.sstypes.condition import Condition
 from smarts.zoo.registry import make as make_social_agent
 
 

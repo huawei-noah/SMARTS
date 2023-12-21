@@ -23,7 +23,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     CompoundCondition,
     Condition,
     ConditionOperator,

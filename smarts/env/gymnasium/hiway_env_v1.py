@@ -32,7 +32,7 @@ from gymnasium import spaces
 from gymnasium.core import ActType, ObsType
 from gymnasium.envs.registration import EnvSpec
 
-from envision import types as envision_types
+from envision import etypes as envision_types
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import current_seed

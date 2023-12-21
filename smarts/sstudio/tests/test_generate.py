@@ -28,7 +28,7 @@ import pytest
 
 from smarts.core.scenario import Scenario
 from smarts.sstudio.genscenario import gen_map, gen_traffic
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Distribution,
     Flow,
     JunctionModel,

@@ -24,7 +24,7 @@ import math
 import numpy as np
 import pytest
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.chassis import BoxChassis
