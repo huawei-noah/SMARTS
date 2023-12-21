@@ -141,7 +141,7 @@ def distance_point_to_line(
     if offset == 0:
         return euclidean_distance(point, p1)
     u = offset / euclidean_distance(line_start, line_end)
-    intersection = (p1[0] + u * (p2[0] - p1[0]), p1[1] + u * (p2[1] - p1[1]))
+    intersection = Point(p1[0] + u * (p2[0] - p1[0]), p1[1] + u * (p2[1] - p1[1]))
     return euclidean_distance(point, intersection)
 
 

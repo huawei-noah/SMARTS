@@ -177,7 +177,7 @@ def main(
         def __init__(self) -> None:
             self.last_observations: Dict[str, Observation] = {}
 
-        def observation_callback(self, obs: Observation):
+        def observation_callback(self, obs: Dict[str, Observation]):
             self.last_observations = obs
 
     obs_state = ObservationState()
