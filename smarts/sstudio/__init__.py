@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import os
+import sys
 
 from .genscenario import gen_scenario
 
@@ -36,3 +37,4 @@ elif _hashseed == "random":
     )
 
 from . import sstypes as types
+sys.modules["smarts.sstudio.types"] = types
