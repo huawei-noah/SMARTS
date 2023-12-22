@@ -30,7 +30,7 @@ from helpers.bubbles import bubble_geometry
 from helpers.scenario import temp_scenario
 from shapely.geometry import Point
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS

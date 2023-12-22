@@ -19,14 +19,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+
 from dataclasses import dataclass
 
-from smarts.sstudio.types.actor.traffic_actor import TrafficActor
+from smarts.sstudio.sstypes.constants import MAX
 
 
 @dataclass(frozen=True)
-class TrafficEngineActor(TrafficActor):
-    """This represents an actor that should be controlled by a traffic simulator."""
+class BubbleLimits:
+    """Defines the capture limits of a bubble."""
 
-    traffic_provider: str = "LocalTrafficProvider"
-    """The traffic provider that the actor is intended to be handed over to."""
+    hijack_limit: int = MAX
+    """The maximum number of vehicles the bubble can hijack"""
+    shadow_limit: int = MAX
+    """The maximum number of vehicles the bubble can shadow"""
+
+    def __post_init__(self):
+        if self.shadow_limit is None:
+            raise ValueError("Shadow limit must be a non-negative real number")
+        if self.hijack_limit is None or self.shadow_limit < self.hijack_limit:
+            raise ValueError("Shadow limit must be >= hijack limit")

@@ -17,20 +17,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from smarts.sstudio.types.actor.social_agent_actor import *
-from smarts.sstudio.types.actor.traffic_actor import *
-from smarts.sstudio.types.actor.traffic_engine_actor import *
-from smarts.sstudio.types.bubble import *
-from smarts.sstudio.types.bubble_limits import *
-from smarts.sstudio.types.condition import *
-from smarts.sstudio.types.constants import *
-from smarts.sstudio.types.dataset import *
-from smarts.sstudio.types.distribution import *
-from smarts.sstudio.types.entry_tactic import *
-from smarts.sstudio.types.map_spec import *
-from smarts.sstudio.types.mission import *
-from smarts.sstudio.types.route import *
-from smarts.sstudio.types.scenario import *
-from smarts.sstudio.types.traffic import *
-from smarts.sstudio.types.traffic_model import *
-from smarts.sstudio.types.zone import *
+from smarts.sstudio.sstypes.actor.social_agent_actor import *
+from smarts.sstudio.sstypes.actor.traffic_actor import *
+from smarts.sstudio.sstypes.actor.traffic_engine_actor import *
+from smarts.sstudio.sstypes.bubble import *
+from smarts.sstudio.sstypes.bubble_limits import *
+from smarts.sstudio.sstypes.condition import *
+from smarts.sstudio.sstypes.constants import *
+from smarts.sstudio.sstypes.dataset import *
+from smarts.sstudio.sstypes.distribution import *
+from smarts.sstudio.sstypes.entry_tactic import *
+from smarts.sstudio.sstypes.map_spec import *
+from smarts.sstudio.sstypes.mission import *
+from smarts.sstudio.sstypes.route import *
+from smarts.sstudio.sstypes.scenario import *
+from smarts.sstudio.sstypes.traffic import *
+from smarts.sstudio.sstypes.traffic_model import *
+from smarts.sstudio.sstypes.zone import *

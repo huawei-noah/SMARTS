@@ -26,7 +26,7 @@ from typing import Any, Optional, Tuple
 
 from smarts.core import gen_id
 from smarts.core.utils.file import pickle_hash_int
-from smarts.sstudio.types.map_spec import MapSpec
+from smarts.sstudio.sstypes.map_spec import MapSpec
 
 
 @dataclass(frozen=True)

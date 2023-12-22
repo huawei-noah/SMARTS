@@ -34,14 +34,14 @@ import numpy as np
 
 from smarts.core.coordinates import BoundingBox, Point
 from smarts.core.signal_provider import SignalLightState
-from smarts.core.utils.file import read_tfrecord_file
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     circular_mean,
     constrain_angle,
     min_angles_difference_signed,
     vec_to_radians,
 )
-from smarts.sstudio import types
+from smarts.core.utils.file import read_tfrecord_file
+from smarts.sstudio import sstypes
 from smarts.waymo.exceptions import WaymoDatasetError
 
 METERS_PER_FOOT = 0.3048
@@ -1084,7 +1084,7 @@ class Argoverse(_TrajectoryDataset):
 
 
 def import_dataset(
-    dataset_spec: types.TrafficHistoryDataset,
+    dataset_spec: sstypes.TrafficHistoryDataset,
     output_path: str,
     map_bbox: Optional[BoundingBox] = None,
 ):

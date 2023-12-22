@@ -38,7 +38,7 @@ from typing import (
 
 import numpy as np
 
-from envision import types as envision_types
+from envision import etypes as envision_types
 from envision.client import Client as EnvisionClient
 from smarts import VERSION
 from smarts.core.actor_capture_manager import ActorCaptureManager
@@ -46,7 +46,7 @@ from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.simulation_local_constants import SimulationLocalConstants
-from smarts.core.utils.logging import timeit
+from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
 
 from . import config, models
@@ -82,8 +82,8 @@ from .traffic_history_provider import TrafficHistoryProvider
 from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
+from .utils.core_math import rounder_for_dt
 from .utils.id import Id
-from .utils.math import rounder_for_dt
 from .utils.pybullet import bullet_client as bc
 from .vehicle import Vehicle
 from .vehicle_index import VehicleIndex

@@ -34,10 +34,10 @@ import numpy as np
 from yattag import Doc, indent
 
 from smarts.core.road_map import RoadMap
+from smarts.core.utils.core_math import wrap_value
 from smarts.core.utils.file import make_dir_in_smarts_log_dir, replace
-from smarts.core.utils.math import wrap_value
 
-from . import types
+from . import sstypes
 
 SECONDS_PER_HOUR_INV = 1 / 60 / 60
 
@@ -90,7 +90,7 @@ class RandomRouteGenerator:
             end_lane_index = random_lane_index(end_road_id)
             end_lane_offset = random_lane_offset(end_road_id, end_lane_index)
 
-            return types.Route(
+            return sstypes.Route(
                 begin=(start_road_id, start_lane_index, start_lane_offset),
                 via=tuple(road.road_id for road in route.roads[1:-1]),
                 end=(end_road_id, end_lane_index, end_lane_offset),
@@ -108,7 +108,7 @@ class TrafficGenerator:
     def __init__(
         self,
         scenario_dir: str,
-        scenario_map_spec: Optional[types.MapSpec],
+        scenario_map_spec: Optional[sstypes.MapSpec],
         log_dir: Optional[str] = None,
         overwrite: bool = False,
     ):
@@ -142,7 +142,7 @@ class TrafficGenerator:
 
     def plan_and_save(
         self,
-        traffic: types.Traffic,
+        traffic: sstypes.Traffic,
         name: str,
         output_dir: Optional[str] = None,
         seed: int = 42,
@@ -221,7 +221,7 @@ class TrafficGenerator:
         return route_path
 
     def _writexml(
-        self, traffic: types.Traffic, fill_in_route_gaps: bool, route_path: str
+        self, traffic: sstypes.Traffic, fill_in_route_gaps: bool, route_path: str
     ):
         """Writes a traffic spec into a route file. Typically this would be the source
         data to Sumo's DUAROUTER.
@@ -355,7 +355,7 @@ class TrafficGenerator:
         if not self._road_network:
             from smarts.core.sumo_road_network import SumoRoadNetwork
 
-            map_spec = types.MapSpec(self._road_network_path)
+            map_spec = sstypes.MapSpec(self._road_network_path)
             self._road_network = SumoRoadNetwork.from_spec(map_spec)
 
     def resolve_edge_length(self, edge_id, lane_idx):
@@ -380,13 +380,13 @@ class TrafficGenerator:
                     self._scenario_map_spec, lanepoint_spacing=lp_spacing
                 )
             else:
-                map_spec = types.MapSpec(
+                map_spec = sstypes.MapSpec(
                     self._road_network_path, lanepoint_spacing=lp_spacing
                 )
         road_map, _ = map_spec.builder_fn(map_spec)
         return road_map
 
-    def _fill_in_gaps(self, route: types.Route) -> types.Route:
+    def _fill_in_gaps(self, route: sstypes.Route) -> sstypes.Route:
         # TODO:  do this at runtime so each vehicle on the flow can take a different variation of the route ?
         # TODO:  or do it like SUMO and generate a huge *.rou.xml file instead ?
         road_map = self._map_for_route(route)
@@ -402,16 +402,16 @@ class TrafficGenerator:
             route, via=tuple((road.road_id for road in routes[0].roads[1:-1]))
         )
 
-    def resolve_route(self, route, fill_in_gaps: bool) -> types.Route:
+    def resolve_route(self, route, fill_in_gaps: bool) -> sstypes.Route:
         """Attempts to fill in the route between the beginning and end specified in the initial
         route.
 
         Args:
             route: An incomplete route.
         Returns:
-            smarts.sstudio.types.route.Route: A complete route listing all road segments it passes through.
+            smarts.sstudio.sstypes.route.Route: A complete route listing all road segments it passes through.
         """
-        if not isinstance(route, types.RandomRoute):
+        if not isinstance(route, sstypes.RandomRoute):
             return self._fill_in_gaps(route) if fill_in_gaps else route
 
         if not self._random_route_generator:

@@ -41,7 +41,7 @@ from smarts.core.utils.bullet import (
     JointInfo,
     JointState,
 )
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     min_angles_difference_signed,
     radians_to_vec,
     vec_to_radians,

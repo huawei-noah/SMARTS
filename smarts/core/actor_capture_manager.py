@@ -29,7 +29,7 @@ from typing import Any, Dict, Optional
 from smarts.core.actor import ActorState
 from smarts.core.plan import Plan
 from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import ConditionRequires
+from smarts.sstudio.sstypes import ConditionRequires
 
 
 class ActorCaptureManager:

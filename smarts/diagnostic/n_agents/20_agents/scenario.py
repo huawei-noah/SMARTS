@@ -21,7 +21,7 @@
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Mission, RandomRoute, Scenario, SocialAgentActor
+from smarts.sstudio.sstypes import Mission, RandomRoute, Scenario, SocialAgentActor
 
 
 def gen_actors(id_):

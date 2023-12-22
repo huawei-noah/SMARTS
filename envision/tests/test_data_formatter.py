@@ -27,7 +27,7 @@ from unittest.mock import MagicMock, PropertyMock
 import numpy as np
 import pytest
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from envision.client import Client
 from envision.data_formatter import (
     EnvisionDataFormatter,
@@ -35,7 +35,7 @@ from envision.data_formatter import (
     Operation,
     _formatter_map,
 )
-from envision.types import State, TrafficActorState, TrafficActorType, VehicleType
+from envision.etypes import State, TrafficActorState, TrafficActorType, VehicleType
 from smarts.core import seed
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.controllers import ActionSpaceType
@@ -302,10 +302,10 @@ def sim_data():
         [],
         [4],
         {
-            0: "car-west_0_0-east_0_max--41457-668134-0-0.0",
+            0: "car-west_0_0-east_0_max--22530-248058-0-0.0",
             1: None,
-            2: "car-west_1_0-east_1_max--31231--18481-1-0.0",
-            3: "car-west_2_0-east_2_max-674625--72317-2-0.0",
+            2: "car-west_1_0-east_1_max-810328-635068-1-0.0",
+            3: "car-west_2_0-east_2_max--22462--73609-2-0.0",
             4: "AGENT_1",
         },
         [],
@@ -398,7 +398,7 @@ def test_client_with_smarts(smarts: SMARTS, scenarios: Iterator[Scenario], sim_d
         es = EnvisionDataFormatter(EnvisionDataFormatterArgs(None))
         assert state.scenario_id is not None
         with mock.patch(
-            "envision.types.State.scenario_id", new_callable=PropertyMock
+            "envision.etypes.State.scenario_id", new_callable=PropertyMock
         ) as state_scenario_id:
             state_scenario_id.return_value = None
             es.add_any(state)

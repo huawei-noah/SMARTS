@@ -44,13 +44,17 @@ from .route_cache import RouteWithCache
 from .scenario import Scenario
 from .signals import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
+from .utils.core_math import (
+    min_angles_difference_signed,
+    radians_to_vec,
+    vec_to_radians,
+)
 from .utils.kinematics import (
     distance_covered,
     stopping_distance,
     stopping_time,
     time_to_cover,
 )
-from .utils.math import min_angles_difference_signed, radians_to_vec, vec_to_radians
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
 MAX_IMPATIENCE = 3.0
@@ -484,7 +488,7 @@ class _TrafficActor:
         self._dest_offset = None
         self._wrong_way: bool = False
 
-        # The default values here all attempt to match those in sstudio.types,
+        # The default values here all attempt to match those in sstudio.sstypes,
         # which in turn attempt to match Sumo's defaults.
         self._min_space_cush = float(self._vtype.get("minGap", 2.5))
         speed_factor = float(self._vtype.get("speedFactor", 1.0))
@@ -641,7 +645,7 @@ class _TrafficActor:
 
     def _resolve_flow_speed(self, flow: Dict[str, Any]) -> float:
         depart_speed = flow.get("departSpeed", 0.0)
-        # maxSpeed's default attempts to match the one in sstudio.types,
+        # maxSpeed's default attempts to match the one in sstudio.sstypes,
         # which in turn attempt to match Sumo's default.
         max_speed = float(self._vtype.get("maxSpeed", 55.5))
         if depart_speed == "random":

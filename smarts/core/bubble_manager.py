@@ -47,11 +47,11 @@ from smarts.core.utils.id import SocialAgentId
 from smarts.core.utils.string import truncate
 from smarts.core.vehicle import Vehicle
 from smarts.core.vehicle_index import VehicleIndex
-from smarts.sstudio.types import BoidAgentActor
-from smarts.sstudio.types import Bubble as SSBubble
-from smarts.sstudio.types import BubbleLimits, SocialAgentActor
-from smarts.sstudio.types.actor.traffic_engine_actor import TrafficEngineActor
-from smarts.sstudio.types.condition import Condition
+from smarts.sstudio.sstypes import BoidAgentActor
+from smarts.sstudio.sstypes import Bubble as SSBubble
+from smarts.sstudio.sstypes import BubbleLimits, SocialAgentActor
+from smarts.sstudio.sstypes.actor.traffic_engine_actor import TrafficEngineActor
+from smarts.sstudio.sstypes.condition import Condition
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -82,7 +82,7 @@ class BubbleCaptureState(Enum):
 
 
 class Bubble:
-    """Wrapper around `sstudio.types.Bubble` to cache bubble geometry (and does some
+    """Wrapper around `sstudio.sstypes.Bubble` to cache bubble geometry (and does some
     internal Bubble-related business logic).
     """
 
@@ -214,7 +214,7 @@ class Bubble:
         running_cursors: Set["Cursor"],
     ):
         """The vehicle_id we are querying for and the `other_vehicle_ids` _presently in
-        this :class:`~smarts.sstudio.types.bubble.Bubble`.
+        this :class:`~smarts.sstudio.sstypes.bubble.Bubble`.
         """
         for prefix in self.exclusion_prefixes:
             if vehicle_id.startswith(prefix):

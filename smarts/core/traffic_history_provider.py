@@ -33,7 +33,7 @@ from smarts.core.road_map import RoadMap
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_provider import TrafficProvider
-from smarts.core.utils.math import rounder_for_dt
+from smarts.core.utils.core_math import rounder_for_dt
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 

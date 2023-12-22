@@ -45,7 +45,7 @@ from smarts.core.route_cache import RouteWithCache
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
-from smarts.core.utils.logging import suppress_output
+from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 from smarts.core.utils.sumo import traci, TraciConn  # isort:skip

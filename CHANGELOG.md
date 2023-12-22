@@ -12,6 +12,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Added
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
+- The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
 ### Deprecated
 ### Fixed
 - Fixed an issue where `AgentInterface.vehicle_type` would not affect agent vehicles when attempting to take over an existing vehicle.
@@ -26,6 +27,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a `pkg_resources` deprecation warning in `python3.10` and up.
 - Fixed the envision camera to center on the map which was broken due to a change in the `gltf` metadata hierarchy.
 - Fixed an issue where you would need to install `waymo` in order to use any kind of dataset histories.
+- Fixed an issue where Pycharm would load `smarts/sstudio/types` as the integrated `types` module. See #2125.
 ### Removed
 ### Security
 

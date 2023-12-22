@@ -31,7 +31,7 @@ import numpy as np
 
 from smarts.core.coordinates import Heading, Point, Pose
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
+from smarts.core.utils.core_math import fast_quaternion_from_angle, vec_to_radians
 
 
 @dataclass(frozen=True)

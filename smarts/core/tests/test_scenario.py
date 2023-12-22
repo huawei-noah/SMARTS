@@ -27,7 +27,7 @@ from helpers.scenario import temp_scenario
 from smarts.core.scenario import Scenario
 from smarts.core.utils.id import SocialAgentId
 from smarts.sstudio.genscenario import gen_agent_missions, gen_social_agent_missions
-from smarts.sstudio.types import Mission, Route, SocialAgentActor
+from smarts.sstudio.sstypes import Mission, Route, SocialAgentActor
 
 AGENT_ID = "Agent-007"
 

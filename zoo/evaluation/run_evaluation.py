@@ -12,7 +12,7 @@ from pathlib import Path
 import yaml
 from rich.console import Console
 
-from smarts.sstudio.types import SocialAgentActor
+from smarts.sstudio.sstypes import SocialAgentActor
 
 console = Console()
 
@@ -47,7 +47,7 @@ def python(command):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
-    except Exception as e:
+    except subprocess.CalledProcessError as e:
         console.print(e.output.decode("utf-8"))
         exit(e.returncode)
 
@@ -110,7 +110,7 @@ def build_scenario(agent_name, actor, scenario_path):
         except OSError as e:
             console.print(e)
             exit(1)
-        except Exception as e:
+        except subprocess.CalledProcessError as e:
             console.print(e.output.decode("utf-8"))
             exit(e.returncode)
 

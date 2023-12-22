@@ -25,9 +25,9 @@ from dataclasses import dataclass, field
 from typing import Union
 
 from smarts.core.utils.file import pickle_hash_int
-from smarts.sstudio.types.actor import Actor
-from smarts.sstudio.types.distribution import Distribution
-from smarts.sstudio.types.traffic_model import JunctionModel, LaneChangingModel
+from smarts.sstudio.sstypes.actor import Actor
+from smarts.sstudio.sstypes.distribution import Distribution
+from smarts.sstudio.sstypes.traffic_model import JunctionModel, LaneChangingModel
 
 
 @dataclass(frozen=True)

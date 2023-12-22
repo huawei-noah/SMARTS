@@ -39,7 +39,7 @@ from shapely.ops import split, unary_union
 
 from smarts.core.coordinates import RefLinePoint
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import rotate_cw_around_point
+from smarts.core.utils.core_math import rotate_cw_around_point
 
 
 @dataclass(frozen=True)

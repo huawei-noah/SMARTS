@@ -25,12 +25,12 @@ from dataclasses import dataclass
 from typing import Optional, Tuple
 
 from smarts.core.condition_state import ConditionState
-from smarts.sstudio.types.condition import (
+from smarts.sstudio.sstypes.condition import (
     Condition,
     ConditionRequires,
     LiteralCondition,
 )
-from smarts.sstudio.types.zone import MapZone
+from smarts.sstudio.sstypes.zone import MapZone
 
 
 @dataclass(frozen=True)

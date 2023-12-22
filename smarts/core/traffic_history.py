@@ -40,7 +40,7 @@ from typing import (
 )
 
 from smarts.core.coordinates import Dimensions
-from smarts.core.utils.math import radians_to_vec
+from smarts.core.utils.core_math import radians_to_vec
 from smarts.core.vehicle import VEHICLE_CONFIGS
 
 T = TypeVar("T")

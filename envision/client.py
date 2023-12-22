@@ -32,11 +32,11 @@ from typing import Any, Optional, Union
 
 import numpy as np
 
-from envision import types
+from envision import etypes
 from envision.client_config import EnvisionStateFilter
 from envision.data_formatter import EnvisionDataFormatter, EnvisionDataFormatterArgs
+from smarts.core.utils.core_logging import suppress_websocket
 from smarts.core.utils.file import unpack
-from smarts.core.utils.logging import suppress_websocket
 
 
 @dataclass
@@ -219,7 +219,7 @@ class Client:
         if data_formatter_args:
             data_formatter = EnvisionDataFormatter(data_formatter_args)
 
-        def optionally_serialize_and_write(state: Union[types.State, str], ws):
+        def optionally_serialize_and_write(state: Union[etypes.State, str], ws):
             # if not already serialized
             if not isinstance(state, str):
                 if data_formatter:
@@ -307,7 +307,7 @@ class Client:
         except (BrokenPipeError, KeyboardInterrupt, EOFError):
             pass
 
-    def send(self, state: Union[types.State, types.Preamble]):
+    def send(self, state: Union[etypes.State, etypes.Preamble]):
         """Send the given envision state to the remote as the most recent state."""
         if not self._headless and self._process.is_alive():
             self._state_queue.put(state)

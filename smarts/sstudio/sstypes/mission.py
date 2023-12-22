@@ -24,9 +24,9 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple, Union
 
-from smarts.sstudio.types.constants import MISSING
-from smarts.sstudio.types.entry_tactic import EntryTactic
-from smarts.sstudio.types.route import JunctionEdgeIDResolver, RandomRoute, Route
+from smarts.sstudio.sstypes.constants import MISSING
+from smarts.sstudio.sstypes.entry_tactic import EntryTactic
+from smarts.sstudio.sstypes.route import JunctionEdgeIDResolver, RandomRoute, Route
 
 
 @dataclass(frozen=True)

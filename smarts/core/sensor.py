@@ -45,7 +45,7 @@ from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
-from smarts.core.utils.math import squared_dist
+from smarts.core.utils.core_math import squared_dist
 from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
 
 

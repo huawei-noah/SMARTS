@@ -26,7 +26,7 @@ from typing import Any, Generator, Sequence, Tuple
 import pytest
 from helpers.scenario import temp_scenario
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.scenario import Scenario

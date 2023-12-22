@@ -23,7 +23,7 @@ from itertools import combinations
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Flow,
     Mission,
     Route,

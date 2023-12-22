@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 import numpy as np
 
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     combination_pairs_with_unique_indices,
     position_to_ego_frame,
     world_position_from_ego_frame,

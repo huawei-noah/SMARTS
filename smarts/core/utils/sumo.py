@@ -31,7 +31,7 @@ import sys
 from typing import Any, List, Optional
 
 from smarts.core.utils import networking
-from smarts.core.utils.logging import suppress_output
+from smarts.core.utils.core_logging import suppress_output
 
 try:
     import sumo

@@ -28,7 +28,7 @@ import pytest
 
 from smarts.core.scenario import Scenario
 from smarts.sstudio.genscenario import gen_map, gen_traffic
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Distribution,
     Flow,
     JunctionModel,
@@ -95,10 +95,10 @@ def test_generate_traffic(traffic: Traffic):
 
 
 def _compare_files(file1, file2):
-    with open(file1) as f:
+    with open(file1, encoding="UTF-8") as f:
         items = [x.items() for x in ElementTree(file=f).iter()]
 
-    with open(file2) as f:
+    with open(file2, encoding="UTF-8") as f:
         generated_items = [x.items() for x in ElementTree(file=f).iter()]
 
     sorted_items = sorted(items)
