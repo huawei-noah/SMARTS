@@ -123,3 +123,15 @@ The benchmark listing file is organized as below.
 
     This avoids loading the module into python but resolves to the first
     path that matches the module.
+
+.. note::
+
+    Resolving SMARTS engine configuration.
+
+    The engine configuration resolves by referencing the setting through
+    the evaluation syntax ``${}``. This is restricted to ``"SMARTS_"``
+    prefixed environment variables.
+
+    .. code:: yaml
+
+        is_debug: ${SMARTS_CORE_DEBUG} # literal environment variable or engine setting `[core] debug`

@@ -28,6 +28,7 @@ from typing import Any, Dict, Optional
 import yaml
 
 import smarts.assets
+from smarts import config
 
 
 def load_controller_params(controller_filepath: str):
@@ -66,7 +67,8 @@ def _replace_with_module_path(base: str, module_str: str):
 def load_yaml_config_with_substitution(path: Path) -> Optional[Dict[str, Any]]:
     """Read in a yaml configuration to dictionary format replacing instances of ${{module}} with
     module's file path."""
-    config = None
+    smarts_config = config()
+    out_config = None
     if path.exists():
         assert path.suffix in (".yaml", ".yml"), f"`{str(path)}` is not a YAML file."
         with tempfile.NamedTemporaryFile("w", suffix=".py", dir=path.parent) as c:
@@ -77,9 +79,10 @@ def load_yaml_config_with_substitution(path: Path) -> Optional[Dict[str, Any]]:
                 if match:
                     for val in match:
                         conf = _replace_with_module_path(conf, val)
+                conf = smarts_config.substitute_settings(conf, path.__str__())
                 c.write(conf)
 
             c.flush()
             with open(c.name, "r", encoding="utf-8") as file:
-                config = yaml.safe_load(file)
-    return config
+                out_config = yaml.safe_load(file)
+    return out_config

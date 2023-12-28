@@ -10,6 +10,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased] - XXXX-XX-XX
 ### Added
+- Resources loaded with `load_yaml_config_with_substitution()` now substitute in smarts configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration.
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
@@ -17,6 +18,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `rllib` is now constrained as `<=2.9,>2.4`.
 - The `examples/e12_rllib` training examples `{pg_example|pg_pbt_example}.py` have been changed to `{ppo_example|ppo_pbt_example}.py`. `Policy Gradients (PG)` has been dropped in favor of the more well documented `Proximal Policy Optimization (PPO)`.
 - Renamed `vehicle.urdf` to `sedan.urdf`.
+- Environment prefix is now configurable for custom `smarts.core.config()` calls.
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 ### Fixed

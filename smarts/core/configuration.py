@@ -25,7 +25,9 @@ import functools
 import logging
 import os
 import pathlib
-from typing import Any, Callable, Optional, Union
+import re
+import warnings
+from typing import Any, Callable, List, Optional, Union
 
 _UNSET = object()
 
@@ -66,7 +68,10 @@ class Config:
             interpolation=configparser.ExtendedInterpolation()
         )
         self._environment_prefix = environment_prefix.upper()
-        self._environment_variable_format_string = self._environment_prefix + "_{}_{}"
+        self._environment_variable_format_string = (
+            self._environment_prefix + "_{}_{}" if self._environment_prefix else "{}_{}"
+        )
+        self.env_variable_substitution_pattern = re.compile(r"\$\{.+\}")
 
         if isinstance(config_file, str):
             config_file = pathlib.Path(config_file)
@@ -125,6 +130,32 @@ class Config:
                 ) from exc
             return default
         return cast(value)
+
+    def substitute_settings(self, input: str, source: Optional[str] = "") -> str:
+        """Given a string, substitutes in configuration settings if they exist."""
+
+        m: List[str] = self.env_variable_substitution_pattern.findall(input)
+
+        output = input
+        if not m:
+            return input
+        output = input
+        for val in set(m):
+            if self.environment_prefix:
+                environment_prefix, _, setting = val.partition("_")
+                if environment_prefix != self.environment_prefix:
+                    warnings.warn(
+                        f"Unable to substitute environment variable `{val}` from `{source}`"
+                    )
+                    continue
+            else:
+                setting = val
+
+            section, _, option_name = setting.lower().partition("_")
+            env_value = self(section=section, option=option_name)
+
+            output = output.replace(f"${{{val}}}", env_value)
+        return output
 
     def __call__(
         self,
