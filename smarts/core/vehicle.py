@@ -26,10 +26,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+import smarts.assets
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
-from . import config, models
+from . import config
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
@@ -282,7 +283,7 @@ class Vehicle:
         else:
             raise ValueError(f"Vehicle type `{vehicle_type}` does not exist!!!")
 
-        with pkg_resources.path(models, urdf_name + ".urdf") as path:
+        with pkg_resources.path(smarts.assets, urdf_name + ".urdf") as path:
             vehicle_filepath = str(path.absolute())
 
         return vehicle_filepath

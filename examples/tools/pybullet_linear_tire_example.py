@@ -1,9 +1,11 @@
+import importlib.resources as pkg_resources
 import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+import smarts.assets
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
@@ -238,21 +240,22 @@ if __name__ == "__main__":
                 # frictionERP=0.1,
             )
 
-            path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
-            path = str(path.absolute())
-            plane_body_id = client.loadURDF(path, useFixedBase=True)
+            with pkg_resources.path(smarts.assets, "plane.urdf") as path:
+                path = str(path.absolute())
+                plane_body_id = client.loadURDF(path, useFixedBase=True)
 
             client.changeDynamics(plane_body_id, -1, **frictions(sliders))
 
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
-            vehicle = Vehicle(
-                "hello",
-                chassis=AckermannChassis(
-                    pose=pose,
-                    bullet_client=client,
-                    tire_parameters_filepath="../../smarts/core/models/tire_parameters.yaml",
-                ),
-            )
+            with pkg_resources.path(smarts.assets, "tire_parameters.yaml") as tire_path:
+                vehicle = Vehicle(
+                    "hello",
+                    chassis=AckermannChassis(
+                        pose=pose,
+                        bullet_client=client,
+                        tire_parameters_filepath=tire_path,
+                    ),
+                )
 
             run(
                 client,

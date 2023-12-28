@@ -30,7 +30,7 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from smarts.core import models
+import smarts.assets
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.tire_models import TireForces
 from smarts.core.utils import pybullet
@@ -49,9 +49,9 @@ from smarts.core.utils.core_math import (
 )
 from smarts.core.utils.pybullet import bullet_client as bc
 
-with pkg_resources.path(models, "vehicle.urdf") as path:
+with pkg_resources.path(smarts.assets, "vehicle.urdf") as path:
     DEFAULT_VEHICLE_FILEPATH = str(path.absolute())
-with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
+with pkg_resources.path(smarts.assets, "controller_parameters.yaml") as controller_path:
     controller_filepath = str(controller_path.absolute())
 with open(controller_filepath, "r") as controller_file:
     DEFAULT_CONTROLLER_PARAMETERS = yaml.safe_load(controller_file)["sedan"]

@@ -27,14 +27,14 @@ from typing import Any, Dict, Optional
 
 import yaml
 
-from .. import models
+import smarts.assets
 
 
 def load_controller_params(controller_filepath: str):
     """Load a controller parameters file."""
     if (controller_filepath is None) or not os.path.exists(controller_filepath):
         with pkg_resources.path(
-            models, "controller_parameters.yaml"
+            smarts.assets, "controller_parameters.yaml"
         ) as controller_path:
             controller_filepath = str(controller_path.absolute())
     with open(controller_filepath, "r", encoding="utf-8") as controller_file:

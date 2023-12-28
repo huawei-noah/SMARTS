@@ -1,8 +1,10 @@
+import importlib.resources as pkg_resources
 import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+import smarts.assets
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
@@ -162,9 +164,9 @@ if __name__ == "__main__":
                 # frictionERP=0.1,
             )
 
-            path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
-            path = str(path.absolute())
-            plane_body_id = client.loadURDF(path, useFixedBase=True)
+            with pkg_resources.path(smarts.assets, "plane.urdf") as path:
+                path = str(path.absolute())
+                plane_body_id = client.loadURDF(path, useFixedBase=True)
 
             client.changeDynamics(plane_body_id, -1, **frictions(sliders))
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))

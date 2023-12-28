@@ -58,7 +58,8 @@ from panda3d.core import (
     loadPrcFileData,
 )
 
-from smarts.core import glsl, models
+import smarts.assets
+from smarts.core import glsl
 from smarts.core.colors import Colors, SceneColors
 from smarts.core.coordinates import Point, Pose
 from smarts.core.masks import RenderMasks
@@ -495,7 +496,7 @@ class Renderer(RendererBase):
         """Create a vehicle node."""
         if vid in self._vehicle_nodes:
             return False
-        with pkg_resources.path(models, glb_model) as path:
+        with pkg_resources.path(smarts.assets, glb_model) as path:
             node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
         node_path.setName("vehicle-%s" % vid)
         if (

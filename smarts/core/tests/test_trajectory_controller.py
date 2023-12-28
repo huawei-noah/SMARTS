@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 import yaml
 
-from smarts.core import models
+import smarts.assets
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
@@ -47,9 +47,11 @@ def vehicle_controller_file(request):
     if request.param == "sedan":
         vehicle_file_name = "vehicle.urdf"
 
-    with pkg_resources.path(models, vehicle_file_name) as path:
+    with pkg_resources.path(smarts.assets, vehicle_file_name) as path:
         vehicle_file_path = str(path.absolute())
-    with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
+    with pkg_resources.path(
+        smarts.assets, "controller_parameters.yaml"
+    ) as controller_path:
         controller_filepath = str(controller_path.absolute())
     with open(controller_filepath, "r") as controller_file:
         vehicle_controller_file_path = yaml.safe_load(controller_file)[request.param]
@@ -66,9 +68,9 @@ def bullet_client(fixed_timestep_sec=time_step):
         fixedTimeStep=fixed_timestep_sec,
         numSubSteps=int(fixed_timestep_sec / (1 / 240)),
     )
-    path = Path(__file__).parent / "../models/plane.urdf"
-    path = str(path.absolute())
-    plane_body_id = client.loadURDF(path, useFixedBase=True)
+    with pkg_resources.path(smarts.assets, "plane.urdf") as path:
+        path = str(path.absolute())
+        plane_body_id = client.loadURDF(path, useFixedBase=True)
     yield client
     client.disconnect()
 
