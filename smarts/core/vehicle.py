@@ -270,7 +270,7 @@ class Vehicle:
             vehicle_type = "passenger"
 
         if vehicle_type == "passenger":
-            urdf_name = "vehicle"
+            urdf_name = "sedan"
         elif vehicle_type in {
             "bus",
             "coach",
