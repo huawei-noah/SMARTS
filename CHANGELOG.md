@@ -16,7 +16,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Exposed `traffic:traci_retries`/`SMARTS_TRAFFIC_TRACI_RETRIES` to control how many times the `SumoTrafficSimulation` will try to restart when using default configuration.
 - `rllib` is now constrained as `<=2.9,>2.4`.
 - The `examples/e12_rllib` training examples `{pg_example|pg_pbt_example}.py` have been changed to `{ppo_example|ppo_pbt_example}.py`. `Policy Gradients (PG)` has been dropped in favor of the more well documented `Proximal Policy Optimization (PPO)`.
+- Renamed `vehicle.urdf` to `sedan.urdf`.
 ### Deprecated
+- Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 ### Fixed
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
 - Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.

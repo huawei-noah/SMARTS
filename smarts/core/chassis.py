@@ -49,7 +49,7 @@ from smarts.core.utils.core_math import (
 )
 from smarts.core.utils.pybullet import bullet_client as bc
 
-with pkg_resources.path(smarts.assets, "vehicle.urdf") as path:
+with pkg_resources.path(smarts.assets, "sedan.urdf") as path:
     DEFAULT_VEHICLE_FILEPATH = str(path.absolute())
 with pkg_resources.path(smarts.assets, "controller_parameters.yaml") as controller_path:
     controller_filepath = str(controller_path.absolute())

@@ -45,7 +45,7 @@ time_step = 0.1
 def vehicle_controller_file(request):
     vehicle_file_name = request.param + ".urdf"
     if request.param == "sedan":
-        vehicle_file_name = "vehicle.urdf"
+        vehicle_file_name = "sedan.urdf"
 
     with pkg_resources.path(smarts.assets, vehicle_file_name) as path:
         vehicle_file_path = str(path.absolute())
