@@ -88,6 +88,7 @@ class SumoTrafficSimulation(TrafficProvider):
         allow_reload: bool = True,
         debug: bool = True,
         remove_agents_only_mode: bool = False,
+        traci_retries: Optional[int] = None,
     ):
         self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
@@ -121,6 +122,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._last_vehicle_subscriptions = dict()
         self._sim = None
         self._handling_error = False
+        self._traci_retries = traci_retries
 
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
@@ -322,7 +324,11 @@ class SumoTrafficSimulation(TrafficProvider):
 
         if restart_sumo:
             try:
-                self._initialize_traci_conn()
+                engine_config = config()
+                traci_retries = self._traci_retries or engine_config(
+                    "sumo", "traci_retries", default=5, cast=int
+                )
+                self._initialize_traci_conn(num_retries=traci_retries)
             except traci.exceptions.FatalTraCIError:
                 return ProviderState()
         elif self._allow_reload:
