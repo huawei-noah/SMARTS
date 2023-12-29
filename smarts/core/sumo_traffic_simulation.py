@@ -30,7 +30,7 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from smarts.core import gen_id
+from smarts.core import config, gen_id
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
@@ -204,7 +204,6 @@ class SumoTrafficSimulation(TrafficProvider):
                 sumo_binary=sumo_binary,
             )
             # Ensure there has been enough time for sumo to start
-            time.sleep(0.05)
             try:
                 while self._traci_conn.viable and not self._traci_conn.connected:
                     try:
@@ -227,6 +226,8 @@ class SumoTrafficSimulation(TrafficProvider):
                 # Some other process owns the port... sumo did not die just retry
                 self._traci_conn.close_traci_and_pipes()
                 continue
+            except OSError:
+                raise
             except KeyboardInterrupt:
                 self._log.debug("Keyboard interrupted TraCI connection.")
                 self._traci_conn.close_traci_and_pipes()
@@ -238,7 +239,7 @@ class SumoTrafficSimulation(TrafficProvider):
             # It is mandatory to set order when using multiple clients.
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
-        except (traci.exceptions.FatalTraCIError, AssertionError) as err:
+        except (traci.exceptions.FatalTraCIError, TypeError) as err:
             logging.error(
                 """Failed to initialize SUMO
                 Your scenario might not be configured correctly or
