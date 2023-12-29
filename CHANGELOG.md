@@ -15,6 +15,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
 ### Deprecated
 ### Fixed
+- Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.
+
 - Fixed an issue where `AgentInterface.vehicle_type` would not affect agent vehicles when attempting to take over an existing vehicle.
 - Fixed a case where newly created agent vehicles would have a constant `"sedan"` size instead of the size of `AgentInterface.vehicle_type`.
 - Fixed a case where if vehicles are replaced they would not respect controller and vehicle parameters.
