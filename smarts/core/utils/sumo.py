@@ -20,6 +20,7 @@
 """Importing this module "redirects" the import to the "real" sumolib. This is available
 for convenience and to reduce code duplication as sumolib lives under SUMO_HOME.
 """
+from __future__ import annotations
 
 import functools
 import inspect
@@ -115,18 +116,15 @@ class TraciConn:
 
     def connect(
         self,
-        timeout: float = 5,
-        minimum_traci_version=20,
-        minimum_sumo_version=(
-            1,
-            10,
-            0,
-        ),
+        timeout: float,
+        minimum_traci_version: int,
+        minimum_sumo_version: Tuple[int, ...],
+        debug: bool = False,
     ):
         """Attempt a connection with the SUMO process."""
         traci_conn = None
         try:
-            with suppress_output(stdout=False):
+            with suppress_output(stderr=not debug, stdout=False):
                 traci_conn = traci.connect(
                     self._sumo_port,
                     numRetries=max(0, int(20 * timeout)),
@@ -215,7 +213,7 @@ class TraciConn:
                 # TraCI connection is already dead.
                 pass
             except AttributeError:
-                # Socket was destroyed internally by a fatal error somehow.
+                # Socket was destroyed internally, likely due to an error.
                 pass
 
         if self._traci_conn:
@@ -236,14 +234,13 @@ class TraciConn:
 
 
 def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
-    # Argument order must be `*args` first so keyword arguments are required for `method` and `sumo_process`.
+    # Argument order must be `*args` first so `method` and `sumo_process` are keyword only arguments.
     try:
         return method(*args, **kwargs)
     except traci.exceptions.FatalTraCIError:
-        # Traci cannot continue
+        # TraCI cannot continue
         sumo_process.close_traci_and_pipes()
         raise
     except traci.exceptions.TraCIException:
-        # Case where SUMO can continue
-        # TAI: consider closing the process even with a non fatal error
+        # Case where TraCI/SUMO can theoretically continue
         raise

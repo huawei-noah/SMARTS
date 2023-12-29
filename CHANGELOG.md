@@ -13,10 +13,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
+- Exposed `traffic:traci_retries`/`SMARTS_TRAFFIC_TRACI_RETRIES` to control how many times the `SumoTrafficSimulation` will try to restart when using default configuration.
+
 ### Deprecated
 ### Fixed
+- `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
 - Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.
-
 - Fixed an issue where `AgentInterface.vehicle_type` would not affect agent vehicles when attempting to take over an existing vehicle.
 - Fixed a case where newly created agent vehicles would have a constant `"sedan"` size instead of the size of `AgentInterface.vehicle_type`.
 - Fixed a case where if vehicles are replaced they would not respect controller and vehicle parameters.
