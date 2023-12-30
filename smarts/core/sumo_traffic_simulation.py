@@ -30,7 +30,7 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from smarts.core import gen_id
+from smarts.core import config, gen_id
 from smarts.core.actor import ActorRole, ActorState
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Heading, Pose, RefLinePoint
@@ -74,6 +74,8 @@ class SumoTrafficSimulation(TrafficProvider):
         remove_agents_only_mode:
             Remove only agent vehicles used by SMARTS and not delete other SUMO
             vehicles when the traffic simulation calls to tear-down
+        traci_retries:
+            The number of times to retry acquisition of a TraCI server before erroring.
     """
 
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -86,8 +88,9 @@ class SumoTrafficSimulation(TrafficProvider):
         sumo_port: Optional[int] = None,
         auto_start: bool = True,
         allow_reload: bool = True,
-        debug: bool = True,
+        debug: bool = False,
         remove_agents_only_mode: bool = False,
+        traci_retries: Optional[int] = None,
     ):
         self._remove_agents_only_mode = remove_agents_only_mode
         self._log = logging.getLogger(self.__class__.__name__)
@@ -121,6 +124,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._last_vehicle_subscriptions = dict()
         self._sim = None
         self._handling_error = False
+        self._traci_retries = traci_retries
 
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
@@ -203,8 +207,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 base_params=self._base_sumo_load_params(),
                 sumo_binary=sumo_binary,
             )
-            # Ensure there has been enough time for sumo to start
-            time.sleep(0.05)
+
             try:
                 while self._traci_conn.viable and not self._traci_conn.connected:
                     try:
@@ -212,6 +215,7 @@ class SumoTrafficSimulation(TrafficProvider):
                             timeout=5,
                             minimum_traci_version=20,
                             minimum_sumo_version=(1, 10, 0),
+                            debug=self._debug,
                         )
                     except traci.exceptions.FatalTraCIError:
                         # Could not connect in time just retry connection
@@ -224,30 +228,28 @@ class SumoTrafficSimulation(TrafficProvider):
                 self._traci_conn.close_traci_and_pipes()
                 continue
             except ConnectionRefusedError:
-                # Some other process owns the port... sumo did not die just retry
-                self._traci_conn.close_traci_and_pipes()
+                # Some other process somehow owns the port... sumo needs to be restarted.
                 continue
+            except OSError:
+                # TraCI or SUMO version are not at the minimum required version.
+                raise
             except KeyboardInterrupt:
                 self._log.debug("Keyboard interrupted TraCI connection.")
                 self._traci_conn.close_traci_and_pipes()
                 raise
             break
+        else:
+            exception = traci.exceptions.FatalTraCIError(
+                f"Unable to connect to TraCI server after `{num_retries=}`."
+            )
+            self._handle_traci_exception(exception, actors_relinquishable=False)
+            raise exception
 
         try:
-            assert self._traci_conn is not None
             # It is mandatory to set order when using multiple clients.
             self._traci_conn.setOrder(0)
             self._traci_conn.getVersion()
-        except (traci.exceptions.FatalTraCIError, AssertionError) as err:
-            logging.error(
-                """Failed to initialize SUMO
-                Your scenario might not be configured correctly or
-                you were trying to initialize many SUMO instances at
-                once and we were not able to assign unique port
-                numbers to all SUMO processes.
-                Check %s for hints""",
-                self._log_file,
-            )
+        except (traci.exceptions.FatalTraCIError, TypeError) as err:
             self._handle_traci_exception(err, actors_relinquishable=False)
             self.teardown()
             raise
@@ -321,7 +323,11 @@ class SumoTrafficSimulation(TrafficProvider):
 
         if restart_sumo:
             try:
-                self._initialize_traci_conn()
+                engine_config = config()
+                traci_retries = self._traci_retries or engine_config(
+                    "sumo", "traci_retries", default=5, cast=int
+                )
+                self._initialize_traci_conn(num_retries=traci_retries)
             except traci.exceptions.FatalTraCIError:
                 return ProviderState()
         elif self._allow_reload:
