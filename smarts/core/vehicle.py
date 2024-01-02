@@ -86,8 +86,7 @@ class Vehicle:
         # Color override
         self._color: Optional[SceneColors] = color
         if self._color is None:
-            config = VEHICLE_CONFIGS[vehicle_config_type]
-            self._color = config.color
+            self._color = SceneColors.SocialVehicle
 
         self._initialized = True
         self._has_stepped = False
