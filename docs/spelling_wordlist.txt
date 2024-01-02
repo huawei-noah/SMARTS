@@ -35,6 +35,7 @@ egoless
 Env
 fallbacks
 frenet
+Jupyter
 indexable
 infos
 instantiating

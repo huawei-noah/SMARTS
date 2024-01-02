@@ -20,6 +20,7 @@
 """Importing this module "redirects" the import to the "real" sumolib. This is available
 for convenience and to reduce code duplication as sumolib lives under SUMO_HOME.
 """
+from __future__ import annotations
 
 import functools
 import inspect
@@ -28,10 +29,10 @@ import multiprocessing
 import os
 import subprocess
 import sys
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 from smarts.core.utils import networking
-from smarts.core.utils.logging import suppress_output
+from smarts.core.utils.core_logging import suppress_output
 
 try:
     import sumo
@@ -86,7 +87,7 @@ class TraciConn:
         self._sumo_proc = None
         self._traci_conn = None
         self._sumo_port = None
-        self._sumo_version = ()
+        self._sumo_version: Tuple[int, ...] = tuple()
 
         if sumo_port is None:
             sumo_port = networking.find_free_port()
@@ -115,18 +116,15 @@ class TraciConn:
 
     def connect(
         self,
-        timeout: float = 5,
-        minimum_traci_version=20,
-        minimum_sumo_version=(
-            1,
-            10,
-            0,
-        ),
+        timeout: float,
+        minimum_traci_version: int,
+        minimum_sumo_version: Tuple[int, ...],
+        debug: bool = False,
     ):
         """Attempt a connection with the SUMO process."""
         traci_conn = None
         try:
-            with suppress_output(stdout=False):
+            with suppress_output(stderr=not debug, stdout=False):
                 traci_conn = traci.connect(
                     self._sumo_port,
                     numRetries=max(0, int(20 * timeout)),
@@ -142,40 +140,45 @@ class TraciConn:
             raise
         except ConnectionRefusedError:
             logging.error(
-                "Connection refused. Tried to connect to unpaired TraCI client."
+                "Connection refused. Tried to connect to an unpaired TraCI client."
             )
             raise
 
         try:
             vers, vers_str = traci_conn.getVersion()
-            assert (
-                vers >= minimum_traci_version
-            ), f"TraCI API version must be >= {minimum_traci_version}. Got version ({vers})"
+            if vers < minimum_traci_version:
+                raise OSError(
+                    f"TraCI API version must be >= {minimum_traci_version}. Got version ({vers})"
+                )
             self._sumo_version = tuple(
                 int(v) for v in vers_str.partition(" ")[2].split(".")
             )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
-            assert (
-                self._sumo_version >= minimum_sumo_version
-            ), f"SUMO version must be >= SUMO {minimum_sumo_version}"
+            if self._sumo_version < minimum_sumo_version:
+                raise OSError(f"SUMO version must be >= SUMO {minimum_sumo_version}")
         except traci.exceptions.FatalTraCIError as err:
-            logging.debug("TraCI could not connect in time.")
+            logging.debug("TraCI disconnected, process may have died.")
             # XXX: the error type is changed to TraCIException to make it consistent with the
             # process died case of `traci.connect`.
             raise traci.exceptions.TraCIException(err)
-        except AssertionError:
+        except OSError:
             self.close_traci_and_pipes()
             raise
         self._traci_conn = traci_conn
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         """Check if the connection is still valid."""
         return self._sumo_proc is not None and self._traci_conn is not None
 
     @property
-    def viable(self):
+    def viable(self) -> bool:
         """If making a connection to the sumo process is still viable."""
         return self._sumo_proc is not None and self._sumo_proc.poll() is None
+
+    @property
+    def sumo_version(self) -> Tuple[int, ...]:
+        """Get the current SUMO version as a tuple."""
+        return self._sumo_version
 
     def __getattr__(self, name: str) -> Any:
         if not self.connected:
@@ -210,7 +213,7 @@ class TraciConn:
                 # TraCI connection is already dead.
                 pass
             except AttributeError:
-                # Socket was destroyed internally by a fatal error somehow.
+                # Socket was destroyed internally, likely due to an error.
                 pass
 
         if self._traci_conn:
@@ -231,14 +234,13 @@ class TraciConn:
 
 
 def _wrap_traci_method(*args, method, sumo_process: TraciConn, **kwargs):
-    # Argument order must be `*args` first so keyword arguments are required for `method` and `sumo_process`.
+    # Argument order must be `*args` first so `method` and `sumo_process` are keyword only arguments.
     try:
         return method(*args, **kwargs)
     except traci.exceptions.FatalTraCIError:
-        # Traci cannot continue
+        # TraCI cannot continue
         sumo_process.close_traci_and_pipes()
         raise
     except traci.exceptions.TraCIException:
-        # Case where SUMO can continue
-        # TAI: consider closing the process even with a non fatal error
+        # Case where TraCI/SUMO can theoretically continue
         raise

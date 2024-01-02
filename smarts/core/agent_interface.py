@@ -22,7 +22,7 @@ import warnings
 from dataclasses import dataclass, field, replace
 from enum import IntEnum
 from functools import cached_property
-from typing import List, Optional, Tuple, Union
+from typing import List, Literal, Optional, Tuple, Union
 
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
@@ -320,7 +320,9 @@ class AgentInterface:
     The choice of action space; this also decides the controller that will be enabled and the chassis type that will be used.
     """
 
-    vehicle_type: str = "sedan"
+    vehicle_type: Literal[
+        "bus", "coach", "motorcycle", "pedestrian", "sedan", "trailer", "truck"
+    ] = "sedan"
     """
     The choice of vehicle type.
     """
@@ -367,7 +369,15 @@ class AgentInterface:
             self.lane_positions, LanePositions
         )
         self.signals = AgentInterface._resolve_config(self.signals, Signals)
-        assert self.vehicle_type in {"sedan", "bus"}
+        assert self.vehicle_type in {
+            "bus",
+            "coach",
+            "motorcycle",
+            "pedestrian",
+            "sedan",
+            "trailer",
+            "truck",
+        }
 
     @staticmethod
     def from_type(requested_type: AgentType, **kwargs):

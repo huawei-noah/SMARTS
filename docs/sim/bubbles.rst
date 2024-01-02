@@ -22,7 +22,7 @@ Bubbles can be fixed to a static location defined either as an edge or a positio
 
 .. code-block:: python
 
-    import smarts.sstudio.types as t
+    import smarts.sstudio.sstypes as t
     zoo_agent_actor = t.SocialAgentActor(
         # Unique agent name
         name="zoo-agent",
@@ -45,7 +45,7 @@ Bubbles that are vehicle-relative can be attached to specific actors by specifyi
 
 .. code-block:: python
 
-    import smarts.sstudio.types as t
+    import smarts.sstudio.sstypes as t
     t.Bubble(
         ...,
         # The target of the bubble to follow the given actor
@@ -61,7 +61,7 @@ There is currently no interface for dynamically-created bubbles. However, if the
 
 .. code-block:: python
     
-    import smarts.sstudio.types as t
+    import smarts.sstudio.sstypes as t
     scenario_iter = Scenario.scenario_variations(path)
     scenario = next(scenario)
     scenario.bubbles.append(

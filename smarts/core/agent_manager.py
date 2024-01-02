@@ -23,7 +23,7 @@ import weakref
 from concurrent import futures
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
-from envision.types import format_actor_id
+from envision.etypes import format_actor_id
 from smarts.core.actor import ActorRole
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
@@ -34,7 +34,7 @@ from smarts.core.plan import Plan
 from smarts.core.sensor_manager import SensorManager
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle_state import VehicleState
-from smarts.sstudio.types.actor.social_agent_actor import SocialAgentActor
+from smarts.sstudio.sstypes.actor.social_agent_actor import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
 
 
@@ -611,10 +611,8 @@ class AgentManager:
             agent_id,
             agent_interface,
             plan,
-            scenario.vehicle_filepath,
             scenario.tire_parameters_filepath,
             trainable,
-            scenario.surface_patches,
             agent_model.initial_speed,
             boid=boid,
             vehicle_id=agent_model.actor_name,

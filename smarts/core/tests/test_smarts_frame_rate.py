@@ -30,7 +30,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+from smarts.sstudio import sstypes as t
 
 AGENT_1 = "Agent_007"
 

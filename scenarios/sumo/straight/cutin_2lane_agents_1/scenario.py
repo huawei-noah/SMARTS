@@ -5,7 +5,7 @@ from pathlib import Path
 from numpy import random
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Distribution,
     Flow,
     Mission,

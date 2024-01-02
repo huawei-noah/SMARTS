@@ -64,8 +64,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :maxdepth: 3
    :caption: Examples
 
-   examples/egoless.rst
-   examples/control.rst
+   examples/base_examples.rst
    examples/rl_model.rst
 
 .. toctree::

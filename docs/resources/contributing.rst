@@ -78,7 +78,7 @@ You are encouraged to review other people's pull requests and tag in relevant re
 Code Format
 -----------
 
-The project follows a strict format requirement for python code. We made a decision early on in the project to use `Black <https://github.com/psf/black>`_. This makes formatting consistent while eliminating `bike shedding <http://bikeshed.com/>`_.
+The project follows a strict format requirement for python code. We made a decision early on in the project to use `Black <https://github.com/psf/black>`_. This makes formatting consistent while eliminating `bike shedding <https://bikeshed.com/>`_.
 If you do not already have it please install it via ``pip install black``.
 
 Formatting guarantees that your code will pass the CI formatting test case.
@@ -145,4 +145,4 @@ Things inevitably become slow, when this happens, Flame Graph is a great tool to
     $ mkdir -p flamegraph_dir
     $ curl https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl > ./utils/third_party/tools/flamegraph.pl
     $ chmod 777 {$flamegraph_dir}/flamegraph.pl
-    $ make flamegraph scenario=./scenarios/sumo/loop script=./examples/control/chase_via_points.py
+    $ make flamegraph scenario=./scenarios/sumo/loop script=./examples/e2_single_agent.py

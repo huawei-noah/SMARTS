@@ -29,7 +29,7 @@ from typing import Any, Dict, Optional
 from smarts.core.actor import ActorState
 from smarts.core.plan import Plan
 from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import ConditionRequires
+from smarts.sstudio.sstypes import ConditionRequires
 
 
 class ActorCaptureManager:
@@ -68,10 +68,8 @@ class ActorCaptureManager:
             agent_id,
             agent_interface,
             plan,
-            sim.scenario.vehicle_filepath,
             sim.scenario.tire_parameters_filepath,
             True,
-            sim.scenario.surface_patches,
             initial_speed=initial_speed,
             boid=False,
         )

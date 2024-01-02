@@ -154,7 +154,7 @@ format: gen-header
 
 .PHONY: docs
 docs:
-	cd docs && make clean html SPHINXOPTS="-W -T -n --keep-going -b spelling"
+	cd docs && make clean html SPHINXOPTS="-W -T -n --keep-going -b spelling -b linkcheck"
 
 .PHONY: wheel
 wheel: docs

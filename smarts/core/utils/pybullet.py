@@ -20,7 +20,7 @@
 import functools
 import inspect
 
-from smarts.core.utils.logging import suppress_output
+from smarts.core.utils.core_logging import suppress_output
 
 # XXX: Importing pybullet logs an annoying build version tag. There's no "friendly"
 #      way to fix this since they simply use print(...). Disabling logging at the
@@ -49,7 +49,12 @@ class SafeBulletClient(bullet_client.BulletClient):
 
     def __del__(self):
         """Clean up connection if not already done."""
-        super().__del__()
+        try:
+            super().__del__()
+        except TypeError as error:
+            # Pybullet 3.2.6 currently attempts to catch an error type that does not exist.
+            if not error.args[0].contains("BaseException"):
+                raise
 
     def __getattr__(self, name):
         """Inject the client id into Bullet functions."""

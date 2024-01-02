@@ -459,7 +459,20 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         chassis = None
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
-            chassis = AckermannChassis(pose=vehicle.pose, bullet_client=sim.bc)
+            chassis = AckermannChassis(
+                pose=vehicle.pose,
+                bullet_client=sim.bc,
+                vehicle_filepath=Vehicle.vehicle_urdf_path(
+                    vehicle_type=agent_interface.vehicle_type,
+                    override_path=sim.scenario.vehicle_filepath,
+                ),
+                tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
+                friction_map=sim.scenario.surface_patches,
+                controller_parameters=self.controller_params_for_vehicle_type(
+                    agent_interface.vehicle_type
+                ),
+                initial_speed=vehicle.speed,
+            )
         else:
             chassis = BoxChassis(
                 pose=vehicle.pose,
@@ -612,7 +625,10 @@ class VehicleIndex:
             vehicle.id,
             agent_interface,
             plan,
-            sim.scenario.vehicle_filepath,
+            Vehicle.vehicle_urdf_path(
+                vehicle_type=agent_interface.vehicle_type,
+                override_path=sim.scenario.vehicle_filepath,
+            ),
             sim.scenario.tire_parameters_filepath,
             not hijacking,
             sim.scenario.surface_patches,
@@ -660,12 +676,10 @@ class VehicleIndex:
         agent_id,
         agent_interface,
         plan,
-        filepath,
         tire_filepath,
-        trainable,
-        surface_patches,
-        initial_speed=None,
-        boid=False,
+        trainable: bool,
+        initial_speed: Optional[float] = None,
+        boid: bool = False,
         *,
         vehicle_id=None,
     ):
@@ -675,10 +689,13 @@ class VehicleIndex:
             vehicle_id=vehicle_id or agent_id,
             agent_interface=agent_interface,
             plan=plan,
-            vehicle_filepath=filepath,
+            vehicle_filepath=Vehicle.vehicle_urdf_path(
+                vehicle_type=agent_interface.vehicle_type,
+                override_path=sim.scenario.vehicle_filepath,
+            ),
             tire_filepath=tire_filepath,
             trainable=trainable,
-            surface_patches=surface_patches,
+            surface_patches=sim.scenario.surface_patches,
             initial_speed=initial_speed,
         )
 

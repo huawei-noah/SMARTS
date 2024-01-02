@@ -23,7 +23,7 @@ SMARTS docker images are hosted at `dockerhub <https://hub.docker.com/u/huaweino
 
     # Run an example. 
     # Add --headless if visualisation is not needed.
-    $ python examples/control/chase_via_points.py scenarios/sumo/loop
+    $ python examples/e2_single_agent.py scenarios/sumo/loop
 
     # Visit http://localhost:8081 in the host machine to see the running simulation in Envision.
 
@@ -50,10 +50,10 @@ Instructions for running SMARTS within a `singularity <https://apptainer.org/>`_
     # 1. Run container in interactive mode.
     $ singularity shell --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif
     # Inside the container
-    Singularity> python3.8 /src/examples/control/chase_via_points.py /src/scenarios/sumo/loop/ --headless
+    Singularity> python3.8 /src/examples/e2_single_agent.py /src/scenarios/sumo/loop/ --headless
 
     # 2. Run commands within the container from the host system.
-    $ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.8 /src/examples/control/chase_via_points.py /src/scenarios/sumo/loop/ --headless
+    $ singularity exec --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif python3.8 /src/examples/e2_single_agent.py /src/scenarios/sumo/loop/ --headless
 
     # 3. Run container instance in the background.
-    $ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/control/chase_via_points.py /src/scenarios/sumo/loop/ --headless
+    $ singularity instance start --containall --bind ../SMARTS:/src ./utils/singularity/smarts.sif smarts_train /src/examples/e2_single_agent.py /src/scenarios/sumo/loop/ --headless

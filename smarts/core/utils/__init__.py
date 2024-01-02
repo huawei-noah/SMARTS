@@ -17,3 +17,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+import sys
+
+from . import core_logging as logging
+from . import core_math as math
+
+sys.modules[f"{__name__}.{math=}".partition("=")[0]] = math
+sys.modules[f"{__name__}.{logging=}".partition("=")[0]] = logging

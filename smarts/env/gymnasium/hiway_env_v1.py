@@ -32,7 +32,7 @@ from gymnasium import spaces
 from gymnasium.core import ActType, ObsType
 from gymnasium.envs.registration import EnvSpec
 
-from envision import types as envision_types
+from envision import etypes as envision_types
 from envision.client import Client as Envision
 from envision.data_formatter import EnvisionDataFormatterArgs
 from smarts.core import current_seed
@@ -329,7 +329,7 @@ class HiWayEnvV1(gym.Env):
                 Usually, you want to pass an integer *right after the environment has been initialized and then never again*.
             options (dict, optional): Additional information to specify how the environment is reset (optional,
                 depending on the specific environment). Forwards to :meth:`~smarts.core.smarts.SMARTS.reset`.
-                - "scenario" (:class:`~smarts.sstudio.types.scenario.Scenario`): An explicit scenario to reset to. The default is a scenario from the scenario iter.
+                - "scenario" (:class:`~smarts.sstudio.sstypes.scenario.Scenario`): An explicit scenario to reset to. The default is a scenario from the scenario iter.
                 - "start_time" (float): Forwards the start time of the current scenario. The default is 0.
 
         Returns:

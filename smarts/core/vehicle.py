@@ -29,7 +29,7 @@ import numpy as np
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.plan import Mission, Plan
 
-from . import models
+from . import config, models
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
@@ -50,8 +50,8 @@ from .sensors import (
     ViaSensor,
     WaypointsSensor,
 )
+from .utils.core_math import rotate_cw_around_point
 from .utils.custom_exceptions import RendererException
-from .utils.math import rotate_cw_around_point
 from .vehicle_state import VEHICLE_CONFIGS, VehicleConfig, VehicleState
 
 
@@ -72,6 +72,8 @@ class Vehicle:
         self._id = id
 
         self._chassis: Chassis = chassis
+        if vehicle_config_type == "sedan":
+            vehicle_config_type = "passenger"
         self._vehicle_config_type = vehicle_config_type
         self._action_space = action_space
 
@@ -246,24 +248,69 @@ class Vehicle:
         return self._initialized
 
     @staticmethod
-    def agent_vehicle_dims(mission: Mission) -> Dimensions:
+    @lru_cache(maxsize=None)
+    def vehicle_urdf_path(vehicle_type: str, override_path: Optional[str]) -> str:
+        """Resolve the physics model filepath.
+
+        Args:
+            vehicle_type (str): The type of the vehicle.
+            override_path (Optional[str]): The override.
+
+        Raises:
+            ValueError: The vehicle type is valid.
+
+        Returns:
+            str: The path to the model `.urdf`.
+        """
+        if (override_path is not None) and os.path.exists(override_path):
+            return override_path
+
+        if vehicle_type == "sedan":
+            vehicle_type = "passenger"
+
+        if vehicle_type == "passenger":
+            urdf_name = "vehicle"
+        elif vehicle_type in {
+            "bus",
+            "coach",
+            "motorcycle",
+            "pedestrian",
+            "trailer",
+            "truck",
+        }:
+            urdf_name = vehicle_type
+        else:
+            raise ValueError(f"Vehicle type `{vehicle_type}` does not exist!!!")
+
+        with pkg_resources.path(models, urdf_name + ".urdf") as path:
+            vehicle_filepath = str(path.absolute())
+
+        return vehicle_filepath
+
+    @staticmethod
+    def agent_vehicle_dims(
+        mission: Mission, default: Optional[str] = None
+    ) -> Dimensions:
         """Get the vehicle dimensions from the mission requirements.
         Args:
             A mission for the agent.
         Returns:
             The mission vehicle spec dimensions XOR the default "passenger" vehicle dimensions.
         """
+        if default == "sedan":
+            default = "passenger"
+        default_type = default or config().get_setting(
+            "resources", "default_agent_vehicle", default="passenger"
+        )
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
             vehicle_config_type = mission.vehicle_spec.veh_config_type
             return Dimensions.copy_with_defaults(
                 mission.vehicle_spec.dimensions,
-                VEHICLE_CONFIGS[vehicle_config_type].dimensions,
+                VEHICLE_CONFIGS[vehicle_config_type or default_type].dimensions,
             )
-        # non-history agents can currently only control passenger vehicles.
-        vehicle_config_type = "passenger"
-        return VEHICLE_CONFIGS[vehicle_config_type].dimensions
+        return VEHICLE_CONFIGS[default_type].dimensions
 
     @classmethod
     def build_agent_vehicle(
@@ -272,7 +319,7 @@ class Vehicle:
         vehicle_id: str,
         agent_interface: AgentInterface,
         plan: Plan,
-        vehicle_filepath: str,
+        vehicle_filepath: Optional[str],
         tire_filepath: str,
         trainable: bool,
         surface_patches: List[Dict[str, Any]],
@@ -281,9 +328,14 @@ class Vehicle:
         """Create a new vehicle and set up sensors and planning information as required by the
         ego agent.
         """
-        mission = plan.mission
+        urdf_file = cls.vehicle_urdf_path(
+            vehicle_type=agent_interface.vehicle_type, override_path=vehicle_filepath
+        )
 
-        chassis_dims = cls.agent_vehicle_dims(mission)
+        mission = plan.mission
+        chassis_dims = cls.agent_vehicle_dims(
+            mission, default=agent_interface.vehicle_type
+        )
 
         start = mission.start
         if start.from_front_bumper:
@@ -296,18 +348,6 @@ class Vehicle:
             start_pose = Pose.from_center(start.position, start.heading)
 
         vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
-
-        if agent_interface.vehicle_type == "sedan":
-            urdf_name = "vehicle"
-        elif agent_interface.vehicle_type == "bus":
-            urdf_name = "bus"
-        else:
-            raise Exception("Vehicle type does not exist!!!")
-
-        if (vehicle_filepath is None) or not os.path.exists(vehicle_filepath):
-            with pkg_resources.path(models, urdf_name + ".urdf") as path:
-                vehicle_filepath = str(path.absolute())
-
         controller_parameters = sim.vehicle_index.controller_params_for_vehicle_type(
             agent_interface.vehicle_type
         )
@@ -340,6 +380,7 @@ class Vehicle:
             id=vehicle_id,
             chassis=chassis,
             color=vehicle_color,
+            vehicle_config_type=agent_interface.vehicle_type,
         )
 
         return vehicle

@@ -20,7 +20,7 @@
 import argparse
 
 from smarts.core.opendrive_road_network import OpenDriveRoadNetwork
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 
 
 def generate_glb_from_opendrive_file(od_xodr_file: str, out_glb_dir: str):

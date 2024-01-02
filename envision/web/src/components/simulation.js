@@ -106,15 +106,20 @@ export default function Simulation({
     this.name = `load_gltf_extras_${scenario_id}`;
     this.enabled = true;
 
-    if (loader.gltf["extras"]) {
-      if (loader.gltf.extras["lane_dividers"]) {
-        setLaneDividerPos(loader.gltf.extras["lane_dividers"]);
+    let extras = loader.gltf["extras"]
+      ? loader.gltf.extras
+      : loader.gltf["scenes"]
+        ? loader.gltf.scenes[0].extras
+        : null;
+    if (extras) {
+      if (extras["lane_dividers"]) {
+        setLaneDividerPos(extras["lane_dividers"]);
       }
-      if (loader.gltf.extras["edge_dividers"]) {
-        setEdgeDividerPos(loader.gltf.extras["edge_dividers"]);
+      if (extras["edge_dividers"]) {
+        setEdgeDividerPos(extras["edge_dividers"]);
       }
-      if (loader.gltf.extras["bounding_box"]) {
-        setRoadNetworkBbox(loader.gltf.extras["bounding_box"]);
+      if (extras["bounding_box"]) {
+        setRoadNetworkBbox(extras["bounding_box"]);
       }
     }
   }

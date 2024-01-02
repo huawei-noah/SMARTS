@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import Mission, Route, Scenario, SocialAgentActor, Traffic
-from smarts.sstudio.types.entry_tactic import IdEntryTactic
-from smarts.sstudio.types.route import RandomRoute
-from smarts.sstudio.types.traffic import Trip
+from smarts.sstudio.sstypes import Mission, Route, Scenario, SocialAgentActor, Traffic
+from smarts.sstudio.sstypes.entry_tactic import IdEntryTactic
+from smarts.sstudio.sstypes.route import RandomRoute
+from smarts.sstudio.sstypes.traffic import Trip
 
 
 def actor_gen(id_):

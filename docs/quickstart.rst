@@ -43,8 +43,7 @@ Explore
 
 Explore more examples.
 
-(i) :ref:`Egoless <egoless>`
-(ii) :ref:`Control theory <control>`
-(iii) :ref:`RL model <rl_model>`
+(i) :ref:`Base Examples <base_examples>`
+(ii) :ref:`RL model <rl_model>`
 
 A handful of pre-built scenarios are available at :scenarios:`scenarios <>` folder.

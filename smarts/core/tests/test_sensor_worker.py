@@ -36,7 +36,7 @@ from smarts.core.sensors.parallel_sensor_resolver import (
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.logging import diff_unpackable
+from smarts.core.utils.core_logging import diff_unpackable
 
 SimulationState = SimulationFrame
 SensorState = Any

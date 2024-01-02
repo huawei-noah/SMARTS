@@ -88,7 +88,7 @@ To consume the generated observations you could use the following approach:
             ...
 
 
-Alternatively, an approach like :examples:`traffic_histories_vehicle_replacement.py` can be used to operate directly with the scenarios.
+Alternatively, an approach like :examples:`direct/traffic_histories_vehicle_replacement.py` can be used to operate directly with the scenarios.
 
 
 Samples

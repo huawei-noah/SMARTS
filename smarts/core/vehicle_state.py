@@ -30,7 +30,7 @@ from shapely.geometry import box as shapely_box
 from .actor import ActorState
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
-from .utils.math import rotate_cw_around_point
+from .utils.core_math import rotate_cw_around_point
 
 
 @dataclass(frozen=True)

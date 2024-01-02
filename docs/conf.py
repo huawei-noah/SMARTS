@@ -148,6 +148,14 @@ nitpick_ignore_regex = {
     (r"py:class", r".*\.?S"),
 }
 
+# -- Options for broken link checks ------------------------------------------
+linkcheck_anchors = False
+linkcheck_ignore = [
+    r"https?://localhost:\d+/?",
+    r"https?://ops.fhwa.dot.gov.*",  # The ngsim domain (us government) appears to go down sometimes.
+]
+linkcheck_retries = 2
+
 # -- Options for spelling ----------------------------------------------------
 spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]
 spelling_ignore_pypi_package_names = True
