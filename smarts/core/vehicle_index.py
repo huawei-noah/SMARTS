@@ -625,18 +625,16 @@ class VehicleIndex:
         controller_state = self._controller_states[vehicle_id]
         plan = sensor_state.get_plan(sim.road_map)
 
+        vehicle_definition = self.load_vehicle_definition(agent_interface.vehicle_type)
         # Create a new vehicle to replace the old one
         new_vehicle = Vehicle.build_agent_vehicle(
             sim,
             vehicle.id,
             agent_interface,
             plan,
-            self.load_vehicle_definition(agent_interface.vehicle_type).get(
-                "dynamics_model"
-            ),
-            self.load_vehicle_definition(agent_interface.vehicle_type).get(
-                "tire_params"
-            ),
+            vehicle_definition.get("dynamics_model"),
+            vehicle_definition.get("tire_params"),
+            vehicle_definition.get("visual_model"),
             not hijacking,
             sim.scenario.surface_patches,
         )
@@ -690,17 +688,15 @@ class VehicleIndex:
         vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""
+        vehicle_definition = self.load_vehicle_definition(agent_interface.vehicle_type)
         vehicle = Vehicle.build_agent_vehicle(
             sim=sim,
             vehicle_id=vehicle_id or agent_id,
             agent_interface=agent_interface,
             plan=plan,
-            vehicle_dynamics_filepath=self.load_vehicle_definition(
-                agent_interface.vehicle_type
-            ).get("dynamics_model"),
-            tire_filepath=self.load_vehicle_definition(
-                agent_interface.vehicle_type
-            ).get("tire_params"),
+            vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
+            tire_filepath=vehicle_definition.get("tire_params"),
+            visual_model_filepath=vehicle_definition.get("visual_model"),
             trainable=trainable,
             surface_patches=sim.scenario.surface_patches,
             initial_speed=initial_speed,

@@ -140,6 +140,7 @@ if __name__ == "__main__":
                 pose=pose,
                 bullet_client=client,
             ),
+            visual_model_filepath=None,
         )
 
         run(

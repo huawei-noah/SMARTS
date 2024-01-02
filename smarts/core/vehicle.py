@@ -21,16 +21,11 @@ from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging
-import os
-from dataclasses import dataclass
-from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 
-import smarts.assets
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.plan import Mission, Plan
+import smarts.assets as smarts_assets
 
 from . import config
 from .actor import ActorRole
@@ -56,6 +51,13 @@ from .sensors import (
 from .utils.core_math import rotate_cw_around_point
 from .utils.custom_exceptions import RendererException
 from .vehicle_state import VEHICLE_CONFIGS, VehicleState
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.plan import Mission, Plan
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.sensor_manager import SensorManager
+    from smarts.core.smarts import SMARTS
 
 
 class Vehicle:
@@ -250,46 +252,6 @@ class Vehicle:
         return self._initialized
 
     @staticmethod
-    @lru_cache(maxsize=None)
-    def vehicle_urdf_path(vehicle_type: str, override_path: Optional[str]) -> str:
-        """Resolve the physics model filepath.
-
-        Args:
-            vehicle_type (str): The type of the vehicle.
-            override_path (Optional[str]): The override.
-
-        Raises:
-            ValueError: The vehicle type is valid.
-
-        Returns:
-            str: The path to the model `.urdf`.
-        """
-        if (override_path is not None) and os.path.exists(override_path):
-            return override_path
-
-        if vehicle_type == "sedan":
-            vehicle_type = "passenger"
-
-        if vehicle_type == "passenger":
-            urdf_name = "sedan"
-        elif vehicle_type in {
-            "bus",
-            "coach",
-            "motorcycle",
-            "pedestrian",
-            "trailer",
-            "truck",
-        }:
-            urdf_name = vehicle_type
-        else:
-            raise ValueError(f"Vehicle type `{vehicle_type}` does not exist!!!")
-
-        with pkg_resources.path(smarts.assets, urdf_name + ".urdf") as path:
-            vehicle_filepath = str(path.absolute())
-
-        return vehicle_filepath
-
-    @staticmethod
     def agent_vehicle_dims(
         mission: Mission, default: Optional[str] = None
     ) -> Dimensions:
@@ -323,6 +285,7 @@ class Vehicle:
         plan: Plan,
         vehicle_dynamics_filepath: Optional[str],
         tire_filepath: str,
+        visual_model_filepath: str,
         trainable: bool,
         surface_patches: List[Dict[str, Any]],
         initial_speed: Optional[float] = None,
@@ -379,6 +342,7 @@ class Vehicle:
             chassis=chassis,
             color=vehicle_color,
             vehicle_config_type=agent_interface.vehicle_type,
+            visual_model_filepath=visual_model_filepath,
         )
 
         return vehicle
@@ -400,6 +364,7 @@ class Vehicle:
             id=vehicle_id,
             chassis=chassis,
             vehicle_config_type=vehicle_state.vehicle_config_type,
+            visual_model_filepath=None,
         )
 
     @staticmethod
@@ -539,11 +504,10 @@ class Vehicle:
         # XXX:  any way to update acceleration in pybullet?
         self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
 
-    def create_renderer_node(self, renderer):
+    def create_renderer_node(self, renderer: RendererBase):
         """Create the vehicle's rendering node in the renderer."""
-        config = VEHICLE_CONFIGS[self._vehicle_config_type]
         return renderer.create_vehicle_node(
-            config.glb_model, self._id, self.vehicle_color, self.pose
+            self._vehicle_visual_model_path, self._id, self.vehicle_color, self.pose
         )
 
     # @lru_cache(maxsize=1)

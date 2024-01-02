@@ -258,6 +258,7 @@ if __name__ == "__main__":
                         bullet_client=client,
                         tire_parameters_filepath=tire_path,
                     ),
+                    visual_model_filepath=None,
                 )
 
             run(

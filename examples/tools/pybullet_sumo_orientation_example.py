@@ -123,6 +123,7 @@ def run(
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,
                 ),
+                visual_model_filepath=None,
             )
 
         # Hide any additional vehicles

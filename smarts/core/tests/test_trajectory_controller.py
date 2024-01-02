@@ -87,6 +87,7 @@ def vehicle(bullet_client, vehicle_definition, fixed_timestep_sec=time_step):
                 vehicle_definition["chassis_params"]
             ),
         ),
+        visual_model_filepath=None,
     )
     return vehicle1
 
