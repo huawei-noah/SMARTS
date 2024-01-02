@@ -595,7 +595,7 @@ class VehicleIndex:
             vehicle.id,
             SensorState(
                 agent_interface.max_episode_steps,
-                plan_frame=plan.frame,
+                plan_frame=plan.frame(),
             ),
         )
         self._controller_states[vehicle_id] = ControllerState.from_action_space(
