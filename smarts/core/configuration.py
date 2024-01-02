@@ -53,7 +53,7 @@ def _convert_truthy(t: str) -> bool:
 
 
 _config_defaults: Final = {
-    ("assets", "path"): f"{smarts.__path__[0]}/assets",
+    ("assets", "path"): f"{list(smarts.__path__)[0]}/assets",
     ("core", "observation_workers"): 0,
     ("core", "max_custom_image_sensors"): 4,
     ("core", "sensor_parallelization"): "mp",
