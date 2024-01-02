@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -53,7 +55,7 @@ from .sensors import (
 )
 from .utils.core_math import rotate_cw_around_point
 from .utils.custom_exceptions import RendererException
-from .vehicle_state import VEHICLE_CONFIGS, VehicleConfig, VehicleState
+from .vehicle_state import VEHICLE_CONFIGS, VehicleState
 
 
 class Vehicle:
@@ -298,11 +300,11 @@ class Vehicle:
         Returns:
             The mission vehicle spec dimensions XOR the default "passenger" vehicle dimensions.
         """
+        if not default:
+            default = config().get_setting("assets", "default_agent_vehicle")
         if default == "sedan":
             default = "passenger"
-        default_type = default or config().get_setting(
-            "resources", "default_agent_vehicle", default="passenger"
-        )
+        default_type = default
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
@@ -325,7 +327,7 @@ class Vehicle:
         trainable: bool,
         surface_patches: List[Dict[str, Any]],
         initial_speed: Optional[float] = None,
-    ) -> "Vehicle":
+    ) -> Vehicle:
         """Create a new vehicle and set up sensors and planning information as required by the
         ego agent.
         """
@@ -409,7 +411,7 @@ class Vehicle:
     def attach_sensors_to_vehicle(
         sensor_manager,
         sim,
-        vehicle: "Vehicle",
+        vehicle: Vehicle,
         agent_interface,
     ):
         """Attach sensors as required to satisfy the agent interface's requirements"""
