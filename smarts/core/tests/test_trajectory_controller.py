@@ -21,11 +21,9 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import math
-from pathlib import Path
 
 import numpy as np
 import pytest
-import yaml
 
 import smarts.assets.vehicles.controller_params
 import smarts.assets.vehicles.dynamics_model
@@ -47,7 +45,7 @@ from smarts.core.vehicle import Vehicle
 time_step = 0.1
 
 
-@pytest.fixture(params=["sedan", "bus"])
+@pytest.fixture(params=["bus", "sedan", "truck"])
 def vehicle_definition(request):
     vehicle_list = load_vehicle_list(None)
     vehicle_path = vehicle_list.get(request.param)
