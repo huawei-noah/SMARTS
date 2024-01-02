@@ -68,7 +68,6 @@ class ActorCaptureManager:
             agent_id,
             agent_interface,
             plan,
-            sim.scenario.tire_parameters_filepath,
             True,
             initial_speed=initial_speed,
             boid=False,

@@ -27,7 +27,9 @@ import os
 import pathlib
 import re
 import warnings
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, Final, List, Optional, Union
+
+import smarts
 
 _UNSET = object()
 
@@ -48,6 +50,20 @@ def _convert_truthy(t: str) -> bool:
     out = ast.literal_eval(t.strip().title())
     assert isinstance(out, (bool, int))
     return bool(out)
+
+
+_config_defaults: Final = {
+    ("assets", "path"): f"{smarts.__path__[0]}/assets",
+    ("core", "observation_workers"): 0,
+    ("core", "max_custom_image_sensors"): 4,
+    ("core", "sensor_parallelization"): "mp",
+    ("core", "debug"): False,
+    ("core", "reset_retries"): 0,
+    # ("physics", "max_pybullet_freq"): 240,
+    ("ray", "num_gpus"): 0,
+    ("ray", "num_cpus"): None,
+    ("ray", "log_to_driver"): False,
+}
 
 
 class Config:
@@ -71,7 +87,7 @@ class Config:
         self._environment_variable_format_string = (
             self._environment_prefix + "_{}_{}" if self._environment_prefix else "{}_{}"
         )
-        self.env_variable_substitution_pattern = re.compile(r"\$\{.+\}")
+        self.env_variable_substitution_pattern = re.compile(r"\$\{(.+)\}")
 
         if isinstance(config_file, str):
             config_file = pathlib.Path(config_file)
@@ -125,6 +141,8 @@ class Config:
             value = self._config[section][option]
         except (configparser.NoSectionError, KeyError) as exc:
             if default is _UNSET:
+                if value := _config_defaults.get((section, option)):
+                    return value
                 raise EnvironmentError(
                     f"Setting `${env_variable}` cannot be found in environment or configuration."
                 ) from exc
@@ -136,7 +154,6 @@ class Config:
 
         m: List[str] = self.env_variable_substitution_pattern.findall(input)
 
-        output = input
         if not m:
             return input
         output = input
@@ -152,7 +169,7 @@ class Config:
                 setting = val
 
             section, _, option_name = setting.lower().partition("_")
-            env_value = self(section=section, option=option_name)
+            env_value = self(section, option_name)
 
             output = output.replace(f"${{{val}}}", env_value)
         return output
@@ -161,6 +178,7 @@ class Config:
         self,
         section: str,
         option: str,
+        /,
         default: Any = _UNSET,
         cast: Callable[[str], Any] = str,
     ) -> Optional[Any]:

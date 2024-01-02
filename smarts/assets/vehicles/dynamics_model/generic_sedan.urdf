@@ -1,0 +1,135 @@
+<?xml version="1.0"?>
+
+<!-- note: if inertia values are set to 0, bullet will re-compute our inertias for us-->
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="vehicle">
+  <link name="base_link">
+    <inertial>
+      <mass value="1"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
+    </inertial>
+  </link>
+  <link name="chassis">
+    <collision name="chassis">
+      <origin xyz="0.0 0.0 0.6" rpy="0 0 0"/>
+      <geometry>
+        <box size="1.47 3.68 1"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2356.0"/>
+      <origin xyz="0 -0.1 0.20" rpy="0 0 1.5708"/>
+      <inertia ixx="2581.13354740" ixy="0.0" ixz="0.0" iyy="591.30846112" iyz="0.0" izz="2681.95008628"/>
+    </inertial>
+  </link>
+  <link name="fl_axle">
+    <inertial>
+      <mass value="1"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="3" izz="0"/>
+    </inertial>
+  </link>
+  <link name="fr_axle">
+    <inertial>
+      <mass value="1"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="3" izz="0"/>
+    </inertial>
+  </link>
+  <link name="front_left_wheel">
+    <inertial>
+      <mass value="15"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="2"/>
+    </inertial>
+    <collision name="front_left_wheel_collision">
+      <origin rpy="0 1.5707963267948966 0"/>
+      <geometry>
+        <cylinder length="0.25" radius="0.31265"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="front_right_wheel">
+    <inertial>
+      <mass value="15"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="2"/>
+    </inertial>
+    <collision name="front_right_wheel_collision">
+      <origin rpy="0 1.5707963267948966 0"/>
+      <geometry>
+        <cylinder length="0.25" radius="0.31265"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="rear_left_wheel">
+    <inertial>
+      <mass value="15"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="2"/>
+    </inertial>
+    <collision name="rear_left_wheel_collision">
+      <origin rpy="0 1.5707963267948966 0"/>
+      <geometry>
+        <cylinder length="0.25" radius="0.31265"/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="rear_right_wheel">
+    <inertial>
+      <mass value="15"/>
+      <origin xyz="0 0 0"/>
+      <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="2"/>
+    </inertial>
+    <collision name="rear_right_wheel_collision">
+      <origin rpy="0 1.5707963267948966 0"/>
+      <geometry>
+        <cylinder length="0.25" radius="0.31265"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="base_link_connection" type="fixed">
+    <parent link="base_link"/>
+    <child link="chassis"/>
+    <origin xyz="0 0 0" rpy="0 0 3.141592653589793"/>
+  </joint>
+
+  <joint name="front_left_steer_joint" type="revolute">
+    <parent link="chassis"/>
+    <child link="fl_axle"/>
+    <origin xyz="0.5 -1.5 0.3" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8727" upper="0.8727" effort="10000000" velocity="1000000"/>
+  </joint>
+  <joint name="front_right_steer_joint" type="revolute">
+    <parent link="chassis"/>
+    <child link="fr_axle"/>
+    <origin xyz="-0.5 -1.5 0.3" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-0.8727" upper="0.8727" effort="10000000" velocity="1000000"/>
+  </joint>
+  <joint name="front_left_wheel_joint" type="continuous">
+    <parent link="fl_axle"/>
+    <child link="front_left_wheel"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <joint name="front_right_wheel_joint" type="continuous">
+    <parent link="fr_axle"/>
+    <child link="front_right_wheel"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+
+  <joint name="rear_left_wheel_joint" type="continuous">
+    <parent link="chassis"/>
+    <child link="rear_left_wheel"/>
+    <origin xyz="0.5 1.5 0.3" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+  <joint name="rear_right_wheel_joint" type="continuous">
+    <parent link="chassis"/>
+    <child link="rear_right_wheel"/>
+    <origin xyz="-0.5 1.5 0.3" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+  </joint>
+</robot>

@@ -27,19 +27,21 @@ from typing import Any, Dict, Optional
 
 import yaml
 
-import smarts.assets
-from smarts import config
+import smarts.assets.vehicles
+from smarts.core import config
 
 
-def load_controller_params(controller_filepath: str):
-    """Load a controller parameters file."""
-    if (controller_filepath is None) or not os.path.exists(controller_filepath):
-        with pkg_resources.path(
-            smarts.assets, "controller_parameters.yaml"
-        ) as controller_path:
-            controller_filepath = str(controller_path.absolute())
-    with open(controller_filepath, "r", encoding="utf-8") as controller_file:
-        return yaml.safe_load(controller_file)
+def load_vehicle_list(vehicle_list_filepath: str):
+    """Load a vehicle definition list file."""
+    if (vehicle_list_filepath is None) or not os.path.exists(vehicle_list_filepath):
+        with pkg_resources.path(smarts.assets.vehicles, "vehicle_list.yaml") as vd_path:
+            vehicle_list_filepath = str(vd_path.absolute())
+    return load_yaml_config_with_substitution(Path(vehicle_list_filepath))
+
+
+def load_vehicle_definition(vehicle_definition_filepath: str):
+    """Load a vehicle definition file."""
+    return load_yaml_config_with_substitution(Path(vehicle_definition_filepath))
 
 
 def load_yaml_config(path: Path) -> Optional[Dict[str, Any]]:

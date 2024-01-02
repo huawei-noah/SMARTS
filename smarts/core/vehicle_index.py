@@ -25,7 +25,9 @@
 """
 import logging
 from copy import copy, deepcopy
+from functools import lru_cache
 from io import StringIO
+from pathlib import Path
 from typing import (
     Dict,
     FrozenSet,
@@ -100,7 +102,7 @@ class VehicleIndex:
         self._controller_states = {}
 
         # Loaded from yaml file on scenario reset
-        self._controller_params = {}
+        self._vehicle_definitions_list: Dict[str, str] = {}
 
     @classmethod
     def identity(cls):
@@ -462,13 +464,17 @@ class VehicleIndex:
             chassis = AckermannChassis(
                 pose=vehicle.pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=Vehicle.vehicle_urdf_path(
-                    vehicle_type=agent_interface.vehicle_type,
-                    override_path=sim.scenario.vehicle_filepath,
-                ),
-                tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
+                vehicle_filepath=self.load_vehicle_definition(
+                    agent_interface.vehicle_type
+                ).get("dynamics_model"),
+                tire_parameters_filepath=self.load_vehicle_definition(
+                    agent_interface.vehicle_type
+                ).get("tire_params"),
                 friction_map=sim.scenario.surface_patches,
                 controller_parameters=self.controller_params_for_vehicle_type(
+                    agent_interface.vehicle_type
+                ),
+                chassis_parameters=self.chassis_params_for_vehicle_type(
                     agent_interface.vehicle_type
                 ),
                 initial_speed=vehicle.speed,
@@ -625,11 +631,12 @@ class VehicleIndex:
             vehicle.id,
             agent_interface,
             plan,
-            Vehicle.vehicle_urdf_path(
-                vehicle_type=agent_interface.vehicle_type,
-                override_path=sim.scenario.vehicle_filepath,
+            self.load_vehicle_definition(agent_interface.vehicle_type).get(
+                "dynamics_model"
             ),
-            sim.scenario.tire_parameters_filepath,
+            self.load_vehicle_definition(agent_interface.vehicle_type).get(
+                "tire_params"
+            ),
             not hijacking,
             sim.scenario.surface_patches,
         )
@@ -676,7 +683,6 @@ class VehicleIndex:
         agent_id,
         agent_interface,
         plan,
-        tire_filepath,
         trainable: bool,
         initial_speed: Optional[float] = None,
         boid: bool = False,
@@ -689,11 +695,12 @@ class VehicleIndex:
             vehicle_id=vehicle_id or agent_id,
             agent_interface=agent_interface,
             plan=plan,
-            vehicle_filepath=Vehicle.vehicle_urdf_path(
-                vehicle_type=agent_interface.vehicle_type,
-                override_path=sim.scenario.vehicle_filepath,
-            ),
-            tire_filepath=tire_filepath,
+            vehicle_filepath=self.load_vehicle_definition(
+                agent_interface.vehicle_type
+            ).get("dynamics_model"),
+            tire_filepath=self.load_vehicle_definition(
+                agent_interface.vehicle_type
+            ).get("tire_params"),
             trainable=trainable,
             surface_patches=sim.scenario.surface_patches,
             initial_speed=initial_speed,
@@ -815,14 +822,34 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
         return self._controller_states[vehicle_id]
 
-    def load_controller_params(self, controller_filepath: str):
-        """Set the default controller parameters for owner controlled vehicles."""
-        self._controller_params = resources.load_controller_params(controller_filepath)
+    def load_vehicle_definitions_list(self, vehicles_filepath: str):
+        """Loads in a list of vehicle definitions."""
+        self._vehicle_definitions_list = resources.load_vehicle_list(vehicles_filepath)
 
+    @lru_cache(maxsize=20)
+    def load_vehicle_definition(self, vehicle_type: str):
+        """Loads in a particular vehicle definition."""
+        if vehicle_definition_filepath := self._vehicle_definitions_list.get(
+            vehicle_type
+        ):
+            return resources.load_vehicle_definition(vehicle_definition_filepath)
+        raise OSError(
+            f"Vehicle {vehicle_type} is not defined in {list(self._vehicle_definitions_list.keys())}"
+        )
+
+    @lru_cache(maxsize=20)
     def controller_params_for_vehicle_type(self, vehicle_type: str):
         """Get the controller parameters for the given vehicle type"""
-        assert self._controller_params, "Controller params have not been loaded"
-        return self._controller_params[vehicle_type]
+        vehicle_definition = self.load_vehicle_definition(vehicle_type)
+        controller_params = Path(vehicle_definition["controller_params"])
+        return resources.load_yaml_config_with_substitution(controller_params)
+
+    @lru_cache(maxsize=20)
+    def chassis_params_for_vehicle_type(self, vehicle_type: str):
+        """Get the controller parameters for the given vehicle type"""
+        vehicle_definition = self.load_vehicle_definition(vehicle_type)
+        chassis_parms = Path(vehicle_definition["chassis_params"])
+        return resources.load_yaml_config_with_substitution(chassis_parms)
 
     @staticmethod
     def _build_empty_controlled_by():
