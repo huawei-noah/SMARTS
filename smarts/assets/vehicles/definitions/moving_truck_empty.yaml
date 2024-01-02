@@ -1,5 +1,5 @@
 model: Generic Bus
-type: bus
+type: truck
 controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_moving_truck.yaml
 chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_moving_truck.yaml
 dynamics_model: ${SMARTS_ASSETS_PATH}/vehicles/dynamics_model/generic_moving_truck_empty.urdf
