@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import smarts.assets
+import smarts.assets.vehicles.tire_params
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers.actuator_dynamic_controller import (
     ActuatorDynamicController,
@@ -247,7 +248,9 @@ if __name__ == "__main__":
             client.changeDynamics(plane_body_id, -1, **frictions(sliders))
 
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
-            with pkg_resources.path(smarts.assets, "tire_parameters.yaml") as tire_path:
+            with pkg_resources.path(
+                smarts.assets.vehicles.tire_params, "base_tire_parameters.yaml"
+            ) as tire_path:
                 vehicle = Vehicle(
                     "hello",
                     chassis=AckermannChassis(
