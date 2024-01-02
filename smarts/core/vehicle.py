@@ -69,6 +69,7 @@ class Vehicle:
         self,
         id: str,
         chassis: Chassis,
+        visual_model_filepath: Optional[str],
         vehicle_config_type: str = "passenger",
         color: Optional[SceneColors] = None,
         action_space=None,
@@ -84,6 +85,13 @@ class Vehicle:
 
         self._meta_create_sensor_functions()
         self._sensors = {}
+        self._vehicle_visual_model_path = visual_model_filepath
+
+        if self._vehicle_visual_model_path in {None, ""}:
+            with pkg_resources.path(
+                smarts_assets, VEHICLE_CONFIGS[vehicle_config_type].glb_model
+            ) as path:
+                self._vehicle_visual_model_path = path
 
         # Color override
         self._color: Optional[SceneColors] = color
@@ -279,7 +287,7 @@ class Vehicle:
     @classmethod
     def build_agent_vehicle(
         cls,
-        sim,
+        sim: SMARTS,
         vehicle_id: str,
         agent_interface: AgentInterface,
         plan: Plan,
@@ -348,7 +356,9 @@ class Vehicle:
         return vehicle
 
     @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state: VehicleState) -> "Vehicle":
+    def build_social_vehicle(
+        sim: SMARTS, vehicle_id: str, vehicle_state: VehicleState
+    ) -> Vehicle:
         """Create a new unassociated vehicle."""
         dims = Dimensions.copy_with_defaults(
             vehicle_state.dimensions,
@@ -369,8 +379,8 @@ class Vehicle:
 
     @staticmethod
     def attach_sensors_to_vehicle(
-        sensor_manager,
-        sim,
+        sensor_manager: SensorManager,
+        sim: SMARTS,
         vehicle: Vehicle,
         agent_interface,
     ):
@@ -469,7 +479,7 @@ class Vehicle:
                 continue
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor_name, sensor)
 
-    def step(self, current_simulation_time):
+    def step(self, current_simulation_time: float):
         """Update internal state."""
         self._has_stepped = True
         self._chassis.step(current_simulation_time)
