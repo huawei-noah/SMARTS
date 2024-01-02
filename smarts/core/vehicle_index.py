@@ -23,12 +23,15 @@
     shadower
     shadowers
 """
+from __future__ import annotations
+
 import logging
 from copy import copy, deepcopy
 from functools import lru_cache
 from io import StringIO
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Dict,
     FrozenSet,
     Iterator,
@@ -53,7 +56,15 @@ from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
 from .sensors import SensorState
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.plan import Plan
+    from smarts.core.smarts import SMARTS
+    from smarts.core.renderer_base import RendererBase
+
+    from .vehicle import VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
@@ -375,11 +386,11 @@ class VehicleIndex:
     @clear_cache
     def start_agent_observation(
         self,
-        sim,
+        sim: SMARTS,
         vehicle_id,
         agent_id,
-        agent_interface,
-        plan,
+        agent_interface: AgentInterface,
+        plan: Plan,
         boid=False,
         initialize_sensors=True,
     ):
@@ -422,13 +433,13 @@ class VehicleIndex:
     @clear_cache
     def switch_control_to_agent(
         self,
-        sim,
+        sim: SMARTS,
         vehicle_id,
         agent_id,
         boid=False,
         hijacking=False,
         recreate=False,
-        agent_interface=None,
+        agent_interface: Optional[AgentInterface]=None,
     ):
         """Give control of the specified vehicle to the specified agent.
         Args:
@@ -540,7 +551,7 @@ class VehicleIndex:
 
     @clear_cache
     def relinquish_agent_control(
-        self, sim, vehicle_id: str, road_map
+        self, sim: SMARTS, vehicle_id: str, road_map: RoadMap
     ) -> Tuple[VehicleState, List[str]]:
         """Give control of the vehicle back to its original controller."""
         self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
@@ -580,7 +591,7 @@ class VehicleIndex:
         return vehicle.state, route
 
     @clear_cache
-    def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
+    def attach_sensors_to_vehicle(self, sim: SMARTS, vehicle_id, agent_interface: AgentInterface, plan: Plan):
         """Attach sensors as per the agent interface requirements to the specified vehicle."""
         vehicle_id = _2id(vehicle_id)
 
@@ -603,7 +614,7 @@ class VehicleIndex:
         )
 
     def _switch_control_to_agent_recreate(
-        self, sim, vehicle_id, agent_id, boid, hijacking
+        self, sim: SMARTS, vehicle_id, agent_id, boid: bool, hijacking: bool
     ):
         # XXX: vehicle_id and agent_id are already fixed-length as this is an internal
         #      method.
@@ -677,10 +688,10 @@ class VehicleIndex:
 
     def build_agent_vehicle(
         self,
-        sim,
+        sim: SMARTS,
         agent_id,
-        agent_interface,
-        plan,
+        agent_interface: AgentInterface,
+        plan: Plan,
         trainable: bool,
         initial_speed: Optional[float] = None,
         boid: bool = False,
@@ -724,12 +735,12 @@ class VehicleIndex:
     @clear_cache
     def _enfranchise_agent(
         self,
-        sim,
+        sim: SMARTS,
         agent_id,
-        agent_interface,
-        vehicle,
-        controller_state,
-        sensor_state,
+        agent_interface: AgentInterface,
+        vehicle: Vehicle,
+        controller_state: ControllerState,
+        sensor_state: SensorState,
         boid: bool = False,
         hijacking: bool = False,
     ):
@@ -766,7 +777,7 @@ class VehicleIndex:
 
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, owner_id, vehicle_id=None
+        self, sim: SMARTS, vehicle_state: VehicleState, owner_id, vehicle_id=None
     ) -> Vehicle:
         """Build an entirely new vehicle for a social agent."""
         if vehicle_id is None:
@@ -804,7 +815,7 @@ class VehicleIndex:
 
         return vehicle
 
-    def begin_rendering_vehicles(self, renderer):
+    def begin_rendering_vehicles(self, renderer: RendererBase):
         """Render vehicles using the specified renderer."""
         agent_vehicle_ids = self.agent_vehicle_ids()
         for vehicle in self._vehicles.values():
