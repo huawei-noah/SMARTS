@@ -127,7 +127,7 @@ if __name__ == "__main__":
             # frictionERP=0.1,
         )
 
-        path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
+        path = Path(__file__).parent / "../smarts/assets/plane.urdf"
         path = str(path.absolute())
         plane_body_id = client.loadURDF(path, useFixedBase=True)
 
