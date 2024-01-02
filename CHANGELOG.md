@@ -20,6 +20,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Renamed `vehicle.urdf` to `sedan.urdf`.
 - Environment prefix is now configurable for custom `smarts.core.config()` calls.
 - `Vehicle.build_agent_vehicle()` argument `vehicle_filepath` now renamed to `vehicle_dynamics_filepath`.
+- Renamed `MACOS` `pybullet` gui utility from `smarts.core.utils.bullet.BulletClient` to `smarts.core.utils.pybullet.BulletClientMACOS`.
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 ### Fixed
