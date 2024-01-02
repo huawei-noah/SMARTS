@@ -26,6 +26,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Fixed
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
 - Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.
+- Fixed a bug where `smarts.core.vehicle_index.VehicleIndex.attach_sensors_to_vehicle()` would pass a method instead of a `PlanFrame` to the generated vehicle `SensorState`.
 - Fixed an issue where `AgentInterface.vehicle_type` would not affect agent vehicles when attempting to take over an existing vehicle.
 - Fixed a case where newly created agent vehicles would have a constant `"sedan"` size instead of the size of `AgentInterface.vehicle_type`.
 - Fixed a case where if vehicles are replaced they would not respect controller and vehicle parameters.
