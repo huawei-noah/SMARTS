@@ -1,6 +1,6 @@
 from typing import Callable, Tuple
 
-import gym
+import gymnasium as gym
 import numpy as np
 from pynput import keyboard
 
