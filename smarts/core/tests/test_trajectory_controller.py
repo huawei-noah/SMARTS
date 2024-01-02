@@ -27,7 +27,8 @@ import numpy as np
 import pytest
 import yaml
 
-import smarts.assets
+import smarts.assets.vehicles.controller_params
+import smarts.assets.vehicles.dynamics_model
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
@@ -36,27 +37,24 @@ from smarts.core.controllers import (
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.core.utils.resources import (
+    load_vehicle_definition,
+    load_vehicle_list,
+    load_yaml_config_with_substitution,
+)
 from smarts.core.vehicle import Vehicle
 
 time_step = 0.1
 
 
 @pytest.fixture(params=["sedan", "bus"])
-def vehicle_controller_file(request):
-    vehicle_file_name = request.param + ".urdf"
-    if request.param == "sedan":
-        vehicle_file_name = "sedan.urdf"
+def vehicle_definition(request):
+    vehicle_list = load_vehicle_list(None)
+    vehicle_path = vehicle_list.get(request.param)
 
-    with pkg_resources.path(smarts.assets, vehicle_file_name) as path:
-        vehicle_file_path = str(path.absolute())
-    with pkg_resources.path(
-        smarts.assets, "controller_parameters.yaml"
-    ) as controller_path:
-        controller_filepath = str(controller_path.absolute())
-    with open(controller_filepath, "r") as controller_file:
-        vehicle_controller_file_path = yaml.safe_load(controller_file)[request.param]
+    _vehicle_definition = load_vehicle_definition(vehicle_path)
 
-    return (vehicle_file_path, vehicle_controller_file_path)
+    return _vehicle_definition
 
 
 @pytest.fixture
@@ -76,15 +74,20 @@ def bullet_client(fixed_timestep_sec=time_step):
 
 
 @pytest.fixture
-def vehicle(bullet_client, vehicle_controller_file, fixed_timestep_sec=time_step):
+def vehicle(bullet_client, vehicle_definition, fixed_timestep_sec=time_step):
     pose = Pose.from_center((0, 0, 0), Heading(0))
     vehicle1 = Vehicle(
         id="vehicle",
         chassis=AckermannChassis(
             pose=pose,
             bullet_client=bullet_client,
-            vehicle_filepath=vehicle_controller_file[0],
-            controller_parameters=vehicle_controller_file[1],
+            vehicle_filepath=vehicle_definition["dynamics_model"],
+            controller_parameters=load_yaml_config_with_substitution(
+                vehicle_definition["controller_params"]
+            ),
+            chassis_parameters=load_yaml_config_with_substitution(
+                vehicle_definition["chassis_params"]
+            ),
         ),
     )
     return vehicle1

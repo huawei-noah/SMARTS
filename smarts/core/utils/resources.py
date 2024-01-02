@@ -23,7 +23,7 @@ import re
 import tempfile
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import yaml
 
@@ -31,11 +31,11 @@ import smarts.assets.vehicles
 from smarts.core import config
 
 
-def load_vehicle_list(vehicle_list_filepath: str):
+def load_vehicle_list(vehicle_list_filepath: Optional[str]):
     """Load a vehicle definition list file."""
     if (vehicle_list_filepath is None) or not os.path.exists(vehicle_list_filepath):
-        with pkg_resources.path(smarts.assets.vehicles, "vehicle_list.yaml") as vd_path:
-            vehicle_list_filepath = str(vd_path.absolute())
+        with pkg_resources.path(smarts.assets.vehicles, "vehicle_list.yaml") as vl_path:
+            vehicle_list_filepath = str(vl_path.absolute())
     return load_yaml_config_with_substitution(Path(vehicle_list_filepath))
 
 
@@ -66,11 +66,15 @@ def _replace_with_module_path(base: str, module_str: str):
     return base.replace(f"${{{{{module_str}}}}}", origin)
 
 
-def load_yaml_config_with_substitution(path: Path) -> Optional[Dict[str, Any]]:
+def load_yaml_config_with_substitution(
+    path: Union[str, Path]
+) -> Optional[Dict[str, Any]]:
     """Read in a yaml configuration to dictionary format replacing instances of ${{module}} with
     module's file path."""
     smarts_config = config()
     out_config = None
+    if isinstance(path, str):
+        path = Path(path)
     if path.exists():
         assert path.suffix in (".yaml", ".yml"), f"`{str(path)}` is not a YAML file."
         with tempfile.NamedTemporaryFile("w", suffix=".py", dir=path.parent) as c:
