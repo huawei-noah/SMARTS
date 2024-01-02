@@ -322,7 +322,7 @@ class Vehicle:
         vehicle_id: str,
         agent_interface: AgentInterface,
         plan: Plan,
-        vehicle_filepath: Optional[str],
+        vehicle_dynamics_filepath: Optional[str],
         tire_filepath: str,
         trainable: bool,
         surface_patches: List[Dict[str, Any]],
@@ -331,10 +331,6 @@ class Vehicle:
         """Create a new vehicle and set up sensors and planning information as required by the
         ego agent.
         """
-        urdf_file = cls.vehicle_urdf_path(
-            vehicle_type=agent_interface.vehicle_type, override_path=vehicle_filepath
-        )
-
         mission = plan.mission
         chassis_dims = cls.agent_vehicle_dims(
             mission, default=agent_interface.vehicle_type
@@ -365,7 +361,7 @@ class Vehicle:
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=vehicle_filepath,
+                vehicle_filepath=vehicle_dynamics_filepath,
                 tire_parameters_filepath=tire_filepath,
                 friction_map=surface_patches,
                 controller_parameters=controller_parameters,

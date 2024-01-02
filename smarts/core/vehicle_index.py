@@ -695,7 +695,7 @@ class VehicleIndex:
             vehicle_id=vehicle_id or agent_id,
             agent_interface=agent_interface,
             plan=plan,
-            vehicle_filepath=self.load_vehicle_definition(
+            vehicle_dynamics_filepath=self.load_vehicle_definition(
                 agent_interface.vehicle_type
             ).get("dynamics_model"),
             tire_filepath=self.load_vehicle_definition(

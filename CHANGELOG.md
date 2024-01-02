@@ -19,6 +19,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The `examples/e12_rllib` training examples `{pg_example|pg_pbt_example}.py` have been changed to `{ppo_example|ppo_pbt_example}.py`. `Policy Gradients (PG)` has been dropped in favor of the more well documented `Proximal Policy Optimization (PPO)`.
 - Renamed `vehicle.urdf` to `sedan.urdf`.
 - Environment prefix is now configurable for custom `smarts.core.config()` calls.
+- `Vehicle.build_agent_vehicle()` argument `vehicle_filepath` now renamed to `vehicle_dynamics_filepath`.
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 ### Fixed
