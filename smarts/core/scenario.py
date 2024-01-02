@@ -921,6 +921,10 @@ class Scenario:
     @property
     def vehicle_filepath(self) -> Optional[str]:
         """The file-path of the vehicle's physics model."""
+        warnings.warn(
+            "tire_parameters_filepath is no longer in use.  Please update your code.",
+            category=DeprecationWarning,
+        )
         if not os.path.isdir(self._root):
             return None
         for fname in os.listdir(self._root):
@@ -931,12 +935,25 @@ class Scenario:
     @property
     def tire_parameters_filepath(self) -> str:
         """The path of the tire model's parameters."""
+        warnings.warn(
+            "tire_parameters_filepath is no longer in use.  Please update your code.",
+            category=DeprecationWarning,
+        )
         return os.path.join(self._root, "tire_parameters.yaml")
 
     @property
     def controller_parameters_filepath(self) -> str:
         """The path of the vehicle controller parameters."""
+        warnings.warn(
+            "controller_parameters_filepath is no longer in use.  Please update your code.",
+            category=DeprecationWarning,
+        )
         return os.path.join(self._root, "controller_parameters.yaml")
+
+    @property
+    def vehicle_definitions_filepath(self) -> str:
+        """The path to the default list of vehicle definitions."""
+        return os.path.join(self._root, "vehicle_list.yaml")
 
     @property
     def traffic_specs(self) -> Sequence[str]:
