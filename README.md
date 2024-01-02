@@ -16,43 +16,6 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 # Documentation
 :rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/) . :bell: :rotating_light:
 
-# Examples 
-### Primitive
-1. [Egoless](examples/e1_egoless.py) example.
-   + Run a SMARTS simulation without any ego agents, but with only background traffic.
-1. [Single-Agent](examples/e2_single_agent.py) example.
-   + Run a SMARTS simulation with a single ego agent.
-1. [Multi-Agent](examples/e3_multi_agent.py) example.
-   + Run a SMARTS simulation with multiple ego agents.
-1. [Environment Config](examples/e4_environment_config.py) example.
-   + Demonstrate the main observation/action configuration of the environment.
-1. [Agent Zoo](examples/e5_agent_zoo.py) example.
-   + Demonstrate how the agent zoo works.
-1. [Agent interface example](examples/6_agent_interface.py)
-   + TODO demonstrate how the agent interface works.
-
-### Integration examples
-A few more complex integrations are demonstrated.
-
-1. Configurable example
-   + script: [examples/e7_experiment_base.py](examples/e7_experiment_base.py)
-   + Configurable agent number.
-   + Configurable agent type.
-   + Configurable environment.
-1. Parallel environments
-   + script: [examples/e8_parallel_environment.py](examples/e8_parallel_environment.py)
-   + Multiple SMARTS environments in parallel
-   + ActionSpaceType: LaneWithContinuousSpeed
-
-### RL Examples
-1. [Drive](examples/e10_drive). See [Driving SMARTS 2023.1 & 2023.2](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_1.html) for more info.
-1. [VehicleFollowing](examples/e11_platoon). See [Driving SMARTS 2023.3](https://smarts.readthedocs.io/en/latest/benchmarks/driving_smarts_2023_3.html) for more info.
-1. [PG](examples/e12_rllib/pg_example.py). See [RLlib](https://smarts.readthedocs.io/en/latest/ecosystem/rllib.html) for more info.
-1. [PG Population Based Training](examples/e12_rllib/pg_pbt_example.py). See [RLlib](https://smarts.readthedocs.io/en/latest/ecosystem/rllib.html) for more info.
-
-### RL Environment
-1. [ULTRA](https://github.com/smarts-project/smarts-project.rl/blob/master/ultra) provides a gym-based environment built upon SMARTS to tackle intersection navigation, specifically the unprotected left turn.
-
 # Issues, Bugs, Feature Requests 
 1. First, read how to communicate issues, report bugs, and request features [here](./docs/resources/contributing.rst#communication).
 1. Next, raise them using appropriate tags at [https://github.com/huawei-noah/SMARTS/issues](https://github.com/huawei-noah/SMARTS/issues).
