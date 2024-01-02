@@ -14,7 +14,9 @@ Check out the paper at [SMARTS: Scalable Multi-Agent Reinforcement Learning Trai
 ![](docs/_static/smarts_envision.gif)
 
 # Documentation
-:rotating_light: :bell: Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/) . :bell: :rotating_light:
+1. Read the docs :notebook_with_decorative_cover: at [smarts.readthedocs.io](https://smarts.readthedocs.io/) :fire:
+1. [Base examples](https://smarts.readthedocs.io/en/latest/examples/base_examples.html)
+1. [RL models](https://smarts.readthedocs.io/en/latest/examples/rl_model.html)
 
 # Issues, Bugs, Feature Requests 
 1. First, read how to communicate issues, report bugs, and request features [here](./docs/resources/contributing.rst#communication).
