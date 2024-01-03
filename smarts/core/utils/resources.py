@@ -38,9 +38,11 @@ def load_vehicle_definitions_list(vehicle_list_filepath: Optional[str]):
     if (vehicle_list_filepath is None) or not os.path.exists(vehicle_list_filepath):
         vehicle_list_filepath = config()("assets", "default_vehicle_definitions_list")
     vehicle_list_filepath = Path(vehicle_list_filepath).absolute()
-    data = load_yaml_config_with_substitution(vehicle_list_filepath)
 
-    return VehicleDefintions(data=data, filename=vehicle_list_filepath)
+    return VehicleDefintions(
+        data=load_yaml_config_with_substitution(vehicle_list_filepath),
+        filepath=vehicle_list_filepath,
+    )
 
 
 def load_yaml_config(path: Path) -> Optional[Dict[str, Any]]:
@@ -69,7 +71,7 @@ def load_yaml_config_with_substitution(
     path: Union[str, Path]
 ) -> Optional[Dict[str, Any]]:
     """Read in a yaml configuration to dictionary format replacing instances of ${{module}} with
-    module's file path."""
+    module's file path and ${} with the SMARTS environment variable."""
     smarts_config = config()
     out_config = None
     if isinstance(path, str):
@@ -95,8 +97,12 @@ def load_yaml_config_with_substitution(
 
 @dataclass(frozen=True)
 class VehicleDefintions:
+    """This defines a set of vehicle definitions and loading utilities."""
+
     data: Dict[str, Any]
-    filename: str
+    """The data associated with the vehicle definitions. This is generally vehicle type keys."""
+    filepath: str
+    """The path to the vehicle definitions file."""
 
     @lru_cache(maxsize=20)
     def load_vehicle_definition(self, vehicle_type: str):
@@ -122,4 +128,4 @@ class VehicleDefintions:
         return load_yaml_config_with_substitution(chassis_parms)
 
     def __hash__(self) -> int:
-        return hash(self.filename)
+        return hash(self.filepath)
