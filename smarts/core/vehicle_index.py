@@ -638,10 +638,10 @@ class VehicleIndex:
 
         vehicle_definition = self.load_vehicle_definition(agent_interface.vehicle_type)
         # Create a new vehicle to replace the old one
-        new_vehicle = Vehicle.build_agent_vehicle(
+        new_vehicle = VehicleIndex._build_agent_vehicle(
             sim,
             vehicle.id,
-            agent_interface,
+            agent_interface.action,
             plan,
             vehicle_definition.get("dynamics_model"),
             vehicle_definition.get("tire_params"),
@@ -686,6 +686,84 @@ class VehicleIndex:
 
         return new_vehicle
 
+    @classmethod
+    def _build_agent_vehicle(
+        cls,
+        sim: SMARTS,
+        vehicle_id: str,
+        action: Optional[ActionSpaceType],
+        vehicle_type: str,
+        plan: Plan,
+        vehicle_dynamics_filepath: Optional[str],
+        tire_filepath: str,
+        visual_model_filepath: str,
+        trainable: bool,
+        surface_patches: List[Dict[str, Any]],
+        initial_speed: Optional[float] = None,
+    ) -> Vehicle:
+        """Create a new vehicle and set up sensors and planning information as required by the
+        ego agent.
+        """
+        mission = plan.mission
+        chassis_dims = Vehicle.agent_vehicle_dims(mission, default=vehicle_type)
+
+        start = mission.start
+        if start.from_front_bumper:
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position[:2]),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            start_pose = Pose.from_center(start.position, start.heading)
+
+        vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
+        controller_parameters = (
+            sim.vehicle_index._vehicle_definitions.controller_params_for_vehicle_type(
+                vehicle_type
+            )
+        )
+        chassis_parameters = (
+            sim.vehicle_index._vehicle_definitions.chassis_params_for_vehicle_type(
+                vehicle_type
+            )
+        )
+
+        chassis = None
+        if action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
+            chassis = AckermannChassis(
+                pose=start_pose,
+                bullet_client=sim.bc,
+                vehicle_filepath=vehicle_dynamics_filepath,
+                tire_parameters_filepath=tire_filepath,
+                friction_map=surface_patches,
+                controller_parameters=controller_parameters,
+                chassis_parameters=chassis_parameters,
+                initial_speed=initial_speed,
+            )
+        else:
+            chassis = BoxChassis(
+                pose=start_pose,
+                speed=initial_speed,
+                dimensions=chassis_dims,
+                bullet_client=sim.bc,
+            )
+
+        vehicle = Vehicle(
+            id=vehicle_id,
+            chassis=chassis,
+            color=vehicle_color,
+            vehicle_config_type=vehicle_type,
+            visual_model_filepath=visual_model_filepath,
+        )
+
+        return vehicle
+
     def build_agent_vehicle(
         self,
         sim: SMARTS,
@@ -699,11 +777,10 @@ class VehicleIndex:
         vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""
-        vehicle_definition = self.load_vehicle_definition(agent_interface.vehicle_type)
-        vehicle = Vehicle.build_agent_vehicle(
+        vehicle = VehicleIndex._build_agent_vehicle(
             sim=sim,
             vehicle_id=vehicle_id or agent_id,
-            agent_interface=agent_interface,
+            action=agent_interface.action,
             plan=plan,
             vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
             tire_filepath=vehicle_definition.get("tire_params"),
@@ -775,6 +852,28 @@ class VehicleIndex:
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
+    @staticmethod
+    def _build_social_vehicle(
+        sim: SMARTS, vehicle_id: str, vehicle_state: VehicleState
+    ) -> Vehicle:
+        """Create a new unassociated vehicle."""
+        dims = Dimensions.copy_with_defaults(
+            vehicle_state.dimensions,
+            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
+        )
+        chassis = BoxChassis(
+            pose=vehicle_state.pose,
+            speed=vehicle_state.speed,
+            dimensions=dims,
+            bullet_client=sim.bc,
+        )
+        return Vehicle(
+            id=vehicle_id,
+            chassis=chassis,
+            vehicle_config_type=vehicle_state.vehicle_config_type,
+            visual_model_filepath=None,
+        )
+
     @clear_cache
     def build_social_vehicle(
         self, sim: SMARTS, vehicle_state: VehicleState, owner_id, vehicle_id=None
@@ -783,7 +882,7 @@ class VehicleIndex:
         if vehicle_id is None:
             vehicle_id = gen_id()
 
-        vehicle = Vehicle.build_social_vehicle(
+        vehicle = VehicleIndex._build_social_vehicle(
             sim,
             vehicle_id,
             vehicle_state,

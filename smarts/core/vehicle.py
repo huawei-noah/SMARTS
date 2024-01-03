@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -53,8 +53,7 @@ from .utils.custom_exceptions import RendererException
 from .vehicle_state import VEHICLE_CONFIGS, VehicleState
 
 if TYPE_CHECKING:
-    from smarts.core.agent_interface import AgentInterface
-    from smarts.core.plan import Mission, Plan
+    from smarts.core.plan import Mission
     from smarts.core.renderer_base import RendererBase
     from smarts.core.sensor_manager import SensorManager
     from smarts.core.smarts import SMARTS
@@ -283,99 +282,6 @@ class Vehicle:
                 VEHICLE_CONFIGS[vehicle_config_type or default_type].dimensions,
             )
         return VEHICLE_CONFIGS[default_type].dimensions
-
-    @classmethod
-    def build_agent_vehicle(
-        cls,
-        sim: SMARTS,
-        vehicle_id: str,
-        agent_interface: AgentInterface,
-        plan: Plan,
-        vehicle_dynamics_filepath: Optional[str],
-        tire_filepath: str,
-        visual_model_filepath: str,
-        trainable: bool,
-        surface_patches: List[Dict[str, Any]],
-        initial_speed: Optional[float] = None,
-    ) -> Vehicle:
-        """Create a new vehicle and set up sensors and planning information as required by the
-        ego agent.
-        """
-        mission = plan.mission
-        chassis_dims = cls.agent_vehicle_dims(
-            mission, default=agent_interface.vehicle_type
-        )
-
-        start = mission.start
-        if start.from_front_bumper:
-            start_pose = Pose.from_front_bumper(
-                front_bumper_position=np.array(start.position[:2]),
-                heading=start.heading,
-                length=chassis_dims.length,
-            )
-        else:
-            start_pose = Pose.from_center(start.position, start.heading)
-
-        vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
-        controller_parameters = sim.vehicle_index.controller_params_for_vehicle_type(
-            agent_interface.vehicle_type
-        )
-
-        chassis = None
-        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
-            if mission.vehicle_spec:
-                logger = logging.getLogger(cls.__name__)
-                logger.warning(
-                    "setting vehicle dimensions on a AckermannChassis not yet supported"
-                )
-            chassis = AckermannChassis(
-                pose=start_pose,
-                bullet_client=sim.bc,
-                vehicle_filepath=vehicle_dynamics_filepath,
-                tire_parameters_filepath=tire_filepath,
-                friction_map=surface_patches,
-                controller_parameters=controller_parameters,
-                initial_speed=initial_speed,
-            )
-        else:
-            chassis = BoxChassis(
-                pose=start_pose,
-                speed=initial_speed,
-                dimensions=chassis_dims,
-                bullet_client=sim.bc,
-            )
-
-        vehicle = Vehicle(
-            id=vehicle_id,
-            chassis=chassis,
-            color=vehicle_color,
-            vehicle_config_type=agent_interface.vehicle_type,
-            visual_model_filepath=visual_model_filepath,
-        )
-
-        return vehicle
-
-    @staticmethod
-    def build_social_vehicle(
-        sim: SMARTS, vehicle_id: str, vehicle_state: VehicleState
-    ) -> Vehicle:
-        """Create a new unassociated vehicle."""
-        dims = Dimensions.copy_with_defaults(
-            vehicle_state.dimensions,
-            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
-        )
-        chassis = BoxChassis(
-            pose=vehicle_state.pose,
-            speed=vehicle_state.speed,
-            dimensions=dims,
-            bullet_client=sim.bc,
-        )
-        return Vehicle(
-            id=vehicle_id,
-            chassis=chassis,
-            vehicle_config_type=vehicle_state.vehicle_config_type,
-            visual_model_filepath=None,
-        )
 
     @staticmethod
     def attach_sensors_to_vehicle(
