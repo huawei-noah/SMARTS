@@ -21,6 +21,8 @@ import importlib.resources as pkg_resources
 import os
 import re
 import tempfile
+from dataclasses import dataclass
+from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -31,17 +33,14 @@ import smarts.assets.vehicles
 from smarts.core import config
 
 
-def load_vehicle_list(vehicle_list_filepath: Optional[str]):
+def load_vehicle_definitions_list(vehicle_list_filepath: Optional[str]):
     """Load a vehicle definition list file."""
     if (vehicle_list_filepath is None) or not os.path.exists(vehicle_list_filepath):
-        with pkg_resources.path(smarts.assets.vehicles, "vehicle_list.yaml") as vl_path:
-            vehicle_list_filepath = str(vl_path.absolute())
-    return load_yaml_config_with_substitution(Path(vehicle_list_filepath))
+        vehicle_list_filepath = config()("assets", "default_vehicle_definitions_list")
+    vehicle_list_filepath = Path(vehicle_list_filepath).absolute()
+    data = load_yaml_config_with_substitution(vehicle_list_filepath)
 
-
-def load_vehicle_definition(vehicle_definition_filepath: str):
-    """Load a vehicle definition file."""
-    return load_yaml_config_with_substitution(Path(vehicle_definition_filepath))
+    return VehicleDefintions(data=data, filename=vehicle_list_filepath)
 
 
 def load_yaml_config(path: Path) -> Optional[Dict[str, Any]]:
@@ -92,3 +91,35 @@ def load_yaml_config_with_substitution(
             with open(c.name, "r", encoding="utf-8") as file:
                 out_config = yaml.safe_load(file)
     return out_config
+
+
+@dataclass(frozen=True)
+class VehicleDefintions:
+    data: Dict[str, Any]
+    filename: str
+
+    @lru_cache(maxsize=20)
+    def load_vehicle_definition(self, vehicle_type: str):
+        """Loads in a particular vehicle definition."""
+        if vehicle_definition_filepath := self.data.get(vehicle_type):
+            return load_yaml_config_with_substitution(Path(vehicle_definition_filepath))
+        raise OSError(
+            f"Vehicle '{vehicle_type}' is not defined in {list(self.data.keys())}"
+        )
+
+    @lru_cache(maxsize=20)
+    def controller_params_for_vehicle_type(self, vehicle_type: str):
+        """Get the controller parameters for the given vehicle type"""
+        vehicle_definition = self.load_vehicle_definition(vehicle_type)
+        controller_params = Path(vehicle_definition["controller_params"])
+        return load_yaml_config_with_substitution(controller_params)
+
+    @lru_cache(maxsize=20)
+    def chassis_params_for_vehicle_type(self, vehicle_type: str):
+        """Get the controller parameters for the given vehicle type"""
+        vehicle_definition = self.load_vehicle_definition(vehicle_type)
+        chassis_parms = Path(vehicle_definition["chassis_params"])
+        return load_yaml_config_with_substitution(chassis_parms)
+
+    def __hash__(self) -> int:
+        return hash(self.filename)

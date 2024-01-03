@@ -953,7 +953,7 @@ class Scenario:
     @property
     def vehicle_definitions_filepath(self) -> str:
         """The path to the default list of vehicle definitions."""
-        return os.path.join(self._root, "vehicle_list.yaml")
+        return os.path.join(self._root, "vehicle_definitions_list.yaml")
 
     @property
     def traffic_specs(self) -> Sequence[str]:

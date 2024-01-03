@@ -1,4 +1,4 @@
-model: Generic Bus
+model: Generic Loaded Moving Truck
 type: truck
 controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_moving_truck.yaml
 chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_moving_truck.yaml

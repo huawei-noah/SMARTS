@@ -34,10 +34,9 @@ from smarts.core.controllers import (
 )
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.core.utils.pybullet import SafeBulletClient
 from smarts.core.utils.resources import (
-    load_vehicle_definition,
-    load_vehicle_list,
+    load_vehicle_definitions_list,
     load_yaml_config_with_substitution,
 )
 from smarts.core.vehicle import Vehicle
@@ -45,19 +44,20 @@ from smarts.core.vehicle import Vehicle
 time_step = 0.1
 
 
+@pytest.fixture
+def vehicle_definitions_list():
+    return load_vehicle_definitions_list(None)
+
+
 @pytest.fixture(params=["bus", "sedan", "truck"])
-def vehicle_definition(request):
-    vehicle_list = load_vehicle_list(None)
-    vehicle_path = vehicle_list.get(request.param)
+def vehicle_definition(vehicle_definitions_list, request: pytest.FixtureRequest):
 
-    _vehicle_definition = load_vehicle_definition(vehicle_path)
-
-    return _vehicle_definition
+    return vehicle_definitions_list.load_vehicle_definition(request.param)
 
 
 @pytest.fixture
 def bullet_client(fixed_timestep_sec=time_step):
-    client = bc.BulletClient(pybullet.DIRECT)
+    client = SafeBulletClient(pybullet.DIRECT)
     client.resetSimulation()
     client.setGravity(0, 0, -9.8)
     client.setPhysicsEngineParameter(

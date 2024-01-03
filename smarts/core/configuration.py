@@ -56,9 +56,13 @@ def _convert_truthy(t: str) -> bool:
     return bool(out)
 
 
+_assets_path = os.path.join(list(smarts.__path__)[0], "assets")
 _config_defaults: Final = {
-    ("assets", "path"): f"{list(smarts.__path__)[0]}/assets",
+    ("assets", "path"): _assets_path,
     ("assets", "default_agent_vehicle"): "sedan",
+    ("assets", "default_vehicle_definitions_list"): os.path.join(
+        _assets_path, "vehicles/vehicle_definitions_list.yaml"
+    ),
     ("core", "observation_workers"): 0,
     ("core", "max_custom_image_sensors"): 4,
     ("core", "sensor_parallelization"): "mp",

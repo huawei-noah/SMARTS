@@ -32,6 +32,7 @@ from io import StringIO
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     FrozenSet,
     Iterator,
@@ -47,9 +48,12 @@ import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
+from smarts.core.colors import SceneColors
+from smarts.core.coordinates import Dimensions, Pose
 from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
+from smarts.core.vehicle_state import VEHICLE_CONFIGS
 
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
@@ -60,9 +64,10 @@ from .vehicle import Vehicle
 
 if TYPE_CHECKING:
     from smarts.core.agent_interface import AgentInterface
+    from smarts.core.controllers.action_space_type import ActionSpaceType
     from smarts.core.plan import Plan
-    from smarts.core.smarts import SMARTS
     from smarts.core.renderer_base import RendererBase
+    from smarts.core.smarts import SMARTS
 
     from .vehicle import VehicleState
 
@@ -113,7 +118,7 @@ class VehicleIndex:
         self._controller_states = {}
 
         # Loaded from yaml file on scenario reset
-        self._vehicle_definitions_list: Dict[str, str] = {}
+        self._vehicle_definitions: resources.VehicleDefintions = {}
 
     @classmethod
     def identity(cls):
@@ -439,7 +444,7 @@ class VehicleIndex:
         boid=False,
         hijacking=False,
         recreate=False,
-        agent_interface: Optional[AgentInterface]=None,
+        agent_interface: Optional[AgentInterface] = None,
     ):
         """Give control of the specified vehicle to the specified agent.
         Args:
@@ -475,17 +480,19 @@ class VehicleIndex:
             chassis = AckermannChassis(
                 pose=vehicle.pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=self.load_vehicle_definition(
+                vehicle_filepath=self._vehicle_definitions.load_vehicle_definition(
                     agent_interface.vehicle_type
                 ).get("dynamics_model"),
-                tire_parameters_filepath=self.load_vehicle_definition(
+                tire_parameters_filepath=self._vehicle_definitions.load_vehicle_definition(
                     agent_interface.vehicle_type
-                ).get("tire_params"),
+                ).get(
+                    "tire_params"
+                ),
                 friction_map=sim.scenario.surface_patches,
-                controller_parameters=self.controller_params_for_vehicle_type(
+                controller_parameters=self._vehicle_definitions.controller_params_for_vehicle_type(
                     agent_interface.vehicle_type
                 ),
-                chassis_parameters=self.chassis_params_for_vehicle_type(
+                chassis_parameters=self._vehicle_definitions.chassis_params_for_vehicle_type(
                     agent_interface.vehicle_type
                 ),
                 initial_speed=vehicle.speed,
@@ -591,7 +598,9 @@ class VehicleIndex:
         return vehicle.state, route
 
     @clear_cache
-    def attach_sensors_to_vehicle(self, sim: SMARTS, vehicle_id, agent_interface: AgentInterface, plan: Plan):
+    def attach_sensors_to_vehicle(
+        self, sim: SMARTS, vehicle_id, agent_interface: AgentInterface, plan: Plan
+    ):
         """Attach sensors as per the agent interface requirements to the specified vehicle."""
         vehicle_id = _2id(vehicle_id)
 
@@ -636,12 +645,15 @@ class VehicleIndex:
         controller_state = self._controller_states[vehicle_id]
         plan = sensor_state.get_plan(sim.road_map)
 
-        vehicle_definition = self.load_vehicle_definition(agent_interface.vehicle_type)
+        vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+            agent_interface.vehicle_type
+        )
         # Create a new vehicle to replace the old one
         new_vehicle = VehicleIndex._build_agent_vehicle(
             sim,
             vehicle.id,
             agent_interface.action,
+            vehicle_definition.get("type"),
             plan,
             vehicle_definition.get("dynamics_model"),
             vehicle_definition.get("tire_params"),
@@ -777,10 +789,14 @@ class VehicleIndex:
         vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""
+        vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+            agent_interface.vehicle_type
+        )
         vehicle = VehicleIndex._build_agent_vehicle(
             sim=sim,
             vehicle_id=vehicle_id or agent_id,
             action=agent_interface.action,
+            vehicle_type=vehicle_definition.get("type"),
             plan=plan,
             vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
             tire_filepath=vehicle_definition.get("tire_params"),
@@ -928,34 +944,11 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
         return self._controller_states[vehicle_id]
 
-    def load_vehicle_definitions_list(self, vehicles_filepath: str):
+    def load_vehicle_definitions_list(self, vehicle_definitions_filepath: str):
         """Loads in a list of vehicle definitions."""
-        self._vehicle_definitions_list = resources.load_vehicle_list(vehicles_filepath)
-
-    @lru_cache(maxsize=20)
-    def load_vehicle_definition(self, vehicle_type: str):
-        """Loads in a particular vehicle definition."""
-        if vehicle_definition_filepath := self._vehicle_definitions_list.get(
-            vehicle_type
-        ):
-            return resources.load_vehicle_definition(vehicle_definition_filepath)
-        raise OSError(
-            f"Vehicle {vehicle_type} is not defined in {list(self._vehicle_definitions_list.keys())}"
+        self._vehicle_definitions = resources.load_vehicle_definitions_list(
+            vehicle_definitions_filepath
         )
-
-    @lru_cache(maxsize=20)
-    def controller_params_for_vehicle_type(self, vehicle_type: str):
-        """Get the controller parameters for the given vehicle type"""
-        vehicle_definition = self.load_vehicle_definition(vehicle_type)
-        controller_params = Path(vehicle_definition["controller_params"])
-        return resources.load_yaml_config_with_substitution(controller_params)
-
-    @lru_cache(maxsize=20)
-    def chassis_params_for_vehicle_type(self, vehicle_type: str):
-        """Get the controller parameters for the given vehicle type"""
-        vehicle_definition = self.load_vehicle_definition(vehicle_type)
-        chassis_parms = Path(vehicle_definition["chassis_params"])
-        return resources.load_yaml_config_with_substitution(chassis_parms)
 
     @staticmethod
     def _build_empty_controlled_by():

@@ -1,5 +1,0 @@
-bus: ${SMARTS_ASSETS_PATH}/vehicles/definitions/bus.yaml
-moving_truck_empty: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empty.yaml
-moving_truck_full: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_full.yaml
-sedan: ${SMARTS_ASSETS_PATH}/vehicles/definitions/sedan.yaml
-truck: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empty.yaml

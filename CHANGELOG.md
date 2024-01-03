@@ -10,7 +10,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased] - XXXX-XX-XX
 ### Added
-- Resources loaded with `load_yaml_config_with_substitution()` now substitute in smarts configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration and vehicle configuration.
+- Resources loaded with `load_yaml_config_with_substitution()` now substitute in SMARTS configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration and vehicle configuration.
+- Default vehicle definitions can be now modified using `assets:default_vehicle_definitions_list`/`SMARTS_ASSSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST` or by providing a `vehicle_definitions_list.yaml` in the scenario. These vehicle types are related to the `AgentInterface.vehicle_type` attribute.
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
@@ -25,6 +26,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `smarts.core.configuration.Configuration.get_settings()` now uses the `PyYAML` default instead of forcefully casting to `str`.
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
+- Deprecated a few things related to vehicles in the `Scenario` class, including the `vehicle_filepath`, `tire_parameters_filepath`, and `controller_parameters_filepath`. The functionality is now handled through the vehicle definitions.
 ### Fixed
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
 - Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.

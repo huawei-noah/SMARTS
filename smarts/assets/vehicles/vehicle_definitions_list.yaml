@@ -1,0 +1,6 @@
+bus: ${SMARTS_ASSETS_PATH}/vehicles/definitions/bus.yaml
+moving_truck_empty: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empty.yaml
+moving_truck_loaded: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_loaded.yaml
+sedan: &SEDAN ${SMARTS_ASSETS_PATH}/vehicles/definitions/sedan.yaml
+truck: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empty.yaml
+passenger: *SEDAN
