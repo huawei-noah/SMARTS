@@ -26,6 +26,7 @@ from smarts.core.utils.core_logging import suppress_output
 #      way to fix this since they simply use print(...). Disabling logging at the
 #      time of import is our hack.
 with suppress_output():
+    import pybullet
     from pybullet import *
     from pybullet_utils import bullet_client
 
@@ -78,7 +79,7 @@ class BulletClientMACOS:
             mp.set_start_method('spawn', force=True)
     """
 
-    def __init__(self, bullet_connect_mode=GUI):
+    def __init__(self, bullet_connect_mode=pybullet.GUI):
         self._parent_conn, self._child_conn = Pipe()
         self.process = Process(
             target=BulletClientMACOS.consume,
