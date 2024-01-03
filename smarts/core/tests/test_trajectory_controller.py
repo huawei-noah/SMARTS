@@ -36,6 +36,7 @@ from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import SafeBulletClient
 from smarts.core.utils.resources import (
+    VehicleDefinitions,
     load_vehicle_definitions_list,
     load_yaml_config_with_substitution,
 )
@@ -45,13 +46,14 @@ time_step = 0.1
 
 
 @pytest.fixture
-def vehicle_definitions_list():
+def vehicle_definitions_list() -> VehicleDefinitions:
     return load_vehicle_definitions_list(None)
 
 
 @pytest.fixture(params=["bus", "sedan", "truck"])
-def vehicle_definition(vehicle_definitions_list, request: pytest.FixtureRequest):
-
+def vehicle_definition(
+    vehicle_definitions_list: VehicleDefinitions, request: pytest.FixtureRequest
+):
     return vehicle_definitions_list.load_vehicle_definition(request.param)
 
 
@@ -79,7 +81,7 @@ def vehicle(bullet_client, vehicle_definition, fixed_timestep_sec=time_step):
         chassis=AckermannChassis(
             pose=pose,
             bullet_client=bullet_client,
-            vehicle_filepath=vehicle_definition["dynamics_model"],
+            vehicle_dynamics_filepath=vehicle_definition["dynamics_model"],
             controller_parameters=load_yaml_config_with_substitution(
                 vehicle_definition["controller_params"]
             ),

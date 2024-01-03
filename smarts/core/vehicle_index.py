@@ -118,7 +118,7 @@ class VehicleIndex:
         self._controller_states = {}
 
         # Loaded from yaml file on scenario reset
-        self._vehicle_definitions: resources.VehicleDefintions = {}
+        self._vehicle_definitions: resources.VehicleDefinitions = {}
 
     @classmethod
     def identity(cls):
@@ -477,23 +477,20 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         chassis = None
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+                agent_interface.vehicle_class
+            )
             chassis = AckermannChassis(
                 pose=vehicle.pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=self._vehicle_definitions.load_vehicle_definition(
-                    agent_interface.vehicle_type
-                ).get("dynamics_model"),
-                tire_parameters_filepath=self._vehicle_definitions.load_vehicle_definition(
-                    agent_interface.vehicle_type
-                ).get(
-                    "tire_params"
-                ),
+                vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
+                tire_parameters_filepath=vehicle_definition.get("tire_params"),
                 friction_map=sim.scenario.surface_patches,
-                controller_parameters=self._vehicle_definitions.controller_params_for_vehicle_type(
-                    agent_interface.vehicle_type
+                controller_parameters=self._vehicle_definitions.controller_params_for_vehicle_class(
+                    agent_interface.vehicle_class
                 ),
-                chassis_parameters=self._vehicle_definitions.chassis_params_for_vehicle_type(
-                    agent_interface.vehicle_type
+                chassis_parameters=self._vehicle_definitions.chassis_params_for_vehicle_class(
+                    agent_interface.vehicle_class
                 ),
                 initial_speed=vehicle.speed,
             )
@@ -646,7 +643,7 @@ class VehicleIndex:
         plan = sensor_state.get_plan(sim.road_map)
 
         vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
-            agent_interface.vehicle_type
+            agent_interface.vehicle_class
         )
         # Create a new vehicle to replace the old one
         new_vehicle = VehicleIndex._build_agent_vehicle(
@@ -654,6 +651,7 @@ class VehicleIndex:
             vehicle.id,
             agent_interface.action,
             vehicle_definition.get("type"),
+            agent_interface.vehicle_class,
             plan,
             vehicle_definition.get("dynamics_model"),
             vehicle_definition.get("tire_params"),
@@ -705,6 +703,7 @@ class VehicleIndex:
         vehicle_id: str,
         action: Optional[ActionSpaceType],
         vehicle_type: str,
+        vehicle_class: str,
         plan: Plan,
         vehicle_dynamics_filepath: Optional[str],
         tire_filepath: str,
@@ -731,13 +730,13 @@ class VehicleIndex:
 
         vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
         controller_parameters = (
-            sim.vehicle_index._vehicle_definitions.controller_params_for_vehicle_type(
-                vehicle_type
+            sim.vehicle_index._vehicle_definitions.controller_params_for_vehicle_class(
+                vehicle_class
             )
         )
         chassis_parameters = (
-            sim.vehicle_index._vehicle_definitions.chassis_params_for_vehicle_type(
-                vehicle_type
+            sim.vehicle_index._vehicle_definitions.chassis_params_for_vehicle_class(
+                vehicle_class
             )
         )
 
@@ -751,7 +750,7 @@ class VehicleIndex:
             chassis = AckermannChassis(
                 pose=start_pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=vehicle_dynamics_filepath,
+                vehicle_dynamics_filepath=vehicle_dynamics_filepath,
                 tire_parameters_filepath=tire_filepath,
                 friction_map=surface_patches,
                 controller_parameters=controller_parameters,
@@ -771,6 +770,7 @@ class VehicleIndex:
             chassis=chassis,
             color=vehicle_color,
             vehicle_config_type=vehicle_type,
+            vehicle_class=vehicle_class,
             visual_model_filepath=visual_model_filepath,
         )
 
@@ -790,13 +790,14 @@ class VehicleIndex:
     ):
         """Build an entirely new vehicle for an agent."""
         vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
-            agent_interface.vehicle_type
+            agent_interface.vehicle_class
         )
         vehicle = VehicleIndex._build_agent_vehicle(
             sim=sim,
             vehicle_id=vehicle_id or agent_id,
             action=agent_interface.action,
             vehicle_type=vehicle_definition.get("type"),
+            vehicle_class=agent_interface.vehicle_class,
             plan=plan,
             vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
             tire_filepath=vehicle_definition.get("tire_params"),

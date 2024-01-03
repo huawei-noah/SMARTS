@@ -346,7 +346,7 @@ class AckermannChassis(Chassis):
         self,
         pose: Pose,
         bullet_client: bc.BulletClient,
-        vehicle_filepath=DEFAULT_VEHICLE_FILEPATH,
+        vehicle_dynamics_filepath=DEFAULT_VEHICLE_FILEPATH,
         tire_parameters_filepath=None,
         friction_map=None,
         controller_parameters=DEFAULT_CONTROLLER_PARAMETERS,
@@ -381,7 +381,7 @@ class AckermannChassis(Chassis):
         self._road_wheel_frictions = None
 
         self._bullet_id = self._client.loadURDF(
-            vehicle_filepath,
+            vehicle_dynamics_filepath,
             [0, 0, 0],
             [0, 0, 0, 1],
             useFixedBase=False,

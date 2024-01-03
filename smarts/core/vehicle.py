@@ -69,7 +69,8 @@ class Vehicle:
         id: str,
         chassis: Chassis,
         visual_model_filepath: Optional[str],
-        vehicle_config_type: str = "passenger",
+        vehicle_config_type: str = "sedan",
+        vehicle_class: str = "generic_sedan",
         color: Optional[SceneColors] = None,
         action_space=None,
     ):
@@ -80,6 +81,7 @@ class Vehicle:
         if vehicle_config_type == "sedan":
             vehicle_config_type = "passenger"
         self._vehicle_config_type = vehicle_config_type
+        self._vehicle_class = vehicle_class
         self._action_space = action_space
 
         self._meta_create_sensor_functions()
@@ -115,6 +117,7 @@ class Vehicle:
   pose={self.pose},
   speed={self.speed},
   type={self.vehicle_type},
+  class={self.vehicle_class},
   w={self.width},
   l={self.length},
   h={self.height}
@@ -250,8 +253,18 @@ class Vehicle:
 
     @property
     def vehicle_type(self) -> str:
-        """Get the vehicle type identifier."""
+        """Get the vehicle type name as recognized by SMARTS. (e.g. 'car')"""
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
+
+    @property
+    def vehicle_config_type(self) -> str:
+        """Get the vehicle type identifier. (e.g. 'sedan')"""
+        return self._vehicle_config_type
+
+    @property
+    def vehicle_class(self) -> str:
+        """Get the custom class of vehicle this is. (e.g. 'ford_f150')"""
+        return self._vehicle_class
 
     @property
     def valid(self) -> bool:

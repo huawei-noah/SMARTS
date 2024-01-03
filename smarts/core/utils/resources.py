@@ -39,7 +39,7 @@ def load_vehicle_definitions_list(vehicle_list_filepath: Optional[str]):
         vehicle_list_filepath = config()("assets", "default_vehicle_definitions_list")
     vehicle_list_filepath = Path(vehicle_list_filepath).absolute()
 
-    return VehicleDefintions(
+    return VehicleDefinitions(
         data=load_yaml_config_with_substitution(vehicle_list_filepath),
         filepath=vehicle_list_filepath,
     )
@@ -96,7 +96,7 @@ def load_yaml_config_with_substitution(
 
 
 @dataclass(frozen=True)
-class VehicleDefintions:
+class VehicleDefinitions:
     """This defines a set of vehicle definitions and loading utilities."""
 
     data: Dict[str, Any]
@@ -105,25 +105,25 @@ class VehicleDefintions:
     """The path to the vehicle definitions file."""
 
     @lru_cache(maxsize=20)
-    def load_vehicle_definition(self, vehicle_type: str):
+    def load_vehicle_definition(self, vehicle_class: str):
         """Loads in a particular vehicle definition."""
-        if vehicle_definition_filepath := self.data.get(vehicle_type):
+        if vehicle_definition_filepath := self.data.get(vehicle_class):
             return load_yaml_config_with_substitution(Path(vehicle_definition_filepath))
         raise OSError(
-            f"Vehicle '{vehicle_type}' is not defined in {list(self.data.keys())}"
+            f"Vehicle '{vehicle_class}' is not defined in {list(self.data.keys())}"
         )
 
     @lru_cache(maxsize=20)
-    def controller_params_for_vehicle_type(self, vehicle_type: str):
+    def controller_params_for_vehicle_class(self, vehicle_class: str):
         """Get the controller parameters for the given vehicle type"""
-        vehicle_definition = self.load_vehicle_definition(vehicle_type)
+        vehicle_definition = self.load_vehicle_definition(vehicle_class)
         controller_params = Path(vehicle_definition["controller_params"])
         return load_yaml_config_with_substitution(controller_params)
 
     @lru_cache(maxsize=20)
-    def chassis_params_for_vehicle_type(self, vehicle_type: str):
+    def chassis_params_for_vehicle_class(self, vehicle_class: str):
         """Get the controller parameters for the given vehicle type"""
-        vehicle_definition = self.load_vehicle_definition(vehicle_type)
+        vehicle_definition = self.load_vehicle_definition(vehicle_class)
         chassis_parms = Path(vehicle_definition["chassis_params"])
         return load_yaml_config_with_substitution(chassis_parms)
 
