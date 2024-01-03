@@ -36,6 +36,10 @@ _UNSET = object()
 logger = logging.getLogger(__name__)
 
 
+def _passthrough_cast(val):
+    return val
+
+
 def _convert_truthy(t: str) -> bool:
     """Convert value to a boolean. This should only allow ([Tt]rue)|([Ff]alse)|[\\d].
 
@@ -110,7 +114,7 @@ class Config:
         section: str,
         option: str,
         default: Any = _UNSET,
-        cast: Callable[[str], Any] = str,
+        cast: Callable[[Any], Any] = _passthrough_cast,
     ) -> Optional[Any]:
         """Finds the given configuration checking the following in order: environment variable,
         configuration file, and default.

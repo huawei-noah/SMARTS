@@ -22,6 +22,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `Vehicle.build_agent_vehicle()` argument `vehicle_filepath` now renamed to `vehicle_dynamics_filepath`.
 - Renamed `MACOS` `pybullet` gui utility from `smarts.core.utils.bullet.BulletClient` to `smarts.core.utils.pybullet.BulletClientMACOS`.
 - `Vehicle.build_agent_vehicle()` and `Vehicle.build_social_vehicle()` moved to `VehicleIndex`.
+- `smarts.core.configuration.Configuration.get_settings()` now uses the `PyYAML` default instead of forcefully casting to `str`.
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 ### Fixed
