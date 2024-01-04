@@ -6,17 +6,17 @@ RLlib
 
 **RLlib** is an open-source library for reinforcement learning that offers both high scalability and a unified API for a variety of applications. ``RLlib`` natively supports ``TensorFlow``, ``TensorFlow Eager``, and ``PyTorch``. Most of its internals are agnostic to such deep learning frameworks.
 
-SMARTS contains two examples using `Policy Gradients (PG) <https://docs.ray.io/en/latest/rllib-algorithms.html#policy-gradients-pg>`_.
+SMARTS contains two examples using `Proximal Policy Optimization (PPO) <https://docs.ray.io/en/latest/rllib/rllib-algorithms.html#ppo>`_.
 
 #. Policy gradient
 
-    + script: :examples:`e12_rllib/pg_example.py`
+    + script: :examples:`e12_rllib/ppo_example.py`
     + Shows the basics of using RLlib with SMARTS through :class:`~smarts.env.rllib_hiway_env.RLlibHiWayEnv`.
 
 #. Policy gradient with population based training
 
-    + script: :examples:`e12_rllib/pg_pbt_example.py`
-    + Combines Policy Gradients with `Population Based Training (PBT) <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.PopulationBasedTraining.html>`_ scheduling.
+    + script: :examples:`e12_rllib/ppo_pbt_example.py`
+    + Combines Proximal Policy Optimization with `Population Based Training (PBT) <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.PopulationBasedTraining.html>`_ scheduling.
 
 
 Recommended reads

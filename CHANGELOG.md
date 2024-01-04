@@ -15,6 +15,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
 - Exposed `traffic:traci_retries`/`SMARTS_TRAFFIC_TRACI_RETRIES` to control how many times the `SumoTrafficSimulation` will try to restart when using default configuration.
 - `rllib` is now constrained as `<=2.9,>2.4`.
+- The `examples/e12_rllib` training examples `{pg_example|pg_pbt_example}.py` have been changed to `{ppo_example|ppo_pbt_example}.py`. `Policy Gradients (PG)` has been dropped in favor of the more well documented `Proximal Policy Optimization (PPO)`.
 ### Deprecated
 ### Fixed
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
