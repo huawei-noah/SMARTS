@@ -14,7 +14,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
 - Exposed `traffic:traci_retries`/`SMARTS_TRAFFIC_TRACI_RETRIES` to control how many times the `SumoTrafficSimulation` will try to restart when using default configuration.
-
+- `rllib` is now constrained as `<=2.9,>2.4`.
 ### Deprecated
 ### Fixed
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
@@ -32,6 +32,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed the envision camera to center on the map which was broken due to a change in the `gltf` metadata hierarchy.
 - Fixed an issue where you would need to install `waymo` in order to use any kind of dataset histories.
 - Fixed an issue where Pycharm would load `smarts/sstudio/types` as the integrated `types` module. See #2125.
+- Fixed an issue where the `e12_rllib` examples would use the wrong path for the default loop scenario.
 ### Removed
 ### Security
 
