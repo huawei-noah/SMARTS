@@ -63,9 +63,9 @@ from .sensors import SensorState
 from .vehicle import Vehicle
 
 if TYPE_CHECKING:
+    from smarts.core import plan
     from smarts.core.agent_interface import AgentInterface
     from smarts.core.controllers.action_space_type import ActionSpaceType
-    from smarts.core.plan import Plan
     from smarts.core.renderer_base import RendererBase
     from smarts.core.smarts import SMARTS
 
@@ -118,7 +118,9 @@ class VehicleIndex:
         self._controller_states = {}
 
         # Loaded from yaml file on scenario reset
-        self._vehicle_definitions: resources.VehicleDefinitions = {}
+        self._vehicle_definitions: resources.VehicleDefinitions = (
+            resources.VehicleDefinitions({}, "")
+        )
 
     @classmethod
     def identity(cls):
@@ -395,7 +397,7 @@ class VehicleIndex:
         vehicle_id,
         agent_id,
         agent_interface: AgentInterface,
-        plan: Plan,
+        plan: "plan.Plan",
         boid=False,
         initialize_sensors=True,
     ):
@@ -556,14 +558,14 @@ class VehicleIndex:
     @clear_cache
     def relinquish_agent_control(
         self, sim: SMARTS, vehicle_id: str, road_map: RoadMap
-    ) -> Tuple[VehicleState, List[str]]:
+    ) -> Tuple[VehicleState, Optional[RoadMap.Route]]:
         """Give control of the vehicle back to its original controller."""
         self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
 
         v_id = _2id(vehicle_id)
 
         ss = sim.sensor_manager.sensor_state_for_actor_id(vehicle_id)
-        route = ss.get_plan(road_map).route
+        route = ss.get_plan(road_map).route if ss else None
         vehicle = self.stop_agent_observation(vehicle_id)
 
         # pytype: disable=attribute-error
@@ -596,7 +598,11 @@ class VehicleIndex:
 
     @clear_cache
     def attach_sensors_to_vehicle(
-        self, sim: SMARTS, vehicle_id, agent_interface: AgentInterface, plan: Plan
+        self,
+        sim: SMARTS,
+        vehicle_id,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
     ):
         """Attach sensors as per the agent interface requirements to the specified vehicle."""
         vehicle_id = _2id(vehicle_id)
@@ -639,6 +645,7 @@ class VehicleIndex:
         ), f"Missing agent_interface for agent_id={agent_id}"
         vehicle = self._vehicles[vehicle_id]
         sensor_state = sim.sensor_manager.sensor_state_for_actor_id(vehicle.id)
+        assert sensor_state is not None
         controller_state = self._controller_states[vehicle_id]
         plan = sensor_state.get_plan(sim.road_map)
 
@@ -652,7 +659,7 @@ class VehicleIndex:
             agent_interface.action,
             vehicle_definition.get("type"),
             agent_interface.vehicle_class,
-            plan,
+            plan.mission,
             vehicle_definition.get("dynamics_model"),
             vehicle_definition.get("tire_params"),
             vehicle_definition.get("visual_model"),
@@ -704,7 +711,7 @@ class VehicleIndex:
         action: Optional[ActionSpaceType],
         vehicle_type: str,
         vehicle_class: str,
-        plan: Plan,
+        mission: plan.Mission,
         vehicle_dynamics_filepath: Optional[str],
         tire_filepath: str,
         visual_model_filepath: str,
@@ -715,7 +722,6 @@ class VehicleIndex:
         """Create a new vehicle and set up sensors and planning information as required by the
         ego agent.
         """
-        mission = plan.mission
         chassis_dims = Vehicle.agent_vehicle_dims(mission, default=vehicle_type)
 
         start = mission.start
@@ -781,7 +787,7 @@ class VehicleIndex:
         sim: SMARTS,
         agent_id,
         agent_interface: AgentInterface,
-        plan: Plan,
+        plan: "plan.Plan",
         trainable: bool,
         initial_speed: Optional[float] = None,
         boid: bool = False,
@@ -798,7 +804,7 @@ class VehicleIndex:
             action=agent_interface.action,
             vehicle_type=vehicle_definition.get("type"),
             vehicle_class=agent_interface.vehicle_class,
-            plan=plan,
+            mission=plan.mission,
             vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
             tire_filepath=vehicle_definition.get("tire_params"),
             visual_model_filepath=vehicle_definition.get("visual_model"),

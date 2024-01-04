@@ -81,12 +81,6 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
             vehicle,
             controller_state,
             dt_sec=TIMESTEP_SEC,
-            heading_gain=0.05,
-            lateral_gain=0.65,
-            velocity_gain=1.8,
-            traction_gain=2,
-            derivative_activation=False,
-            speed_reduction_activation=False,
         )
 
         client.stepSimulation()

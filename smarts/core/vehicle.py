@@ -53,7 +53,7 @@ from .utils.custom_exceptions import RendererException
 from .vehicle_state import VEHICLE_CONFIGS, VehicleState
 
 if TYPE_CHECKING:
-    from smarts.core.plan import Mission
+    from smarts.core import plan
     from smarts.core.renderer_base import RendererBase
     from smarts.core.sensor_manager import SensorManager
     from smarts.core.smarts import SMARTS
@@ -273,7 +273,7 @@ class Vehicle:
 
     @staticmethod
     def agent_vehicle_dims(
-        mission: "Mission", default: Optional[str] = None
+        mission: "plan.Mission", default: Optional[str] = None
     ) -> Dimensions:
         """Get the vehicle dimensions from the mission requirements.
         Args:

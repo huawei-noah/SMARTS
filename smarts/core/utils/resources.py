@@ -101,8 +101,12 @@ class VehicleDefinitions:
 
     data: Dict[str, Any]
     """The data associated with the vehicle definitions. This is generally vehicle type keys."""
-    filepath: str
+    filepath: Union[str, Path]
     """The path to the vehicle definitions file."""
+
+    def __post_init__(self):
+        if isinstance(self.filepath, Path):
+            object.__setattr__(self, "filepath", self.filepath.__str__())
 
     @lru_cache(maxsize=20)
     def load_vehicle_definition(self, vehicle_class: str):
