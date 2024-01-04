@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 import numpy as np
 
-import smarts.assets as smarts_assets
+import smarts.assets.vehicles.visual_model as smarts_vehicle_visuals
 
 from . import config
 from .actor import ActorRole
@@ -86,13 +86,13 @@ class Vehicle:
 
         self._meta_create_sensor_functions()
         self._sensors = {}
-        self._vehicle_visual_model_path = visual_model_filepath
+        self._visual_model_path = visual_model_filepath
 
-        if self._vehicle_visual_model_path in {None, ""}:
+        if self._visual_model_path in {None, ""}:
             with pkg_resources.path(
-                smarts_assets, VEHICLE_CONFIGS[vehicle_config_type].glb_model
+                smarts_vehicle_visuals, VEHICLE_CONFIGS[self._vehicle_config_type].glb_model
             ) as path:
-                self._vehicle_visual_model_path = path
+                self._visual_model_path = path
 
         # Color override
         self._color: Optional[SceneColors] = color
@@ -436,7 +436,7 @@ class Vehicle:
     def create_renderer_node(self, renderer: RendererBase):
         """Create the vehicle's rendering node in the renderer."""
         return renderer.create_vehicle_node(
-            self._vehicle_visual_model_path, self._id, self.vehicle_color, self.pose
+            self._visual_model_path, self._id, self.vehicle_color, self.pose
         )
 
     # @lru_cache(maxsize=1)

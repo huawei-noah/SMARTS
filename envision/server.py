@@ -46,7 +46,7 @@ except:
         "Missing dependencies for Envision. Install them using the command `pip install -e .[envision]` at the source directory."
     )
 
-import smarts.assets
+import smarts.assets.vehicles.visual_model
 from envision.web import dist as web_dist
 from smarts.core.utils.file import path2hash
 
@@ -473,11 +473,11 @@ class ModelFileHandler(FileHandler):
     async def get(self, id_):
         """Serve the requested model geometry."""
         if id_ not in self._path_map or not pkg_resources.is_resource(
-            smarts.assets, self._path_map[id_]
+            smarts.assets.vehicles.visual_model, self._path_map[id_]
         ):
             raise tornado.web.HTTPError(404, f"GLB Model `{id_}` not found.")
 
-        with pkg_resources.path(smarts.assets, self._path_map[id_]) as path:
+        with pkg_resources.path(smarts.assets.vehicles.visual_model, self._path_map[id_]) as path:
             await self.serve_chunked(path)
 
 
