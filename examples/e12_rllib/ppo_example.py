@@ -129,7 +129,7 @@ def main(
             enable_tf1_exec_eagerly=True,
         )
         .training(
-            lr=[[0, 1e-3], [1e3, 5e-4], [1e5, 1e-4], [1e7, 5e-5], [1e8, 1e-5]],
+            lr_schedule=[[0, 1e-3], [1e3, 5e-4], [1e5, 1e-4], [1e7, 5e-5], [1e8, 1e-5]],
             train_batch_size=train_batch_size,
         )
         .multi_agent(

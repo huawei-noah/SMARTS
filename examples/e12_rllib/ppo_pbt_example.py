@@ -225,7 +225,7 @@ def main(
         scheduler=pbt,
         max_concurrent_trials=4,
     )
-    trainable = "PG"
+    trainable = "PPO"
     if resume_training:
         tuner = tune.Tuner.restore(
             str(experiment_dir),
@@ -246,8 +246,7 @@ def main(
 
     # Get the best checkpoint corresponding to the best result.
     best_checkpoint = best_result.checkpoint
-
-    best_logdir = Path(best_result.log_dir)
+    best_logdir = Path(best_checkpoint.path)
     model_path = best_logdir
 
     copy_tree(str(model_path), save_model_path, overwrite=True)
