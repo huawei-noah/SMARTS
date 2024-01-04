@@ -14,7 +14,7 @@ try:
     from ray import tune
     from ray.rllib.algorithms.algorithm import AlgorithmConfig
     from ray.rllib.algorithms.callbacks import DefaultCallbacks
-    from ray.rllib.algorithms.pg import PGConfig
+    from ray.rllib.algorithms.ppo import PPOConfig
     from ray.rllib.env.base_env import BaseEnv
     from ray.rllib.evaluation.episode import Episode
     from ray.rllib.evaluation.episode_v2 import EpisodeV2
@@ -147,7 +147,7 @@ def main(
     smarts.core.seed(seed)
     assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0
     algo_config: AlgorithmConfig = (
-        PGConfig()
+        PPOConfig()
         .environment(
             env=RLlibHiWayEnv,
             env_config={
