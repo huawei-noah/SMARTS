@@ -153,8 +153,8 @@ def validate_vehicle(vehicle: Vehicle):
                 sensor_attach = sensor_attach.fget
             assert isinstance(sensor_attach, partial)
             assert (
-                vehicle.id == sensor_attach.keywords["self"].id
-            ), f"{vehicle.id} | {sensor_attach.keywords['self'].id}"
+                vehicle.id == sensor_attach.func.__self__.id
+            ), f"{vehicle.id} | {sensor_attach.func.__self__.id}"
 
     for sensor_name in vehicle.sensor_names:
         check_attr(f"attach_{sensor_name}")
