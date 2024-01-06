@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 import math
+from functools import partial
 
 import numpy as np
 import pytest
@@ -27,13 +28,12 @@ import pytest
 from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS, Vehicle, VehicleState
 
 
 @pytest.fixture
 def bullet_client():
-    client = bc.BulletClient(pybullet.DIRECT)
+    client = pybullet.SafeBulletClient(pybullet.DIRECT)
     yield client
     client.disconnect()
 
@@ -141,3 +141,39 @@ def test_vehicle_bounding_box(bullet_client):
         vehicle.bounding_box, [[0.5, 2.5], (1.5, 2.5), (1.5, -0.5), (0.5, -0.5)]
     ):
         assert np.array_equal(coordinates[0], coordinates[1])
+
+
+def validate_vehicle(vehicle: Vehicle):
+    def check_attr(sensor_control_name):
+        if hasattr(vehicle, sensor_control_name):
+            sensor_attach = getattr(vehicle, sensor_control_name)
+            if sensor_attach is None:
+                return
+            if isinstance(sensor_attach, property):
+                sensor_attach = sensor_attach.fget
+            assert isinstance(sensor_attach, partial)
+            assert (
+                vehicle.id == sensor_attach.keywords["self"].id
+            ), f"{vehicle.id} | {sensor_attach.keywords['self'].id}"
+
+    for sensor_name in vehicle.sensor_names:
+        check_attr(f"attach_{sensor_name}")
+        check_attr(f"detach_{sensor_name}")
+
+
+def test_vehicle_meta_methods(bullet_client):
+    pose = Pose.from_center((1, 1, 0), Heading(0))
+    chassis = BoxChassis(
+        pose=pose,
+        speed=0,
+        dimensions=Dimensions(length=3, width=1, height=1),
+        bullet_client=bullet_client,
+    )
+
+    for i in range(2):
+        vehicle = Vehicle(
+            id=f"vehicle-{i}",
+            chassis=chassis,
+            vehicle_config_type="passenger",
+        )
+        validate_vehicle(vehicle)
