@@ -695,16 +695,12 @@ class Vehicle:
             setattr(
                 cls,
                 f"subscribed_to_{sensor_name}",
-                property(
-                    partial(cls.subscribed_to, sensor_name=sensor_name)
-                ),
+                property(partial(cls.subscribed_to, sensor_name=sensor_name)),
             )
             setattr(
                 Vehicle,
                 f"{sensor_name}",
-                property(
-                    partial(cls.sensor_property, sensor_name=sensor_name)
-                ),
+                property(partial(cls.sensor_property, sensor_name=sensor_name)),
             )
 
         def detach_all_sensors_from_vehicle(vehicle):
@@ -724,4 +720,3 @@ class Vehicle:
         # Bit of metaprogramming to make sensor creation more DRY
         self._meta_create_instance_sensor_functions()
         self._meta_create_class_sensor_functions()
-
