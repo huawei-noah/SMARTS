@@ -44,7 +44,6 @@ class SensorManager:
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._logger.setLevel(logging.INFO)
         self._sensors: Dict[str, Sensor] = {}
 
         # {actor_id: <SensorState>}
@@ -179,12 +178,12 @@ class SensorManager:
 
     def add_sensor_state(self, actor_id: str, sensor_state: SensorState):
         """Add a sensor state associated with a given actor."""
-        self._logger.info("Sensor state added for actor '%s'.", actor_id)
+        self._logger.debug("Sensor state added for actor '%s'.", actor_id)
         self._sensor_states[actor_id] = sensor_state
 
     def remove_sensor_state_by_actor_id(self, actor_id: str):
         """Add a sensor state associated with a given actor."""
-        self._logger.info("Sensor state removed for actor '%s'.", actor_id)
+        self._logger.debug("Sensor state removed for actor '%s'.", actor_id)
         return self._sensor_states.pop(actor_id, None)
 
     def remove_actor_sensors_by_actor_id(
@@ -203,7 +202,7 @@ class SensorManager:
         sensors_by_actor = self._sensors_by_actor_id.get(actor_id)
         if not sensors_by_actor:
             return []
-        self._logger.info("Target sensor removal for actor '%s'.", actor_id)
+        self._logger.debug("Target sensor removal for actor '%s'.", actor_id)
         discarded_sensors = []
         for sensor_id in sensors_by_actor:
             self._actors_by_sensor_id[sensor_id].remove(actor_id)
@@ -219,7 +218,7 @@ class SensorManager:
         self, sensor_id: str, schedule_teardown: bool = False
     ) -> Optional[Sensor]:
         """Remove a sensor by its id. Removes any associations it has with actors."""
-        self._logger.info("Target removal of sensor '%s'.", sensor_id)
+        self._logger.debug("Target removal of sensor '%s'.", sensor_id)
         sensor = self._sensors.get(sensor_id)
         if not sensor:
             return None
