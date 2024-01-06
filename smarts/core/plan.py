@@ -26,7 +26,7 @@ import random
 import sys
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Type
 
 import numpy as np
 
@@ -300,6 +300,11 @@ class PlanFrame:
 
     road_ids: List[str]
     mission: Optional[Mission]
+
+    @classmethod
+    def empty(cls: Type[PlanFrame]):
+        """Creates an empty plan frame."""
+        return cls(road_ids=[], mission=None)
 
 
 class Plan:
