@@ -548,6 +548,8 @@ class VehicleIndex:
         # pytype: disable=attribute-error
         Vehicle.detach_all_sensors_from_vehicle(vehicle)
         # pytype: enable=attribute-error
+        sim.sensor_manager.remove_actor_sensors_by_actor_id(vehicle_id)
+        sim.sensor_manager.remove_sensor_state_by_actor_id(vehicle_id)
 
         vehicle = self._vehicles[v_id]
         box_chassis = BoxChassis(

@@ -115,15 +115,15 @@ class ClassRegister:
                 # Import the module so that the agent may register itself in the index
                 # it is assumed that a `register(name=..., entry_point=...)` exists in the target module.
                 module = importlib.import_module(mod_name)
-            except ImportError:
+            except ImportError as exc:
                 import sys
 
                 raise ImportError(
                     f"Ensure that `{mod_name}` module can be found from your "
                     f"PYTHONPATH and name=`{locator}` exists (e.g. was registered "
-                    "manually or downloaded.\n"
+                    "manually or downloaded).\n"
                     f"`PYTHONPATH`: `{sys.path}`"
-                )
+                ) from exc
         else:
             # There is no module component.
             name = mod_name
@@ -132,8 +132,8 @@ class ClassRegister:
             # See if `register()` has been called.
             # return the builder if it exists.
             return self.index[name]
-        except KeyError:
-            raise NameError(f"Locator not registered in lookup: {locator}")
+        except KeyError as exc:
+            raise NameError(f"Locator not registered in lookup: {locator}") from exc
 
     def make(self, locator, **kwargs):
         """Calls the factory with `locator` name key supplying the keyword arguments as argument

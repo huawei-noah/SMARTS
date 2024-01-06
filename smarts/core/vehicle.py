@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -59,7 +61,7 @@ class Vehicle:
     """Represents a single vehicle."""
 
     _HAS_DYNAMIC_ATTRIBUTES = True  # dynamic pytype attribute
-    _sensor_names = [
+    _sensor_names = (
         "ogm_sensor",
         "rgb_sensor",
         "lidar_sensor",
@@ -73,7 +75,7 @@ class Vehicle:
         "lane_position_sensor",
         "via_sensor",
         "signals_sensor",
-    ]
+    )
 
     def __init__(
         self,
@@ -262,6 +264,12 @@ class Vehicle:
         """Check if the vehicle still `exists` and is still operable."""
         return self._initialized
 
+    @classmethod
+    @property
+    def sensor_names(cls) -> Tuple[str]:
+        """The names of the sensors that are potentially available to this vehicle."""
+        return cls._sensor_names
+
     @staticmethod
     @lru_cache(maxsize=None)
     def vehicle_urdf_path(vehicle_type: str, override_path: Optional[str]) -> str:
@@ -413,11 +421,12 @@ class Vehicle:
             dimensions=dims,
             bullet_client=sim.bc,
         )
-        return Vehicle(
+        vehicle = Vehicle(
             id=vehicle_id,
             chassis=chassis,
             vehicle_config_type=vehicle_state.vehicle_config_type,
         )
+        return vehicle
 
     @classmethod
     def attach_sensors_to_vehicle(
@@ -634,13 +643,16 @@ class Vehicle:
         (for example, for observation collection from history vehicles),
         but if that vehicle gets hijacked, we want to use the sensors
         specified by the hijacking agent's interface."""
-        self.detach_sensor(sensor_name)
-        self._log.debug("replacing existing %s on vehicle %s", sensor_name, self.id)
+        detach = getattr(self, f"detach_{sensor_name}")
+        if detach:
+            self.detach_sensor(sensor_name)
+        self._log.debug("Replaced existing %s on vehicle %s", sensor_name, self.id)
         setattr(self, f"_{sensor_name}", sensor)
         self._sensors[sensor_name] = sensor
 
     def detach_sensor(self, sensor_name):
         """Detach a sensor by name."""
+        self._log.debug("Removed existing %s on vehicle %s", sensor_name, self.id)
         sensor = getattr(self, f"_{sensor_name}", None)
         if sensor is not None:
             setattr(self, f"_{sensor_name}", None)
@@ -655,48 +667,61 @@ class Vehicle:
     def sensor_property(self, sensor_name):
         """Call a sensor by name."""
         sensor = getattr(self, f"_{sensor_name}", None)
-        assert sensor is not None, f"{sensor_name} is not attached to {self.id}"
+        assert sensor is not None, f"'{sensor_name}' is not attached to '{self.id}'"
         return sensor
 
-    def _meta_create_sensor_functions(self):
-        # Bit of metaprogramming to make sensor creation more DRY
-        sensor_names = self._sensor_names
-        for sensor_name in sensor_names:
-            setattr(Vehicle, f"_{sensor_name}", None)
+    def _meta_create_instance_sensor_functions(self):
+        for sensor_name in Vehicle._sensor_names:
+            setattr(self, f"_{sensor_name}", None)
             setattr(
-                Vehicle,
+                self,
                 f"attach_{sensor_name}",
-                partial(self.attach_sensor, sensor_name=sensor_name),
+                partial(
+                    self.__class__.attach_sensor, self=self, sensor_name=sensor_name
+                ),
             )
             setattr(
-                Vehicle,
+                self,
                 f"detach_{sensor_name}",
-                partial(self.detach_sensor, sensor_name=sensor_name),
+                partial(
+                    self.__class__.detach_sensor, self=self, sensor_name=sensor_name
+                ),
             )
+
+    @classmethod
+    @lru_cache(1)
+    def _meta_create_class_sensor_functions(cls):
+        for sensor_name in cls._sensor_names:
             setattr(
-                Vehicle,
+                cls,
                 f"subscribed_to_{sensor_name}",
                 property(
-                    partial(self.__class__.subscribed_to, sensor_name=sensor_name)
+                    partial(cls.subscribed_to, sensor_name=sensor_name)
                 ),
             )
             setattr(
                 Vehicle,
                 f"{sensor_name}",
                 property(
-                    partial(self.__class__.sensor_property, sensor_name=sensor_name)
+                    partial(cls.sensor_property, sensor_name=sensor_name)
                 ),
             )
 
         def detach_all_sensors_from_vehicle(vehicle):
             sensors = []
-            for sensor_name in sensor_names:
+            for sensor_name in cls._sensor_names:
                 detach_sensor_func = getattr(vehicle, f"detach_{sensor_name}")
                 sensors.append(detach_sensor_func())
             return sensors
 
         setattr(
-            Vehicle,
+            cls,
             "detach_all_sensors_from_vehicle",
             staticmethod(detach_all_sensors_from_vehicle),
         )
+
+    def _meta_create_sensor_functions(self):
+        # Bit of metaprogramming to make sensor creation more DRY
+        self._meta_create_instance_sensor_functions()
+        self._meta_create_class_sensor_functions()
+
