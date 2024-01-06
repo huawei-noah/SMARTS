@@ -425,7 +425,7 @@ class Vehicle:
         sensor_manager,
         sim,
         vehicle: "Vehicle",
-        agent_interface,
+        agent_interface: AgentInterface,
         replace=True,
         reset_sensors=False,
     ):
@@ -443,7 +443,7 @@ class Vehicle:
             # pytype: enable=attribute-error
 
         def add_sensor_if_needed(
-            sensor_type: Type[Sensor],
+            sensor_type,
             sensor_name: str,
             condition: bool = True,
             **kwargs,
@@ -460,12 +460,12 @@ class Vehicle:
 
         add_sensor_if_needed(TripMeterSensor, sensor_name="trip_meter_sensor")
         add_sensor_if_needed(DrivenPathSensor, sensor_name="driven_path_sensor")
-        add_sensor_if_needed(
-            NeighborhoodVehiclesSensor,
-            sensor_name="neighborhood_vehicle_states_sensor",
-            condition=agent_interface.neighborhood_vehicle_states,
-            radius=agent_interface.neighborhood_vehicle_states.radius,
-        )
+        if agent_interface.neighborhood_vehicle_states:
+            add_sensor_if_needed(
+                NeighborhoodVehiclesSensor,
+                sensor_name="neighborhood_vehicle_states_sensor",
+                radius=agent_interface.neighborhood_vehicle_states.radius,
+            )
 
         add_sensor_if_needed(
             AccelerometerSensor,
@@ -477,12 +477,12 @@ class Vehicle:
             sensor_name="waypoints_sensor",
             condition=agent_interface.waypoint_paths,
         )
-        add_sensor_if_needed(
-            RoadWaypointsSensor,
-            "road_waypoints_sensor",
-            condition=agent_interface.road_waypoints,
-            horizon=agent_interface.road_waypoints.horizon,
-        )
+        if agent_interface.road_waypoints:
+            add_sensor_if_needed(
+                RoadWaypointsSensor,
+                "road_waypoints_sensor",
+                horizon=agent_interface.road_waypoints.horizon,
+            )
         add_sensor_if_needed(
             LanePositionSensor,
             "lane_position_sensor",
@@ -530,22 +530,22 @@ class Vehicle:
                 resolution=agent_interface.top_down_rgb.resolution,
                 renderer=sim.renderer,
             )
-        add_sensor_if_needed(
-            LidarSensor,
-            "lidar_sensor",
-            condition=agent_interface.lidar_point_cloud,
-            vehicle_state=vehicle_state,
-            sensor_params=agent_interface.lidar_point_cloud.sensor_params,
-        )
+        if agent_interface.lidar_point_cloud:
+            add_sensor_if_needed(
+                LidarSensor,
+                "lidar_sensor",
+                vehicle_state=vehicle_state,
+                sensor_params=agent_interface.lidar_point_cloud.sensor_params,
+            )
         add_sensor_if_needed(
             ViaSensor, "via_sensor", True, lane_acquisition_range=80, speed_accuracy=1.5
         )
-        add_sensor_if_needed(
-            SignalsSensor,
-            "signals_sensor",
-            condition=agent_interface.signals,
-            lookahead=agent_interface.signals.lookahead,
-        )
+        if agent_interface.signals:
+            add_sensor_if_needed(
+                SignalsSensor,
+                "signals_sensor",
+                lookahead=agent_interface.signals.lookahead,
+            )
 
         for sensor_name, sensor in added_sensors:
             if not sensor:
