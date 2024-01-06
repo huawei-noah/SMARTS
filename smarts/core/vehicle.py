@@ -21,8 +21,8 @@ import importlib.resources as pkg_resources
 import logging
 import os
 from dataclasses import dataclass
-from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from functools import lru_cache, partial
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 import numpy as np
 
@@ -59,6 +59,21 @@ class Vehicle:
     """Represents a single vehicle."""
 
     _HAS_DYNAMIC_ATTRIBUTES = True  # dynamic pytype attribute
+    _sensor_names = [
+        "ogm_sensor",
+        "rgb_sensor",
+        "lidar_sensor",
+        "driven_path_sensor",
+        "trip_meter_sensor",
+        "drivable_area_grid_map_sensor",
+        "neighborhood_vehicle_states_sensor",
+        "waypoints_sensor",
+        "road_waypoints_sensor",
+        "accelerometer_sensor",
+        "lane_position_sensor",
+        "via_sensor",
+        "signals_sensor",
+    ]
 
     def __init__(
         self,
@@ -404,104 +419,135 @@ class Vehicle:
             vehicle_config_type=vehicle_state.vehicle_config_type,
         )
 
-    @staticmethod
+    @classmethod
     def attach_sensors_to_vehicle(
+        cls,
         sensor_manager,
         sim,
         vehicle: "Vehicle",
         agent_interface,
+        replace=True,
+        reset_sensors=False,
     ):
         """Attach sensors as required to satisfy the agent interface's requirements"""
         # The distance travelled sensor is not optional b/c it is used for the score
         # and reward calculation
         vehicle_state = vehicle.state
-        sensor = TripMeterSensor()
-        vehicle.attach_trip_meter_sensor(sensor)
+        has_no_sensors = len(vehicle.sensors) == 0
+        added_sensors: List[Tuple[str, Sensor]] = []
 
-        # The distance travelled sensor is not optional b/c it is used for visualization
-        # done criteria
-        sensor = DrivenPathSensor()
-        vehicle.attach_driven_path_sensor(sensor)
+        if reset_sensors:
+            sensor_manager.remove_actor_sensors_by_actor_id(vehicle.id)
+            # pytype: disable=attribute-error
+            Vehicle.detach_all_sensors_from_vehicle(vehicle)
+            # pytype: enable=attribute-error
 
-        if agent_interface.neighborhood_vehicle_states:
-            sensor = NeighborhoodVehiclesSensor(
-                radius=agent_interface.neighborhood_vehicle_states.radius,
-            )
-            vehicle.attach_neighborhood_vehicle_states_sensor(sensor)
+        def add_sensor_if_needed(
+            sensor_type: Type[Sensor],
+            sensor_name: str,
+            condition: bool = True,
+            **kwargs,
+        ):
+            assert sensor_name in cls._sensor_names
+            if (
+                replace
+                or has_no_sensors
+                or (condition and not vehicle.subscribed_to(sensor_name))
+            ):
+                sensor = sensor_type(**kwargs)
+                vehicle.attach_sensor(sensor, sensor_name)
+                added_sensors.append((sensor_name, sensor))
 
-        if agent_interface.accelerometer:
-            sensor = AccelerometerSensor()
-            vehicle.attach_accelerometer_sensor(sensor)
+        add_sensor_if_needed(TripMeterSensor, sensor_name="trip_meter_sensor")
+        add_sensor_if_needed(DrivenPathSensor, sensor_name="driven_path_sensor")
+        add_sensor_if_needed(
+            NeighborhoodVehiclesSensor,
+            sensor_name="neighborhood_vehicle_states_sensor",
+            condition=agent_interface.neighborhood_vehicle_states,
+            radius=agent_interface.neighborhood_vehicle_states.radius,
+        )
 
-        if agent_interface.lane_positions:
-            sensor = LanePositionSensor()
-            vehicle.attach_lane_position_sensor(sensor)
-
-        if agent_interface.waypoint_paths:
-            sensor = WaypointsSensor(
-                lookahead=agent_interface.waypoint_paths.lookahead,
-            )
-            vehicle.attach_waypoints_sensor(sensor)
-
-        if agent_interface.road_waypoints:
-            sensor = RoadWaypointsSensor(
-                horizon=agent_interface.road_waypoints.horizon,
-            )
-            vehicle.attach_road_waypoints_sensor(sensor)
-
+        add_sensor_if_needed(
+            AccelerometerSensor,
+            sensor_name="accelerometer_sensor",
+            condition=agent_interface.accelerometer,
+        )
+        add_sensor_if_needed(
+            WaypointsSensor,
+            sensor_name="waypoints_sensor",
+            condition=agent_interface.waypoint_paths,
+        )
+        add_sensor_if_needed(
+            RoadWaypointsSensor,
+            "road_waypoints_sensor",
+            condition=agent_interface.road_waypoints,
+            horizon=agent_interface.road_waypoints.horizon,
+        )
+        add_sensor_if_needed(
+            LanePositionSensor,
+            "lane_position_sensor",
+            condition=agent_interface.lane_positions,
+        )
+        # DrivableAreaGridMapSensor
         if agent_interface.drivable_area_grid_map:
             if not sim.renderer:
                 raise RendererException.required_to("add a drivable_area_grid_map")
-            sensor = DrivableAreaGridMapSensor(
+            add_sensor_if_needed(
+                DrivableAreaGridMapSensor,
+                "drivable_area_grid_map_sensor",
+                True,  # Always add this sensor
                 vehicle_state=vehicle_state,
                 width=agent_interface.drivable_area_grid_map.width,
                 height=agent_interface.drivable_area_grid_map.height,
                 resolution=agent_interface.drivable_area_grid_map.resolution,
                 renderer=sim.renderer,
             )
-            vehicle.attach_drivable_area_grid_map_sensor(sensor)
+        # OGMSensor
         if agent_interface.occupancy_grid_map:
             if not sim.renderer:
                 raise RendererException.required_to("add an OGM")
-            sensor = OGMSensor(
+            add_sensor_if_needed(
+                OGMSensor,
+                "ogm_sensor",
+                True,  # Always add this sensor
                 vehicle_state=vehicle_state,
                 width=agent_interface.occupancy_grid_map.width,
                 height=agent_interface.occupancy_grid_map.height,
                 resolution=agent_interface.occupancy_grid_map.resolution,
                 renderer=sim.renderer,
             )
-            vehicle.attach_ogm_sensor(sensor)
+        # RGBSensor
         if agent_interface.top_down_rgb:
             if not sim.renderer:
                 raise RendererException.required_to("add an RGB camera")
-            sensor = RGBSensor(
+            add_sensor_if_needed(
+                RGBSensor,
+                "rgb_sensor",
+                True,  # Always add this sensor
                 vehicle_state=vehicle_state,
                 width=agent_interface.top_down_rgb.width,
                 height=agent_interface.top_down_rgb.height,
                 resolution=agent_interface.top_down_rgb.resolution,
                 renderer=sim.renderer,
             )
-            vehicle.attach_rgb_sensor(sensor)
-        if agent_interface.lidar_point_cloud:
-            sensor = LidarSensor(
-                vehicle_state=vehicle_state,
-                sensor_params=agent_interface.lidar_point_cloud.sensor_params,
-            )
-            vehicle.attach_lidar_sensor(sensor)
-
-        sensor = ViaSensor(
-            # At lane change time of 6s and speed of 13.89m/s, acquistion range = 6s x 13.89m/s = 83.34m.
-            lane_acquisition_range=80,
-            speed_accuracy=1.5,
+        add_sensor_if_needed(
+            LidarSensor,
+            "lidar_sensor",
+            condition=agent_interface.lidar_point_cloud,
+            vehicle_state=vehicle_state,
+            sensor_params=agent_interface.lidar_point_cloud.sensor_params,
         )
-        vehicle.attach_via_sensor(sensor)
+        add_sensor_if_needed(
+            ViaSensor, "via_sensor", True, lane_acquisition_range=80, speed_accuracy=1.5
+        )
+        add_sensor_if_needed(
+            SignalsSensor,
+            "signals_sensor",
+            condition=agent_interface.signals,
+            lookahead=agent_interface.signals.lookahead,
+        )
 
-        if agent_interface.signals:
-            lookahead = agent_interface.signals.lookahead
-            sensor = SignalsSensor(lookahead=lookahead)
-            vehicle.attach_signals_sensor(sensor)
-
-        for sensor_name, sensor in vehicle.sensors.items():
+        for sensor_name, sensor in added_sensors:
             if not sensor:
                 continue
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor_name, sensor)
@@ -581,62 +627,66 @@ class Vehicle:
             renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
+    def attach_sensor(self, sensor, sensor_name):
+        """replace previously-attached sensor with this one
+        (to allow updating its parameters).
+        Sensors might have been attached to a non-agent vehicle
+        (for example, for observation collection from history vehicles),
+        but if that vehicle gets hijacked, we want to use the sensors
+        specified by the hijacking agent's interface."""
+        self.detach_sensor(sensor_name)
+        self._log.debug("replacing existing %s on vehicle %s", sensor_name, self.id)
+        setattr(self, f"_{sensor_name}", sensor)
+        self._sensors[sensor_name] = sensor
+
+    def detach_sensor(self, sensor_name):
+        """Detach a sensor by name."""
+        sensor = getattr(self, f"_{sensor_name}", None)
+        if sensor is not None:
+            setattr(self, f"_{sensor_name}", None)
+            del self._sensors[sensor_name]
+        return sensor
+
+    def subscribed_to(self, sensor_name):
+        """Confirm if the sensor is subscribed."""
+        sensor = getattr(self, f"_{sensor_name}", None)
+        return sensor is not None
+
+    def sensor_property(self, sensor_name):
+        """Call a sensor by name."""
+        sensor = getattr(self, f"_{sensor_name}", None)
+        assert sensor is not None, f"{sensor_name} is not attached to {self.id}"
+        return sensor
+
     def _meta_create_sensor_functions(self):
         # Bit of metaprogramming to make sensor creation more DRY
-        sensor_names = [
-            "ogm_sensor",
-            "rgb_sensor",
-            "lidar_sensor",
-            "driven_path_sensor",
-            "trip_meter_sensor",
-            "drivable_area_grid_map_sensor",
-            "neighborhood_vehicle_states_sensor",
-            "waypoints_sensor",
-            "road_waypoints_sensor",
-            "accelerometer_sensor",
-            "lane_position_sensor",
-            "via_sensor",
-            "signals_sensor",
-        ]
+        sensor_names = self._sensor_names
         for sensor_name in sensor_names:
-
-            def attach_sensor(self, sensor, sensor_name=sensor_name):
-                # replace previously-attached sensor with this one
-                # (to allow updating its parameters).
-                # Sensors might have been attached to a non-agent vehicle
-                # (for example, for observation collection from history vehicles),
-                # but if that vehicle gets hijacked, we want to use the sensors
-                # specified by the hijacking agent's interface.
-                detach = getattr(self, f"detach_{sensor_name}")
-                if detach:
-                    detach(sensor_name)
-                    self._log.debug(
-                        f"replacing existing {sensor_name} on vehicle {self.id}"
-                    )
-                setattr(self, f"_{sensor_name}", sensor)
-                self._sensors[sensor_name] = sensor
-
-            def detach_sensor(self, sensor_name=sensor_name):
-                sensor = getattr(self, f"_{sensor_name}", None)
-                if sensor is not None:
-                    setattr(self, f"_{sensor_name}", None)
-                    del self._sensors[sensor_name]
-                return sensor
-
-            def subscribed_to(self, sensor_name=sensor_name):
-                sensor = getattr(self, f"_{sensor_name}", None)
-                return sensor is not None
-
-            def sensor_property(self, sensor_name=sensor_name):
-                sensor = getattr(self, f"_{sensor_name}", None)
-                assert sensor is not None, f"{sensor_name} is not attached to {self.id}"
-                return sensor
-
             setattr(Vehicle, f"_{sensor_name}", None)
-            setattr(Vehicle, f"attach_{sensor_name}", attach_sensor)
-            setattr(Vehicle, f"detach_{sensor_name}", detach_sensor)
-            setattr(Vehicle, f"subscribed_to_{sensor_name}", property(subscribed_to))
-            setattr(Vehicle, f"{sensor_name}", property(sensor_property))
+            setattr(
+                Vehicle,
+                f"attach_{sensor_name}",
+                partial(self.attach_sensor, sensor_name=sensor_name),
+            )
+            setattr(
+                Vehicle,
+                f"detach_{sensor_name}",
+                partial(self.detach_sensor, sensor_name=sensor_name),
+            )
+            setattr(
+                Vehicle,
+                f"subscribed_to_{sensor_name}",
+                property(
+                    partial(self.__class__.subscribed_to, sensor_name=sensor_name)
+                ),
+            )
+            setattr(
+                Vehicle,
+                f"{sensor_name}",
+                property(
+                    partial(self.__class__.sensor_property, sensor_name=sensor_name)
+                ),
+            )
 
         def detach_all_sensors_from_vehicle(vehicle):
             sensors = []
