@@ -264,11 +264,10 @@ class Vehicle:
         """Check if the vehicle still `exists` and is still operable."""
         return self._initialized
 
-    @classmethod
     @property
-    def sensor_names(cls) -> Tuple[str]:
+    def sensor_names(self) -> Tuple[str]:
         """The names of the sensors that are potentially available to this vehicle."""
-        return cls._sensor_names
+        return self._sensor_names
 
     @staticmethod
     @lru_cache(maxsize=None)
@@ -467,6 +466,7 @@ class Vehicle:
                 vehicle.attach_sensor(sensor, sensor_name)
                 added_sensors.append((sensor_name, sensor))
 
+        # pytype: disable=attribute-error
         add_sensor_if_needed(TripMeterSensor, sensor_name="trip_meter_sensor")
         add_sensor_if_needed(DrivenPathSensor, sensor_name="driven_path_sensor")
         if agent_interface.neighborhood_vehicle_states:
@@ -555,6 +555,7 @@ class Vehicle:
                 "signals_sensor",
                 lookahead=agent_interface.signals.lookahead,
             )
+        # pytype: enable=attribute-error
 
         for sensor_name, sensor in added_sensors:
             if not sensor:
@@ -676,16 +677,12 @@ class Vehicle:
             setattr(
                 self,
                 f"attach_{sensor_name}",
-                partial(
-                    self.__class__.attach_sensor, self=self, sensor_name=sensor_name
-                ),
+                partial(self.attach_sensor, sensor_name=sensor_name),
             )
             setattr(
                 self,
                 f"detach_{sensor_name}",
-                partial(
-                    self.__class__.detach_sensor, self=self, sensor_name=sensor_name
-                ),
+                partial(self.detach_sensor, sensor_name=sensor_name),
             )
 
     @classmethod
