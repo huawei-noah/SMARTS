@@ -38,13 +38,12 @@ from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 
-logger = logging.getLogger(__name__)
-
 
 class SensorManager:
     """A sensor management system that associates actors with sensors."""
 
     def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._sensors: Dict[str, Sensor] = {}
 
         # {actor_id: <SensorState>}
@@ -55,7 +54,7 @@ class SensorManager:
         self._actors_by_sensor_id: Dict[str, Set[str]] = {}
         self._sensor_references = Counter()
         # {sensor_id, ...}
-        self._scheduled_sensors: List[Sensor] = []
+        self._scheduled_sensors: List[Tuple[str, Sensor]] = []
         observation_workers = config()(
             "core", "observation_workers", default=0, cast=int
         )
@@ -168,6 +167,7 @@ class SensorManager:
 
     def teardown(self, renderer):
         """Tear down the current sensors and clean up any internal resources."""
+        self._logger.info("++ Sensors and sensor states reset. ++")
         for sensor in self._sensors.values():
             sensor.teardown(renderer=renderer)
         self._sensors = {}
@@ -178,23 +178,31 @@ class SensorManager:
 
     def add_sensor_state(self, actor_id: str, sensor_state: SensorState):
         """Add a sensor state associated with a given actor."""
+        self._logger.debug("Sensor state added for actor '%s'.", actor_id)
         self._sensor_states[actor_id] = sensor_state
 
-    def remove_sensors_by_actor_id(
+    def remove_sensor_state_by_actor_id(self, actor_id: str):
+        """Add a sensor state associated with a given actor."""
+        self._logger.debug("Sensor state removed for actor '%s'.", actor_id)
+        return self._sensor_states.pop(actor_id, None)
+
+    def remove_actor_sensors_by_actor_id(
         self, actor_id: str, schedule_teardown: bool = True
     ) -> Iterable[Tuple[Sensor, int]]:
         """Remove association of an actor to sensors. If the sensor is no longer associated an actor, the
         sensor is scheduled to be removed."""
         sensor_states = self._sensor_states.get(actor_id)
         if not sensor_states:
-            logger.warning(
-                "Attempted to remove sensors from actor with no sensors: `%s`", actor_id
+            self._logger.warning(
+                "Attempted to remove sensors from actor with no sensors: '%s'.",
+                actor_id,
             )
             return []
-        del self._sensor_states[actor_id]
+        self.remove_sensor_state_by_actor_id(actor_id)
         sensors_by_actor = self._sensors_by_actor_id.get(actor_id)
         if not sensors_by_actor:
             return []
+        self._logger.debug("Target sensor removal for actor '%s'.", actor_id)
         discarded_sensors = []
         for sensor_id in sensors_by_actor:
             self._actors_by_sensor_id[sensor_id].remove(actor_id)
@@ -210,6 +218,7 @@ class SensorManager:
         self, sensor_id: str, schedule_teardown: bool = False
     ) -> Optional[Sensor]:
         """Remove a sensor by its id. Removes any associations it has with actors."""
+        self._logger.debug("Target removal of sensor '%s'.", sensor_id)
         sensor = self._sensors.get(sensor_id)
         if not sensor:
             return None
@@ -218,8 +227,9 @@ class SensorManager:
 
     def _disassociate_sensor(self, sensor_id, schedule_teardown):
         if schedule_teardown:
-            self._scheduled_sensors.append(self._sensors[sensor_id])
+            self._scheduled_sensors.append((sensor_id, self._sensors[sensor_id]))
 
+        self._logger.info("Sensor '%s' removed from manager.", sensor_id)
         del self._sensors[sensor_id]
         del self._sensor_references[sensor_id]
 
@@ -275,7 +285,7 @@ class SensorManager:
         s_id = SensorManager._actor_and_sensor_name_to_sensor_id(name, actor_id)
         actor_sensors = self._sensors_by_actor_id.setdefault(actor_id, set())
         if s_id in actor_sensors:
-            logger.warning(
+            self._logger.warning(
                 "Duplicate sensor attempted to add to actor `%s`: `%s`", actor_id, s_id
             )
             return s_id
@@ -286,6 +296,7 @@ class SensorManager:
 
     def add_sensor(self, sensor_id, sensor: Sensor) -> str:
         """Adds a sensor to the sensor manager."""
+        self._logger.info("Added sensor '%s' to sensor manager.", sensor_id)
         assert sensor_id not in self._sensors
         self._sensors[sensor_id] = sensor
         self._sensor_references.update([sensor_id])
@@ -298,9 +309,10 @@ class SensorManager:
         missing_actors = old_actor_ids - current_actor_ids
 
         for aid in missing_actors:
-            self.remove_sensors_by_actor_id(aid)
+            self.remove_actor_sensors_by_actor_id(aid)
 
-        for sensor in self._scheduled_sensors:
+        for sensor_id, sensor in self._scheduled_sensors:
+            self._logger.info("Sensor '%s' destroyed.", sensor_id)
             sensor.teardown(renderer=renderer)
 
         self._scheduled_sensors.clear()

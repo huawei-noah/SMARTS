@@ -465,7 +465,7 @@ class VehicleIndex:
             agent_interface:
                 The agent interface for sensor requirements.
         """
-        self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
+        self._log.debug("Switching control of '%s' to '%s'", vehicle_id, agent_id)
 
         vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
         if recreate:
@@ -571,6 +571,8 @@ class VehicleIndex:
         # pytype: disable=attribute-error
         Vehicle.detach_all_sensors_from_vehicle(vehicle)
         # pytype: enable=attribute-error
+        sim.sensor_manager.remove_actor_sensors_by_actor_id(vehicle_id)
+        sim.sensor_manager.remove_sensor_state_by_actor_id(vehicle_id)
 
         vehicle = self._vehicles[v_id]
         box_chassis = BoxChassis(
@@ -679,7 +681,7 @@ class VehicleIndex:
 
         # Remove the old vehicle
         self.teardown_vehicles_by_vehicle_ids([vehicle.id], sim.renderer_ref)
-        sim.sensor_manager.remove_sensors_by_actor_id(vehicle.id)
+        sim.sensor_manager.remove_actor_sensors_by_actor_id(vehicle.id)
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_actor(vehicle.id):

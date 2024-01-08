@@ -47,6 +47,7 @@ from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
+from smarts.core.sensors import SensorState
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
@@ -757,7 +758,7 @@ class SMARTS(ProviderManager):
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
         if self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id) is None:
-            self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
+            self._sensor_manager.remove_actor_sensors_by_actor_id(vehicle_id)
 
     def _agent_releases_actor(
         self,
@@ -953,28 +954,76 @@ class SMARTS(ProviderManager):
         for v_id in vehicle_ids:
             self._remove_vehicle_from_providers(v_id)
 
-    def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
+    def attach_sensors_to_vehicles(
+        self,
+        agent_interface: AgentInterface,
+        vehicle_ids,
+        overwrite_sensors=False,
+        reset_sensors=False,
+    ):
         """Set the specified vehicles with the sensors needed to satisfy the specified agent
-        interface.
+        interface. See :attr:`smarts.core.smarts.SMARTS.prepare_observe_from`.
+
+        Args:
+            agent_interface (AgentInterface): The minimum interface generating the observations.
+            vehicle_ids (Sequence[str]): The vehicles to target.
+            overwrite_sensors (bool, optional): If to replace existing sensors (USE CAREFULLY). Defaults to False.
+            reset_sensors (bool, optional): If to remove all existing sensors before adding sensors (USE **VERY** CAREFULLY). Defaults to False.
+        """
+        self.prepare_observe_from(
+            vehicle_ids, agent_interface, overwrite_sensors, reset_sensors
+        )
+
+    def prepare_observe_from(
+        self,
+        vehicle_ids: Sequence[str],
+        interface: AgentInterface,
+        overwrite_sensors,
+        reset_sensors,
+    ):
+        """Assigns the given vehicle sensors as is described by the agent interface.
+
+        Args:
+            vehicle_ids (Sequence[str]): The vehicles to target.
+            interface (AgentInterface): The minimum interface generating the observations.
+            overwrite_sensors (bool, optional): If to replace existing sensors (USE CAREFULLY).
+            reset_sensors (bool, optional): If to remove all existing sensors (USE **VERY** CAREFULLY).
         """
         self._check_valid()
+
         for v_id in vehicle_ids:
             v = self._vehicle_index.vehicle_by_id(v_id)
             Vehicle.attach_sensors_to_vehicle(
-                self._sensor_manager, self, v, agent_interface
+                self.sensor_manager,
+                self,
+                v,
+                interface,
+                replace=overwrite_sensors,
+                reset_sensors=reset_sensors,
             )
 
     def observe_from(
-        self, vehicle_ids: Sequence[str], interface: AgentInterface
+        self,
+        vehicle_ids: Sequence[str],
+        interface: AgentInterface,
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
-        """Generate observations from the specified vehicles."""
+        """Generate observations from the specified vehicles.
+
+        Args:
+            vehicle_ids (Sequence[str]): The vehicles to target.
+            interface (AgentInterface): The intended interface generating the observations (this may be ignored.)
+
+        Returns:
+            Tuple[Dict[str, Observation], Dict[str, bool]]: A dictionary of observations and the hypothetical dones.
+        """
         self._check_valid()
 
-        vehicles = {
+        vehicles: Dict[str, Vehicle] = {
             v_id: self.vehicle_index.vehicle_by_id(v_id) for v_id in vehicle_ids
         }
         sensor_states = {
             vehicle.id: self._sensor_manager.sensor_state_for_actor_id(vehicle.id)
+            or SensorState.invalid()
             for vehicle in vehicles.values()
         }
         return self.sensor_manager.observe_batch(

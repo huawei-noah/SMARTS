@@ -10,6 +10,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased] - XXXX-XX-XX
 ### Added
+- Added a utility method `SMARTS.prepare_observe_from()` which allows safely adding sensors to vehicles.
+- The following methods now exist explicitly `Vehicle.{add_sensor|detach_sensor|subscribed_to|sensor_property|}`.
 - Resources loaded with `load_yaml_config_with_substitution()` now substitute in SMARTS configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration and vehicle configuration.
 - Default vehicle definitions can be now modified using `assets:default_vehicle_definitions_list`/`SMARTS_ASSSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST` or by providing a `vehicle_definitions_list.yaml` in the scenario. These vehicle types are related to the `AgentInterface.vehicle_type` attribute.
 ### Changed
@@ -18,7 +20,9 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Exposed `traffic:traci_retries`/`SMARTS_TRAFFIC_TRACI_RETRIES` to control how many times the `SumoTrafficSimulation` will try to restart when using default configuration.
 - `rllib` is now constrained as `<=2.9,>2.4`.
 - The `examples/e12_rllib` training examples `{pg_example|pg_pbt_example}.py` have been changed to `{ppo_example|ppo_pbt_example}.py`. `Policy Gradients (PG)` has been dropped in favor of the more well documented `Proximal Policy Optimization (PPO)`.
-- Renamed `vehicle.urdf` to `sedan.urdf`.
+- Vehicles can now have sensors added to, overwritten, or replaced outright.
+- Logging is now improved to give information about sensor changes in the sensor manager.
+- - Renamed `vehicle.urdf` to `sedan.urdf`.
 - Environment prefix is now configurable for custom `smarts.core.config()` calls.
 - `Vehicle.build_agent_vehicle()` argument `vehicle_filepath` now renamed to `vehicle_dynamics_filepath`.
 - Renamed `MACOS` `pybullet` gui utility from `smarts.core.utils.bullet.BulletClient` to `smarts.core.utils.pybullet.BulletClientMACOS`.
@@ -47,6 +51,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed an issue where you would need to install `waymo` in order to use any kind of dataset histories.
 - Fixed an issue where Pycharm would load `smarts/sstudio/types` as the integrated `types` module. See #2125.
 - Fixed an issue where the `e12_rllib` examples would use the wrong path for the default loop scenario.
+- Fixed an issue where the sensor state could be `None` when calling `SMARTS.observe_from()` on a non-ego vehicle. See #2133.
+- The via sensor and trip meter sensor now work without a mission.
+- Fixed a bug with `VehicleIndex.attach_sensors_to_vehicle()` that would generate an invalid plan.
+- Fixed a bug where vehicle sensor meta attributes would reference the wrong vehicle.
 ### Removed
 ### Security
 

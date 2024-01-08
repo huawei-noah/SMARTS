@@ -8,15 +8,15 @@ RLlib
 
 SMARTS contains two examples using `Proximal Policy Optimization (PPO) <https://docs.ray.io/en/latest/rllib/rllib-algorithms.html#ppo>`_.
 
-#. Policy gradient
+#. Proximal policy optimization
 
     + script: :examples:`e12_rllib/ppo_example.py`
     + Shows the basics of using RLlib with SMARTS through :class:`~smarts.env.rllib_hiway_env.RLlibHiWayEnv`.
 
-#. Policy gradient with population based training
+#. Proximal policy optimization with population based training
 
     + script: :examples:`e12_rllib/ppo_pbt_example.py`
-    + Combines Proximal Policy Optimization with `Population Based Training (PBT) <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.PopulationBasedTraining.html>`_ scheduling.
+    + Combines `Proximal Policy Optimization (PPO)` with `Population Based Training (PBT) <https://docs.ray.io/en/latest/tune/api/doc/ray.tune.schedulers.PopulationBasedTraining.html>`_ scheduling.
 
 
 Recommended reads
