@@ -477,7 +477,9 @@ class ModelFileHandler(FileHandler):
         ):
             raise tornado.web.HTTPError(404, f"GLB Model `{id_}` not found.")
 
-        with pkg_resources.path(smarts.assets.vehicles.visual_model, self._path_map[id_]) as path:
+        with pkg_resources.path(
+            smarts.assets.vehicles.visual_model, self._path_map[id_]
+        ) as path:
             await self.serve_chunked(path)
 
 

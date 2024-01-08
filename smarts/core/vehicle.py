@@ -90,7 +90,8 @@ class Vehicle:
 
         if self._visual_model_path in {None, ""}:
             with pkg_resources.path(
-                smarts_vehicle_visuals, VEHICLE_CONFIGS[self._vehicle_config_type].glb_model
+                smarts_vehicle_visuals,
+                VEHICLE_CONFIGS[self._vehicle_config_type].glb_model,
             ) as path:
                 self._visual_model_path = path
 
