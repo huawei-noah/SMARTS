@@ -190,7 +190,7 @@ class TypeSuite(Generic[T]):
         self._associated_groups: Dict[T, List[Type[T]]] = defaultdict(list)
         self._base_type = base_type
 
-    def clear_type(self, type_to_clear: Type[S]):
+    def clear_type(self, type_to_clear: Type):
         """Clear all instances of the given type from this suite. This includes
         all sub-classes. This should be an sub-class of the type that this suite
         manages.
