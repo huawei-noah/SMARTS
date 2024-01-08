@@ -3,4 +3,4 @@ moving_truck_empty: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empt
 moving_truck_loaded: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_loaded.yaml
 generic_sedan: &GENERIC_SEDAN ${SMARTS_ASSETS_PATH}/vehicles/definitions/sedan.yaml
 sedan: *GENERIC_SEDAN
-truck: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empty.yaml
+pickup_truck: ${SMARTS_ASSETS_PATH}/vehicles/definitions/pickup_truck.yaml
