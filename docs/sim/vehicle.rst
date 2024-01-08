@@ -41,11 +41,13 @@ Default agent vehicle details
 
 Note that the dimensions do not take into account elevation due to the wheels.
 
-See also :assets:`vehicles/vehicle_definitions_list.yaml` and `truck classifications <https://en.wikipedia.org/wiki/Truck_classification>`.
+.. note::
+
+    See also :assets:`vehicles/vehicle_definitions_list.yaml` and `truck classifications <https://en.wikipedia.org/wiki/Truck_classification>`.
 
 
-Specifying a vehicle definitions
---------------------------------
+Specifying vehicle definitions
+------------------------------
 
 Vehicles can be configured in a few different ways.
 
@@ -58,8 +60,9 @@ Configuration file
     [assets]
     default_vehicle_definitions_list = path/to/file.yaml
 
+.. note::
 
-See also :ref:`engine_configuration`.
+    See also :ref:`engine_configuration`.
 
 
 Environment variable
@@ -67,7 +70,9 @@ Environment variable
 
 Setting ``SMARTS_ASSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST`` will cause ``SMARTS`` to use the given vehicle definitions file as the default vehicle definitions.
 
-See also :ref:`engine_configuration`.
+.. note::
+
+    See also :ref:`engine_configuration`.
 
 
 Scenario
@@ -105,7 +110,41 @@ Agent interface
         action=ActionSpaceType.Continuous,
     )
 
-See also :ref:`agent`.
+.. note::
+
+    See also :ref:`agent`.
 
 
+Syntax
+------
+
+A vehicle can be composed in the following way:
+
+
+.. code-block:: yaml
+
+    # vehicle_definitions_list.yaml
+    f150: /usr/home/dev/vehicles/f150.yaml
+
+
+.. code-block:: yaml
+
+    # /usr/home/dev/vehicles/f150.yaml
+    model: Ford F-150
+    type: truck
+    controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_pickup_truck.yaml
+    chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_pickup_truck.yaml
+    dynamics_model: /usr/home/dev/vehicles/f150_loaded.urdf
+    visual_model: /usr/home/dev/vehicles/f150.glb
+    tire_params: null # ${SMARTS_ASSETS_PATH}/vehicles/tire_params/base_tire_parameters.yaml
+
+
+.. note::
+
+    See :ref:`engine_configuration` for details about how YAML is resolved.
+
+
+.. note::
+
+    See :assets:`vehicles/controller_params/generic_pickup_truck.yaml` and :assets:`vehicles/chassis_params/generic_pickup_truck.yaml`.
 

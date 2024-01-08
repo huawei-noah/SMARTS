@@ -108,30 +108,5 @@ The benchmark listing file is organized as below.
            params: # Additional values to pass into the entrypoint as named keyword arguments.
              benchmark_config: ${{smarts.benchmark.driving_smarts.v2022}}/config.yaml
 
-.. note:: 
-    
-    Resolving module directories.
 
-    The benchmark configuration directory can be dynamically found through
-    python using an evaluation syntax ``${{}}``. This is experimental and
-    open to change but the following resolves the python module location in
-    loaded configuration files:
-
-    .. code:: yaml
-
-        somewhere_path: ${{module.to.resolve}}/file.txt # resolves to <path>/module/to/resolve/file.txt
-
-    This avoids loading the module into python but resolves to the first
-    path that matches the module.
-
-.. note::
-
-    Resolving SMARTS engine configuration.
-
-    The engine configuration resolves by referencing the setting through
-    the evaluation syntax ``${}``. This is restricted to ``"SMARTS_"``
-    prefixed environment variables.
-
-    .. code:: yaml
-
-        is_debug: ${SMARTS_CORE_DEBUG} # literal environment variable or engine setting `[core] debug`
+See :ref:`engine_configuration` for more details.
