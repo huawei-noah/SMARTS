@@ -178,5 +178,6 @@ def test_vehicle_meta_methods(bullet_client):
             id=f"vehicle-{i}",
             chassis=chassis,
             vehicle_config_type="passenger",
+            visual_model_filepath=None,
         )
         validate_vehicle(vehicle)
