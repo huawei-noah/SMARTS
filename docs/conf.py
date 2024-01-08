@@ -47,6 +47,10 @@ extensions = [
 ]
 
 extlinks = {
+    "assets": (
+        "https://github.com/huawei-noah/SMARTS/blob/master/smarts/assets/%s",
+        "%s",
+    ),
     "examples": (
         "https://github.com/huawei-noah/SMARTS/blob/master/examples/%s",
         "%s",

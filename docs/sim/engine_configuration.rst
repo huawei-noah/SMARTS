@@ -1,4 +1,4 @@
-.. _configuration:
+.. _engine_configuration:
 
 Configuration
 =============
