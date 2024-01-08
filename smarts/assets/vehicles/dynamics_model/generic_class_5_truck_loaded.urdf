@@ -25,7 +25,7 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="2000.0"/>
+      <mass value="3500.0"/>
       <origin xyz="0 -0.1 0.20" rpy="0 0 1.5708"/>
       <inertia ixx="27380" ixy="0.0" ixz="0.0" iyy="5300" iyz="0.0" izz="26920"/>
     </inertial>
@@ -49,7 +49,7 @@
     </collision>
     -->
     <inertial>
-      <mass value="3000.0"/>
+      <mass value="2500.0"/>
       <origin xyz="0 -0.1 0.20" rpy="0 0 1.5708"/> 
       <inertia ixx="27380" ixy="0.0" ixz="0.0" iyy="5300" iyz="0.0" izz="26920"/>
     </inertial>
@@ -73,7 +73,7 @@
     </collision>
     -->
     <inertial>
-      <mass value="1500.0"/>
+      <mass value="2700.0"/>
       <origin xyz="0 -0.1 0.20" rpy="0 0 1.5708"/>
       <inertia ixx="27380" ixy="0.0" ixz="0.0" iyy="5300" iyz="0.0" izz="26920"/>
     </inertial>

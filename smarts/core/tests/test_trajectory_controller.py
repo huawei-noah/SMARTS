@@ -51,7 +51,7 @@ def vehicle_definitions_list() -> VehicleDefinitions:
 
 
 @pytest.fixture(
-    params=["bus", "sedan", "pickup_truck", "moving_truck_empty", "moving_truck_loaded"]
+    params=["bus", "sedan", "pickup", "moving_truck_empty", "moving_truck_loaded"]
 )
 def vehicle_definition(
     vehicle_definitions_list: VehicleDefinitions, request: pytest.FixtureRequest

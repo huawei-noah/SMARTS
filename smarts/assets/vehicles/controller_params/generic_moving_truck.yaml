@@ -1,7 +1,7 @@
 final_heading_gain: 0.15
 final_lateral_gain: 5.3
 final_steering_filter_constant: 27.5
-throttle_filter_constant: 2
+throttle_filter_constant: 4
 velocity_gain: 6.1
 velocity_integral_gain: 0
 traction_gain: 8
