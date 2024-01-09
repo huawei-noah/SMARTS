@@ -24,7 +24,7 @@ jobs:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           ref: master
       - name: Install SMARTS

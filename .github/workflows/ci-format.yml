@@ -12,7 +12,7 @@ jobs:
     container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       - name: Check header
         run: |
           cd $GITHUB_WORKSPACE
@@ -24,7 +24,7 @@ jobs:
     container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       - name: Check docstring
         run: |
           cd $GITHUB_WORKSPACE
@@ -51,7 +51,7 @@ jobs:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install SMARTS
@@ -85,7 +85,7 @@ jobs:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install Enchant
@@ -123,7 +123,7 @@ jobs:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Install SMARTS with all extras and check for conflicts
