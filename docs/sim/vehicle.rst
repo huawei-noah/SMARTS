@@ -144,7 +144,7 @@ YAML configurations
 
 .. note::
 
-    See :ref:`engine_configuration` for details about how YAML is resolved.
+    See :ref:`engine_configuration` for details about how ``YAML`` is resolved.
 
 
 .. note::
@@ -156,7 +156,7 @@ URDF hierarchy
 ^^^^^^^^^^^^^^
 
 
-The vehicle urdf requires the following link configuration:
+The vehicle ``.urdf`` requires the following link configuration:
 
 
 .. code-block:: text
@@ -171,7 +171,7 @@ The vehicle urdf requires the following link configuration:
         └── <rear_right_wheel_joint (joint 6)> rear_right_wheel
 
 
-In XML this looks like:
+In ``XML`` this looks like:
 
 
 .. code-block:: xml
