@@ -48,7 +48,7 @@ from smarts.core.sensors import (
     WaypointsSensor,
 )
 from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+from smarts.sstudio import sstypes as t
 
 AGENT_ID = "Agent-007"
 

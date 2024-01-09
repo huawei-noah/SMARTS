@@ -25,11 +25,19 @@ import functools
 import logging
 import os
 import pathlib
-from typing import Any, Callable, Final, Optional, Union
+import re
+import warnings
+from typing import Any, Callable, Final, List, Optional, Union
+
+import smarts
 
 _UNSET = object()
 
 logger = logging.getLogger(__name__)
+
+
+def _passthrough_cast(val):
+    return val
 
 
 def _convert_truthy(t: str) -> bool:
@@ -48,7 +56,13 @@ def _convert_truthy(t: str) -> bool:
     return bool(out)
 
 
+_assets_path = os.path.join(list(smarts.__path__)[0], "assets")
 _config_defaults: Final = {
+    ("assets", "path"): _assets_path,
+    ("assets", "default_agent_vehicle"): "sedan",
+    ("assets", "default_vehicle_definitions_list"): os.path.join(
+        _assets_path, "vehicles/vehicle_definitions_list.yaml"
+    ),
     ("core", "observation_workers"): 0,
     ("core", "max_custom_image_sensors"): 4,
     ("core", "sensor_parallelization"): "mp",
@@ -79,7 +93,10 @@ class Config:
             interpolation=configparser.ExtendedInterpolation()
         )
         self._environment_prefix = environment_prefix.upper()
-        self._environment_variable_format_string = self._environment_prefix + "_{}_{}"
+        self._environment_variable_format_string = (
+            self._environment_prefix + "_{}_{}" if self._environment_prefix else "{}_{}"
+        )
+        self.env_variable_substitution_pattern = re.compile(r"\$\{(.+)\}")
 
         if isinstance(config_file, str):
             config_file = pathlib.Path(config_file)
@@ -101,7 +118,7 @@ class Config:
         section: str,
         option: str,
         default: Any = _UNSET,
-        cast: Callable[[str], Any] = str,
+        cast: Callable[[Any], Any] = _passthrough_cast,
     ) -> Optional[Any]:
         """Finds the given configuration checking the following in order: environment variable,
         configuration file, and default.
@@ -140,6 +157,31 @@ class Config:
                 ) from exc
             return default
         return cast(value)
+
+    def substitute_settings(self, input: str, source: Optional[str] = "") -> str:
+        """Given a string, substitutes in configuration settings if they exist."""
+
+        m: List[str] = self.env_variable_substitution_pattern.findall(input)
+
+        if not m:
+            return input
+        output = input
+        for val in set(m):
+            if self.environment_prefix:
+                environment_prefix, _, setting = val.partition("_")
+                if environment_prefix != self.environment_prefix:
+                    warnings.warn(
+                        f"Unable to substitute environment variable `{val}` from `{source}`"
+                    )
+                    continue
+            else:
+                setting = val
+
+            section, _, option_name = setting.lower().partition("_")
+            env_value = self(section, option_name)
+
+            output = output.replace(f"${{{val}}}", env_value)
+        return output
 
     def __call__(
         self,

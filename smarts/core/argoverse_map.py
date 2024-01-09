@@ -33,14 +33,14 @@ from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePo
 from smarts.core.lanepoints import LanePoint, LanePoints, LinkedLanePoint
 from smarts.core.road_map import RoadMap, RoadMapWithCaches, Waypoint
 from smarts.core.route_cache import RouteWithCache
-from smarts.core.utils.glb import make_map_glb, make_road_line_glb
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     inplace_unwrap,
     line_intersect_vectorized,
     radians_to_vec,
     vec_2d,
 )
-from smarts.sstudio.types import MapSpec
+from smarts.core.utils.glb import make_map_glb, make_road_line_glb
+from smarts.sstudio.sstypes import MapSpec
 
 try:
     import rtree

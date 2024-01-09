@@ -20,7 +20,7 @@
 import argparse
 
 from smarts.core.sumo_road_network import SumoRoadNetwork
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 
 
 def generate_glb_from_sumo_file(sumo_net_file: str, out_glb_dir: str):

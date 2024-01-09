@@ -35,11 +35,12 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 import cloudpickle
 import yaml
 
+import smarts.core
 from smarts.core.default_map_builder import find_mapfile_in_dir
+from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.file import file_md5_hash, path2hash, pickle_hash
-from smarts.core.utils.logging import timeit
 
-from . import types
+from . import sstypes
 from .generators import TrafficGenerator
 
 logging.basicConfig(level=logging.WARNING)
@@ -51,10 +52,10 @@ logger.setLevel(logging.WARNING)
 class ActorAndMission:
     """Holds an Actor object and its associated Mission."""
 
-    actor: types.Actor
+    actor: sstypes.Actor
     """Specification for traffic actor.
     """
-    mission: Union[types.Mission, types.EndlessMission, types.LapMission]
+    mission: Union[sstypes.Mission, sstypes.EndlessMission, sstypes.LapMission]
     """Mission for traffic actor.
     """
 
@@ -71,7 +72,7 @@ def _check_if_called_externally():
         )
 
 
-def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
+def _build_graph(scenario: sstypes.Scenario, base_dir: str) -> Dict[str, Any]:
     graph = collections.defaultdict(list)
 
     graph["map"] = [os.path.join(base_dir, "map", "map.glb")]
@@ -101,7 +102,7 @@ def _build_graph(scenario: types.Scenario, base_dir: str) -> Dict[str, Any]:
 
     if scenario.traffic_histories:
         for dataset in scenario.traffic_histories:
-            assert isinstance(dataset, types.TrafficHistoryDataset)
+            assert isinstance(dataset, sstypes.TrafficHistoryDataset)
             artifact_path = os.path.join(base_dir, f"{dataset.name}.shf")
             graph["traffic_histories"].append(artifact_path)
 
@@ -154,7 +155,7 @@ def _update_artifacts(
 
 
 def gen_scenario(
-    scenario: types.Scenario,
+    scenario: sstypes.Scenario,
     output_dir: Union[str, Path],
     seed: int = 42,
 ):
@@ -164,6 +165,7 @@ def gen_scenario(
     """
     # XXX: For now this simply coalesces the sub-calls but in the future this allows
     #      us to simplify our serialization between SStudio and SMARTS.
+    smarts.core.seed(seed)
 
     scenario_dir = os.path.abspath(str(output_dir))
     build_dir = os.path.join(scenario_dir, "build")
@@ -196,7 +198,7 @@ def gen_scenario(
         if scenario.map_spec is not None:
             map_spec = scenario.map_spec
         else:
-            map_spec = types.MapSpec(source=scenario_dir)
+            map_spec = sstypes.MapSpec(source=scenario_dir)
 
     if map_spec.shift_to_origin and scenario.traffic_histories:
         logger.warning(
@@ -242,12 +244,14 @@ def gen_scenario(
         db_conn, scenario.traffic, artifact_paths, obj_hash, map_needs_rebuild
     ):
         with timeit("traffic", logger.info):
-            for name, traffic in scenario.traffic.items():
+
+            for iteration, (name, traffic) in enumerate(scenario.traffic.items()):
+                derived_seed = seed + iteration
                 gen_traffic(
                     scenario=scenario_dir,
                     traffic=traffic,
                     name=name,
-                    seed=seed,
+                    seed=derived_seed,
                     map_spec=map_spec,
                 )
             _update_artifacts(db_conn, artifact_paths, obj_hash)
@@ -261,7 +265,7 @@ def gen_scenario(
         with timeit("ego_missions", logger.info):
             missions = []
             for mission in scenario.ego_missions:
-                if isinstance(mission, types.GroupedLapMission):
+                if isinstance(mission, sstypes.GroupedLapMission):
                     gen_group_laps(
                         scenario=output_dir,
                         begin=mission.route.begin,
@@ -359,7 +363,7 @@ def gen_scenario(
 
 
 def gen_map_spec_artifact(
-    scenario: str, map_spec: types.MapSpec, output_dir: Optional[str] = None
+    scenario: str, map_spec: sstypes.MapSpec, output_dir: Optional[str] = None
 ):
     """Saves a map spec to file."""
     _check_if_called_externally()
@@ -376,11 +380,11 @@ def gen_map_spec_artifact(
 
 def gen_traffic(
     scenario: str,
-    traffic: types.Traffic,
+    traffic: sstypes.Traffic,
     name: str,
     output_dir: Optional[str] = None,
     seed: int = 42,
-    map_spec: Optional[types.MapSpec] = None,
+    map_spec: Optional[sstypes.MapSpec] = None,
 ):
     """Generates the traffic routes for the given scenario. If the output directory is
     not provided, the scenario directory is used."""
@@ -400,10 +404,12 @@ def gen_traffic(
 
 def gen_social_agent_missions(
     scenario: str,
-    missions: Sequence[types.Mission],
-    social_agent_actor: Union[types.SocialAgentActor, Sequence[types.SocialAgentActor]],
+    missions: Sequence[sstypes.Mission],
+    social_agent_actor: Union[
+        sstypes.SocialAgentActor, Sequence[sstypes.SocialAgentActor]
+    ],
     name: str,
-    map_spec: Optional[types.MapSpec] = None,
+    map_spec: Optional[sstypes.MapSpec] = None,
 ):
     """Generates the social agent missions for the given scenario.
 
@@ -428,7 +434,7 @@ def gen_social_agent_missions(
         actors = [actors]
 
     # This doesn't support BoidAgentActor. Here we make that explicit
-    if any(isinstance(actor, types.BoidAgentActor) for actor in actors):
+    if any(isinstance(actor, sstypes.BoidAgentActor) for actor in actors):
         raise ValueError(
             "gen_social_agent_missions(...) can't be called with BoidAgentActor, got:"
             f"{actors}"
@@ -455,7 +461,7 @@ def gen_social_agent_missions(
 def gen_agent_missions(
     scenario: str,
     missions: Sequence,
-    map_spec: Optional[types.MapSpec] = None,
+    map_spec: Optional[sstypes.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will create
     the output_dir if it doesn't exist already. The output file will be named `missions`.
@@ -474,7 +480,7 @@ def gen_agent_missions(
     saved = gen_missions(
         scenario=scenario,
         missions=missions,
-        actors=[types.TrafficActor(name="car")],
+        actors=[sstypes.TrafficActor(name="car")],
         name="missions",
         output_dir=output_dir,
         map_spec=map_spec,
@@ -491,9 +497,9 @@ def gen_group_laps(
     grid_offset: int,
     used_lanes: int,
     vehicle_count: int,
-    entry_tactic: Optional[types.EntryTactic],
+    entry_tactic: Optional[sstypes.EntryTactic],
     num_laps: int = 3,
-    map_spec: Optional[types.MapSpec] = None,
+    map_spec: Optional[sstypes.MapSpec] = None,
 ):
     """Generates missions that start with a grid offset at the start-line and do a number
     of laps until finishing.
@@ -523,8 +529,8 @@ def gen_group_laps(
     for i in range(vehicle_count):
         s_lane = (start_lane + i) % used_lanes
         missions.append(
-            types.LapMission(
-                types.Route(
+            sstypes.LapMission(
+                sstypes.Route(
                     begin=(
                         start_road_id,
                         s_lane,
@@ -548,7 +554,7 @@ def gen_group_laps(
         logger.debug(f"Generated grouped lap missions for scenario={scenario}")
 
 
-def gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
+def gen_bubbles(scenario: str, bubbles: Sequence[sstypes.Bubble]):
     """Generates 'bubbles' in the scenario that capture vehicles for actors.
     Args:
         scenario:
@@ -562,7 +568,9 @@ def gen_bubbles(scenario: str, bubbles: Sequence[types.Bubble]):
         pickle.dump(bubbles, f)
 
 
-def gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurfacePatch]):
+def gen_friction_map(
+    scenario: str, surface_patches: Sequence[sstypes.RoadSurfacePatch]
+):
     """Generates friction map file according to the surface patches defined in
     scenario file.
     """
@@ -574,11 +582,11 @@ def gen_friction_map(scenario: str, surface_patches: Sequence[types.RoadSurfaceP
 
 def gen_missions(
     scenario: str,
-    missions: Sequence[types.Mission],
-    actors: Sequence[types.Actor],
+    missions: Sequence[sstypes.Mission],
+    actors: Sequence[sstypes.Actor],
     name: str,
     output_dir: str,
-    map_spec: Optional[types.MapSpec] = None,
+    map_spec: Optional[sstypes.MapSpec] = None,
 ):
     """Generates a route file to represent missions (a route per mission). Will
     create the output_dir if it doesn't exist already.
@@ -616,11 +624,11 @@ def gen_missions(
     return True
 
 
-def _resolve_vias(via: Tuple[types.Via], generator):
+def _resolve_vias(via: Tuple[sstypes.Via], generator):
     vias = [*via]
     for i in range(len(vias)):
         v = vias[i]
-        if isinstance(v.road_id, types.JunctionEdgeIDResolver):
+        if isinstance(v.road_id, sstypes.JunctionEdgeIDResolver):
             vias[i] = replace(v, road_id=v.road_id.to_edge(generator.road_network))
     return tuple(vias)
 
@@ -634,20 +642,20 @@ def _validate_entry_tactic(mission):
     if not mission.entry_tactic:
         return
 
-    if isinstance(mission.entry_tactic, types.TrapEntryTactic):
+    if isinstance(mission.entry_tactic, sstypes.TrapEntryTactic):
         if not mission.entry_tactic.zone and not isinstance(
-            mission.entry_tactic.zone, types.MapZone
+            mission.entry_tactic.zone, sstypes.MapZone
         ):
             return
 
         z_edge, _, _ = mission.entry_tactic.zone.start
-        if isinstance(mission, types.EndlessMission):
+        if isinstance(mission, sstypes.EndlessMission):
             edge, _, _ = mission.start
             assert (
                 edge == z_edge
             ), f"Zone edge `{z_edge}` is not the same edge as `types.EndlessMission` start edge `{edge}`"
 
-        elif isinstance(mission, (types.Mission, types.LapMission)):
+        elif isinstance(mission, (sstypes.Mission, sstypes.LapMission)):
             edge, _, _ = mission.route.begin
             assert (
                 edge == z_edge
@@ -656,8 +664,8 @@ def _validate_entry_tactic(mission):
 
 def gen_traffic_histories(
     scenario: str,
-    histories_datasets: Sequence[Union[types.TrafficHistoryDataset, str]],
-    map_spec: Optional[types.MapSpec] = None,
+    histories_datasets: Sequence[Union[sstypes.TrafficHistoryDataset, str]],
+    map_spec: Optional[sstypes.MapSpec] = None,
 ):
     """Converts traffic history to a format that SMARTS can use.
     Args:
@@ -671,7 +679,7 @@ def gen_traffic_histories(
     _check_if_called_externally()
     road_map = None  # shared across all history_datasets in scenario
     for hdsr in histories_datasets:
-        assert isinstance(hdsr, types.TrafficHistoryDataset)
+        assert isinstance(hdsr, sstypes.TrafficHistoryDataset)
         if not hdsr.input_path:
             print(f"skipping placeholder dataset spec '{hdsr.name}'.")
             continue
@@ -693,12 +701,12 @@ def gen_traffic_histories(
         genhistories.import_dataset(hdsr, output_dir, map_bbox)
 
 
-def gen_metadata(scenario: str, scenario_metadata: types.StandardMetadata):
+def gen_metadata(scenario: str, scenario_metadata: sstypes.StandardMetadata):
     """Generate the metadata for the scenario
 
     Args:
         scenario (str):The scenario directory
-        scenario_metadata (smarts.sstudio.types.standard_metadata.StandardMetadata): Scenario metadata information.
+        scenario_metadata (smarts.sstudio.sstypes.standard_metadata.StandardMetadata): Scenario metadata information.
     """
     _check_if_called_externally()
     output_path = os.path.join(scenario, "build", "scenario_metadata.yaml")

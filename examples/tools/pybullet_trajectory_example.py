@@ -1,8 +1,10 @@
+import importlib.resources as pkg_resources
 import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+import smarts.assets
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
@@ -79,12 +81,6 @@ def run(client, vehicle, plane_body_id, sliders, n_steps=1e6):
             vehicle,
             controller_state,
             dt_sec=TIMESTEP_SEC,
-            heading_gain=0.05,
-            lateral_gain=0.65,
-            velocity_gain=1.8,
-            traction_gain=2,
-            derivative_activation=False,
-            speed_reduction_activation=False,
         )
 
         client.stepSimulation()
@@ -162,9 +158,9 @@ if __name__ == "__main__":
                 # frictionERP=0.1,
             )
 
-            path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
-            path = str(path.absolute())
-            plane_body_id = client.loadURDF(path, useFixedBase=True)
+            with pkg_resources.path(smarts.assets, "plane.urdf") as path:
+                path = str(path.absolute())
+                plane_body_id = client.loadURDF(path, useFixedBase=True)
 
             client.changeDynamics(plane_body_id, -1, **frictions(sliders))
             pose = pose = Pose.from_center((0, 0, 0), Heading(0))
@@ -175,6 +171,7 @@ if __name__ == "__main__":
                     pose=pose,
                     bullet_client=client,
                 ),
+                visual_model_filepath=None,
             )
 
             run(

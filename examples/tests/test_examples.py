@@ -73,10 +73,10 @@ def test_examples(example):
         )
 
 
-def test_rllib_pg_example():
-    from examples.e12_rllib import pg_example
+def test_rllib_ppo_example():
+    from examples.e12_rllib import ppo_example
 
-    main = pg_example.main
+    main = ppo_example.main
     with tempfile.TemporaryDirectory() as result_dir:
         main(
             scenarios=["./scenarios/sumo/loop"],
@@ -95,10 +95,10 @@ def test_rllib_pg_example():
         )
 
 
-def test_rllib_tune_pg_example():
-    from examples.e12_rllib import pg_pbt_example
+def test_rllib_tune_ppo_example():
+    from examples.e12_rllib import ppo_pbt_example
 
-    main = pg_pbt_example.main
+    main = ppo_pbt_example.main
     with tempfile.TemporaryDirectory() as result_dir, tempfile.TemporaryDirectory() as model_dir:
         main(
             scenarios=["./scenarios/sumo/loop"],

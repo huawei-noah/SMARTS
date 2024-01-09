@@ -26,7 +26,7 @@ import psutil
 
 from .lidar_sensor_params import SensorParams
 from .utils import pybullet
-from .utils.math import batches, rotate_quat
+from .utils.core_math import batches, rotate_quat
 from .utils.pybullet import bullet_client as bc
 
 

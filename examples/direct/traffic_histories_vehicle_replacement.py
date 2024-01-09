@@ -16,7 +16,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.traffic_history_provider import TrafficHistoryProvider
-from smarts.core.utils.math import radians_to_vec, rounder_for_dt
+from smarts.core.utils.core_math import radians_to_vec, rounder_for_dt
 from smarts.zoo.agent_spec import AgentSpec
 
 logging.basicConfig(level=logging.INFO)

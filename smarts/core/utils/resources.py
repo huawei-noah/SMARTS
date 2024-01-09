@@ -21,24 +21,28 @@ import importlib.resources as pkg_resources
 import os
 import re
 import tempfile
+from dataclasses import dataclass
+from functools import lru_cache
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import yaml
 
-from .. import models
+import smarts.assets.vehicles
+from smarts.core import config
 
 
-def load_controller_params(controller_filepath: str):
-    """Load a controller parameters file."""
-    if (controller_filepath is None) or not os.path.exists(controller_filepath):
-        with pkg_resources.path(
-            models, "controller_parameters.yaml"
-        ) as controller_path:
-            controller_filepath = str(controller_path.absolute())
-    with open(controller_filepath, "r", encoding="utf-8") as controller_file:
-        return yaml.safe_load(controller_file)
+def load_vehicle_definitions_list(vehicle_list_filepath: Optional[str]):
+    """Load a vehicle definition list file."""
+    if (vehicle_list_filepath is None) or not os.path.exists(vehicle_list_filepath):
+        vehicle_list_filepath = config()("assets", "default_vehicle_definitions_list")
+    vehicle_list_filepath = Path(vehicle_list_filepath).absolute()
+
+    return VehicleDefinitions(
+        data=load_yaml_config_with_substitution(vehicle_list_filepath),
+        filepath=vehicle_list_filepath,
+    )
 
 
 def load_yaml_config(path: Path) -> Optional[Dict[str, Any]]:
@@ -63,10 +67,15 @@ def _replace_with_module_path(base: str, module_str: str):
     return base.replace(f"${{{{{module_str}}}}}", origin)
 
 
-def load_yaml_config_with_substitution(path: Path) -> Optional[Dict[str, Any]]:
+def load_yaml_config_with_substitution(
+    path: Union[str, Path]
+) -> Optional[Dict[str, Any]]:
     """Read in a yaml configuration to dictionary format replacing instances of ${{module}} with
-    module's file path."""
-    config = None
+    module's file path and ${} with the SMARTS environment variable."""
+    smarts_config = config()
+    out_config = None
+    if isinstance(path, str):
+        path = Path(path)
     if path.exists():
         assert path.suffix in (".yaml", ".yml"), f"`{str(path)}` is not a YAML file."
         with tempfile.NamedTemporaryFile("w", suffix=".py", dir=path.parent) as c:
@@ -77,9 +86,50 @@ def load_yaml_config_with_substitution(path: Path) -> Optional[Dict[str, Any]]:
                 if match:
                     for val in match:
                         conf = _replace_with_module_path(conf, val)
+                conf = smarts_config.substitute_settings(conf, path.__str__())
                 c.write(conf)
 
             c.flush()
             with open(c.name, "r", encoding="utf-8") as file:
-                config = yaml.safe_load(file)
-    return config
+                out_config = yaml.safe_load(file)
+    return out_config
+
+
+@dataclass(frozen=True)
+class VehicleDefinitions:
+    """This defines a set of vehicle definitions and loading utilities."""
+
+    data: Dict[str, Any]
+    """The data associated with the vehicle definitions. This is generally vehicle type keys."""
+    filepath: Union[str, Path]
+    """The path to the vehicle definitions file."""
+
+    def __post_init__(self):
+        if isinstance(self.filepath, Path):
+            object.__setattr__(self, "filepath", self.filepath.__str__())
+
+    @lru_cache(maxsize=20)
+    def load_vehicle_definition(self, vehicle_class: str):
+        """Loads in a particular vehicle definition."""
+        if vehicle_definition_filepath := self.data.get(vehicle_class):
+            return load_yaml_config_with_substitution(Path(vehicle_definition_filepath))
+        raise OSError(
+            f"Vehicle '{vehicle_class}' is not defined in {list(self.data.keys())}"
+        )
+
+    @lru_cache(maxsize=20)
+    def controller_params_for_vehicle_class(self, vehicle_class: str):
+        """Get the controller parameters for the given vehicle type"""
+        vehicle_definition = self.load_vehicle_definition(vehicle_class)
+        controller_params = Path(vehicle_definition["controller_params"])
+        return load_yaml_config_with_substitution(controller_params)
+
+    @lru_cache(maxsize=20)
+    def chassis_params_for_vehicle_class(self, vehicle_class: str):
+        """Get the controller parameters for the given vehicle type"""
+        vehicle_definition = self.load_vehicle_definition(vehicle_class)
+        chassis_parms = Path(vehicle_definition["chassis_params"])
+        return load_yaml_config_with_substitution(chassis_parms)
+
+    def __hash__(self) -> int:
+        return hash(self.filepath)

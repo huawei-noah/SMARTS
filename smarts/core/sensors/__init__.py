@@ -17,11 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
 import math
 import re
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
 
 import numpy as np
 
@@ -111,7 +113,7 @@ def _make_vehicle_observation(
 class SensorState:
     """Sensor state information"""
 
-    def __init__(self, max_episode_steps: int, plan_frame: PlanFrame):
+    def __init__(self, max_episode_steps: Optional[int], plan_frame: PlanFrame):
         self._max_episode_steps = max_episode_steps
         self._plan_frame = plan_frame
         self._step = 0
@@ -156,6 +158,11 @@ class SensorState:
     def steps_completed(self) -> int:
         """Get the number of steps where this sensor has been updated."""
         return self._step
+
+    @classmethod
+    def invalid(cls: Type[SensorState]) -> SensorState:
+        """Generate a invalid default frame."""
+        return cls(None, PlanFrame.empty())
 
 
 class SensorResolver:
@@ -665,7 +672,7 @@ class Sensors:
         vehicle_state: VehicleState,
         trip_meter_sensor: TripMeterSensor,
     ):
-        if not trip_meter_sensor:
+        if not trip_meter_sensor or plan.mission is None:
             return False
         distance_travelled = trip_meter_sensor()
         mission = plan.mission

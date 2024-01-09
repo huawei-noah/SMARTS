@@ -36,6 +36,10 @@ class SingleAttributeOverride(NamedTuple):
     """The maximum number of elements an iterable attribute can contain."""
 
 
+def _default_override():
+    return SingleAttributeOverride(True, None)
+
+
 @dataclass(frozen=True)
 class EnvisionStateFilter:
     """A state filtering tool."""
@@ -49,7 +53,4 @@ class EnvisionStateFilter:
     def default(cls):
         """Give a new default filter."""
 
-        def default_override():
-            return SingleAttributeOverride(True, None)
-
-        return cls(defaultdict(default_override), defaultdict(default_override))
+        return cls(defaultdict(_default_override), defaultdict(_default_override))

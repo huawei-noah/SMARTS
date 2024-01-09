@@ -116,7 +116,7 @@ function unpack_waypoints(lanes) {
         speed_limit: wp[Waypoint.SPEED_LIMIT],
         lane_index: wp[Waypoint.LANE_INDEX],
       };
-    })
+    }),
   );
 }
 
@@ -143,13 +143,13 @@ function unpack_traffic(traffic) {
         driven_path: unpack_driven_path(t[Traffic.DRIVEN_PATH]),
         point_cloud: unpack_point_cloud(t[Traffic.POINT_CLOUD]),
         mission_route_geometry: unpack_route_geometry(
-          t[Traffic.MISSION_ROUTE_GEOMETRY]
+          t[Traffic.MISSION_ROUTE_GEOMETRY],
         ),
         actor_type: AGENT_TYPE_MAP[t[Traffic.ACTOR_TYPE]],
         vehicle_type: VEHICLE_TYPE_MAP[t[Traffic.VEHICLE_TYPE]],
         interest: t[Traffic.INTEREST],
       },
-    }))
+    })),
   );
   return mapped_traffic;
 }
@@ -162,10 +162,10 @@ function unpack_signals(signals) {
         state: t[TrafficSignal.STATE],
         position: t.slice(
           TrafficSignal.POSITION_BEGIN,
-          TrafficSignal.POSITION_END
+          TrafficSignal.POSITION_END,
         ),
       },
-    }))
+    })),
   );
   return mapped_signals;
 }
@@ -174,7 +174,7 @@ function get_attribute_map(unpacked_traffic, attr) {
   return Object.fromEntries(
     Object.entries(unpacked_traffic)
       .filter(([_, t]) => t.actor_type === AGENT_TYPE_MAP[2])
-      .map(([n, t]) => [n, t[attr]])
+      .map(([n, t]) => [n, t[attr]]),
   );
 }
 
@@ -182,7 +182,7 @@ export default function unpack_worldstate(formatted_state) {
   let unpacked_bubbles = unpack_bubbles(formatted_state[WorldState.BUBBLES]);
   let unpacked_traffic = unpack_traffic(formatted_state[WorldState.TRAFFIC]);
   let unpacked_signals = unpack_signals(
-    formatted_state[WorldState.TRAFFIC_SIGNALS]
+    formatted_state[WorldState.TRAFFIC_SIGNALS],
   );
   const worldstate = {
     traffic: unpacked_traffic,

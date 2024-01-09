@@ -46,7 +46,8 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    sim/simulator.rst
    sim/scenario_studio.rst
    sim/bubbles.rst
-   sim/configuration.rst
+   sim/engine_configuration.rst
+   sim/vehicle.rst
 
 .. toctree::
    :hidden:
@@ -64,8 +65,7 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    :maxdepth: 3
    :caption: Examples
 
-   examples/egoless.rst
-   examples/control.rst
+   examples/base_examples.rst
    examples/rl_model.rst
 
 .. toctree::

@@ -29,7 +29,7 @@ from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.observations import Observation
 from smarts.core.plan import Mission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import running_mean
+from smarts.core.utils.core_math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.env.gymnasium.wrappers.metric.params import Params
 from smarts.env.gymnasium.wrappers.metric.types import Costs

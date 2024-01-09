@@ -1,9 +1,11 @@
 # type: ignore
+import importlib.resources as pkg_resources
 from pathlib import Path
 from typing import Dict
 
 import numpy as np
 
+import smarts.assets
 from smarts.core.actor import ActorRole
 from smarts.core.chassis import BoxChassis
 from smarts.core.coordinates import Heading, Pose
@@ -121,6 +123,7 @@ def run(
                     dimensions=vehicle_config.dimensions,
                     bullet_client=client,
                 ),
+                visual_model_filepath=None,
             )
 
         # Hide any additional vehicles
@@ -165,9 +168,9 @@ if __name__ == "__main__":
             # frictionERP=0.1,
         )
 
-        path = Path(__file__).parent / "../../smarts/core/models/plane.urdf"
-        path = str(path.absolute())
-        plane_body_id = client.loadURDF(path, useFixedBase=True)
+        with pkg_resources.path(smarts.assets, "plane.urdf") as path:
+            path = str(path.absolute())
+            plane_body_id = client.loadURDF(path, useFixedBase=True)
 
         vehicle_config = VEHICLE_CONFIGS["passenger"]
 

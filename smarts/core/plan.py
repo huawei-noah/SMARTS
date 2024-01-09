@@ -26,14 +26,14 @@ import random
 import sys
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Type
 
 import numpy as np
 
 from smarts.core.coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from smarts.core.road_map import RoadMap
-from smarts.core.utils.math import min_angles_difference_signed, vec_to_radians
-from smarts.sstudio.types import EntryTactic, TrapEntryTactic
+from smarts.core.utils.core_math import min_angles_difference_signed, vec_to_radians
+from smarts.sstudio.sstypes import EntryTactic, TrapEntryTactic
 
 MISSING = sys.maxsize
 
@@ -203,7 +203,7 @@ class VehicleSpec:
 class Mission:
     """A navigation mission describing a desired trip."""
 
-    # XXX: Note that this Mission differs from sstudio.types.Mission in that
+    # XXX: Note that this Mission differs from sstudio.sstypes.Mission in that
     # this can be less specific as to the particular route taken to the goal,
     # whereas sstudio.type.Mission includes a specific, predetermined/static route
     # (which might be random, but is still determined before running the scenario).
@@ -275,7 +275,7 @@ class LapMission(Mission):
 
     num_laps: Optional[int] = None  # None means infinite # of laps
 
-    # If a route was specified in a sstudio.types.LapMission object,
+    # If a route was specified in a sstudio.sstypes.LapMission object,
     # then this should be set to its road length
     route_length: Optional[float] = None
 
@@ -300,6 +300,11 @@ class PlanFrame:
 
     road_ids: List[str]
     mission: Optional[Mission]
+
+    @classmethod
+    def empty(cls: Type[PlanFrame]):
+        """Creates an empty plan frame."""
+        return cls(road_ids=[], mission=None)
 
 
 class Plan:

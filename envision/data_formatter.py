@@ -41,7 +41,7 @@ from typing import (
 
 import numpy as np
 
-from envision.types import (
+from envision.etypes import (
     SignalLightState,
     SignalState,
     State,
@@ -73,6 +73,10 @@ _formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
 _sequence_formatter_map: Dict[Type, Callable[[Any, "EnvisionDataFormatter"], None]] = {}
 
 _primitives = {int, float, str, VehicleType, TrafficActorType}
+
+
+def _passthrough_method_1_arg(v):
+    return v
 
 
 class ReductionContext:
@@ -126,7 +130,7 @@ class EnvisionDataFormatterArgs(NamedTuple):
     """Data formatter configurations."""
 
     id: Optional[str]
-    serializer: Callable[[list], Any] = lambda d: d
+    serializer: Callable[[list], Any] = _passthrough_method_1_arg
     float_decimals: int = 2
     bool_as_int: bool = True
     enable_reduction: bool = True

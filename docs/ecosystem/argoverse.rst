@@ -27,6 +27,6 @@ You can then run any of the examples with this scenario:
 
 .. code-block:: sh
 
-    $ scl run --envision examples/egoless.py scenarios/argoverse
+    $ scl run --envision examples/e1_egoless.py scenarios/argoverse
 
 .. image:: /_static/argoverse-replay.gif

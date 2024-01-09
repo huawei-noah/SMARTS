@@ -17,64 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from multiprocessing import Pipe, Process
-from multiprocessing.connection import Connection
+
 from typing import NamedTuple, Tuple
 
 import numpy as np
 
 from smarts.core.coordinates import Pose
 from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
-
-
-class BulletClient:
-    """This wrapper class is a hack for `macOS` where running PyBullet in GUI mode,
-    alongside Panda3D segfaults. It seems due to running two OpenGL applications
-    in the same process. Here we spawn a process to run PyBullet and forward all
-    calls to it over unix pipes.
-
-    N.B. This class can be directly subbed-in for pybullet_utils's BulletClient
-    but your application must start from a,
-
-        if __name__ == "__main__:":
-            # https://turtlemonvh.github.io/python-multiprocessing-and-corefoundation-libraries.html
-            import multiprocessing as mp
-            mp.set_start_method('spawn', force=True)
-    """
-
-    def __init__(self, bullet_connect_mode=pybullet.GUI):
-        self._parent_conn, self._child_conn = Pipe()
-        self.process = Process(
-            target=BulletClient.consume,
-            args=(
-                bullet_connect_mode,
-                self._child_conn,
-            ),
-        )
-        self.process.start()
-
-    def __getattr__(self, name):
-        def wrapper(*args, **kwargs):
-            self._parent_conn.send((name, args, kwargs))
-            return self._parent_conn.recv()
-
-        return wrapper
-
-    @staticmethod
-    def consume(bullet_connect_mode, connection: Connection):
-        """Builds a child pybullet process.
-        Args:
-            bullet_connect_mode: The type of bullet process.
-            connection: The child end of a pipe.
-        """
-        # runs in sep. process
-        client = bc.BulletClient(bullet_connect_mode)
-
-        while True:
-            method, args, kwargs = connection.recv()
-            result = getattr(client, method)(*args, **kwargs)
-            connection.send(result)
 
 
 class ContactPoint(NamedTuple):

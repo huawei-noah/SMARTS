@@ -70,7 +70,6 @@ class Controllers:
         controller_state,
         sensor_state,
         action_space,
-        vehicle_type,
     ):
         """Calls control for the given vehicle based on a given action space and action.
 
@@ -89,13 +88,9 @@ class Controllers:
                 The state of a vehicle sensor as relates to vehicle sensors.
             action_space:
                 The action space of the provided action.
-            vehicle_type:
-                Vehicle type information about the given vehicle.
         """
         if action is None:
             return
-        if vehicle_type == "bus":
-            assert action_space == ActionSpaceType.Trajectory
         if action_space == ActionSpaceType.Continuous:
             vehicle.control(
                 throttle=np.clip(action[0], 0.0, 1.0),

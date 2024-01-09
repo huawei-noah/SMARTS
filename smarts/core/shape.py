@@ -21,7 +21,7 @@ import math
 from typing import List, Optional, Union
 
 from smarts.core.coordinates import Point
-from smarts.core.utils.math import is_close
+from smarts.core.utils.core_math import is_close
 
 ## Note:  the methods in this file are not efficient / optimized,
 ## so they shouldn't be used on the critical path(s).
@@ -141,7 +141,7 @@ def distance_point_to_line(
     if offset == 0:
         return euclidean_distance(point, p1)
     u = offset / euclidean_distance(line_start, line_end)
-    intersection = (p1[0] + u * (p2[0] - p1[0]), p1[1] + u * (p2[1] - p1[1]))
+    intersection = Point(p1[0] + u * (p2[0] - p1[0]), p1[1] + u * (p2[1] - p1[1]))
     return euclidean_distance(point, intersection)
 
 

@@ -47,12 +47,16 @@ extensions = [
 ]
 
 extlinks = {
+    "assets": (
+        "https://github.com/huawei-noah/SMARTS/tree/master/smarts/assets/%s",
+        "%s",
+    ),
     "examples": (
-        "https://github.com/huawei-noah/SMARTS/blob/master/examples/%s",
+        "https://github.com/huawei-noah/SMARTS/tree/master/examples/%s",
         "%s",
     ),
     "scenarios": (
-        "https://github.com/huawei-noah/SMARTS/blob/master/scenarios/%s",
+        "https://github.com/huawei-noah/SMARTS/tree/master/scenarios/%s",
         "%s",
     ),
 }
@@ -147,6 +151,14 @@ nitpick_ignore_regex = {
     (r"py:class", r".*\.?T"),
     (r"py:class", r".*\.?S"),
 }
+
+# -- Options for broken link checks ------------------------------------------
+linkcheck_anchors = False
+linkcheck_ignore = [
+    r"https?://localhost:\d+/?",
+    r"https?://ops.fhwa.dot.gov.*",  # The ngsim domain (us government) appears to go down sometimes.
+]
+linkcheck_retries = 2
 
 # -- Options for spelling ----------------------------------------------------
 spelling_exclude_patterns = ["ignored_*", "**/*_pb2*"]

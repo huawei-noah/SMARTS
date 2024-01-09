@@ -4,7 +4,7 @@ from pathlib import Path
 
 from smarts.core.colors import Colors
 from smarts.sstudio import gen_scenario
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Distribution,
     EndlessMission,
     Flow,

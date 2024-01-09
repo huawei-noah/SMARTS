@@ -35,6 +35,7 @@ egoless
 Env
 fallbacks
 frenet
+Jupyter
 indexable
 infos
 instantiating
@@ -78,6 +79,7 @@ unassociated
 unformatted
 unmanaged
 untriggered
+urdf
 Vandenberghe
 vectorized
 Visdom
@@ -86,3 +88,4 @@ waypoints
 Waymo
 Welford
 whitelisted
+YAML

@@ -15,8 +15,8 @@ from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.observations import Observation
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.logging import timeit
-from smarts.sstudio.types import Bubble, PositionalZone, SocialAgentActor
+from smarts.core.utils.core_logging import timeit
+from smarts.sstudio.sstypes import Bubble, PositionalZone, SocialAgentActor
 from smarts.zoo.agent_spec import AgentSpec
 from smarts.zoo.registry import register
 
@@ -177,7 +177,7 @@ def main(
         def __init__(self) -> None:
             self.last_observations: Dict[str, Observation] = {}
 
-        def observation_callback(self, obs: Observation):
+        def observation_callback(self, obs: Dict[str, Observation]):
             self.last_observations = obs
 
     obs_state = ObservationState()

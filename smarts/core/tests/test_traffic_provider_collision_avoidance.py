@@ -24,7 +24,7 @@ import pytest
 # TODO: Rename temp_scenario(...)
 from helpers.scenario import temp_scenario
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.local_traffic_provider import LocalTrafficProvider
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS

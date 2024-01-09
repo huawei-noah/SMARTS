@@ -21,7 +21,7 @@ gen_social_agent_missions(
 from pathlib import Path
 
 from smarts.sstudio import gen_missions
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Route,
     Mission,  
 )

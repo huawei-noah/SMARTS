@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 from helpers.scenario import temp_scenario
 
-from smarts.core import models
+import smarts.assets as smarts_assets
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.chassis import AckermannChassis, BoxChassis
 from smarts.core.coordinates import Heading, Pose
@@ -38,7 +38,7 @@ from smarts.core.utils import pybullet
 from smarts.core.utils.pybullet import bullet_client as bc
 from smarts.core.vehicle import VEHICLE_CONFIGS
 from smarts.sstudio import gen_scenario
-from smarts.sstudio import types as t
+from smarts.sstudio import sstypes as t
 
 
 @pytest.fixture
@@ -46,8 +46,7 @@ def bullet_client():
     client = bc.BulletClient(pybullet.DIRECT)
     client.setGravity(0, 0, -9.8)
 
-    path = Path(__file__).parent / "../smarts/core/models/plane.urdf"
-    with pkg_resources.path(models, "plane.urdf") as path:
+    with pkg_resources.path(smarts_assets, "plane.urdf") as path:
         plane_path = str(path.absolute())
     # create the ground plane to be big enough that the vehicles can potentially contact the ground too
     client.loadURDF(

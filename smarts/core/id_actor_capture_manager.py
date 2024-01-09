@@ -26,7 +26,7 @@ from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.condition_state import ConditionState
 from smarts.core.plan import Mission
 from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import IdEntryTactic
+from smarts.sstudio.sstypes import IdEntryTactic
 
 
 class IdActorCaptureManager(ActorCaptureManager):

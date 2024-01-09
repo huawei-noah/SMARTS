@@ -10,10 +10,54 @@ Copy and pasting the git commit messages is __NOT__ enough.
 
 ## [Unreleased] - XXXX-XX-XX
 ### Added
+- Added a utility method `SMARTS.prepare_observe_from()` which allows safely adding sensors to vehicles.
+- The following methods now exist explicitly `Vehicle.{add_sensor|detach_sensor|subscribed_to|sensor_property|}`.
+- Resources loaded with `load_yaml_config_with_substitution()` now substitute in SMARTS configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration and vehicle configuration.
+- Default vehicle definitions can be now modified using `assets:default_vehicle_definitions_list`/`SMARTS_ASSSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST` or by providing a `vehicle_definitions_list.yaml` in the scenario. These vehicle types are related to the `AgentInterface.vehicle_type` attribute.
 ### Changed
+- `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
+- The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
+- Exposed `traffic:traci_retries`/`SMARTS_TRAFFIC_TRACI_RETRIES` to control how many times the `SumoTrafficSimulation` will try to restart when using default configuration.
+- `rllib` is now constrained as `<=2.9,>2.4`.
+- The `examples/e12_rllib` training examples `{pg_example|pg_pbt_example}.py` have been changed to `{ppo_example|ppo_pbt_example}.py`. `Policy Gradients (PG)` has been dropped in favor of the more well documented `Proximal Policy Optimization (PPO)`.
+- Vehicles can now have sensors added to, overwritten, or replaced outright.
+- Logging is now improved to give information about sensor changes in the sensor manager.
+- - Renamed `vehicle.urdf` to `sedan.urdf`.
+- Environment prefix is now configurable for custom `smarts.core.config()` calls.
+- `Vehicle.build_agent_vehicle()` argument `vehicle_filepath` now renamed to `vehicle_dynamics_filepath`.
+- Renamed `MACOS` `pybullet` gui utility from `smarts.core.utils.bullet.BulletClient` to `smarts.core.utils.pybullet.BulletClientMACOS`.
+- `Vehicle.build_agent_vehicle()` and `Vehicle.build_social_vehicle()` moved to `VehicleIndex`.
+- `smarts.core.configuration.Configuration.get_settings()` now uses the `PyYAML` default instead of forcefully casting to `str`.
+- Added `AgentInterface.vehicle_class` which allows selection of a dynamics vehicle from the vehicle definitions list file.
 - Waypoints now have a `position` property (which will eventually replace `pos`).
+- You must now implement `act()` for any agent inheriting from `smarts.core.agent.Agent`.
+- `FunctionAgent` is now no longer dynamically defined.
 ### Deprecated
+- Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
+- Deprecated a few things related to vehicles in the `Scenario` class, including the `vehicle_filepath`, `tire_parameters_filepath`, and `controller_parameters_filepath`. The functionality is now handled through the vehicle definitions.
+- `AgentInterface.vehicle_type` is now deprecated with potential to be restored.
 ### Fixed
+- `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
+- Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.
+- Fixed a bug where `smarts.core.vehicle_index.VehicleIndex.attach_sensors_to_vehicle()` would pass a method instead of a `PlanFrame` to the generated vehicle `SensorState`.
+- Fixed an issue where `AgentInterface.vehicle_type` would not affect agent vehicles when attempting to take over an existing vehicle.
+- Fixed a case where newly created agent vehicles would have a constant `"sedan"` size instead of the size of `AgentInterface.vehicle_type`.
+- Fixed a case where if vehicles are replaced they would not respect controller and vehicle parameters.
+- Fixed an issue where `RandomRoute` would always give the same route across traffic groups in scenario studio.
+- Fixed an issue where `SMARTS` might not be explicitly destroyed in the `ros_driver`.
+- Fixed issue where `SumoTrafficSimulation` could get locked up on reset if a scenario had only 1 map but multiple scenario variations.
+- Fixed an issue where an out-of-scope method reference caused a pickling error.
+- Fixed an issue where the `EnvisionDataFormatterArgs` default would use a locally defined lambda and cause a serialization failure.
+- Fixed an issue where user configuration was being overridden.
+- Fixed a `pkg_resources` deprecation warning in `python3.10` and up.
+- Fixed the envision camera to center on the map which was broken due to a change in the `gltf` metadata hierarchy.
+- Fixed an issue where you would need to install `waymo` in order to use any kind of dataset histories.
+- Fixed an issue where Pycharm would load `smarts/sstudio/types` as the integrated `types` module. See #2125.
+- Fixed an issue where the `e12_rllib` examples would use the wrong path for the default loop scenario.
+- Fixed an issue where the sensor state could be `None` when calling `SMARTS.observe_from()` on a non-ego vehicle. See #2133.
+- The via sensor and trip meter sensor now work without a mission.
+- Fixed a bug with `VehicleIndex.attach_sensors_to_vehicle()` that would generate an invalid plan.
+- Fixed a bug where vehicle sensor meta attributes would reference the wrong vehicle.
 - Resolved issue with road waypoints not showing waypoints if the horizon was larger than the start of the lane.
 ### Removed
 ### Security

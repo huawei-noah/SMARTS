@@ -19,17 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-
+from __future__ import annotations
 
 import warnings
 from collections import namedtuple
 from dataclasses import replace
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from smarts.core.actor import ActorState
 from smarts.core.plan import Plan
-from smarts.core.vehicle import Vehicle
-from smarts.sstudio.types import ConditionRequires
+from smarts.sstudio.sstypes import ConditionRequires
+
+if TYPE_CHECKING:
+    from smarts.core.actor import ActorState
+    from smarts.core.vehicle import Vehicle
 
 
 class ActorCaptureManager:
@@ -68,10 +70,7 @@ class ActorCaptureManager:
             agent_id,
             agent_interface,
             plan,
-            sim.scenario.vehicle_filepath,
-            sim.scenario.tire_parameters_filepath,
             True,
-            sim.scenario.surface_patches,
             initial_speed=initial_speed,
             boid=False,
         )

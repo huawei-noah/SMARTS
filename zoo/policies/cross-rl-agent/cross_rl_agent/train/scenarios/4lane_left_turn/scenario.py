@@ -21,7 +21,7 @@
 from pathlib import Path
 
 from smarts.sstudio.genscenario import gen_scenario
-from smarts.sstudio.types import (
+from smarts.sstudio.sstypes import (
     Distribution,
     Flow,
     LaneChangingModel,

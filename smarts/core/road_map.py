@@ -34,7 +34,7 @@ from shapely.geometry import Point as SPoint
 from shapely.geometry import Polygon
 
 from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     fast_quaternion_from_angle,
     lerp,
     min_angles_difference_signed,

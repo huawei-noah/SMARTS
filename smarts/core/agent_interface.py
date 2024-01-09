@@ -415,9 +415,14 @@ class AgentInterface:
     The choice of action space; this also decides the controller that will be enabled and the chassis type that will be used.
     """
 
-    vehicle_type: str = "sedan"
+    vehicle_type: str = ""
     """
     The choice of vehicle type.
+    """
+
+    vehicle_class: str = "generic_sedan"
+    """
+    The choice of vehicle classes from the vehicle definition list.
     """
 
     accelerometer: Union[Accelerometer, bool] = True
@@ -470,7 +475,17 @@ class AgentInterface:
             self.lane_positions, LanePositions
         )
         self.signals = AgentInterface._resolve_config(self.signals, Signals)
-        assert self.vehicle_type in {"sedan", "bus"}
+        if self.vehicle_type != "":
+            warnings.warn(
+                "`vehicle_type` is now deprecated. Instead use `vehicle_class`.",
+                category=DeprecationWarning,
+            )
+            assert self.vehicle_type in (
+                "sedan",
+                "bus",
+            ), "Only these values were supported at deprecation."
+            self.vehicle_class = self.vehicle_type
+        assert isinstance(self.vehicle_class, str)
 
         assert len(self.custom_renders) <= config()(
             "core", "max_custom_image_sensors", cast=int

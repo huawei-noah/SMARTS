@@ -67,7 +67,7 @@ You can then run any of the examples with this scenario:
 
 .. code-block:: sh
 
-    $ scl run --envision examples/egoless.py scenarios/waymo
+    $ scl run --envision examples/e1_egoless.py scenarios/waymo
 
 .. image:: /_static/waymo-replay.gif
 

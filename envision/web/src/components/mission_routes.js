@@ -64,12 +64,12 @@ export default function MissionRoutes({ scene, worldState }) {
         let polygon = MeshBuilder.CreatePolygon(
           `mission-route-shape-${vehicle_id}-${shape_id}`,
           { shape: points },
-          scene
+          scene,
         );
         polygon.position.y = 0.1;
         polygon.material = new StandardMaterial(
           `mission-route-shape-${vehicle_id}-${shape_id}-material`,
-          scene
+          scene,
         );
         polygon.material.diffuseColor = new Color4(...SceneColors.MissionRoute);
         polygon.material.alpha = SceneColors.MissionRoute[3];

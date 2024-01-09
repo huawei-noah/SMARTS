@@ -59,7 +59,7 @@ from smarts.core.renderer_base import (
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
 from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.utils.math import squared_dist
+from smarts.core.utils.core_math import squared_dist
 from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
 
 
@@ -644,8 +644,9 @@ class TripMeterSensor(Sensor):
         wp_road = road_map.lane_by_id(new_wp.lane_id).road.road_id
 
         should_count_wp = (
+            plan.mission == None
             # if we do not have a fixed route, we count all waypoints we accumulate
-            not plan.mission.requires_route
+            or not plan.mission.requires_route
             # if we have a route to follow, only count wps on route
             or wp_road in [road.road_id for road in plan.route.roads]
         )
@@ -913,6 +914,9 @@ class ViaSensor(Sensor):
     def __call__(self, vehicle_state: VehicleState, plan, road_map):
         near_points: List[ViaPoint] = list()
         hit_points: List[ViaPoint] = list()
+        if plan.mission is None:
+            return (near_points, hit_points)
+
         vehicle_position = vehicle_state.pose.position[:2]
 
         @lru_cache()

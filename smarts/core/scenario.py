@@ -59,16 +59,16 @@ from smarts.core.plan import (
 )
 from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
-from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
-from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.math import (
+from smarts.core.utils.core_math import (
     combination_pairs_with_unique_indices,
     radians_to_vec,
     vec_to_radians,
 )
-from smarts.sstudio import types as sstudio_types
-from smarts.sstudio.types import EntryTactic, MapSpec
-from smarts.sstudio.types import Via as SSVia
+from smarts.core.utils.file import make_dir_in_smarts_log_dir, path2hash
+from smarts.core.utils.id import SocialAgentId
+from smarts.sstudio import sstypes as sstudio_types
+from smarts.sstudio.sstypes import EntryTactic, MapSpec
+from smarts.sstudio.sstypes import Via as SSVia
 
 VehicleWindow = TrafficHistory.TrafficHistoryVehicleWindow
 
@@ -95,10 +95,10 @@ class Scenario:
         missions:
             agent_id to mission mapping.
         map_spec:
-            If specified, allows specifying a :class:`~smarts.sstudio.types.map_spec.MapSpec` at run-time
+            If specified, allows specifying a :class:`~smarts.sstudio.sstypes.map_spec.MapSpec` at run-time
             to override any spec that may have been pre-specified
             in the scenario folder (or the default if none were).
-            Also see comments around the :class:`~smarts.sstudio.types.map_spec.MapSpec` definition.
+            Also see comments around the :class:`~smarts.sstudio.sstypes.map_spec.MapSpec` definition.
     """
 
     def __init__(
@@ -725,7 +725,7 @@ class Scenario:
 
     @staticmethod
     def _extract_mission(mission, road_map):
-        """Takes a sstudio.types.(Mission, EndlessMission, etc.) and converts it to
+        """Takes a sstudio.sstypes.(Mission, EndlessMission, etc.) and converts it to
         the corresponding SMARTS mission types.
         """
 
@@ -921,6 +921,10 @@ class Scenario:
     @property
     def vehicle_filepath(self) -> Optional[str]:
         """The file-path of the vehicle's physics model."""
+        warnings.warn(
+            "tire_parameters_filepath is no longer in use.  Please update your code.",
+            category=DeprecationWarning,
+        )
         if not os.path.isdir(self._root):
             return None
         for fname in os.listdir(self._root):
@@ -931,12 +935,25 @@ class Scenario:
     @property
     def tire_parameters_filepath(self) -> str:
         """The path of the tire model's parameters."""
+        warnings.warn(
+            "tire_parameters_filepath is no longer in use.  Please update your code.",
+            category=DeprecationWarning,
+        )
         return os.path.join(self._root, "tire_parameters.yaml")
 
     @property
     def controller_parameters_filepath(self) -> str:
         """The path of the vehicle controller parameters."""
+        warnings.warn(
+            "controller_parameters_filepath is no longer in use.  Please update your code.",
+            category=DeprecationWarning,
+        )
         return os.path.join(self._root, "controller_parameters.yaml")
+
+    @property
+    def vehicle_definitions_filepath(self) -> str:
+        """The path to the default list of vehicle definitions."""
+        return os.path.join(self._root, "vehicle_definitions_list.yaml")
 
     @property
     def traffic_specs(self) -> Sequence[str]:

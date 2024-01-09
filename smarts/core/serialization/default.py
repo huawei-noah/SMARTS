@@ -68,10 +68,10 @@ class _SimulationLocalConstantsProxy(Proxy):
         return self.road_map_hash == getattr(__o, "road_map_hash")
 
     def deproxy(self):
-        import smarts.sstudio.types
+        import smarts.sstudio.sstypes
         from smarts.core.simulation_local_constants import SimulationLocalConstants
 
-        assert isinstance(self.road_map_spec, smarts.sstudio.types.MapSpec)
+        assert isinstance(self.road_map_spec, smarts.sstudio.sstypes.MapSpec)
         road_map, _ = self.road_map_spec.builder_fn(self.road_map_spec)
         return SimulationLocalConstants(road_map, self.road_map_hash)
 

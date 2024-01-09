@@ -19,6 +19,7 @@
 # THE SOFTWARE.
 
 import os
+import sys
 
 from .genscenario import gen_scenario
 
@@ -34,3 +35,7 @@ elif _hashseed == "random":
     logging.warning(
         "PYTHONHASHSEED is 'random'. Simulation and generation may be unpredictable."
     )
+
+from . import sstypes as types
+
+sys.modules[f"{__name__}.{types=}".partition("=")[0]] = types

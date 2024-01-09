@@ -24,7 +24,7 @@ import math
 import numpy as np
 import pytest
 
-import smarts.sstudio.types as t
+import smarts.sstudio.sstypes as t
 from smarts.core.agent import Agent
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.chassis import BoxChassis
@@ -171,7 +171,7 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
             bullet_client=bullet_client,
         )
-        vehicle = Vehicle(vehicle_id, chassis)
+        vehicle = Vehicle(vehicle_id, chassis, visual_model_filepath=None)
 
         has_error = False
         try:

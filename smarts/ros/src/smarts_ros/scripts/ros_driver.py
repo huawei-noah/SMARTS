@@ -53,10 +53,10 @@ from smarts.core.plan import (
 )
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
-from smarts.core.utils.math import fast_quaternion_from_angle, vec_to_radians
+from smarts.core.utils.core_math import fast_quaternion_from_angle, vec_to_radians
 from smarts.core.vehicle import VehicleState
 from smarts.ros.logging import log_everything_to_ROS
-from smarts.sstudio.types import MapSpec
+from smarts.sstudio.sstypes import MapSpec
 from smarts.zoo import registry
 
 
@@ -684,15 +684,15 @@ class ROSDriver:
 
                     self._publish_state()
                     self._publish_agents(observations, dones)
-                except Exception as e:
-                    if isinstance(e, rospy.ROSInterruptException):
-                        raise e
+                except Exception as ex:
+                    if isinstance(ex, rospy.ROSInterruptException):
+                        raise ex
                     batch_mode = rospy.get_param("~batch_mode", False)
                     if not batch_mode:
-                        raise e
+                        raise ex
                     import traceback
 
-                    rospy.logerr(f"SMARTS raised exception:  {e}")
+                    rospy.logerr(f"SMARTS raised exception:  {ex}")
                     rospy.logerr(traceback.format_exc())
                     rospy.logerr("Will wait for next reset...")
                     self._smarts = None
@@ -712,8 +712,8 @@ class ROSDriver:
 
         except rospy.ROSInterruptException:
             rospy.loginfo("ROS interrupted.  exiting...")
-
-        self._reset()  # cleans up the SMARTS instance...
+        finally:
+            self._reset()  # cleans up the SMARTS instance...
 
 
 if __name__ == "__main__":
