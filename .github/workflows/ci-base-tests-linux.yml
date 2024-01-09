@@ -23,7 +23,7 @@ jobs:
           - ./examples/tests/test_examples.py
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           python3.8 -m venv ${{env.venv_dir}}
@@ -76,7 +76,7 @@ jobs:
           - e11_platoon
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           cd ${GITHUB_WORKSPACE}/examples/${{matrix.tests}}
@@ -108,7 +108,7 @@ jobs:
           - e11_platoon
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           cd ${GITHUB_WORKSPACE}
