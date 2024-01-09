@@ -291,8 +291,21 @@ def vec_to_radians(v) -> float:
     return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
 
 
-def vec_to_slope(direction_vector):
-    return direction_vector[1] / (direction_vector[0] or 1e-10)
+def vec2d_to_slope(
+    direction_vector: Union[np.ndarray, list, tuple], inf: float = 1e10
+) -> float:
+    """Safely converts a 2 dimensional direction vector to a slope as ``y/x``.
+
+    Args:
+        direction_vector (Union[np.ndarray, list, tuple]): The 2 dimensional direction vector.
+        inf (optional float): The default if the value approaches infinity. Defaults to ``1e10``.
+
+    Returns:
+        float: The slope of the direction vector.
+    """
+    if direction_vector == 0:
+        return inf
+    return direction_vector[1] / direction_vector[0]
 
 
 def circular_mean(vectors: Sequence[np.ndarray]) -> float:
