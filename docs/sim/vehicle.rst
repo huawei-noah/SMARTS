@@ -121,6 +121,9 @@ Syntax
 A vehicle can be composed in the following way:
 
 
+YAML configurations
+^^^^^^^^^^^^^^^^^^^
+
 .. code-block:: yaml
 
     # vehicle_definitions_list.yaml
@@ -147,4 +150,78 @@ A vehicle can be composed in the following way:
 .. note::
 
     See :assets:`vehicles/controller_params/generic_pickup_truck.yaml` and :assets:`vehicles/chassis_params/generic_pickup_truck.yaml`.
+
+
+URDF hierarchy
+^^^^^^^^^^^^^^
+
+
+The vehicle urdf requires the following link configuration:
+
+
+.. code-block:: text
+
+    base_link 
+    └── <base_link_connection (joint 0)> chassis 
+        ├── <front_left_steer_joint (joint 1)> fl_axle 
+        │   └── <front_left_wheel_joint (joint 2)> front_left_wheel
+        ├── <front_right_steer_joint (joint 3)> fr_axle
+        │   └── <front_right_wheel_joint (joint 4)> front_right_wheel 
+        ├── <rear_left_wheel_joint (joint 5)> rear_left_wheel
+        └── <rear_right_wheel_joint (joint 6)> rear_right_wheel
+
+
+In XML this looks like:
+
+
+.. code-block:: xml
+
+    <!--vehicle.urdf-->
+    <?xml version="1.0"?>
+    <robot xmlns:xacro="http://ros.org/wiki/xacro" name="vehicle">
+        <!--Link order is NOT important.-->
+        <link name="base_link">...</link>
+        <link name="chassis">...</link>
+        <link name="fl_axle">...</link>
+        <link name="fr_axle">...</link>
+        <link name="front_left_wheel">...</link>
+        <link name="front_right_wheel">...</link>
+        <link name="rear_left_wheel">...</link>
+        <link name="rear_right_wheel">...</link>
+
+        <!--++++Joint order IS important.++++-->
+        <joint name="base_link_connection" type="fixed">
+            <parent link="base_link"/>
+            <child link="chassis"/>
+        </joint>
+        <joint name="front_left_steer_joint" type="revolute">
+            <parent link="chassis"/>
+            <child link="fl_axle"/>
+        </joint>
+        <joint name="front_right_steer_joint" type="revolute">
+            <parent link="chassis"/>
+            <child link="fr_axle"/>
+        </joint>
+        <joint name="front_left_wheel_joint" type="continuous">
+            <parent link="fl_axle"/>
+            <child link="front_left_wheel"/>
+        </joint>
+        <joint name="front_right_wheel_joint" type="continuous">
+            <parent link="fr_axle"/>
+            <child link="front_right_wheel"/>
+        </joint>
+        <joint name="rear_left_wheel_joint" type="continuous">
+            <parent link="chassis"/>
+            <child link="rear_left_wheel"/>
+        </joint>
+        <joint name="rear_right_wheel_joint" type="continuous">
+            <parent link="chassis"/>
+            <child link="rear_right_wheel"/>
+        </joint>
+    </robot>
+
+
+.. note::
+
+    Joint name and order is critical. Joints and links in excess of the required joints will not cause problems.
 
