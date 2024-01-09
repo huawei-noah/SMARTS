@@ -60,6 +60,7 @@ if TYPE_CHECKING:
     from smarts.core.sensor_manager import SensorManager
     from smarts.core.smarts import SMARTS
 
+
 class Vehicle:
     """Represents a single vehicle."""
 
