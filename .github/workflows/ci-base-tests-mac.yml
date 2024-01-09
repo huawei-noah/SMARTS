@@ -26,7 +26,7 @@ jobs:
           - ./smarts/ray
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           ref: master
       - name: Setup Python
