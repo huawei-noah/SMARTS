@@ -611,7 +611,6 @@ class AgentManager:
             agent_id,
             agent_interface,
             plan,
-            scenario.tire_parameters_filepath,
             trainable,
             agent_model.initial_speed,
             boid=boid,

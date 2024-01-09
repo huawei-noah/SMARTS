@@ -1,0 +1,7 @@
+model: Generic Sedan
+type: passenger
+controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_sedan.yaml
+chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_sedan.yaml
+dynamics_model: ${SMARTS_ASSETS_PATH}/vehicles/dynamics_model/generic_sedan.urdf
+visual_model: ${SMARTS_ASSETS_PATH}/vehicles/visual_model/muscle_car.glb
+tire_params: null # ${SMARTS_ASSETS_PATH}/vehicles/tire_params/base_tire_parameters.yaml

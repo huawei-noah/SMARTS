@@ -63,7 +63,7 @@ def social_vehicle(position, heading, speed, bullet_client):
         dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
         bullet_client=bullet_client,
     )
-    return Vehicle(id="sv-132", chassis=chassis)
+    return Vehicle(id="sv-132", chassis=chassis, visual_model_filepath=None)
 
 
 @pytest.fixture
@@ -112,6 +112,7 @@ def test_create_social_vehicle(bullet_client):
         id="sv-132",
         chassis=chassis,
         vehicle_config_type="passenger",
+        visual_model_filepath=None,
     )
     assert car.vehicle_type == "car"
 
@@ -119,6 +120,7 @@ def test_create_social_vehicle(bullet_client):
         id="sv-132",
         chassis=chassis,
         vehicle_config_type="truck",
+        visual_model_filepath=None,
     )
     assert truck.vehicle_type == "truck"
 
@@ -136,6 +138,7 @@ def test_vehicle_bounding_box(bullet_client):
         id="vehicle-0",
         chassis=chassis,
         vehicle_config_type="passenger",
+        visual_model_filepath=None,
     )
     for coordinates in zip(
         vehicle.bounding_box, [[0.5, 2.5], (1.5, 2.5), (1.5, -0.5), (0.5, -0.5)]
@@ -175,5 +178,6 @@ def test_vehicle_meta_methods(bullet_client):
             id=f"vehicle-{i}",
             chassis=chassis,
             vehicle_config_type="passenger",
+            visual_model_filepath=None,
         )
         validate_vehicle(vehicle)

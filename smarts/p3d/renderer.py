@@ -58,7 +58,8 @@ from panda3d.core import (
     loadPrcFileData,
 )
 
-from smarts.core import glsl, models
+import smarts.assets
+from smarts.core import glsl
 from smarts.core.colors import Colors, SceneColors
 from smarts.core.coordinates import Point, Pose
 from smarts.core.masks import RenderMasks
@@ -490,13 +491,16 @@ class Renderer(RendererBase):
         self._interest_color = interest_color
 
     def create_vehicle_node(
-        self, glb_model: str, vid: str, color: Union[Colors, SceneColors], pose: Pose
+        self,
+        glb_model: Union[str, Path],
+        vid: str,
+        color: Union[Colors, SceneColors],
+        pose: Pose,
     ):
         """Create a vehicle node."""
         if vid in self._vehicle_nodes:
             return False
-        with pkg_resources.path(models, glb_model) as path:
-            node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
+        node_path = self._showbase_instance.loader.loadModel(glb_model)
         node_path.setName("vehicle-%s" % vid)
         if (
             self._interest_filter is not None

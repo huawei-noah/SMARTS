@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -40,7 +42,7 @@ import numpy as np
 
 from envision import etypes as envision_types
 from envision.client import Client as EnvisionClient
-from smarts import VERSION
+from smarts import VERSION, assets
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
@@ -50,7 +52,7 @@ from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
 
-from . import config, models
+from . import config
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
@@ -212,9 +214,9 @@ class SMARTS(ProviderManager):
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
 
-        # For macOS GUI. See our `BulletClient` docstring for details.
-        # from .utils.bullet import BulletClient
-        # self._bullet_client = BulletClient(pybullet.GUI)
+        # For macOS GUI. See our `BulletClientMACOS` docstring for details.
+        # from .utils.pybullet import BulletClientMACOS
+        # self._bullet_client = BulletClientMACOS(pybullet.GUI)
         self._bullet_client = pybullet.SafeBulletClient(
             pybullet.DIRECT
         )  # pylint: disable=no-member
@@ -538,8 +540,8 @@ class SMARTS(ProviderManager):
             self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
-        self._vehicle_index.load_controller_params(
-            scenario.controller_parameters_filepath
+        self._vehicle_index.load_vehicle_definitions_list(
+            scenario.vehicle_definitions_filepath
         )
 
         self._agent_manager.setup_agents()
@@ -837,14 +839,14 @@ class SMARTS(ProviderManager):
     def _setup_pybullet_ground_plane(self, client: bc.BulletClient):
         plane_path = self._scenario.plane_filepath
         if not os.path.exists(plane_path):
-            with pkg_resources.path(models, "plane.urdf") as path:
+            with pkg_resources.path(assets, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
         if not self._map_bb:
             self._map_bb = self.road_map.bounding_box
 
         if self._map_bb:
-            # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
+            # 1e6 is the default value for plane length and width in smarts/assets/plane.urdf.
             DEFAULT_PLANE_DIM = 1e6
             ground_plane_scale = (
                 2.2 * max(self._map_bb.length, self._map_bb.width) / DEFAULT_PLANE_DIM

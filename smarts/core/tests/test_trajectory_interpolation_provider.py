@@ -171,7 +171,7 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
             bullet_client=bullet_client,
         )
-        vehicle = Vehicle(vehicle_id, chassis)
+        vehicle = Vehicle(vehicle_id, chassis, visual_model_filepath=None)
 
         has_error = False
         try:

@@ -23,10 +23,16 @@
     shadower
     shadowers
 """
+from __future__ import annotations
+
 import logging
 from copy import copy, deepcopy
+from functools import lru_cache
 from io import StringIO
+from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
+    Any,
     Dict,
     FrozenSet,
     Iterator,
@@ -42,16 +48,28 @@ import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
+from smarts.core.colors import SceneColors
+from smarts.core.coordinates import Dimensions, Pose
 from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.string import truncate
+from smarts.core.vehicle_state import VEHICLE_CONFIGS
 
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
 from .sensors import SensorState
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from smarts.core import plan
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.controllers.action_space_type import ActionSpaceType
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.smarts import SMARTS
+
+    from .vehicle import VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
@@ -100,7 +118,9 @@ class VehicleIndex:
         self._controller_states = {}
 
         # Loaded from yaml file on scenario reset
-        self._controller_params = {}
+        self._vehicle_definitions: resources.VehicleDefinitions = (
+            resources.VehicleDefinitions({}, "")
+        )
 
     @classmethod
     def identity(cls):
@@ -373,11 +393,11 @@ class VehicleIndex:
     @clear_cache
     def start_agent_observation(
         self,
-        sim,
+        sim: SMARTS,
         vehicle_id,
         agent_id,
-        agent_interface,
-        plan,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
         boid=False,
         initialize_sensors=True,
     ):
@@ -420,13 +440,13 @@ class VehicleIndex:
     @clear_cache
     def switch_control_to_agent(
         self,
-        sim,
+        sim: SMARTS,
         vehicle_id,
         agent_id,
         boid=False,
         hijacking=False,
         recreate=False,
-        agent_interface=None,
+        agent_interface: Optional[AgentInterface] = None,
     ):
         """Give control of the specified vehicle to the specified agent.
         Args:
@@ -459,17 +479,20 @@ class VehicleIndex:
         vehicle = self._vehicles[vehicle_id]
         chassis = None
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+                agent_interface.vehicle_class
+            )
             chassis = AckermannChassis(
                 pose=vehicle.pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=Vehicle.vehicle_urdf_path(
-                    vehicle_type=agent_interface.vehicle_type,
-                    override_path=sim.scenario.vehicle_filepath,
-                ),
-                tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
+                vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
+                tire_parameters_filepath=vehicle_definition.get("tire_params"),
                 friction_map=sim.scenario.surface_patches,
-                controller_parameters=self.controller_params_for_vehicle_type(
-                    agent_interface.vehicle_type
+                controller_parameters=self._vehicle_definitions.controller_params_for_vehicle_class(
+                    agent_interface.vehicle_class
+                ),
+                chassis_parameters=self._vehicle_definitions.chassis_params_for_vehicle_class(
+                    agent_interface.vehicle_class
                 ),
                 initial_speed=vehicle.speed,
             )
@@ -534,15 +557,15 @@ class VehicleIndex:
 
     @clear_cache
     def relinquish_agent_control(
-        self, sim, vehicle_id: str, road_map
-    ) -> Tuple[VehicleState, List[str]]:
+        self, sim: SMARTS, vehicle_id: str, road_map: RoadMap
+    ) -> Tuple[VehicleState, Optional[RoadMap.Route]]:
         """Give control of the vehicle back to its original controller."""
         self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
 
         v_id = _2id(vehicle_id)
 
         ss = sim.sensor_manager.sensor_state_for_actor_id(vehicle_id)
-        route = ss.get_plan(road_map).route
+        route = ss.get_plan(road_map).route if ss else None
         vehicle = self.stop_agent_observation(vehicle_id)
 
         # pytype: disable=attribute-error
@@ -576,7 +599,13 @@ class VehicleIndex:
         return vehicle.state, route
 
     @clear_cache
-    def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
+    def attach_sensors_to_vehicle(
+        self,
+        sim: SMARTS,
+        vehicle_id,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
+    ):
         """Attach sensors as per the agent interface requirements to the specified vehicle."""
         vehicle_id = _2id(vehicle_id)
 
@@ -599,7 +628,7 @@ class VehicleIndex:
         )
 
     def _switch_control_to_agent_recreate(
-        self, sim, vehicle_id, agent_id, boid, hijacking
+        self, sim: SMARTS, vehicle_id, agent_id, boid: bool, hijacking: bool
     ):
         # XXX: vehicle_id and agent_id are already fixed-length as this is an internal
         #      method.
@@ -618,20 +647,24 @@ class VehicleIndex:
         ), f"Missing agent_interface for agent_id={agent_id}"
         vehicle = self._vehicles[vehicle_id]
         sensor_state = sim.sensor_manager.sensor_state_for_actor_id(vehicle.id)
+        assert sensor_state is not None
         controller_state = self._controller_states[vehicle_id]
         plan = sensor_state.get_plan(sim.road_map)
 
+        vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+            agent_interface.vehicle_class
+        )
         # Create a new vehicle to replace the old one
-        new_vehicle = Vehicle.build_agent_vehicle(
+        new_vehicle = VehicleIndex._build_agent_vehicle(
             sim,
             vehicle.id,
-            agent_interface,
-            plan,
-            Vehicle.vehicle_urdf_path(
-                vehicle_type=agent_interface.vehicle_type,
-                override_path=sim.scenario.vehicle_filepath,
-            ),
-            sim.scenario.tire_parameters_filepath,
+            agent_interface.action,
+            vehicle_definition.get("type"),
+            agent_interface.vehicle_class,
+            plan.mission,
+            vehicle_definition.get("dynamics_model"),
+            vehicle_definition.get("tire_params"),
+            vehicle_definition.get("visual_model"),
             not hijacking,
             sim.scenario.surface_patches,
         )
@@ -672,13 +705,91 @@ class VehicleIndex:
 
         return new_vehicle
 
+    @classmethod
+    def _build_agent_vehicle(
+        cls,
+        sim: SMARTS,
+        vehicle_id: str,
+        action: Optional[ActionSpaceType],
+        vehicle_type: str,
+        vehicle_class: str,
+        mission: plan.Mission,
+        vehicle_dynamics_filepath: Optional[str],
+        tire_filepath: str,
+        visual_model_filepath: str,
+        trainable: bool,
+        surface_patches: List[Dict[str, Any]],
+        initial_speed: Optional[float] = None,
+    ) -> Vehicle:
+        """Create a new vehicle and set up sensors and planning information as required by the
+        ego agent.
+        """
+        chassis_dims = Vehicle.agent_vehicle_dims(mission, default=vehicle_type)
+
+        start = mission.start
+        if start.from_front_bumper:
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position[:2]),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            start_pose = Pose.from_center(start.position, start.heading)
+
+        vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
+        controller_parameters = (
+            sim.vehicle_index._vehicle_definitions.controller_params_for_vehicle_class(
+                vehicle_class
+            )
+        )
+        chassis_parameters = (
+            sim.vehicle_index._vehicle_definitions.chassis_params_for_vehicle_class(
+                vehicle_class
+            )
+        )
+
+        chassis = None
+        if action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
+            chassis = AckermannChassis(
+                pose=start_pose,
+                bullet_client=sim.bc,
+                vehicle_dynamics_filepath=vehicle_dynamics_filepath,
+                tire_parameters_filepath=tire_filepath,
+                friction_map=surface_patches,
+                controller_parameters=controller_parameters,
+                chassis_parameters=chassis_parameters,
+                initial_speed=initial_speed,
+            )
+        else:
+            chassis = BoxChassis(
+                pose=start_pose,
+                speed=initial_speed,
+                dimensions=chassis_dims,
+                bullet_client=sim.bc,
+            )
+
+        vehicle = Vehicle(
+            id=vehicle_id,
+            chassis=chassis,
+            color=vehicle_color,
+            vehicle_config_type=vehicle_type,
+            vehicle_class=vehicle_class,
+            visual_model_filepath=visual_model_filepath,
+        )
+
+        return vehicle
+
     def build_agent_vehicle(
         self,
-        sim,
+        sim: SMARTS,
         agent_id,
-        agent_interface,
-        plan,
-        tire_filepath,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
         trainable: bool,
         initial_speed: Optional[float] = None,
         boid: bool = False,
@@ -686,16 +797,19 @@ class VehicleIndex:
         vehicle_id=None,
     ):
         """Build an entirely new vehicle for an agent."""
-        vehicle = Vehicle.build_agent_vehicle(
+        vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+            agent_interface.vehicle_class
+        )
+        vehicle = VehicleIndex._build_agent_vehicle(
             sim=sim,
             vehicle_id=vehicle_id or agent_id,
-            agent_interface=agent_interface,
-            plan=plan,
-            vehicle_filepath=Vehicle.vehicle_urdf_path(
-                vehicle_type=agent_interface.vehicle_type,
-                override_path=sim.scenario.vehicle_filepath,
-            ),
-            tire_filepath=tire_filepath,
+            action=agent_interface.action,
+            vehicle_type=vehicle_definition.get("type"),
+            vehicle_class=agent_interface.vehicle_class,
+            mission=plan.mission,
+            vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
+            tire_filepath=vehicle_definition.get("tire_params"),
+            visual_model_filepath=vehicle_definition.get("visual_model"),
             trainable=trainable,
             surface_patches=sim.scenario.surface_patches,
             initial_speed=initial_speed,
@@ -723,12 +837,12 @@ class VehicleIndex:
     @clear_cache
     def _enfranchise_agent(
         self,
-        sim,
+        sim: SMARTS,
         agent_id,
-        agent_interface,
-        vehicle,
-        controller_state,
-        sensor_state,
+        agent_interface: AgentInterface,
+        vehicle: Vehicle,
+        controller_state: ControllerState,
+        sensor_state: SensorState,
         boid: bool = False,
         hijacking: bool = False,
     ):
@@ -763,15 +877,37 @@ class VehicleIndex:
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
+    @staticmethod
+    def _build_social_vehicle(
+        sim: SMARTS, vehicle_id: str, vehicle_state: VehicleState
+    ) -> Vehicle:
+        """Create a new unassociated vehicle."""
+        dims = Dimensions.copy_with_defaults(
+            vehicle_state.dimensions,
+            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
+        )
+        chassis = BoxChassis(
+            pose=vehicle_state.pose,
+            speed=vehicle_state.speed,
+            dimensions=dims,
+            bullet_client=sim.bc,
+        )
+        return Vehicle(
+            id=vehicle_id,
+            chassis=chassis,
+            vehicle_config_type=vehicle_state.vehicle_config_type,
+            visual_model_filepath=None,
+        )
+
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, owner_id, vehicle_id=None
+        self, sim: SMARTS, vehicle_state: VehicleState, owner_id, vehicle_id=None
     ) -> Vehicle:
         """Build an entirely new vehicle for a social agent."""
         if vehicle_id is None:
             vehicle_id = gen_id()
 
-        vehicle = Vehicle.build_social_vehicle(
+        vehicle = VehicleIndex._build_social_vehicle(
             sim,
             vehicle_id,
             vehicle_state,
@@ -803,7 +939,7 @@ class VehicleIndex:
 
         return vehicle
 
-    def begin_rendering_vehicles(self, renderer):
+    def begin_rendering_vehicles(self, renderer: RendererBase):
         """Render vehicles using the specified renderer."""
         agent_vehicle_ids = self.agent_vehicle_ids()
         for vehicle in self._vehicles.values():
@@ -817,14 +953,11 @@ class VehicleIndex:
         vehicle_id = _2id(vehicle_id)
         return self._controller_states[vehicle_id]
 
-    def load_controller_params(self, controller_filepath: str):
-        """Set the default controller parameters for owner controlled vehicles."""
-        self._controller_params = resources.load_controller_params(controller_filepath)
-
-    def controller_params_for_vehicle_type(self, vehicle_type: str):
-        """Get the controller parameters for the given vehicle type"""
-        assert self._controller_params, "Controller params have not been loaded"
-        return self._controller_params[vehicle_type]
+    def load_vehicle_definitions_list(self, vehicle_definitions_filepath: str):
+        """Loads in a list of vehicle definitions."""
+        self._vehicle_definitions = resources.load_vehicle_definitions_list(
+            vehicle_definitions_filepath
+        )
 
     @staticmethod
     def _build_empty_controlled_by():

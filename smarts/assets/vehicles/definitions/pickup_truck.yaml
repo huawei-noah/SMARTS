@@ -1,0 +1,7 @@
+model: Generic Pickup Truck
+type: truck
+controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_pickup_truck.yaml
+chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_pickup_truck.yaml
+dynamics_model: ${SMARTS_ASSETS_PATH}/vehicles/dynamics_model/generic_class_2a_truck.urdf
+visual_model: ${SMARTS_ASSETS_PATH}/vehicles/visual_model/truck.glb
+tire_params: null # ${SMARTS_ASSETS_PATH}/vehicles/tire_params/base_tire_parameters.yaml

@@ -21,17 +21,14 @@ from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging
-import os
-from dataclasses import dataclass
 from functools import lru_cache, partial
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.plan import Mission, Plan
+import smarts.assets.vehicles.visual_model as smarts_vehicle_visuals
 
-from . import config, models
+from . import config
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
@@ -54,8 +51,14 @@ from .sensors import (
 )
 from .utils.core_math import rotate_cw_around_point
 from .utils.custom_exceptions import RendererException
-from .vehicle_state import VEHICLE_CONFIGS, VehicleConfig, VehicleState
+from .vehicle_state import VEHICLE_CONFIGS, VehicleState
 
+if TYPE_CHECKING:
+    from smarts.core import plan
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.sensor_manager import SensorManager
+    from smarts.core.smarts import SMARTS
 
 class Vehicle:
     """Represents a single vehicle."""
@@ -81,7 +84,9 @@ class Vehicle:
         self,
         id: str,
         chassis: Chassis,
-        vehicle_config_type: str = "passenger",
+        visual_model_filepath: Optional[str],
+        vehicle_config_type: str = "sedan",
+        vehicle_class: str = "generic_sedan",
         color: Optional[SceneColors] = None,
         action_space=None,
     ):
@@ -92,16 +97,24 @@ class Vehicle:
         if vehicle_config_type == "sedan":
             vehicle_config_type = "passenger"
         self._vehicle_config_type = vehicle_config_type
+        self._vehicle_class = vehicle_class
         self._action_space = action_space
 
         self._meta_create_sensor_functions()
         self._sensors = {}
+        self._visual_model_path = visual_model_filepath
+
+        if self._visual_model_path in {None, ""}:
+            with pkg_resources.path(
+                smarts_vehicle_visuals,
+                VEHICLE_CONFIGS[self._vehicle_config_type].glb_model,
+            ) as path:
+                self._visual_model_path = path
 
         # Color override
         self._color: Optional[SceneColors] = color
         if self._color is None:
-            config = VEHICLE_CONFIGS[vehicle_config_type]
-            self._color = config.color
+            self._color = SceneColors.SocialVehicle
 
         self._initialized = True
         self._has_stepped = False
@@ -121,6 +134,7 @@ class Vehicle:
   pose={self.pose},
   speed={self.speed},
   type={self.vehicle_type},
+  class={self.vehicle_class},
   w={self.width},
   l={self.length},
   h={self.height}
@@ -256,8 +270,18 @@ class Vehicle:
 
     @property
     def vehicle_type(self) -> str:
-        """Get the vehicle type identifier."""
+        """Get the vehicle type name as recognized by SMARTS. (e.g. 'car')"""
         return VEHICLE_CONFIGS[self._vehicle_config_type].vehicle_type
+
+    @property
+    def vehicle_config_type(self) -> str:
+        """Get the vehicle type identifier. (e.g. 'sedan')"""
+        return self._vehicle_config_type
+
+    @property
+    def vehicle_class(self) -> str:
+        """Get the custom class of vehicle this is. (e.g. 'ford_f150')"""
+        return self._vehicle_class
 
     @property
     def valid(self) -> bool:
@@ -270,48 +294,8 @@ class Vehicle:
         return self._sensor_names
 
     @staticmethod
-    @lru_cache(maxsize=None)
-    def vehicle_urdf_path(vehicle_type: str, override_path: Optional[str]) -> str:
-        """Resolve the physics model filepath.
-
-        Args:
-            vehicle_type (str): The type of the vehicle.
-            override_path (Optional[str]): The override.
-
-        Raises:
-            ValueError: The vehicle type is valid.
-
-        Returns:
-            str: The path to the model `.urdf`.
-        """
-        if (override_path is not None) and os.path.exists(override_path):
-            return override_path
-
-        if vehicle_type == "sedan":
-            vehicle_type = "passenger"
-
-        if vehicle_type == "passenger":
-            urdf_name = "vehicle"
-        elif vehicle_type in {
-            "bus",
-            "coach",
-            "motorcycle",
-            "pedestrian",
-            "trailer",
-            "truck",
-        }:
-            urdf_name = vehicle_type
-        else:
-            raise ValueError(f"Vehicle type `{vehicle_type}` does not exist!!!")
-
-        with pkg_resources.path(models, urdf_name + ".urdf") as path:
-            vehicle_filepath = str(path.absolute())
-
-        return vehicle_filepath
-
-    @staticmethod
     def agent_vehicle_dims(
-        mission: Mission, default: Optional[str] = None
+        mission: "plan.Mission", default: Optional[str] = None
     ) -> Dimensions:
         """Get the vehicle dimensions from the mission requirements.
         Args:
@@ -319,11 +303,11 @@ class Vehicle:
         Returns:
             The mission vehicle spec dimensions XOR the default "passenger" vehicle dimensions.
         """
+        if not default:
+            default = config().get_setting("assets", "default_agent_vehicle")
         if default == "sedan":
             default = "passenger"
-        default_type = default or config().get_setting(
-            "resources", "default_agent_vehicle", default="passenger"
-        )
+        default_type = default
         if mission.vehicle_spec:
             # mission.vehicle_spec.veh_config_type will always be "passenger" for now,
             # but we use that value here in case we ever expand our history functionality.
@@ -335,104 +319,11 @@ class Vehicle:
         return VEHICLE_CONFIGS[default_type].dimensions
 
     @classmethod
-    def build_agent_vehicle(
-        cls,
-        sim,
-        vehicle_id: str,
-        agent_interface: AgentInterface,
-        plan: Plan,
-        vehicle_filepath: Optional[str],
-        tire_filepath: str,
-        trainable: bool,
-        surface_patches: List[Dict[str, Any]],
-        initial_speed: Optional[float] = None,
-    ) -> "Vehicle":
-        """Create a new vehicle and set up sensors and planning information as required by the
-        ego agent.
-        """
-        urdf_file = cls.vehicle_urdf_path(
-            vehicle_type=agent_interface.vehicle_type, override_path=vehicle_filepath
-        )
-
-        mission = plan.mission
-        chassis_dims = cls.agent_vehicle_dims(
-            mission, default=agent_interface.vehicle_type
-        )
-
-        start = mission.start
-        if start.from_front_bumper:
-            start_pose = Pose.from_front_bumper(
-                front_bumper_position=np.array(start.position[:2]),
-                heading=start.heading,
-                length=chassis_dims.length,
-            )
-        else:
-            start_pose = Pose.from_center(start.position, start.heading)
-
-        vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
-        controller_parameters = sim.vehicle_index.controller_params_for_vehicle_type(
-            agent_interface.vehicle_type
-        )
-
-        chassis = None
-        if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
-            if mission.vehicle_spec:
-                logger = logging.getLogger(cls.__name__)
-                logger.warning(
-                    "setting vehicle dimensions on a AckermannChassis not yet supported"
-                )
-            chassis = AckermannChassis(
-                pose=start_pose,
-                bullet_client=sim.bc,
-                vehicle_filepath=vehicle_filepath,
-                tire_parameters_filepath=tire_filepath,
-                friction_map=surface_patches,
-                controller_parameters=controller_parameters,
-                initial_speed=initial_speed,
-            )
-        else:
-            chassis = BoxChassis(
-                pose=start_pose,
-                speed=initial_speed,
-                dimensions=chassis_dims,
-                bullet_client=sim.bc,
-            )
-
-        vehicle = Vehicle(
-            id=vehicle_id,
-            chassis=chassis,
-            color=vehicle_color,
-            vehicle_config_type=agent_interface.vehicle_type,
-        )
-
-        return vehicle
-
-    @staticmethod
-    def build_social_vehicle(sim, vehicle_id, vehicle_state: VehicleState) -> "Vehicle":
-        """Create a new unassociated vehicle."""
-        dims = Dimensions.copy_with_defaults(
-            vehicle_state.dimensions,
-            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
-        )
-        chassis = BoxChassis(
-            pose=vehicle_state.pose,
-            speed=vehicle_state.speed,
-            dimensions=dims,
-            bullet_client=sim.bc,
-        )
-        vehicle = Vehicle(
-            id=vehicle_id,
-            chassis=chassis,
-            vehicle_config_type=vehicle_state.vehicle_config_type,
-        )
-        return vehicle
-
-    @classmethod
     def attach_sensors_to_vehicle(
         cls,
-        sensor_manager,
-        sim,
-        vehicle: "Vehicle",
+        sensor_manager: SensorManager,
+        sim: SMARTS,
+        vehicle: Vehicle,
         agent_interface: AgentInterface,
         replace=True,
         reset_sensors=False,
@@ -562,7 +453,7 @@ class Vehicle:
                 continue
             sensor_manager.add_sensor_for_actor(vehicle.id, sensor_name, sensor)
 
-    def step(self, current_simulation_time):
+    def step(self, current_simulation_time: float):
         """Update internal state."""
         self._has_stepped = True
         self._chassis.step(current_simulation_time)
@@ -597,11 +488,10 @@ class Vehicle:
         # XXX:  any way to update acceleration in pybullet?
         self._chassis.state_override(dt, state.pose, linear_velocity, angular_velocity)
 
-    def create_renderer_node(self, renderer):
+    def create_renderer_node(self, renderer: RendererBase):
         """Create the vehicle's rendering node in the renderer."""
-        config = VEHICLE_CONFIGS[self._vehicle_config_type]
         return renderer.create_vehicle_node(
-            config.glb_model, self._id, self.vehicle_color, self.pose
+            self._visual_model_path, self._id, self.vehicle_color, self.pose
         )
 
     # @lru_cache(maxsize=1)
