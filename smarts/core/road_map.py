@@ -871,7 +871,7 @@ def interpolate_waypoints(
     second_waypoint: Waypoint,
     start_relative_offset: float,
     interval: float,
-) -> Tuple[list[Waypoint], float, float]:
+) -> Tuple[List[Waypoint], float]:
     """Generate intermediary waypoints between the given waypoints.
 
     Args:
@@ -881,7 +881,7 @@ def interpolate_waypoints(
         interval (float): The interval to generate the waypoints at.
 
     Returns:
-        list[Waypoint], float: The resulting waypoints and the used offset
+        Tuple[List[Waypoint], float]: The resulting waypoints and the used offset
     """
     assert interval > 0, f"Instead got {interval =}"
     assert start_relative_offset >= 0, f"Instead got {start_relative_offset =}"
