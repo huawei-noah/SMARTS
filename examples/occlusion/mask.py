@@ -40,7 +40,7 @@ from smarts.core.agent_interface import (
 from smarts.core.colors import Colors
 from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.road_map import Waypoint, interpolate_waypoints
-from smarts.core.utils.core_math import squared_dist, vec2d_to_slope
+from smarts.core.utils.core_math import slope, squared_dist
 from smarts.core.utils.observations import points_to_pixels
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.sstudio.graphics.bytemap2edge import (
@@ -192,10 +192,8 @@ def generate_shadow_mask_polygons(
         midpoint = get_midpoint(point_a, point_b)
         point_on_tangent = find_point_past_target(center, midpoint, radius)
         tangent_slope = perpendicular_slope(
-            vec2d_to_slope(
-                np.array(
-                    (center[0] - point_on_tangent[0], center[1] - point_on_tangent[1])
-                )
+            slope=slope(
+                center[0] - point_on_tangent[0], center[1] - point_on_tangent[1]
             )
         )
         b2edge_intersection = find_tangent_intersection(
@@ -216,10 +214,9 @@ def generate_shadow_mask_polygons(
         midpoint = get_midpoint(point_a, point_b)
         point_on_tangent = find_point_past_target(center, midpoint, radius)
         tangent_slope = perpendicular_slope(
-            vec2d_to_slope(
-                np.array(
-                    (center[0] - point_on_tangent[0], center[1] - point_on_tangent[1])
-                )
+            slope=slope(
+                center[0] - point_on_tangent[0],
+                center[1] - point_on_tangent[1],
             )
         )
         point_a, _ = facing_away_edges[0]
@@ -255,8 +252,9 @@ def find_tangent_intersection(center, radius, point_a, point_on_tangent, tangent
         a2edge_intersection = point_on_tangent
     else:
         # This is the slope from the center to the near bounding points
-        a_slope = vec2d_to_slope(
-            np.array((center[0] - point_a[0], center[1] - point_a[1]))
+        a_slope = slope(
+            center[0] - point_a[0],
+            center[1] - point_a[1],
         )
         # This is where the slope intersects with the circle tangent.
         a2edge_intersection = find_line_intersection(

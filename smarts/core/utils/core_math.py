@@ -291,23 +291,6 @@ def vec_to_radians(v) -> float:
     return (r - 0.5 * math.pi) % (2 * math.pi)  # quad 1
 
 
-def vec2d_to_slope(
-    direction_vector: Union[np.ndarray, list, tuple], inf: float = 1e10
-) -> float:
-    """Safely converts a 2 dimensional direction vector to a slope as ``y/x``.
-
-    Args:
-        direction_vector (Union[np.ndarray, list, tuple]): The 2 dimensional direction vector.
-        inf (optional float): The default if the value approaches infinity. Defaults to ``1e10``.
-
-    Returns:
-        float: The slope of the direction vector.
-    """
-    if direction_vector == 0:
-        return inf
-    return direction_vector[1] / direction_vector[0]
-
-
 def circular_mean(vectors: Sequence[np.ndarray]) -> float:
     """Given a sequence of equal-length 2D vectors (e.g., unit vectors),
     returns their circular mean in radians, but with +y = 0 rad.
@@ -679,8 +662,18 @@ def combination_pairs_with_unique_indices(
     return []
 
 
-def slope(horizontal, vertical):
-    return safe_division(vertical, horizontal, default=math.inf)
+def slope(horizontal, vertical, default=math.inf):
+    """Safely converts a 2 dimensional direction vector to a slope as ``y/x``.
+
+    Args:
+        horizontal (float): The x growth rate.
+        vertical (float): The y growth rate.
+        inf (optional float): The default if the value approaches infinity. Defaults to ``1e10``.
+
+    Returns:
+        float: The slope of the direction vector.
+    """
+    return safe_division(vertical, horizontal, default=default)
 
 
 def line_of_sight_test(
@@ -689,6 +682,17 @@ def line_of_sight_test(
     horizontal_dist: float,
     intermediary_altitude_iterator: Generator[Tuple[float, float], None, None],
 ):
+    """Check if line of sight is broken along a 1 dimensional cast.
+
+    Args:
+        viewer_altitude (float): The initial altitude to cast from.
+        target_altitude (float): The altitude of the target
+        horizontal_dist (float): The distance to check towards.
+        intermediary_altitude_iterator (Generator[Tuple[float, float], None, None]): An iterator that generates each new altitude to compare.
+
+    Returns:
+        bool: If the line of sight is unbroken.
+    """
     slope_to_target = slope(horizontal_dist, target_altitude - viewer_altitude)
     for (
         intermediary_altitude,
