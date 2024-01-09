@@ -12,7 +12,7 @@ env:
 
 jobs:
   base-tests-mac:
-    runs-on: macos-11
+    runs-on: macos-12
     strategy:
       matrix:
         tests:
@@ -29,12 +29,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: master
-      - name: Setup Python
-        run: |
-          brew update
-          brew install python@3.8
-          brew unlink python@3.9
-          brew link --force --overwrite python@3.8
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
       - name: Setup SUMO
         run: |
           brew install xquartz
@@ -43,7 +41,7 @@ jobs:
           brew install geos
       - name: Install dependencies
         run: |
-          python3.8 -m venv ${{env.venv_dir}}
+          python3.9 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
