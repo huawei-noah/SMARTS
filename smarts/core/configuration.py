@@ -150,7 +150,7 @@ class Config:
             value = self._config[section][option]
         except (configparser.NoSectionError, KeyError) as exc:
             if default is _UNSET:
-                if value := _config_defaults.get((section, option)):
+                if (value := _config_defaults.get((section, option), _UNSET)) != _UNSET:
                     return value
                 raise EnvironmentError(
                     f"Setting `${env_variable}` cannot be found in environment or configuration."
