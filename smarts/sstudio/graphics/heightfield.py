@@ -25,7 +25,8 @@ import enum
 import math
 from abc import ABC
 from enum import IntEnum
-from typing import Callable, Dict, Optional, Tuple, Union
+from pathlib import Path
+from typing import BinaryIO, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 
@@ -82,16 +83,16 @@ class HeightField(ABC):
             self._size == other._size
         )
 
-    def add(self, other: HeightField):
+    def add(self, other: HeightField) -> HeightField:
         assert self._check_match(other)
         return HeightField(np.add(self._data, other._data), self._size)
 
-    def subtract(self, other: HeightField):
+    def subtract(self, other: HeightField) -> HeightField:
         assert self._check_match(other)
         data = np.subtract(self._data, other._data)
         return HeightField(data, self.size)
 
-    def scale_by(self, other: HeightField):
+    def scale_by(self, other: HeightField) -> HeightField:
         assert self._check_match(other)
         inplace_array = np.multiply(
             other._data,
@@ -102,15 +103,15 @@ class HeightField(ABC):
             inplace_array.round(out=inplace_array)
         return HeightField(inplace_array.astype(self.dtype), self.size)
 
-    def multiply(self, other: HeightField):
+    def multiply(self, other: HeightField) -> HeightField:
         assert self._check_match(other)
         return HeightField(np.multiply(self._data, other._data), self.size)
 
-    def max(self, other: HeightField):
+    def max(self, other: HeightField) -> HeightField:
         assert self._check_match(other)
         return HeightField(np.max([self._data, other._data], axis=0), self.size)
 
-    def inverted(self):
+    def inverted(self) -> HeightField:
         data = np.invert(self._data)
         return HeightField(data, self._size, self._metadata)
 
@@ -125,12 +126,12 @@ class HeightField(ABC):
             dtype=np.float64,
         )
 
-    def _direct_coordinate_sample(self, coordinate):
+    def _direct_coordinate_sample(self, coordinate: Union[Tuple[float, float], np.ndarray]) -> float:
         # average the nearest 3 pixel coordinates
         u, v = coordinate
         return self._data[int(v)][int(u)]
 
-    def _direct_4_point_coordinate_sample(self, coordinate):
+    def _direct_4_point_coordinate_sample(self, coordinate) -> float:
         u1 = int(coordinate[0])
         v1 = int(coordinate[1])
 
@@ -153,7 +154,7 @@ class HeightField(ABC):
 
     def _get_sample_averaging_function(
         self, coordinate_sample_mode: CoordinateSampleMode
-    ):
+    ) -> Callable[[Union[Tuple[float, float], np.ndarray]], float]:
         if coordinate_sample_mode is CoordinateSampleMode.POINT:
             return self._direct_coordinate_sample
         if coordinate_sample_mode is CoordinateSampleMode.FOUR_POINTS:
@@ -163,12 +164,12 @@ class HeightField(ABC):
 
     def _data_sample_line(
         self,
-        change_normalized,
-        resolution,
-        magnitude,
-        sample_function,
-        viewer_coordinate,
-        factor,
+        change_normalized: np.ndarray,
+        resolution: float,
+        magnitude: float,
+        sample_function: Callable,
+        viewer_coordinate: Union[Tuple[float, float], np.ndarray],
+        factor: float,
     ):
         """Generates samples on the line between `viewer_coordinate`(excluded) and the end point `viewer_coordinate*magnitude*change_normalized`(excluded)"""
         dist = int(magnitude * np.reciprocal(resolution))
@@ -197,7 +198,7 @@ class HeightField(ABC):
         target_height = sample_function(data_target_coordinate)
 
         change = np.subtract(data_target_coordinate, data_viewer_coordinate)
-        magnitude = np.linalg.norm(change)
+        magnitude: float = np.linalg.norm(change)
         if magnitude == 0:
             return True
         factor = resolution / magnitude
@@ -304,7 +305,7 @@ class HeightField(ABC):
 
         return HeightField(output, self.size)
 
-    def write_image(self, file):
+    def write_image(self, file: Union[str, Path, BinaryIO]):
         from PIL import Image
 
         a = self.data.astype(np.uint8)
@@ -312,7 +313,7 @@ class HeightField(ABC):
         im.save(file)
 
     @classmethod
-    def load_image(cls, file):
+    def load_image(cls, file: Union[str, Path]):
         from PIL import Image
 
         with Image.open(file) as im:
