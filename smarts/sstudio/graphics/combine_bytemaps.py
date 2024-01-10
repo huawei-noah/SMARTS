@@ -36,7 +36,12 @@ class Mode(Enum):
     max = "max"
 
 
-def merge_bmps(bmp_1_file: Union[str, Path], bmp_2_file: Union[str, Path], output_file: Union[str, Path], mode=Mode.scale):
+def merge_bmps(
+    bmp_1_file: Union[str, Path],
+    bmp_2_file: Union[str, Path],
+    output_file: Union[str, Path],
+    mode=Mode.scale,
+):
     hf1 = HeightField.load_image(bmp_1_file)
     hf2 = HeightField.load_image(bmp_2_file)
 

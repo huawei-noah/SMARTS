@@ -126,7 +126,9 @@ class HeightField(ABC):
             dtype=np.float64,
         )
 
-    def _direct_coordinate_sample(self, coordinate: Union[Tuple[float, float], np.ndarray]) -> float:
+    def _direct_coordinate_sample(
+        self, coordinate: Union[Tuple[float, float], np.ndarray]
+    ) -> float:
         # average the nearest 3 pixel coordinates
         u, v = coordinate
         return self._data[int(v)][int(u)]
