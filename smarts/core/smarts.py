@@ -370,9 +370,12 @@ class SMARTS(ProviderManager):
             # so that all updates are ready before rendering happens per
             with timeit("Syncing the renderer", self._log.debug):
                 self.renderer_ref.sync(self.cached_frame)
+
+            # TODO OBSERVATIONS: this needs to happen between the base and rendered observations
             with timeit("Running through the render pipeline", self._log.debug):
                 self.renderer_ref.render()
 
+        # TODO OBSERVATIONS: Need to split the observation generation
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
 
