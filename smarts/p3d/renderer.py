@@ -72,6 +72,7 @@ from smarts.core.renderer_base import (
     RendererBase,
     RendererNotSetUpWarning,
     ShaderStep,
+    ShaderStepBufferDependency,
     ShaderStepCameraDependency,
     ShaderStepDependencyBase,
     ShaderStepVariableDependency,
@@ -842,6 +843,10 @@ class Renderer(RendererBase):
                 shader_input = ShaderInput(dep.script_variable_name, dep.value)
                 quad.setShaderInput(shader_input)
 
+            buffer_dependencies = tuple(
+                v for v in dependencies if isinstance(v, ShaderStepBufferDependency)
+            )
+
             quad.setShaderInput("iResolution", n1=width, n2=height)
             quad.setShaderInput("iTranslation", n1=0, n2=0)
             quad.setShaderInput("iHeading", 0.0)
@@ -849,7 +854,8 @@ class Renderer(RendererBase):
             camera = P3DShaderStep(
                 self,
                 shader_file=fshader_path,
-                dependents=cameras,
+                camera_dependencies=cameras,
+                buffer_dependencies=buffer_dependencies,
                 camera_np=quadcam,
                 buffer=buffer,
                 tex=tex,

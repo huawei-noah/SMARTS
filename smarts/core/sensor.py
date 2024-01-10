@@ -57,6 +57,7 @@ from smarts.core.observations import (
 )
 from smarts.core.renderer_base import (
     RendererBase,
+    ShaderStepBufferDependency,
     ShaderStepCameraDependency,
     ShaderStepVariableDependency,
 )
@@ -496,7 +497,10 @@ class CustomRenderSensor(CameraSensor):
                     script_variable_name=d.variable_name,
                 )
             elif isinstance(d, CustomRenderBufferDependency):
-                pass
+                dependency = ShaderStepBufferDependency(
+                    buffer_name=d.buffer_dependency_name,
+                    script_variable_name=d.variable_name,
+                )
             else:
                 raise TypeError(
                     f"Dependency must be a subtype of `{RenderDependencyBase}`"

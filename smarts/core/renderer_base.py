@@ -27,11 +27,14 @@ from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
 from pathlib import Path
-from typing import Collection, List, Tuple, Union
+from typing import TYPE_CHECKING, Collection, Tuple, Union
 
 import numpy as np
 
 from .coordinates import Pose
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import BufferName
 
 
 class DEBUG_MODE(IntEnum):
@@ -125,6 +128,20 @@ class ShaderStepVariableDependency(ShaderStepDependencyBase):
 
 
 @dataclass(frozen=True)
+class ShaderStepBufferDependency(ShaderStepDependencyBase):
+    """The base for shader dependencies."""
+
+    buffer_name: BufferName
+    script_variable_name: str
+
+    def __post_init__(self):
+        assert (
+            self.buffer_name
+        ), f"`{self.script_variable_name=}` cannot be None or empty."
+        assert self.script_variable_name
+
+
+@dataclass(frozen=True)
 class ShaderStepCameraDependency(ShaderStepDependencyBase):
     """Forwards the texture from a given camera to the"""
 
@@ -143,7 +160,8 @@ class ShaderStep(OffscreenCamera, metaclass=ABCMeta):
     """A camera used for rendering images using a shader and a fullscreen quad."""
 
     shader_file: str
-    dependents: Collection[OffscreenCamera]
+    camera_dependencies: Collection[OffscreenCamera]
+    buffer_dependencies: Collection[ShaderStepBufferDependency]
 
 
 class RendererBase(metaclass=ABCMeta):
