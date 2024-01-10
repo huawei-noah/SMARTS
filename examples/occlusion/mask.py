@@ -31,6 +31,7 @@ from smarts.core.agent_interface import (
     CameraSensorName,
     CustomRender,
     CustomRenderCameraDependency,
+    CustomRenderConstantDependency,
     DoneCriteria,
     DrivableAreaGridMap,
     OcclusionMap,
@@ -802,6 +803,10 @@ def occlusion_main():
                         CustomRenderCameraDependency(
                             camera_dependency_name=CameraSensorName.TOP_DOWN_RGB,
                             variable_name="iChannel1",
+                        ),
+                        CustomRenderConstantDependency(
+                            value=(0.1, 0.5, 0.1),
+                            variable_name="empty_color",
                         ),
                     ),
                     width=w,
