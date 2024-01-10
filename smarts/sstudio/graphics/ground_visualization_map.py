@@ -26,11 +26,10 @@ import warnings
 from functools import cached_property, lru_cache
 from typing import Any, Dict, Tuple, Union
 
-import cloudpickle
 import numpy as np
 
 from smarts.sstudio.graphics.heightfield import CoordinateSampleMode, HeightField
-
+from smarts.core.utils.core_logging import timeit
 
 class GroundPixelViewability:
     def __init__(self, coordinate: Tuple[int, int]) -> None:
@@ -183,7 +182,7 @@ def gen_visibility_file(road_surface_file, topology_file, output_file, width, he
     road_surface = HeightField.load_image(road_surface_file)
     topology = HeightField.load_image(topology_file)
     gvm = GroundViewablityMap(1)
-    from smarts.core.utils.logging import timeit
+
 
     def gen_viewer_coordinates(road_surface):
         max_u, max_v = road_surface.data.shape
