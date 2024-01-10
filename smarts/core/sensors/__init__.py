@@ -23,15 +23,22 @@ import logging
 import math
 import re
 import sys
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Type
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Type,
+)
 
 import numpy as np
 
-from smarts.core.agent_interface import (
-    AgentInterface,
-    AgentsAliveDoneCriteria,
-    InterestDoneCriteria,
-)
 from smarts.core.coordinates import Heading, Point
 from smarts.core.events import Events
 from smarts.core.observations import (
@@ -49,7 +56,6 @@ from smarts.core.observations import (
 )
 from smarts.core.plan import Plan, PlanFrame
 from smarts.core.renderer_base import RendererBase
-from smarts.core.road_map import RoadMap
 from smarts.core.sensor import (
     AccelerometerSensor,
     CameraSensor,
@@ -67,9 +73,19 @@ from smarts.core.sensor import (
     ViaSensor,
     WaypointsSensor,
 )
-from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.simulation_local_constants import SimulationLocalConstants
-from smarts.core.vehicle_state import VehicleState
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import (
+        AgentInterface,
+        AgentsAliveDoneCriteria,
+        InterestDoneCriteria,
+    )
+    from smarts.core.road_map import RoadMap
+    from smarts.core.simulation_frame import SimulationFrame
+    from smarts.core.simulation_local_constants import SimulationLocalConstants
+    from smarts.core.utils.pybullet import bullet_client as bc
+    from smarts.core.vehicle import Vehicle
+    from smarts.core.vehicle_state import VehicleState
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +95,7 @@ LANE_INDEX_CONSTANT = -1
 
 
 def _make_vehicle_observation(
-    road_map,
+    road_map: RoadMap,
     neighborhood_vehicle: VehicleState,
     sim_frame: SimulationFrame,
     interest_extension: Optional[re.Pattern],
@@ -175,8 +191,8 @@ class SensorResolver:
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
         renderer: RendererBase,
-        bullet_client,
-    ):
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool], Dict[str, Dict[str, Sensor]]]:
         """Generate observations
 
         Args:
@@ -188,7 +204,7 @@ class SensorResolver:
         """
         raise NotImplementedError()
 
-    def step(self, sim_frame, sensor_states):
+    def step(self, sim_frame: SimulationFrame, sensor_states: Iterable[SensorState]):
         """Step the sensor state."""
         raise NotImplementedError()
 
@@ -201,8 +217,8 @@ class Sensors:
         cls,
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
-        agent_ids_for_group,
-    ):
+        agent_ids_for_group: Iterable[str],
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool], Dict[str, Dict[str, Sensor]]]:
         """Run the serializable sensors in a batch."""
         observations, dones, updated_sensors = {}, {}, {}
         for agent_id in agent_ids_for_group:
@@ -233,8 +249,8 @@ class Sensors:
         sensor_state: SensorState,
         vehicle_id: str,
         renderer: RendererBase,
-        bullet_client,
-    ):
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Any], Dict[str, Sensor]]:
         """Run observations that can only be done on the main thread."""
         vehicle_sensors: Dict[str, Any] = sim_frame.vehicle_sensors[vehicle_id]
 
@@ -293,7 +309,7 @@ class Sensors:
         sensor_state: SensorState,
         vehicle_id: str,
         agent_id: Optional[str] = None,
-    ):
+    ) -> Tuple[Observation, bool, Dict[str, Sensor]]:
         """Observations that can be done on any thread."""
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
         vehicle_state = sim_frame.vehicle_states[vehicle_id]
@@ -502,10 +518,10 @@ class Sensors:
         sim_local_constants: SimulationLocalConstants,
         interface: AgentInterface,
         sensor_state: SensorState,
-        vehicle,
+        vehicle: Vehicle,
         renderer: RendererBase,
-        bullet_client,
-    ) -> Tuple[Observation, bool, Dict[str, "Sensor"]]:
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Observation, bool, Dict[str, Sensor]]:
         """Generate observations for the given agent around the given vehicle."""
         args = [sim_frame, sim_local_constants, interface, sensor_state, vehicle.id]
         safe_obs, dones, updated_safe_sensors = cls.process_serialization_safe_sensors(
@@ -521,7 +537,10 @@ class Sensors:
 
     @classmethod
     def _agents_alive_done_check(
-        cls, ego_agent_ids, agent_ids, agents_alive: Optional[AgentsAliveDoneCriteria]
+        cls,
+        ego_agent_ids: Collection[str],
+        agent_ids: Collection[str],
+        agents_alive: Optional[AgentsAliveDoneCriteria],
     ):
         if agents_alive is None:
             return False
@@ -561,7 +580,7 @@ class Sensors:
     @classmethod
     def _interest_done_check(
         cls,
-        interest_actors,
+        interest_actors: Collection[str],
         sensor_state: SensorState,
         interest_criteria: Optional[InterestDoneCriteria],
     ):
@@ -667,11 +686,11 @@ class Sensors:
     @classmethod
     def _agent_reached_goal(
         cls,
-        sensor_state,
+        sensor_state: SensorState,
         plan: Plan,
         vehicle_state: VehicleState,
         trip_meter_sensor: TripMeterSensor,
-    ):
+    ) -> bool:
         if not trip_meter_sensor or plan.mission is None:
             return False
         distance_travelled = trip_meter_sensor()
@@ -684,7 +703,7 @@ class Sensors:
         road_map: RoadMap,
         vehicle_state: VehicleState,
         nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
-    ):
+    ) -> bool:
         return not road_map.road_with_point(
             vehicle_state.pose.point, lanes_to_search=nearest_lanes
         )
@@ -695,7 +714,7 @@ class Sensors:
         road_map: RoadMap,
         vehicle_state: VehicleState,
         nearest_lanes: Optional[Sequence["RoadMap.Lane"]] = None,
-    ):
+    ) -> bool:
         # XXX: this isn't technically right as this would also return True
         #      for vehicles that are completely off road.
         for corner_coordinate in vehicle_state.bounding_box_points:
@@ -708,7 +727,7 @@ class Sensors:
     @classmethod
     def _vehicle_is_not_moving(
         cls, sim, last_n_seconds_considered, min_distance_moved, driven_path_sensor
-    ):
+    ) -> bool:
         # Flag if the vehicle has been immobile for the past 'last_n_seconds_considered' seconds
         if sim.elapsed_sim_time < last_n_seconds_considered:
             return False
@@ -800,7 +819,9 @@ class Sensors:
         return (True, is_wrong_way)
 
     @staticmethod
-    def _vehicle_is_wrong_way(vehicle_state: VehicleState, closest_lane: RoadMap.Lane):
+    def _vehicle_is_wrong_way(
+        vehicle_state: VehicleState, closest_lane: RoadMap.Lane
+    ) -> bool:
         target_pose = closest_lane.center_pose_at_point(vehicle_state.pose.point)
         # Check if the vehicle heading is oriented away from the lane heading.
         return (
@@ -811,7 +832,7 @@ class Sensors:
     @classmethod
     def _check_wrong_way_event(
         cls, lane_to_check: RoadMap.Lane, vehicle_state: VehicleState
-    ):
+    ) -> bool:
         # When the vehicle is in an intersection, turn off the `wrong way` check to avoid
         # false positive `wrong way` events.
         if lane_to_check.in_junction:

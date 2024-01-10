@@ -24,7 +24,7 @@ import os
 import pickle
 import warnings
 from functools import cached_property, lru_cache
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, Union
 
 import cloudpickle
 import numpy as np
@@ -35,7 +35,7 @@ from smarts.sstudio.graphics.heightfield import CoordinateSampleMode, HeightFiel
 class GroundPixelViewability:
     def __init__(self, coordinate: Tuple[int, int]) -> None:
         self._coordinate = coordinate
-        self._map: Dict[Tuple[int, int]] = {}
+        self._map: Dict[Tuple[int, int], bool] = {}
 
     def mark(self, coordinate: Tuple[int, int], bit: bool):
         self._map[coordinate] = bit
@@ -84,8 +84,8 @@ class GroundViewablityMap:
 
     def mark(
         self,
-        target_coordinate: Tuple[float, float],
-        spectating_coordinate: Tuple[float, float],
+        target_coordinate: Union[Tuple[float, float], np.ndarray],
+        spectating_coordinate: Union[Tuple[float, float], np.ndarray],
         bit: bool,
     ):
         spectating_coordinate_ints = self._convert_coordinate(spectating_coordinate)

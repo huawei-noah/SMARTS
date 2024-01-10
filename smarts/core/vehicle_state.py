@@ -27,6 +27,8 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
+from smarts.core.coordinates import Dimensions
+
 from .actor import ActorState
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -127,6 +129,12 @@ class VehicleState(ActorState):
             and super().__eq__(__o)
             and self.pose == __o.pose
         )
+
+    def get_pose(self) -> Optional[Pose]:
+        return self.pose
+
+    def get_dimensions(self) -> Optional[Dimensions]:
+        return self.dimensions
 
     @property
     def bounding_box_points(

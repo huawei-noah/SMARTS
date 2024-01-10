@@ -31,7 +31,7 @@ import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
-from typing import Literal, Optional, Tuple, Union
+from typing import Collection, Dict, Literal, Optional, Tuple, Union
 
 import gltf
 import numpy as np
@@ -216,7 +216,7 @@ class _ShowBaseInstance(ShowBase):
 
 
 @dataclass
-class _P3dCameraMixin:
+class _P3DCameraMixin:
 
     camera_np: NodePath
     buffer: GraphicsOutput
@@ -235,7 +235,7 @@ class _P3dCameraMixin:
         for i in range(retries):
             if self.tex.mightHaveRamImage():
                 break
-            self.renderer.log.debug(
+            getattr(self, "renderer").log.debug(
                 f"No image available (attempt {i}/{retries}), forcing a render"
             )
             region = self.buffer.getDisplayRegion(0)
@@ -269,11 +269,11 @@ class _P3dCameraMixin:
         region = self.buffer.getDisplayRegion(0)
         region.window.clearRenderTextures()
         self.buffer.removeAllDisplayRegions()
-        self.renderer.remove_buffer(self.buffer)
+        getattr(self, "renderer").remove_buffer(self.buffer)
 
 
 @dataclass
-class P3dOffscreenCamera(_P3dCameraMixin, OffscreenCamera):
+class P3DOffscreenCamera(_P3DCameraMixin, OffscreenCamera):
     """A camera used for rendering images to a graphics buffer."""
 
     def update(self, pose: Pose, height: float):
@@ -295,7 +295,7 @@ class P3dOffscreenCamera(_P3dCameraMixin, OffscreenCamera):
 
 
 @dataclass
-class P3dShaderStep(_P3dCameraMixin, ShaderStep):
+class P3DShaderStep(_P3DCameraMixin, ShaderStep):
     """A camera used for rendering images using a shader and a fullscreen quad."""
 
     fullscreen_quad_node: NodePath
@@ -338,7 +338,7 @@ class Renderer(RendererBase):
         self._dashed_lines_np = None
         self._vehicle_nodes = {}
         self._signal_nodes = {}
-        self._camera_nodes = {}
+        self._camera_nodes: Dict[str, Union[P3DOffscreenCamera, P3DShaderStep]] = {}
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         _ShowBaseInstance.set_rendering_backend(rendering_backend=rendering_backend)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
@@ -682,7 +682,7 @@ class Renderer(RendererBase):
         signal_np.removeNode()
         del self._signal_nodes[sig_id]
 
-    def camera_for_id(self, camera_id) -> P3dOffscreenCamera:
+    def camera_for_id(self, camera_id) -> Union[P3DOffscreenCamera, P3DShaderStep]:
         """Get a camera by its id."""
         camera = self._camera_nodes.get(camera_id)
         assert (
@@ -745,14 +745,16 @@ class Renderer(RendererBase):
         # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
-        camera = P3dOffscreenCamera(self, camera_np, buffer, tex)
+        camera = P3DOffscreenCamera(self, camera_np, buffer, tex)
         self._camera_nodes[name] = camera
 
     def build_shader_step(
         self,
         name: str,
-        fshader_path: str,
-        dependencies: Tuple[ShaderStepDependencyBase, ...],
+        fshader_path: Union[str, Path],
+        dependencies: Collection[
+            Union[ShaderStepCameraDependency, ShaderStepVariableDependency]
+        ],
         priority: int,
         height: int,
         width: int,
@@ -844,7 +846,7 @@ class Renderer(RendererBase):
             quad.setShaderInput("iTranslation", n1=0, n2=0)
             quad.setShaderInput("iHeading", 0.0)
             quad.setShaderInput("iElevation", 0.0)
-            camera = P3dShaderStep(
+            camera = P3DShaderStep(
                 self,
                 shader_file=fshader_path,
                 dependents=cameras,

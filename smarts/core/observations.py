@@ -19,16 +19,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
-from smarts.core.plan import Mission
-from smarts.core.road_map import Waypoint
-from smarts.core.signals import SignalLightState
-
-from .events import Events
+if TYPE_CHECKING:
+    from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
+    from smarts.core.events import Events
+    from smarts.core.plan import Mission
+    from smarts.core.road_map import Waypoint
+    from smarts.core.signals import SignalLightState
 
 
 class VehicleObservation(NamedTuple):

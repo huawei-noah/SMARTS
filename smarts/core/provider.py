@@ -17,14 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from enum import IntFlag
-from typing import Iterable, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Iterable, List, Optional, Set, Tuple
 
 from .actor import ActorState
 from .controllers import ActionSpaceType
-from .scenario import Scenario
+
+if TYPE_CHECKING:
+    from smarts.core.scenario import Scenario
 
 
 class ProviderRecoveryFlags(IntFlag):
@@ -49,7 +53,7 @@ class ProviderState:
     actors: List[ActorState] = field(default_factory=list)
     dt: Optional[float] = None  # most Providers can leave this blank
 
-    def merge(self, other: "ProviderState"):
+    def merge(self, other: ProviderState):
         """Merge state with another provider's state."""
         our_actors = {a.actor_id for a in self.actors}
         other_actors = {a.actor_id for a in other.actors}
@@ -71,7 +75,7 @@ class ProviderState:
 
         self.dt = max(self.dt, other.dt, key=lambda x: x if x else 0)
 
-    def filter(self, actor_ids):
+    def filter(self, actor_ids: Set[str]):
         """Filter actor states down to the given actors."""
         provider_actor_ids = [a.actor_id for a in self.actors]
         for a_id in actor_ids:
@@ -119,8 +123,8 @@ class ProviderManager:
     # other Providers that are willing to accept new actors could watch for this.
 
     def provider_releases_actor(
-        self, current_provider: Optional["Provider"], state: ActorState
-    ) -> Optional["Provider"]:
+        self, current_provider: Optional[Provider], state: ActorState
+    ) -> Optional[Provider]:
         """The current provider gives up control over the specified actor. The manager
         finds a new Provider for the actor from among the Providers managed by this
         ProviderManager. If no provider accepts the actor the actor is removed from all providers.
@@ -145,8 +149,8 @@ class ProviderManager:
         return new_provider
 
     def provider_relinquishing_actor(
-        self, current_provider: Optional["Provider"], state: ActorState
-    ) -> Tuple[Optional["Provider"], "ActorProviderTransition"]:
+        self, current_provider: Optional[Provider], state: ActorState
+    ) -> Tuple[Optional[Provider], ActorProviderTransition]:
         """Find a new Provider for an actor from among the Providers managed
         by this ProviderManager.
 
@@ -155,13 +159,13 @@ class ProviderManager:
         """
         raise NotImplementedError
 
-    def provider_removing_actor(self, provider: Optional["Provider"], actor_id: str):
+    def provider_removing_actor(self, provider: Optional[Provider], actor_id: str):
         """Called by a Provider when it is removing an actor from the simulation. It
         means that the Provider is indicating that the actor no longer exists.
         This was added for convenience, but it isn't always necessary to be called."""
         raise NotImplementedError
 
-    def provider_for_actor(self, actor_id: str) -> Optional["Provider"]:
+    def provider_for_actor(self, actor_id: str) -> Optional[Provider]:
         """Find the provider that currently manages the given actor.
 
         Args:
@@ -174,9 +178,9 @@ class ProviderManager:
 
     def transition_to_provider(
         self,
-        new_provider: "Provider",
-        actor_provider_transition: "ActorProviderTransition",
-    ) -> Optional["Provider"]:
+        new_provider: Provider,
+        actor_provider_transition: ActorProviderTransition,
+    ) -> Optional[Provider]:
         """Passes a released actor to a new provider. This depends on `provider_relinquishing_actor`.
 
         Args:
@@ -268,7 +272,7 @@ class Provider:
         return False
 
     def add_actor(
-        self, provider_actor: ActorState, from_provider: Optional["Provider"] = None
+        self, provider_actor: ActorState, from_provider: Optional[Provider] = None
     ):
         """Management of the actor with state is being assigned
         (or transferred if from_provider is not None) to this Provider.
@@ -284,7 +288,10 @@ class Provider:
         raise NotImplementedError
 
     def recover(
-        self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
+        self,
+        scenario: Scenario,
+        elapsed_sim_time: float,
+        error: Optional[Exception] = None,
     ) -> Tuple[ProviderState, bool]:
         """Attempt to reconnect the provider if an error or disconnection occurred.
         Implementations may choose to re-raise the passed in exception.
@@ -340,7 +347,7 @@ class Provider:
         # can be overridden to do more cleanup as necessary
 
     @classmethod
-    def provider_id(cls):
+    def provider_id(cls) -> str:
         """The identifying name of the provider."""
         return cls.__name__
 

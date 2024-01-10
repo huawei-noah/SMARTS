@@ -17,19 +17,26 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
+import abc
 import re
 import warnings
 from dataclasses import dataclass, field, replace
 from enum import Enum, IntEnum, auto
 from functools import cached_property
-from typing import List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 
 from smarts.core import config
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
-from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
 
 
 class _SELF(Enum):
@@ -97,16 +104,26 @@ class CameraSensorName(Enum):
 
 
 @dataclass
-class RenderDependencyBase:
+class RenderDependencyBase(metaclass=abc.ABCMeta):
     """Base class for render dependencies"""
+
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        """The name of this dependency."""
+        raise NotImplementedError()
 
 
 @dataclass
-class CustomRenderVariableDependency:
+class CustomRenderVariableDependency(RenderDependencyBase):
     """Base for renderer variable dependencies."""
 
     value: Union[int, float, bool, np.ndarray, list, tuple]
     variable_name: str
+
+    @property
+    def name(self) -> str:
+        return self.variable_name
 
     def __post_init__(self):
         assert self.value, f"`{self.variable_name=}` cannot be None or empty."
@@ -126,6 +143,10 @@ class CustomRenderCameraDependency(RenderDependencyBase):
     variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]
 
     target_actor: Union[str, Literal[_SELF.default]] = _SELF.default
+
+    @property
+    def name(self) -> str:
+        return self.variable_name
 
     def is_self_targetted(self):
         """If the dependency is drawing from one of this agent's cameras."""
@@ -148,7 +169,7 @@ class CustomRender:
 
     name: str
     """The name used to generate the camera."""
-    fragment_shader_path: str
+    fragment_shader_path: Union[str, Path]
     """The path string to the fragment shader."""
     dependencies: Tuple[CustomRenderCameraDependency, ...]
     """Inputs used by the fragment program."""
@@ -491,13 +512,16 @@ class AgentInterface:
             "core", "max_custom_image_sensors", cast=int
         )
 
+        self.occlusion_map = AgentInterface._resolve_config(
+            self.occlusion_map, OcclusionMap
+        )
         if self.occlusion_map:
-            assert (
-                self.occupancy_grid_map
+            assert self.occupancy_grid_map and isinstance(
+                self.occupancy_grid_map, OGM
             ), "Occupancy grid map must also be attached to use occlusion map."
-            self.occlusion_map = AgentInterface._resolve_config(
+            assert isinstance(
                 self.occlusion_map, OcclusionMap
-            )
+            ), "Occlusion map should have resolved to the datatype."
             assert (
                 self.occupancy_grid_map.width == self.occlusion_map.width
             ), "Occlusion map width must match occupancy grid map."

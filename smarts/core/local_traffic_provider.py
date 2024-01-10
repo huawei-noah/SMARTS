@@ -17,6 +17,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 import logging
 import math
@@ -28,20 +29,17 @@ from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from typing import Any, Deque, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Deque, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
-from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
 from .actor import ActorRole, ActorState
-from .controllers import ActionSpaceType
 from .coordinates import Dimensions, Heading, Point, Pose, RefLinePoint
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .road_map import RoadMap
 from .route_cache import RouteWithCache
-from .scenario import Scenario
 from .signals import SignalLightState, SignalState
 from .traffic_provider import TrafficProvider
 from .utils.core_math import (
@@ -57,6 +55,13 @@ from .utils.kinematics import (
     time_to_cover,
 )
 from .vehicle import VEHICLE_CONFIGS, VehicleState
+
+if TYPE_CHECKING:
+    from shapely.geometry import Polygon
+
+    from smarts.core.controllers import ActionSpaceType
+    from smarts.core.scenario import Scenario
+
 
 MAX_IMPATIENCE = 3.0
 

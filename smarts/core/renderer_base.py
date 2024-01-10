@@ -26,7 +26,8 @@ import logging
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import List, Tuple, Union
+from pathlib import Path
+from typing import Collection, List, Tuple, Union
 
 import numpy as np
 
@@ -142,7 +143,7 @@ class ShaderStep(OffscreenCamera, metaclass=ABCMeta):
     """A camera used for rendering images using a shader and a fullscreen quad."""
 
     shader_file: str
-    dependents: List[OffscreenCamera]
+    dependents: Collection[OffscreenCamera]
 
 
 class RendererBase(metaclass=ABCMeta):
@@ -251,8 +252,10 @@ class RendererBase(metaclass=ABCMeta):
     def build_shader_step(
         self,
         name: str,
-        fshader_path: str,
-        dependencies: Tuple[ShaderStepCameraDependency, ...],
+        fshader_path: Union[str, Path],
+        dependencies: Collection[
+            Union[ShaderStepCameraDependency, ShaderStepVariableDependency]
+        ],
         priority: int,
         height: int,
         width: int,

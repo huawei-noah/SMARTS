@@ -17,11 +17,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
 import math
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from shapely.geometry import Polygon
 
@@ -33,6 +35,11 @@ from smarts.core.utils.core_math import clip, squared_dist
 from smarts.core.utils.file import replace
 from smarts.core.vehicle import Vehicle
 from smarts.sstudio.sstypes import MapZone, PositionalZone, TrapEntryTactic
+
+if TYPE_CHECKING:
+    from smarts.core.road_map import RoadMap
+    from smarts.core.scenario import Scenario
+    from smarts.core.smarts import SMARTS
 
 
 @dataclass
@@ -87,11 +94,8 @@ class TrapManager(ActorCaptureManager):
         self._log = logging.getLogger(self.__class__.__name__)
         self._traps: Dict[str, Trap] = {}
 
-    def init_traps(self, road_map, missions, sim):
+    def init_traps(self, road_map, missions, sim: SMARTS):
         """Set up the traps used to capture actors."""
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
         self._traps.clear()
         cancelled_agents: Set[str] = set()
         for agent_id, mission in missions.items():
@@ -107,7 +111,7 @@ class TrapManager(ActorCaptureManager):
         self,
         agent_id: str,
         mission: Mission,
-        road_map,
+        road_map: RoadMap,
         sim_time: float,
         reject_expired: bool = False,
     ) -> Tuple[bool, bool]:
@@ -169,11 +173,8 @@ class TrapManager(ActorCaptureManager):
         )
         self.remove_traps(used_traps)
 
-    def step(self, sim):
+    def step(self, sim: SMARTS):
         """Run vehicle hijacking and update agent and actor states."""
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
         capture_by_agent_id: Dict[str, _CaptureState] = defaultdict(
             lambda: _CaptureState(
                 ready_state=ConditionState.FALSE,
@@ -339,13 +340,15 @@ class TrapManager(ActorCaptureManager):
         """The traps in this manager."""
         return self._traps
 
-    def reset(self, scenario, sim):
+    def reset(self, scenario: Scenario, sim: SMARTS):
         self.init_traps(scenario.road_map, scenario.missions, sim)
 
     def teardown(self):
         self._traps.clear()
 
-    def _mission2trap(self, road_map, mission: Mission, default_zone_dist: float = 6.0):
+    def _mission2trap(
+        self, road_map: RoadMap, mission: Mission, default_zone_dist: float = 6.0
+    ):
         if not (hasattr(mission, "start") and hasattr(mission, "goal")):
             raise ValueError(f"Value {mission} is not a mission!")
 

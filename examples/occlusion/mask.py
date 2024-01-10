@@ -60,6 +60,7 @@ OUTPUT_DIR: Final[Path] = Path("./vaw/vaw")
 class PropertyAccessorUtil:
     def __init__(self, mode: ObservationOptions) -> None:
         if mode in (ObservationOptions.multi_agent, ObservationOptions.full):
+            # pytype: disable=unsupported-operands
             self.position_accessor = lambda o: o["position"]
             self.len_accessor = lambda o: o["box"][0]
             self.width_accessor = lambda o: o["box"][1]
@@ -70,6 +71,7 @@ class PropertyAccessorUtil:
             self.waypoint_position_accessor = lambda o: self.position_accessor(
                 self.wpp_accessor(o)
             )
+            # pytype: enable=unsupported-operands
         else:
             self.position_accessor = lambda o: o.position
             self.len_accessor = lambda o: o.bounding_box.length
@@ -125,7 +127,7 @@ def find_point_past_target(center, target_point, distance: float):
 
 def perpendicular_slope(slope):
     if slope == 0:  # Special case for horizontal line
-        return float("inf")
+        return math.inf
     return -1 / slope
 
 
@@ -282,7 +284,7 @@ def find_line_intersection(slope1, slope2, point1, point2):
 
     # Check if slopes are identical (same slope with same intercept)
     if slope1 == slope2 and b1 == b2:
-        return float("inf"), float("inf")  # Infinite intersection points
+        return math.inf, math.inf  # Infinite intersection points
 
     # Calculate the x-coordinate of the intersection point
     x = (b2 - b1) / (slope1 - slope2)
@@ -413,21 +415,22 @@ def gaussian_noise2(base, mu=0, sigma=0.078):
 
 
 def sample_weighted_binary_probability(normalized_bar):
-    r = random.randint(0, 1e9)
+    bits_16 = int(0b111111111111111)
+    r = random.randint(0, bits_16)
 
-    return r * 1e-9 > normalized_bar
+    return r / bits_16 > normalized_bar
 
 
 def certainty_displace(
     center_point: Tuple[float, float],
     target_point: Tuple[float, float],
-    perturb_target: Any,
+    perturb_target: T,
     certainty_attenuation_fn=one_by_r2_attenuation,
     uncertainty_noise_fn=gaussian_noise2,
     coin_fn=sample_weighted_binary_probability,
     max_sigma=0.073,
     max_observable_radius: float = 10,
-) -> Tuple[float, float, float]:
+) -> Tuple[T, Dict[str, Any]]:
     c_x, c_y = center_point
     t_x, t_y = target_point
 
@@ -625,303 +628,6 @@ class AugmentationWrapper(Agent, metaclass=ABCMeta):
         os.chdir("../..")
 
 
-class VectorAgentWrapper(AugmentationWrapper):
-    def __init__(
-        self,
-        inner_agent,
-        mode,
-        agent_name,
-        observation_radius=40,
-        record: bool = True,
-        output_dir=OUTPUT_DIR,
-    ) -> None:
-        self._inner_agent = inner_agent
-        os.makedirs(output_dir, exist_ok=True)
-        super().__init__(
-            mode=mode,
-            output_dir=output_dir,
-            agent_name=agent_name,
-            observation_radius=observation_radius,
-            record=record,
-        )
-
-    @lru_cache(1)
-    def _get_perlin(
-        self,
-        width,
-        height,
-        smooth_iterations,
-        seed,
-        table_dim,
-        shift,
-        amplitude=5,
-        granularity=0.02,
-    ):
-        # from smarts.sstudio.graphics.perlin_bytemap import generate_perlin
-
-        # return generate_perlin(width, height, smooth_iterations, seed, table_dim, shift)
-        from smarts.sstudio.graphics.perlin_bytemap import generate_simplex
-
-        return generate_simplex(
-            width,
-            height,
-            seed,
-            shift,
-            octaves=2,
-            amplitude=amplitude,
-            granularity=granularity,
-        )
-
-    def _rotate_image(self, heightfield: HeightField, heading: float):
-        image = Image.fromarray(heightfield.data, "L")
-        rotated_image = image.rotate(math.degrees(heading))
-
-        return HeightField(
-            data=np.asarray(rotated_image).reshape(heightfield.resolution),
-            size=heightfield.size,
-        )
-
-    def act(self, obs: Optional[Observation], **configs):
-        img_width, img_height = (
-            obs.drivable_area_grid_map.metadata.width,
-            obs.drivable_area_grid_map.metadata.height,
-        )
-
-        fig, ax = plt.subplots(subplot_kw=dict(aspect="equal"))
-        ax: plt.Axes
-        if obs is None:
-            return None
-        ego_state = self._pa.ego_accessor(obs)
-        ego_heading = self._pa.heading_accessor(ego_state)
-        _observation_center = self._pa.position_accessor(ego_state)[:2]
-
-        vehicle_hf = HeightField(obs.occupancy_grid_map.data, (img_width, img_height))
-        height_scaling = 5
-        drivable_hf = HeightField(
-            obs.drivable_area_grid_map.data, (img_width, img_height)
-        )
-        edge_hf = generate_edge_from_heightfield(
-            drivable_hf,
-            far_kernel(),
-            0 * height_scaling,
-            0.2 * height_scaling,
-        )
-        perlin_hf = self._get_perlin(
-            img_width,
-            img_height,
-            0,
-            42,
-            2048,
-            (
-                _observation_center[0] / self._observation_radius,
-                _observation_center[1] / -self._observation_radius,
-            ),
-            amplitude=int(1 * height_scaling),
-        )
-        perlin_hf = self._rotate_image(perlin_hf, -ego_heading)
-        offroad_perlin = self._get_perlin(
-            img_width,
-            img_height,
-            0,
-            42,
-            2048,
-            (
-                _observation_center[0] / self._observation_radius,
-                _observation_center[1] / -self._observation_radius,
-            ),
-            amplitude=int(2 * height_scaling),
-            granularity=0.5,
-        )
-        offroad_hf = self._rotate_image(offroad_perlin, -ego_heading).scale_by(
-            drivable_hf.inverted()
-        )
-        hf = edge_hf.add(perlin_hf).max(vehicle_hf).max(offroad_hf)
-
-        los = hf.to_line_of_sight(
-            (0, 0),
-            1 * height_scaling,
-            0.3,
-            coordinate_sample_mode=CoordinateSampleMode.POINT,
-        )
-        extent = [
-            -img_width * 0.5,
-            img_width * 0.5,
-            -img_height * 0.5,
-            img_height * 0.5,
-        ]
-        tr = (
-            transforms.Affine2D()
-            .rotate_deg(math.degrees(ego_heading))
-            .translate(*_observation_center)
-        )
-
-        image_data = obs.drivable_area_grid_map.data
-        image_data = hf.data * 10
-        image_data = los.data
-        vehicle_hf = HeightField(obs.obfuscation_grid_map.data, (img_width, img_height))
-        image_data = vehicle_hf.data
-        ax.imshow(
-            image_data,
-            cmap="gray",
-            vmin=0,
-            vmax=255,
-            transform=tr + ax.transData,
-            extent=extent,
-        )
-
-        observation_inverse_mask: Polygon = generate_circle_polygon(
-            _observation_center, self._observation_radius
-        )
-        prep_observation_inverse_mask: PreparedGeometry = prepared.prep(
-            observation_inverse_mask
-        )
-
-        v_geom = generate_vehicle_polygon(
-            self._pa.position_accessor(ego_state),
-            self._pa.len_accessor(ego_state),
-            self._pa.width_accessor(ego_state),
-            self._pa.heading_accessor(ego_state),
-        )
-        ax.plot(*v_geom.exterior.xy, color="y")
-
-        # draw vehicle center points
-        for v in self._pa.nvs_accessor(obs):
-            ax.plot(
-                *PointGenerator.cache_generate(*self._pa.position_accessor(v)).xy, "y+"
-            )
-
-        vehicles = [v for v in self._pa.nvs_accessor(obs)]
-        vehicles_to_downgrade: List[VehicleObservation] = [
-            v
-            for v in vehicles
-            if prep_observation_inverse_mask.contains(
-                PointGenerator.cache_generate(*self._pa.position_accessor(v))
-            )
-        ]
-        occlusion_masks: List[Polygon] = gen_shadow_masks(
-            _observation_center,
-            vehicles_to_downgrade,
-            self._observation_radius,
-            self._mode,
-        )
-
-        for poly in occlusion_masks:
-            # if not hasattr(poly, "exterior"):
-            #     continue
-            observation_inverse_mask = observation_inverse_mask.difference(poly)
-        prep_observation_inverse_mask = prepared.prep(observation_inverse_mask)
-
-        if isinstance(observation_inverse_mask, (MultiPolygon, GeometryCollection)):
-            for g in observation_inverse_mask.geoms:
-                if not hasattr(g, "exterior"):
-                    continue
-                ax.plot(*g.exterior.xy)
-        else:
-            ax.plot(*observation_inverse_mask.exterior.xy)
-
-        final_vehicle_states = []
-        for vehicle_state, position_point in zip(
-            vehicles_to_downgrade,
-            (
-                PointGenerator.cache_generate(*self._pa.position_accessor(v))
-                for v in vehicles_to_downgrade
-            ),
-        ):
-            # discard any vehicle state that is not included
-            for shadow_polygon in occlusion_masks:
-                if shadow_polygon.contains(position_point):
-                    break  # state is masked
-            else:
-                # if not masked
-                final_vehicle_states.append(vehicle_state)
-
-        downgraded_vehicles = downgrade_vehicles(
-            self._pa.position_accessor(ego_state),
-            vehicles_to_downgrade,
-            mode=self._mode,
-        )
-
-        wp_downgrading_fn = partial(
-            downgrade_waypoints,
-            center=self._pa.position_accessor(ego_state),
-            wp_space_resolution=2,
-            max_observable_radius=self._observation_radius * 0.5,
-            waypoint_displacement_factor=0.6,
-        )
-        waypoints_to_downgrade = [
-            [
-                wp
-                for wp in l
-                if prep_observation_inverse_mask.contains(
-                    PointGenerator.cache_generate(*wp.position)
-                )
-            ]
-            for l in self._pa.wpp_accessor(obs)
-        ]
-        downgraded_waypoints = wp_downgrading_fn(waypoints=waypoints_to_downgrade)
-
-        road_waypoints_to_downgrade = [
-            [
-                wp
-                for wp in path
-                if prep_observation_inverse_mask.contains(
-                    PointGenerator.cache_generate(*wp.position)
-                )
-            ]
-            for paths in obs.road_waypoints.lanes.values()
-            for path in paths
-        ]
-        downgraded_road_waypoints = wp_downgrading_fn(
-            waypoints=road_waypoints_to_downgrade
-        )
-
-        for vehicle in self._pa.nvs_accessor(obs):
-            v_geom = generate_vehicle_polygon(
-                self._pa.position_accessor(vehicle),
-                self._pa.len_accessor(vehicle),
-                self._pa.width_accessor(vehicle),
-                self._pa.heading_accessor(vehicle),
-            )
-            ax.plot(*v_geom.exterior.xy, color="b")
-        for vehicle in downgraded_vehicles:
-            v_geom = generate_vehicle_polygon(
-                self._pa.position_accessor(vehicle),
-                self._pa.len_accessor(vehicle),
-                self._pa.width_accessor(vehicle),
-                self._pa.heading_accessor(vehicle),
-            )
-            ax.plot(*v_geom.exterior.xy, color="r")
-
-        self.draw_waypoints(
-            road_waypoints_to_downgrade, self._pa.position_accessor, ax, color="y"
-        )
-        self.draw_waypoints(
-            downgraded_road_waypoints, self._pa.position_accessor, ax, color="g"
-        )
-        self.draw_waypoints(
-            self._pa.wpp_accessor(obs), self._pa.position_accessor, ax, color="b"
-        )
-        self.draw_waypoints(
-            downgraded_waypoints, self._pa.position_accessor, ax, color="r"
-        )
-
-        self.export_video_image(ax, obs)
-        dowgraded_obs = obs._replace(
-            neighborhood_vehicle_states=_vehicle_states,
-            waypoint_paths=downgraded_waypoints,
-        )
-        return self._inner_agent.act(dowgraded_obs, **configs)
-
-    def draw_waypoints(self, waypoints, pos_accessor, ax, color):
-        wp_line_strings: List[shapely.LineString] = [
-            shapely.LineString([pos_accessor(wp)[:2] for wp in l])
-            for l in waypoints
-            if len(l) > 1
-        ]
-        for ls in wp_line_strings:
-            ax.plot(*ls.coords.xy, color=color)
-
-
 class OcclusionAgentWrapper(AugmentationWrapper):
     def __init__(
         self,
@@ -947,16 +653,17 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         )
 
     def act(self, obs: Optional[Observation], **configs):
+        if obs is None:
+            return None
+        assert obs.obfuscation_grid_map is not None
+        assert obs.drivable_area_grid_map is not None
 
+        fig, ax = plt.subplots(subplot_kw=dict(aspect="equal"))
+        ax: plt.Axes
         img_width, img_height = (
             obs.drivable_area_grid_map.metadata.width,
             obs.drivable_area_grid_map.metadata.height,
         )
-
-        fig, ax = plt.subplots(subplot_kw=dict(aspect="equal"))
-        ax: plt.Axes
-        if obs is None:
-            return None
         ego_state = self._pa.ego_accessor(obs)
         ego_heading = self._pa.heading_accessor(ego_state)
         _observation_center = self._pa.position_accessor(ego_state)[:2]

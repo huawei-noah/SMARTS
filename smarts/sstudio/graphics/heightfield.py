@@ -19,17 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import enum
 import math
 from abc import ABC
 from enum import IntEnum
-from functools import cached_property
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from smarts.core.utils.logging import timeit
-from smarts.core.utils.math import line_of_sight_test, squared_dist
+from smarts.core.utils.core_math import line_of_sight_test
 
 
 class CoordinateSampleMode(IntEnum):
@@ -39,7 +39,10 @@ class CoordinateSampleMode(IntEnum):
 
 class HeightField(ABC):
     def __init__(
-        self, data: np.ndarray, size: Tuple[int, int], metadata: Optional[Dict] = None
+        self,
+        data: np.ndarray,
+        size: Union[Tuple[int, int], np.ndarray],
+        metadata: Optional[Dict] = None,
     ) -> None:
         assert isinstance(data, np.ndarray), "Image must be a numpy array."
         assert data.dtype == np.uint8 and (
@@ -74,21 +77,21 @@ class HeightField(ABC):
     def metadata(self):
         return self._metadata
 
-    def _check_match(self, other: "HeightField"):
+    def _check_match(self, other: HeightField):
         return np.all(self._resolution == other._resolution) and np.all(
             self._size == other._size
         )
 
-    def add(self, other: "HeightField"):
+    def add(self, other: HeightField):
         assert self._check_match(other)
         return HeightField(np.add(self._data, other._data), self._size)
 
-    def subtract(self, other: "HeightField"):
+    def subtract(self, other: HeightField):
         assert self._check_match(other)
         data = np.subtract(self._data, other._data)
         return HeightField(data, self.size)
 
-    def scale_by(self, other: "HeightField"):
+    def scale_by(self, other: HeightField):
         assert self._check_match(other)
         inplace_array = np.multiply(
             other._data,
@@ -99,11 +102,11 @@ class HeightField(ABC):
             inplace_array.round(out=inplace_array)
         return HeightField(inplace_array.astype(self.dtype), self.size)
 
-    def multiply(self, other: "HeightField"):
+    def multiply(self, other: HeightField):
         assert self._check_match(other)
         return HeightField(np.multiply(self._data, other._data), self.size)
 
-    def max(self, other: "HeightField"):
+    def max(self, other: HeightField):
         assert self._check_match(other)
         return HeightField(np.max([self._data, other._data], axis=0), self.size)
 
@@ -175,8 +178,8 @@ class HeightField(ABC):
 
     def data_line_of_sight(
         self,
-        data_viewer_coordinate: Tuple[float, float],
-        data_target_coordinate: Tuple[float, float],
+        data_viewer_coordinate: Union[Tuple[float, float], np.ndarray],
+        data_target_coordinate: Union[Tuple[float, float], np.ndarray],
         altitude_mod: float,
         resolution: float = 1,
         coordinate_sample_mode=CoordinateSampleMode.POINT,

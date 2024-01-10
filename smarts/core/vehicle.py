@@ -35,7 +35,7 @@ from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
-from .sensors import (
+from .sensor import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
@@ -601,7 +601,11 @@ class Vehicle:
         sensor = getattr(self, f"_{sensor_name}", None)
         return sensor is not None
 
-    def sensor_property(self, sensor_name: str, default: Optional[Sensor] = ...):
+    def sensor_property(
+        self,
+        sensor_name: str,
+        default: Optional[Union[Sensor, Ellipsis.__class__]] = ...,
+    ):
         """Call a sensor by name."""
         sensor = getattr(self, f"_{sensor_name}", None if default is ... else default)
         assert (

@@ -86,6 +86,7 @@ from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.core_math import rounder_for_dt
+from .utils.custom_exceptions import RendererException
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .vehicle import Vehicle
@@ -277,6 +278,8 @@ class SMARTS(ProviderManager):
             if not config()("core", "debug", cast=bool):
                 self.destroy()
             raise  # re-raise the KeyboardInterrupt
+        except RendererException:
+            raise  # re-raise renderer not found exceptions without retrying.
         except Exception as e:
             self._log.error(
                 "Simulation crashed with exception. Attempting to cleanly shutdown."
@@ -1040,21 +1043,20 @@ class SMARTS(ProviderManager):
     def renderer(self) -> RendererBase:
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
-            from .utils.custom_exceptions import RendererException
-
             try:
                 from smarts.p3d.renderer import Renderer
 
                 self._renderer = Renderer(self._sim_id)
-            except ImportError as e:
-                raise RendererException.required_to("use camera observations")
-            except Exception as e:
+            except ImportError as exc:
+                raise RendererException.required_to("use camera observations") from exc
+            except Exception as exc:
                 self._renderer = None
-                raise RendererException("Unable to create renderer.")
+                raise RendererException("Unable to create renderer.") from exc
             if not self._renderer.is_setup:
                 if self._scenario:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        assert self._renderer is not None
         return self._renderer
 
     @property

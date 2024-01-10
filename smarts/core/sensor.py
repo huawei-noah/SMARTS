@@ -19,13 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
+import abc
 import importlib.resources as pkg_resources
 import logging
+import math
 import sys
 from collections import deque
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -34,10 +38,10 @@ from smarts.core.agent_interface import (
     CameraSensorName,
     CustomRenderCameraDependency,
     CustomRenderVariableDependency,
+    RenderDependencyBase,
 )
-from smarts.core.coordinates import Pose, RefLinePoint
+from smarts.core.coordinates import Dimensions, Pose, RefLinePoint
 from smarts.core.lidar import Lidar
-from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
 from smarts.core.observations import (
     CustomRenderData,
@@ -50,7 +54,6 @@ from smarts.core.observations import (
     TopDownRGB,
     ViaPoint,
 )
-from smarts.core.plan import Plan
 from smarts.core.renderer_base import (
     RendererBase,
     ShaderStepCameraDependency,
@@ -58,9 +61,15 @@ from smarts.core.renderer_base import (
 )
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.signals import SignalState
-from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.utils.core_math import squared_dist
-from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
+from smarts.core.vehicle_state import neighborhood_vehicles_around_vehicle
+
+if TYPE_CHECKING:
+    from smarts.core.actor import ActorState
+    from smarts.core.lidar_sensor_params import SensorParams
+    from smarts.core.plan import Plan
+    from smarts.core.simulation_frame import SimulationFrame
+    from smarts.core.vehicle_state import VehicleState
 
 
 def _gen_sensor_name(base_name: str, vehicle_state: VehicleState):
@@ -71,14 +80,19 @@ def _gen_base_sensor_name(base_name: str, actor_id: str):
     return f"{base_name}_{actor_id}"
 
 
-class Sensor:
+class Sensor(metaclass=abc.ABCMeta):
     """The sensor base class."""
 
     def step(self, sim_frame, **kwargs):
         """Update sensor state."""
 
+    @abc.abstractmethod
     def teardown(self, **kwargs):
         """Clean up internal resources"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
         raise NotImplementedError
 
     @property
@@ -152,11 +166,15 @@ class CameraSensor(Sensor):
             sim_frame.actor_states_by_id[self._target_actor], kwargs.get("renderer")
         )
 
-    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
+    def _follow_actor(self, actor_state: ActorState, renderer: RendererBase):
         if not renderer:
             return
         camera = renderer.camera_for_id(self._camera_name)
-        camera.update(vehicle_state.pose, vehicle_state.dimensions.height + 10)
+        pose = actor_state.get_pose()
+        dimensions = actor_state.get_dimensions()
+        if pose == None or dimensions == None:
+            return
+        camera.update(pose, dimensions.height + 10)
 
     @property
     def camera_name(self) -> str:
@@ -336,7 +354,7 @@ class OcclusionMapSensor(CameraSensor):
                 renderer.build_shader_step(
                     name=simplex_camera_name,
                     fshader_path=simplex_shader_path,
-                    dependencies=[
+                    dependencies=(
                         ShaderStepVariableDependency(
                             value=1.0 / resolution,
                             script_variable_name="scale",
@@ -348,7 +366,7 @@ class OcclusionMapSensor(CameraSensor):
                             ),
                             "iChannel0",
                         ),
-                    ],
+                    ),
                     priority=10,
                     width=width,
                     height=height,
@@ -364,22 +382,26 @@ class OcclusionMapSensor(CameraSensor):
             renderer.build_shader_step(
                 name=composite_camera_name,
                 fshader_path=composite_shader_path,
-                dependencies=[
+                dependencies=(
                     ShaderStepCameraDependency(occlusion_camera0, "iChannel0"),
                     ShaderStepCameraDependency(occlusion_camera1, "iChannel1"),
-                ],
+                ),
                 priority=30,
                 width=width,
                 height=height,
             )
         self._effect_cameras.append(composite_camera_name)
 
-    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
+    def _follow_actor(self, actor_state: ActorState, renderer: RendererBase):
         if not renderer:
             return
         for effect_name in self._effect_cameras:
+            pose = actor_state.get_pose()
+            dimensions = actor_state.get_dimensions()
+            if pose == None or dimensions == None:
+                continue
             camera = renderer.camera_for_id(effect_name)
-            camera.update(vehicle_state.pose, vehicle_state.dimensions.height)
+            camera.update(pose, dimensions.height)
 
     def teardown(self, **kwargs):
         renderer: Optional[RendererBase] = kwargs.get("renderer")
@@ -392,7 +414,7 @@ class OcclusionMapSensor(CameraSensor):
     def __call__(self, renderer: RendererBase) -> ObfuscationGridMap:
         effect_camera = renderer.camera_for_id(self._effect_cameras[-1])
 
-        ram_image = effect_camera.tex.getRamImageAs("RGB")
+        ram_image = effect_camera.wait_for_ram_image("RGB")
         mem_view = memoryview(ram_image)
         grid: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
         grid.shape = effect_camera.image_dimensions
@@ -402,8 +424,8 @@ class OcclusionMapSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_position=-1,
-            camera_heading=-1,
+            camera_position=(math.inf, math.inf, math.inf),
+            camera_heading=math.inf,
         )
         return ObfuscationGridMap(data=grid, metadata=metadata)
 
@@ -419,9 +441,7 @@ class CustomRenderSensor(CameraSensor):
         resolution: float,
         renderer: RendererBase,
         fragment_shader_path: str,
-        render_dependencies: Tuple[
-            Union[CustomRenderCameraDependency, CustomRenderVariableDependency], ...
-        ],
+        render_dependencies: Tuple[RenderDependencyBase, ...],
         ogm_sensor: Optional[OGMSensor],
         top_down_rgb_sensor: Optional[RGBSensor],
         drivable_area_grid_map_sensor: Optional[DrivableAreaGridMapSensor],
@@ -450,7 +470,7 @@ class CustomRenderSensor(CameraSensor):
                 if sensor:
                     return True
                 raise UserWarning(
-                    f"Custom render depency requires `{d.camera_dependency_name}` but the sensor is not attached in the interface."
+                    f"Custom render depency requires `{d.name}` but the sensor is not attached in the interface."
                 )
             return False
 
@@ -474,6 +494,10 @@ class CustomRenderSensor(CameraSensor):
                     value=d.value,
                     script_variable_name=d.variable_name,
                 )
+            else:
+                raise TypeError(
+                    f"Dependency must be a subtype of `{RenderDependencyBase}`"
+                )
             dependencies.append(dependency)
 
         renderer.build_shader_step(
@@ -485,12 +509,6 @@ class CustomRenderSensor(CameraSensor):
             height=height,
         )
 
-    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
-        if not renderer:
-            return
-        camera = renderer.camera_for_id(self._camera_name)
-        camera.update(vehicle_state.pose, vehicle_state.dimensions.height)
-
     def teardown(self, **kwargs):
         renderer: Optional[RendererBase] = kwargs.get("renderer")
         if not renderer:
@@ -498,10 +516,10 @@ class CustomRenderSensor(CameraSensor):
         camera = renderer.camera_for_id(self._camera_name)
         camera.teardown()
 
-    def __call__(self, renderer: RendererBase) -> ObfuscationGridMap:
+    def __call__(self, renderer: RendererBase) -> CustomRenderData:
         effect_camera = renderer.camera_for_id(self._camera_name)
 
-        ram_image = effect_camera.tex.getRamImageAs("RGB")
+        ram_image = effect_camera.wait_for_ram_image("RGB")
         mem_view = memoryview(ram_image)
         grid: np.ndarray = np.frombuffer(mem_view, np.uint8)
         grid.shape = effect_camera.image_dimensions + (3,)
@@ -511,8 +529,8 @@ class CustomRenderSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_position=-1,
-            camera_heading=-1,
+            camera_position=(math.inf, math.inf, math.inf),  # has no position
+            camera_heading=math.inf,  # has no heading
         )
         return CustomRenderData(data=grid, metadata=metadata)
 
