@@ -30,103 +30,9 @@ from smarts.core.renderer_base import ShaderStep
 from smarts.sstudio.graphics.heightfield import HeightField
 
 
-@lru_cache(2)
-def table_cache(table_dim, seed):
-    p = np.arange(table_dim, dtype=int)
-    np.random.shuffle(p)
-    p = np.stack([p, p]).flatten()
-    return p
-
-
 def get_image_dimensions(image_file):
     hf = HeightField.load_image(image_file)
     return hf.resolution
-
-
-class PerlinNoise:
-    """This is a performant perlin noise generator heavily based on https://stackoverflow.com/a/42154921"""
-
-    @classmethod
-    def noise(cls, x, y, seed, table_dim):
-        """Vectorizes the generation of noise.
-
-        Args:
-            x (np.array): The x value grid
-            y (np.array): The y value grid
-            seed (int): The random seed to use
-
-        Returns:
-            np.ndarray: A noise value texture with output range [-0.5:0.5].
-        """
-        # permutation table
-        np.random.seed(seed)
-        p = table_cache(table_dim, seed)
-
-        x_mod, y_mod = x % table_dim, y % table_dim
-        # coordinates of the top-left
-        xi, yi = x_mod.astype(int), y_mod.astype(int)
-        # internal coordinates
-        xf, yf = x_mod - xi, y_mod - yi
-        # fade factors
-        u, v = cls.fade(xf), cls.fade(yf)
-        # noise components
-        n00 = cls.gradient(p[p[xi] + yi], xf, yf)
-        n01 = cls.gradient(p[p[xi] + yi + 1], xf, yf - 1)
-        n11 = cls.gradient(p[p[xi + 1] + yi + 1], xf - 1, yf - 1)
-        n10 = cls.gradient(p[p[xi + 1] + yi], xf - 1, yf)
-        # combine noises
-        x1 = cls.lerp(n00, n10, u)
-        x2 = cls.lerp(n01, n11, u)
-        return cls.lerp(x1, x2, v)
-
-    @staticmethod
-    def fade(t: float) -> float:
-        """The fade function"""
-        return 6 * t**5 - 15 * t**4 + 10 * t**3
-
-    @staticmethod
-    def lerp(a, b, x):
-        "linear interpolation"
-        return a + x * (b - a)
-
-    @staticmethod
-    def gradient(h, x, y):
-        "grad converts h to the right gradient vector and return the dot product with (x,y)"
-        vectors = np.array([[0, 1], [0, -1], [1, 0], [-1, 0]])
-        g = vectors[h % 4]
-        return g[:, :, 0] * x + g[:, :, 1] * y
-
-
-def generate_perlin(
-    width: int,
-    height: int,
-    smooth_iterations: int,
-    seed: int,
-    table_dim: int,
-    shift: Tuple[float, float],
-    octaves: int = 20,
-):
-    image = np.zeros((height, width))
-    for i in range(0, octaves):
-        freq = 2**i
-        lin = np.linspace(shift[0], freq + shift[0], width, endpoint=False)
-        lin2 = np.linspace(shift[1], freq + shift[1], height, endpoint=False)
-        x, y = np.meshgrid(lin, lin2)
-        image = PerlinNoise.noise(x, y, seed=seed, table_dim=table_dim) / freq + image
-
-    image = (image + 1) * 128
-    image = image.astype(np.uint8)
-
-    hf = HeightField(image, (width, height))
-    if smooth_iterations:
-        blur_arr = np.array([0.006, 0.061, 0.242, 0.383, 0.242, 0.061, 0.006])
-        blur_arr_u = blur_arr.reshape((1, 7))
-        blur_arr_v = blur_arr.reshape((7, 1))
-        for i in range(smooth_iterations):
-            hf = hf.apply_kernel(np.array(blur_arr_u))
-            hf = hf.apply_kernel(blur_arr_v)
-
-    return hf
 
 
 def generate_simplex_p3d_gpu(
@@ -163,7 +69,7 @@ def generate_simplex_p3d_gpu(
 
     renderer.render()
 
-    ram_image = camera.tex.getRamImageAs("RGB")
+    ram_image = camera.wait_for_ram_image("RGB")
     mem_view = memoryview(ram_image)
     image: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
     image = np.reshape(image, (width, height))
@@ -171,53 +77,6 @@ def generate_simplex_p3d_gpu(
     assert np.any(image > 0), image
 
     return HeightField(image, size=(width, height))
-
-
-def generate_simplex(
-    width: int,
-    height: int,
-    seed,
-    shift: Tuple[float, float],
-    octaves: float = 2,
-    granularity=0.02,
-    amplitude=4,
-):
-    import noise
-
-    assert amplitude < 256
-    half_amp = amplitude / 2
-    noise_map = np.empty((width, height), dtype=np.uint8)
-    for x in range(width):
-        for y in range(height):
-            nx = x * granularity
-            ny = y * granularity
-            noise_value = noise.snoise2(
-                nx + shift[0],
-                ny + shift[1],
-                octaves=octaves,
-                persistence=0.5,
-                lacunarity=2.0,
-                repeatx=800,
-                repeaty=800,
-            )
-            noise_map[y][x] = np.floor(half_amp * (1 + noise_value))
-
-    return HeightField(noise_map, size=(width, height))
-
-
-def generate_perlin_file(
-    out_bytemap_file, width, height, smooth_iterations, seed, table_dim, shift
-):
-    hf = generate_perlin(
-        width, height, smooth_iterations, seed, table_dim, (shift, shift)
-    )
-    image = hf.data
-
-    from PIL import Image
-
-    im = Image.fromarray(image.squeeze(), "L")
-    im.save(out_bytemap_file)
-    im.close()
 
 
 if __name__ == "__main__":
@@ -248,16 +107,6 @@ if __name__ == "__main__":
     a_width, a_height = args.width, args.height
     if args.match_file_dimensions != "":
         a_width, a_height = get_image_dimensions(args.match_file_dimensions)
-
-    # generate_perlin_file(
-    #     args.output_path,
-    #     width,
-    #     height,
-    #     args.smooth_iterations,
-    #     args.seed,
-    #     args.table_dim,
-    #     args.shift,
-    # )
 
     f_hf = generate_simplex_p3d_gpu(
         a_width,
