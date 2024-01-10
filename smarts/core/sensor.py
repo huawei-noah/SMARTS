@@ -36,8 +36,9 @@ import numpy as np
 from smarts.core import glsl
 from smarts.core.agent_interface import (
     CameraSensorName,
+    CustomRenderBufferDependency,
     CustomRenderCameraDependency,
-    CustomRenderVariableDependency,
+    CustomRenderConstantDependency,
     RenderDependencyBase,
 )
 from smarts.core.coordinates import Dimensions, Pose, RefLinePoint
@@ -489,11 +490,13 @@ class CustomRenderSensor(CameraSensor):
                     camera_id,
                     d.variable_name,
                 )
-            elif isinstance(d, CustomRenderVariableDependency):
+            elif isinstance(d, CustomRenderConstantDependency):
                 dependency = ShaderStepVariableDependency(
                     value=d.value,
                     script_variable_name=d.variable_name,
                 )
+            elif isinstance(d, CustomRenderBufferDependency):
+                pass
             else:
                 raise TypeError(
                     f"Dependency must be a subtype of `{RenderDependencyBase}`"
