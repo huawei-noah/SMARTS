@@ -221,9 +221,13 @@ def lerp(a, b, p):
 
 
 def safe_division(n: float, d: float, default=math.inf):
-    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
-    True and # == #
-    False and NaN == False
+    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) 
+    
+    .. note::
+        
+        The cases are:
+        1) True and <value> == <value>
+        2) False and ``NaN`` == False
     """
     if n == 0:
         return 0
@@ -668,7 +672,7 @@ def slope(horizontal, vertical, default=math.inf):
     Args:
         horizontal (float): The x growth rate.
         vertical (float): The y growth rate.
-        inf (optional float): The default if the value approaches infinity. Defaults to ``1e10``.
+        default (float): The default if the value approaches infinity. Defaults to ``1e10``.
 
     Returns:
         float: The slope of the direction vector.

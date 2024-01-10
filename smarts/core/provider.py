@@ -28,7 +28,7 @@ from .actor import ActorState
 from .controllers import ActionSpaceType
 
 if TYPE_CHECKING:
-    from smarts.core.scenario import Scenario
+    from smarts.core import scenario
 
 
 class ProviderRecoveryFlags(IntFlag):

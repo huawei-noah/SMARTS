@@ -75,7 +75,7 @@ class SumoTrafficSimulation(TrafficProvider):
             Remove only agent vehicles used by SMARTS and not delete other SUMO
             vehicles when the traffic simulation calls to tear-down
         traci_retries:
-            The number of times to retry acquisition of a TraCI server before erroring.
+            The number of times to retry acquisition of a TraCI server before throwing an exception.
     """
 
     _HAS_DYNAMIC_ATTRIBUTES = True

@@ -25,6 +25,7 @@ import warnings
 from dataclasses import dataclass, field, replace
 from enum import Enum, IntEnum, auto
 from functools import cached_property
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Union
 
 import numpy as np
@@ -32,11 +33,7 @@ import numpy as np
 from smarts.core import config
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
+from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
 
 
 class _DEFAULTS(Enum):
@@ -107,7 +104,7 @@ class CameraSensorName(Enum):
 
 
 class BufferName(Enum):
-    """The names of the different buffers avaiable for camera renderering."""
+    """The names of the different buffers available for camera rendering."""
 
     DELTA_TIME = "dt"
     STEP_COUNT = "step_count"
@@ -246,7 +243,7 @@ class CustomRenderCameraDependency(RenderDependencyBase):
     """The name of the camera texture variable."""
 
     target_actor: Union[str, Literal[_DEFAULTS.SELF]] = _DEFAULTS.SELF
-    """The target actor to target. Defaults to targetting this vehicle."""
+    """The target actor to target. Defaults to targeting this vehicle."""
 
     @property
     def name(self) -> str:

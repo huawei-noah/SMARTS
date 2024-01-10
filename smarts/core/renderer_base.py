@@ -157,7 +157,7 @@ class ShaderStepCameraDependency(ShaderStepDependencyBase):
 
 @dataclass
 class ShaderStep(OffscreenCamera, metaclass=ABCMeta):
-    """A camera used for rendering images using a shader and a fullscreen quad."""
+    """A camera used for rendering images using a shader and a full-screen quad."""
 
     shader_file: str
     camera_dependencies: Collection[OffscreenCamera]

@@ -126,6 +126,7 @@ nitpick_ignore = {
     ("py:class", "ObsType"),
     ("py:class", "smarts.env.gymnasium.wrappers.metric.utils.T"),
     ("py:class", "enum.Enum"),
+    ("py:class", "bc.BulletClient"),
 }
 nitpick_ignore_regex = {
     (r"py:.*", r"av2\..*"),

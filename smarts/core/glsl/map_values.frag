@@ -9,6 +9,8 @@ uniform vec2 iResolution;
 uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
 
+uniform vec3 empty_color;
+
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
 {
@@ -23,7 +25,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     fragColor = texture(iChannel1, p);
 
     if (fragColor.rgb == vec3(0.0, 0.0, 0.0)) {
-        fragColor = vec4(0.1, 0.5, 0.1, 1.0);
+        fragColor = vec4(empty_color, 1.0);
     }
 }
 

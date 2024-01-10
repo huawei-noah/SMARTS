@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     from shapely.geometry import Polygon
 
     from smarts.core.controllers import ActionSpaceType
-    from smarts.core.scenario import Scenario
+    from smarts.core import scenario
 
 
 MAX_IMPATIENCE = 3.0

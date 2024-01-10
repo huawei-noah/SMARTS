@@ -30,7 +30,7 @@ from smarts.core.plan import Mission
 from smarts.sstudio.sstypes import IdEntryTactic
 
 if TYPE_CHECKING:
-    from smarts.core.scenario import Scenario
+    from smarts.core import scenario
     from smarts.core.smarts import SMARTS
 
 

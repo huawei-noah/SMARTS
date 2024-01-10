@@ -297,7 +297,7 @@ class P3DOffscreenCamera(_P3DCameraMixin, OffscreenCamera):
 
 @dataclass
 class P3DShaderStep(_P3DCameraMixin, ShaderStep):
-    """A camera used for rendering images using a shader and a fullscreen quad."""
+    """A camera used for rendering images using a shader and a full-screen quad."""
 
     fullscreen_quad_node: NodePath
 

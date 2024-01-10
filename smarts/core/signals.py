@@ -28,7 +28,7 @@ from smarts.core.colors import SceneColors
 from .actor import ActorState
 
 if TYPE_CHECKING:
-    from smarts.core.coordinates import Point
+    from smarts.core import coordinates
 
 
 class SignalLightState(IntFlag):
@@ -61,7 +61,7 @@ class SignalState(ActorState):
     """Traffic signal state information."""
 
     state: Optional[SignalLightState] = None
-    stopping_pos: Optional[Point] = None
+    stopping_pos: Optional[coordinates.Point] = None
     controlled_lanes: Optional[List[str]] = None
     last_changed: Optional[float] = None  # will be None if not known
 

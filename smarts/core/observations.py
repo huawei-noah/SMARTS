@@ -28,9 +28,9 @@ import numpy as np
 if TYPE_CHECKING:
     from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
     from smarts.core.events import Events
-    from smarts.core.plan import Mission
+    from smarts.core import plan
     from smarts.core.road_map import Waypoint
-    from smarts.core.signals import SignalLightState
+    from smarts.core import signals
 
 
 class VehicleObservation(NamedTuple):
@@ -82,7 +82,7 @@ class EgoVehicleObservation(NamedTuple):
     """Identifier for the lane nearest to this vehicle."""
     lane_index: int
     """Index of the nearest lane on the road nearest to this vehicle. Right most lane has index 0 and index increments to the left."""
-    mission: Mission
+    mission: plan.Mission
     """Vehicle's desired destination."""
     linear_velocity: np.ndarray
     """Velocity of vehicle along the global coordinate axes. Units=m/s. A numpy array of shape=(3,) and dtype=np.float64."""
@@ -195,7 +195,7 @@ class Vias(NamedTuple):
 class SignalObservation(NamedTuple):
     """Describes an observation of a traffic signal (light) on this time-step."""
 
-    state: SignalLightState
+    state: signals.SignalLightState
     """The state of the traffic signal."""
     stop_point: Point
     """The stopping point for traffic controlled by the signal, i.e., the

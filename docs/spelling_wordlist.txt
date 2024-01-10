@@ -42,6 +42,7 @@ instantiating
 instantiation
 instantiations
 iterable
+kwargs
 lanepoint
 laner
 lidar
@@ -68,6 +69,7 @@ serialize
 serializes
 serialized
 serializable
+shader
 str
 superclass
 terminateds
