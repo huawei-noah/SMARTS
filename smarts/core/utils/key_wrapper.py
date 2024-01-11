@@ -38,5 +38,4 @@ class KeyWrapper(Sequence):
 
     def insert(self, index: int, item):
         """Insert an item into the sequence."""
-        print("asked to insert %s at index%d" % (item, index))
         self.it.insert(index, item)
