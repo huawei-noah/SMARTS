@@ -99,9 +99,9 @@ class Lidar:
 
             yaws = -1 * self._sensor_params.laser_angles
             rolls = np.arange(n_rays) * self._sensor_params.angle_resolution
+            origin = np.array([0, 0, 0])
             for yaw, roll in itertools.product(yaws, rolls):
                 rot = pybullet.getQuaternionFromEuler((roll, 0, yaw))
-                origin = np.array([0, 0, 0])
 
                 direction = rotate_quat(
                     np.asarray(rot, dtype=float),
