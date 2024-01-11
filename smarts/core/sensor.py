@@ -35,7 +35,6 @@ import numpy as np
 
 from smarts.core import glsl
 from smarts.core.agent_interface import (
-    CameraSensorName,
     CustomRenderBufferDependency,
     CustomRenderCameraDependency,
     CustomRenderConstantDependency,
@@ -62,6 +61,7 @@ from smarts.core.renderer_base import (
     ShaderStepVariableDependency,
 )
 from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.shader_buffer import BufferName, CameraSensorName
 from smarts.core.signals import SignalState
 from smarts.core.utils.core_math import squared_dist
 from smarts.core.vehicle_state import neighborhood_vehicles_around_vehicle
@@ -498,8 +498,13 @@ class CustomRenderSensor(CameraSensor):
                     script_variable_name=d.variable_name,
                 )
             elif isinstance(d, CustomRenderBufferDependency):
+                if isinstance(d.buffer_dependency_name, str):
+                    buffer_name = BufferName(d.buffer_dependency_name)
+                else:
+                    buffer_name = d.buffer_dependency_name
+
                 dependency = ShaderStepBufferDependency(
-                    buffer_name=d.buffer_dependency_name,
+                    buffer_name=buffer_name,
                     script_variable_name=d.variable_name,
                 )
             else:
@@ -658,7 +663,11 @@ class TripMeterSensor(Sensor):
         )
 
     def update_distance_wps_record(
-        self, waypoint_paths: List[List[Waypoint]], vehicle_state: VehicleState, plan: Plan, road_map: RoadMap
+        self,
+        waypoint_paths: List[List[Waypoint]],
+        vehicle_state: VehicleState,
+        plan: Plan,
+        road_map: RoadMap,
     ):
         """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
@@ -717,7 +726,7 @@ class TripMeterSensor(Sensor):
         distance = np.dot(position_disp_vec, wp_unit_vec)
         return distance
 
-    def __call__(self, increment: bool=False):
+    def __call__(self, increment: bool = False):
         if increment:
             return self._dist_travelled - self._last_dist_travelled
 
@@ -730,7 +739,7 @@ class TripMeterSensor(Sensor):
 class NeighborhoodVehiclesSensor(Sensor):
     """Detects other vehicles around the sensor equipped vehicle."""
 
-    def __init__(self, radius: Optional[float]=None):
+    def __init__(self, radius: Optional[float] = None):
         self._radius = radius
 
     @property
@@ -738,7 +747,9 @@ class NeighborhoodVehiclesSensor(Sensor):
         """Radius to check for nearby vehicles."""
         return self._radius
 
-    def __call__(self, vehicle_state: VehicleState, vehicle_states: Collection[VehicleState]) -> List[VehicleState]:
+    def __call__(
+        self, vehicle_state: VehicleState, vehicle_states: Collection[VehicleState]
+    ) -> List[VehicleState]:
         return neighborhood_vehicles_around_vehicle(
             vehicle_state, vehicle_states, radius=self._radius
         )
@@ -760,7 +771,7 @@ class NeighborhoodVehiclesSensor(Sensor):
 class WaypointsSensor(Sensor):
     """Detects waypoints leading forward along the vehicle plan."""
 
-    def __init__(self, lookahead: int=32):
+    def __init__(self, lookahead: int = 32):
         self._lookahead = lookahead
 
     def __call__(self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap):
@@ -787,10 +798,12 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     """Detects waypoints from all paths nearby the vehicle."""
 
-    def __init__(self, horizon: int=32):
+    def __init__(self, horizon: int = 32):
         self._horizon = horizon
 
-    def __call__(self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap) -> RoadWaypoints:
+    def __call__(
+        self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap
+    ) -> RoadWaypoints:
         veh_pt = vehicle_state.pose.point
         lane = road_map.nearest_lane(veh_pt)
         if not lane:
@@ -808,7 +821,11 @@ class RoadWaypointsSensor(Sensor):
         return RoadWaypoints(lanes=lane_paths)
 
     def _paths_for_lane(
-        self, lane: RoadMap.Lane, vehicle_state: VehicleState, plan: Plan, overflow_offset: Optional[float]=None
+        self,
+        lane: RoadMap.Lane,
+        vehicle_state: VehicleState,
+        plan: Plan,
+        overflow_offset: Optional[float] = None,
     ):
         """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m

@@ -28,8 +28,8 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import (
     OGM,
     RGB,
-    CameraSensorName,
     CustomRender,
+    CustomRenderBufferDependency,
     CustomRenderCameraDependency,
     CustomRenderConstantDependency,
     DoneCriteria,
@@ -41,6 +41,7 @@ from smarts.core.agent_interface import (
 from smarts.core.colors import Colors
 from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.road_map import Waypoint, interpolate_waypoints
+from smarts.core.shader_buffer import BufferName, CameraSensorName
 from smarts.core.utils.core_math import slope, squared_dist
 from smarts.core.utils.observations import points_to_pixels
 from smarts.env.utils.observation_conversion import ObservationOptions

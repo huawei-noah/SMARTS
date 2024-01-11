@@ -34,7 +34,7 @@ import numpy as np
 from .coordinates import Pose
 
 if TYPE_CHECKING:
-    from smarts.core.agent_interface import BufferName
+    from smarts.core.shader_buffer import BufferName
 
 
 class DEBUG_MODE(IntEnum):

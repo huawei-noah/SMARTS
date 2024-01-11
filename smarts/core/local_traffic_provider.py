@@ -59,8 +59,8 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 if TYPE_CHECKING:
     from shapely.geometry import Polygon
 
-    from smarts.core.controllers import ActionSpaceType
     from smarts.core import scenario
+    from smarts.core.controllers import ActionSpaceType
 
 
 MAX_IMPATIENCE = 3.0

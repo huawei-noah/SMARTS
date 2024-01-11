@@ -61,7 +61,6 @@ from panda3d.core import (
     loadPrcFileData,
 )
 
-import smarts.assets
 from smarts.core import glsl
 from smarts.core.colors import Colors, SceneColors
 from smarts.core.coordinates import Point, Pose
@@ -78,7 +77,9 @@ from smarts.core.renderer_base import (
     ShaderStepVariableDependency,
 )
 from smarts.core.scenario import Scenario
+from smarts.core.shader_buffer import BufferName
 from smarts.core.signals import SignalState, signal_state_to_color
+from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.vehicle_state import VehicleState
 
 # pytype: enable=import-error
@@ -406,7 +407,7 @@ class Renderer(RendererBase):
         if self._root_np is None:
             self._root_np = self._showbase_instance.setup_sim_root(self._simid)
 
-    def load_road_map(self, map_path):
+    def load_road_map(self, map_path: Path):
         # Load map
         self._ensure_root()
         if self._road_map_np:
@@ -502,7 +503,7 @@ class Renderer(RendererBase):
         """provided for non-SMARTS uses; normally not used by SMARTS."""
         self._showbase_instance.taskMgr.step()
 
-    def sync(self, sim_frame):
+    def sync(self, sim_frame: SimulationFrame):
         """Update the current state of the vehicles and signals within the renderer."""
         signal_ids = set()
         for actor_id, actor_state in sim_frame.actor_states_by_id.items():
@@ -683,7 +684,7 @@ class Renderer(RendererBase):
         signal_np.removeNode()
         del self._signal_nodes[sig_id]
 
-    def camera_for_id(self, camera_id) -> Union[P3DOffscreenCamera, P3DShaderStep]:
+    def camera_for_id(self, camera_id: str) -> Union[P3DOffscreenCamera, P3DShaderStep]:
         """Get a camera by its id."""
         camera = self._camera_nodes.get(camera_id)
         assert (
@@ -754,7 +755,7 @@ class Renderer(RendererBase):
         name: str,
         fshader_path: Union[str, Path],
         dependencies: Collection[
-            Union[ShaderStepCameraDependency, ShaderStepVariableDependency]
+            ShaderStepDependencyBase  # Union[ShaderStepCameraDependency, ShaderStepVariableDependency, ShaderStepBufferDependency]
         ],
         priority: int,
         height: int,
@@ -847,10 +848,9 @@ class Renderer(RendererBase):
                 v for v in dependencies if isinstance(v, ShaderStepBufferDependency)
             )
 
-            quad.setShaderInput("iResolution", n1=width, n2=height)
-            quad.setShaderInput("iTranslation", n1=0, n2=0)
-            quad.setShaderInput("iHeading", 0.0)
-            quad.setShaderInput("iElevation", 0.0)
+            Renderer._set_shader_inputs(
+                quad, width, height, buffers=buffer_dependencies
+            )
             camera = P3DShaderStep(
                 self,
                 shader_file=fshader_path,
@@ -862,3 +862,192 @@ class Renderer(RendererBase):
                 fullscreen_quad_node=quad,
             )
             self._camera_nodes[name] = camera
+
+    @staticmethod
+    def _set_shader_inputs(
+        surface, width, height, buffers: Tuple[ShaderStepBufferDependency]
+    ):
+
+        surface.setShaderInput("iResolution", n1=width, n2=height)
+        surface.setShaderInput("iTranslation", n1=0, n2=0)
+        surface.setShaderInput("iHeading", 0.0)
+        surface.setShaderInput("iElevation", 0.0)
+
+        for svn, bn in ((b.script_variable_name, b.buffer_name) for b in buffers):
+            initial_value = None
+            # SINGLE VALUES
+            if bn in (
+                BufferName.DELTA_TIME,
+                BufferName.ELAPSED_SIM_TIME,
+                BufferName.EGO_VEHICLE_STATE_HEADING,
+                BufferName.EGO_VEHICLE_STATE_SPEED,
+                BufferName.EGO_VEHICLE_STATE_STEERING,
+                BufferName.EGO_VEHICLE_STATE_YAW_RATE,
+                BufferName.EGO_VEHICLE_STATE_LANE_INDEX,
+                BufferName.DISTANCE_TRAVELLED,
+            ):
+                initial_value = float()
+            elif bn in (
+                BufferName.STEP_COUNT,
+                BufferName.STEPS_COMPLETED,
+                BufferName.VEHICLE_TYPE,
+            ):
+                initial_value = int()
+            elif bn in (
+                BufferName.EVENTS_OFF_ROAD,
+                BufferName.EVENTS_OFF_ROUTE,
+                BufferName.EVENTS_ON_SHOULDER,
+                BufferName.EVENTS_WRONG_WAY,
+                BufferName.EVENTS_NOT_MOVING,
+                BufferName.EVENTS_REACH_GOAL,
+                BufferName.EVENTS_REACHED_MAX_EPISODE_STEPS,
+                BufferName.EVENTS_AGENTS_DONE_ALIVE,
+                BufferName.EVENTS_INTEREST_DONE,
+                BufferName.EGO_VEHICLE_STATE_INTEREST,
+                BufferName.UNDER_THIS_VEHICLE_CONTROL,
+            ):
+                initial_value = bool()
+            elif bn in (
+                BufferName.EGO_VEHICLE_STATE_POSITION,
+                BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY,
+                BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY,
+                BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
+                BufferName.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION,
+                BufferName.EGO_VEHICLE_STATE_LINEAR_JERK,
+                BufferName.EGO_VEHICLE_STATE_ANGULAR_JERK,
+            ):
+                initial_value = (float(), float())
+            elif bn in (
+                BufferName.EGO_VEHICLE_STATE_ROAD_ID,
+                BufferName.EGO_VEHICLE_STATE_LANE_ID,
+            ):
+                initial_value = int()
+            elif bn in (
+                BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX,
+                BufferName.EGO_VEHICLE_STATE_LANE_POSITION,
+            ):
+                initial_value = (float(), float(), float())
+
+            # Vector of NEIGHBORHOOD_VEHICLE_STATES
+            elif bn in (BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION,):
+                initial_value = [
+                    (float(), float()),
+                ]
+            elif bn in (
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX,
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION,
+            ):
+                initial_value = [
+                    (float(), float(), float()),
+                ]
+            elif bn in (
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_HEADING,
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_SPEED,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            elif bn in (
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID,
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID,
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX,
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_INTEREST,
+            ):
+                initial_value = [
+                    int(),
+                ]
+
+            # Vector of waypoints from WAYPOINT_PATHS
+            elif bn in (BufferName.WAYPOINT_PATHS_POSITION,):
+                initial_value = [(float(), float())]
+            elif bn in (
+                BufferName.WAYPOINT_PATHS_HEADING,
+                BufferName.WAYPOINT_PATHS_LANE_WIDTH,
+                BufferName.WAYPOINT_PATHS_SPEED_LIMIT,
+                BufferName.WAYPOINT_PATHS_LANE_OFFSET,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            elif bn in (
+                BufferName.WAYPOINT_PATHS_LANE_ID,
+                BufferName.WAYPOINT_PATHS_LANE_INDEX,
+            ):
+                initial_value = [
+                    int(),
+                ]
+
+            # Vector of waypoints from ROAD_WAYPOINTS
+            elif bn in (BufferName.ROAD_WAYPOINTS_POSITIONS,):
+                initial_value = [
+                    (float(), float()),
+                ]
+            elif bn in (
+                BufferName.ROAD_WAYPOINTS_HEADING,
+                BufferName.ROAD_WAYPOINTS_LANE_WIDTH,
+                BufferName.ROAD_WAYPOINTS_SPEED_LIMIT,
+                BufferName.ROAD_WAYPOINTS_LANE_OFFSET,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            elif bn in (
+                BufferName.ROAD_WAYPOINTS_LANE_ID,
+                BufferName.ROAD_WAYPOINTS_LANE_INDEX,
+            ):
+                initial_value = [
+                    int(),
+                ]
+
+            # Vector of via data from VIA_DATA
+            elif bn in (BufferName.VIA_DATA_NEAR_VIA_POINTS_POSITION,):
+                initial_value = [
+                    (float(), float()),
+                ]
+            elif bn in (
+                BufferName.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX,
+                BufferName.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID,
+                BufferName.VIA_DATA_NEAR_VIA_POINTS_HIT,
+            ):
+                initial_value = [
+                    int(),
+                ]
+            elif bn in (BufferName.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED,):
+                initial_value = [
+                    float(),
+                ]
+
+            # Vector of lidar point information from LIDAR_POINT_CLOUD
+            elif bn in (
+                BufferName.LIDAR_POINT_CLOUD_POINTS,
+                BufferName.LIDAR_POINT_CLOUD_ORIGIN,
+                BufferName.LIDAR_POINT_CLOUD_DIRECTION,
+            ):
+                initial_value = [
+                    (float(), float(), float()),
+                ]
+            elif bn in (BufferName.LIDAR_POINT_CLOUD_HITS,):
+                initial_value = [
+                    int(),
+                ]
+
+            # SIGNALS
+            elif bn in (
+                BufferName.SIGNALS_LIGHT_STATE,
+                # BufferName.SIGNALS_CONTROLLED_LANES,
+            ):
+                initial_value = [
+                    int(),
+                ]
+            elif bn in (
+                BufferName.SIGNALS_STOP_POINT,
+                BufferName.SIGNALS_LAST_CHANGED,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            else:
+                raise ValueError(f"Buffer `{bn}` is not yet implemented.")
+
+            shader_input = ShaderInput(name=svn, value=initial_value)
+            surface.set_shader_input(shader_input)
