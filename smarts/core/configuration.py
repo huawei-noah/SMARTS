@@ -68,7 +68,7 @@ _config_defaults: Final = {
     ("core", "sensor_parallelization"): "mp",
     ("core", "debug"): False,
     ("core", "reset_retries"): 0,
-    # ("physics", "max_pybullet_freq"): 240,
+    ("physics", "max_pybullet_freq"): 240,
     ("ray", "num_gpus"): 0,
     ("ray", "num_cpus"): None,
     ("ray", "log_to_driver"): False,
