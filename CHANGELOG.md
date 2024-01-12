@@ -59,6 +59,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug with `VehicleIndex.attach_sensors_to_vehicle()` that would generate an invalid plan.
 - Fixed a bug where vehicle sensor meta attributes would reference the wrong vehicle.
 - Resolved issue with road waypoints not showing waypoints if the horizon was larger than the start of the lane.
+- Fixed an issue where `SMARTS.reset()` would be unable to render cameras.
 ### Removed
 ### Security
 

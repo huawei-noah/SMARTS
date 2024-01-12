@@ -542,8 +542,6 @@ class SMARTS(ProviderManager):
         self._check_valid()
         self._scenario = scenario
 
-        if self._renderer:
-            self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
         self._vehicle_index.load_vehicle_definitions_list(
@@ -554,6 +552,8 @@ class SMARTS(ProviderManager):
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
         for actor_capture_manager in self._actor_capture_managers:
             actor_capture_manager.reset(scenario, self)
+        if self._renderer or any(a.requires_rendering for a in self._agent_manager.agent_interfaces.values()):
+            self.renderer.setup(scenario)
 
         self._harmonize_providers(provider_state)
         self._last_provider_state = provider_state

@@ -397,7 +397,7 @@ class Vehicle:
         )
         # DrivableAreaGridMapSensor
         if agent_interface.drivable_area_grid_map:
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add a drivable_area_grid_map")
             add_sensor_if_needed(
                 DrivableAreaGridMapSensor,
@@ -407,11 +407,11 @@ class Vehicle:
                 width=agent_interface.drivable_area_grid_map.width,
                 height=agent_interface.drivable_area_grid_map.height,
                 resolution=agent_interface.drivable_area_grid_map.resolution,
-                renderer=sim.renderer,
+                renderer=sim.renderer_ref,
             )
         # OGMSensor
         if agent_interface.occupancy_grid_map:
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add an OGM")
             add_sensor_if_needed(
                 OGMSensor,
@@ -421,7 +421,7 @@ class Vehicle:
                 width=agent_interface.occupancy_grid_map.width,
                 height=agent_interface.occupancy_grid_map.height,
                 resolution=agent_interface.occupancy_grid_map.resolution,
-                renderer=sim.renderer,
+                renderer=sim.renderer_ref,
             )
         if agent_interface.occlusion_map:
             if not vehicle.subscribed_to("ogm_sensor"):
@@ -437,13 +437,13 @@ class Vehicle:
                     width=agent_interface.occlusion_map.width,
                     height=agent_interface.occlusion_map.height,
                     resolution=agent_interface.occlusion_map.resolution,
-                    renderer=sim.renderer,
+                    renderer=sim.renderer_ref,
                     ogm_sensor=vehicle.sensor_property("ogm_sensor"),
                     add_surface_noise=agent_interface.occlusion_map.surface_noise,
                 )
         # RGBSensor
         if agent_interface.top_down_rgb:
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add an RGB camera")
             add_sensor_if_needed(
                 RGBSensor,
@@ -453,10 +453,10 @@ class Vehicle:
                 width=agent_interface.top_down_rgb.width,
                 height=agent_interface.top_down_rgb.height,
                 resolution=agent_interface.top_down_rgb.resolution,
-                renderer=sim.renderer,
+                renderer=sim.renderer_ref,
             )
         if len(agent_interface.custom_renders):
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add a fragment program.")
             for i, program in enumerate(agent_interface.custom_renders):
                 add_sensor_if_needed(
@@ -466,7 +466,7 @@ class Vehicle:
                     width=program.width,
                     height=program.height,
                     resolution=program.resolution,
-                    renderer=sim.renderer,
+                    renderer=sim.renderer_ref,
                     fragment_shader_path=program.fragment_shader_path,
                     render_dependencies=program.dependencies,
                     ogm_sensor=vehicle.sensor_property("ogm_sensor", None),
