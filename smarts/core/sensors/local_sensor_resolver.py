@@ -22,17 +22,20 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Dict, Iterable, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Iterable, Optional, Set, Tuple
 
+from smarts.core.sensor import CustomRenderSensor
 from smarts.core.sensors import SensorResolver, Sensors, SensorState
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.file import replace
 
 if TYPE_CHECKING:
     from smarts.core.observations import Observation
+    from smarts.core.renderer_base import RendererBase
     from smarts.core.sensor import Sensor
     from smarts.core.simulation_frame import SimulationFrame
     from smarts.core.simulation_local_constants import SimulationLocalConstants
+    from smarts.core.utils.pybullet import bullet_client as bc
 
 
 logger = logging.getLogger(__name__)
@@ -46,8 +49,8 @@ class LocalSensorResolver(SensorResolver):
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
-        renderer,
-        bullet_client,
+        renderer: Optional[RendererBase],
+        bullet_client: bc.BulletClient,
     ) -> Tuple[Dict[str, Observation], Dict[str, bool], Dict[str, Dict[str, Sensor]]]:
         with timeit("serial run", logger.debug):
             (
@@ -59,6 +62,18 @@ class LocalSensorResolver(SensorResolver):
                 sim_local_constants,
                 agent_ids,
             )
+
+        for v_id, sensors in sim_frame.vehicle_sensors.items():
+            for s_id, sensor in sensors.items():
+                if sensor.serializable or not isinstance(sensor, CustomRenderSensor):
+                    continue
+                sensor.step(
+                    sim_frame=sim_frame, renderer=renderer, observations=observations
+                )
+
+        if renderer:
+            renderer.sync(sim_frame)
+            renderer.render()
 
         # While observation processes are operating do rendering
         with timeit("rendering", logger.debug):

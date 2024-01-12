@@ -221,10 +221,10 @@ def lerp(a, b, p):
 
 
 def safe_division(n: float, d: float, default=math.inf):
-    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) 
-    
+    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0)
+
     .. note::
-        
+
         The cases are:
         1) True and <value> == <value>
         2) False and ``NaN`` == False

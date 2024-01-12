@@ -31,7 +31,7 @@ import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
-from typing import Collection, Dict, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Collection, Dict, Literal, Optional, Tuple, Union
 
 import gltf
 import numpy as np
@@ -81,6 +81,10 @@ from smarts.core.shader_buffer import BufferName
 from smarts.core.signals import SignalState, signal_state_to_color
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.vehicle_state import VehicleState
+
+if TYPE_CHECKING:
+    from smarts.core.observations import Observation
+
 
 # pytype: enable=import-error
 
@@ -302,7 +306,7 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
 
     fullscreen_quad_node: NodePath
 
-    def update(self, pose: Pose=None, height: float=None, **kwargs):
+    def update(self, pose: Pose = None, height: float = None, **kwargs):
         """Update the location of the shader directional values.
         Args:
             pose:
@@ -310,11 +314,171 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
             height:
                 The height of the camera above the camera target.
         """
-        self.fullscreen_quad_node.setShaderInput("iHeading", pose.heading)
-        self.fullscreen_quad_node.setShaderInput(
-            "iTranslation", n1=pose.point.x, n2=pose.point.y
-        )
-        self.fullscreen_quad_node.setShaderInput("iElevation", height)
+        inputs = {}
+        if pose:
+            self.fullscreen_quad_node.setShaderInputs(
+                iHeading=pose.heading,
+                iTranslation=(pose.point.x, pose.point.y),
+            )
+            inputs["iHeading"] = pose.heading
+            inputs["iTranslation"] = (pose.point.x, pose.point.y)
+            # self.fullscreen_quad_node.setShaderInput("iHeading", pose.heading)
+            # self.fullscreen_quad_node.setShaderInput(
+            #     "iTranslation", n1=pose.point.x, n2=pose.point.y
+            # )
+        if height:
+            inputs["iElevation"] = height
+        if observation := kwargs.get("observation"):
+            observation: Observation
+            inputs[BufferName.DELTA_TIME.value] = observation.dt
+            inputs[BufferName.ELAPSED_SIM_TIME.value] = observation.elapsed_sim_time
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_HEADING.value
+            ] = observation.ego_vehicle_state.heading
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_SPEED.value
+            ] = observation.ego_vehicle_state.speed
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_YAW_RATE.value
+            ] = observation.ego_vehicle_state.yaw_rate
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_LANE_INDEX.value
+            ] = observation.ego_vehicle_state.yaw_rate
+            inputs[BufferName.DISTANCE_TRAVELLED.value] = observation.distance_travelled
+
+            inputs[BufferName.STEP_COUNT.value] = observation.step_count
+            inputs[BufferName.STEPS_COMPLETED.value] = observation.steps_completed
+            if vehicle_spec := observation.ego_vehicle_state.mission.vehicle_spec:
+                inputs[BufferName.VEHICLE_TYPE.value] = hash(
+                    vehicle_spec.veh_config_type
+                )
+            else:
+                inputs[BufferName.VEHICLE_TYPE.value] = -1
+
+            inputs[BufferName.EVENTS_OFF_ROAD.value] = int(observation.events.off_road)
+            inputs[BufferName.EVENTS_OFF_ROUTE.value] = int(
+                observation.events.off_route
+            )
+            inputs[BufferName.EVENTS_ON_SHOULDER.value] = int(
+                observation.events.on_shoulder
+            )
+            inputs[BufferName.EVENTS_WRONG_WAY.value] = int(
+                observation.events.wrong_way
+            )
+            inputs[BufferName.EVENTS_NOT_MOVING.value] = int(
+                observation.events.not_moving
+            )
+            inputs[BufferName.EVENTS_REACHED_GOAL.value] = int(
+                observation.events.reached_goal
+            )
+            inputs[BufferName.EVENTS_REACHED_MAX_EPISODE_STEPS.value] = int(
+                observation.events.reached_max_episode_steps
+            )
+            inputs[BufferName.EVENTS_AGENTS_ALIVE_DONE.value] = int(
+                observation.events.agents_alive_done
+            )
+            inputs[BufferName.EVENTS_INTEREST_DONE.value] = int(
+                observation.events.interest_done
+            )
+            inputs[BufferName.UNDER_THIS_VEHICLE_CONTROL.value] = int(
+                observation.under_this_agent_control
+            )
+
+            inputs[BufferName.EGO_VEHICLE_STATE_POSITION.value] = tuple(
+                observation.ego_vehicle_state.position
+            )
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX.value
+            ] = observation.ego_vehicle_state.bounding_box.as_lwh
+            if lane_position := observation.ego_vehicle_state.lane_position:
+                inputs[BufferName.EGO_VEHICLE_STATE_LANE_POSITION.value] = tuple(
+                    lane_position
+                )
+
+            inputs[BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY.value] = tuple(
+                observation.ego_vehicle_state.linear_velocity
+            )
+            inputs[BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY.value] = tuple(
+                observation.ego_vehicle_state.angular_velocity
+            )
+            if observation.ego_vehicle_state.linear_acceleration is not None:
+                inputs[BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION.value] = tuple(
+                    observation.ego_vehicle_state.linear_acceleration
+                )
+                inputs[BufferName.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION.value] = tuple(
+                    observation.ego_vehicle_state.angular_acceleration
+                )
+            if observation.ego_vehicle_state.linear_jerk is not None:
+                inputs[BufferName.EGO_VEHICLE_STATE_LINEAR_JERK.value] = tuple(
+                    observation.ego_vehicle_state.linear_jerk
+                )
+                inputs[BufferName.EGO_VEHICLE_STATE_ANGULAR_JERK.value] = tuple(
+                    observation.ego_vehicle_state.angular_jerk
+                )
+
+            inputs[BufferName.EGO_VEHICLE_STATE_ROAD_ID.value] = hash(
+                observation.ego_vehicle_state.road_id
+            )
+            inputs[BufferName.EGO_VEHICLE_STATE_LANE_ID.value] = hash(
+                observation.ego_vehicle_state.lane_id
+            )
+
+            # XXX: Float cast is needed because Panda3D reacts badly to numpy types.
+            nvs_positions = [
+                tuple(float(round(d, 4)) for d in vs.position)
+                for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value
+            ] = nvs_positions
+            nvs_bounding_box = [
+                vs.bounding_box.as_lwh for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX.value
+            ] = nvs_bounding_box
+            nvs_lane_positions = [
+                tuple(float(v) for v in vs.lane_position)
+                if vs.lane_position is not None
+                else (-1.0, -1.0, -1.0)
+                for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION.value
+            ] = nvs_lane_positions
+
+            nvs_headings = [
+                float(vs.heading) for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_HEADING.value] = nvs_headings
+            nvs_speeds = [
+                float(vs.speed) for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_SPEED.value] = nvs_speeds
+
+            nvs_road_ids = [
+                hash(vs.road_id) for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID.value] = nvs_road_ids
+            nvs_lane_ids = [
+                hash(vs.lane_id) for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID.value] = nvs_lane_ids
+            nvs_lane_indices = [
+                vs.lane_index for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX.value
+            ] = nvs_lane_indices
+            nvs_lane_interest = [
+                int(vs.interest) for vs in observation.neighborhood_vehicle_states
+            ]
+            inputs[
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_INTEREST.value
+            ] = nvs_lane_interest
+
+        if inputs:
+            self.fullscreen_quad_node.setShaderInputs(**inputs)
 
     @property
     def position(self) -> Tuple[float, float, float]:
@@ -837,13 +1001,6 @@ class Renderer(RendererBase):
                 quad.setShaderInput(
                     f"{dep.script_variable_name}Resolution", n1=size_x, n2=size_y
                 )
-            variable_dependencies = tuple(
-                v for v in dependencies if isinstance(v, ShaderStepVariableDependency)
-            )
-            for dep in variable_dependencies:
-                shader_input = ShaderInput(dep.script_variable_name, dep.value)
-                quad.setShaderInput(shader_input)
-
             buffer_dependencies = tuple(
                 v for v in dependencies if isinstance(v, ShaderStepBufferDependency)
             )
@@ -851,6 +1008,13 @@ class Renderer(RendererBase):
             Renderer._set_shader_inputs(
                 quad, width, height, buffers=buffer_dependencies
             )
+            variable_dependencies = tuple(
+                v for v in dependencies if isinstance(v, ShaderStepVariableDependency)
+            )
+            for dep in variable_dependencies:
+                shader_input = ShaderInput(dep.script_variable_name, dep.value)
+                quad.setShaderInput(shader_input)
+
             camera = P3DShaderStep(
                 self,
                 shader_file=fshader_path,
@@ -868,10 +1032,12 @@ class Renderer(RendererBase):
         surface, width, height, buffers: Tuple[ShaderStepBufferDependency]
     ):
 
-        surface.setShaderInput("iResolution", n1=width, n2=height)
-        surface.setShaderInput("iTranslation", n1=0, n2=0)
-        surface.setShaderInput("iHeading", 0.0)
-        surface.setShaderInput("iElevation", 0.0)
+        inputs = {
+            "iResolution": (width, height),
+            "iTranslation": (0.0, 0.0),
+            "iHeading": 0.0,
+            "iElevation": 0.0,
+        }
 
         for svn, bn in ((b.script_variable_name, b.buffer_name) for b in buffers):
             initial_value = None
@@ -899,16 +1065,20 @@ class Renderer(RendererBase):
                 BufferName.EVENTS_ON_SHOULDER,
                 BufferName.EVENTS_WRONG_WAY,
                 BufferName.EVENTS_NOT_MOVING,
-                BufferName.EVENTS_REACH_GOAL,
+                BufferName.EVENTS_REACHED_GOAL,
                 BufferName.EVENTS_REACHED_MAX_EPISODE_STEPS,
-                BufferName.EVENTS_AGENTS_DONE_ALIVE,
+                BufferName.EVENTS_AGENTS_ALIVE_DONE,
                 BufferName.EVENTS_INTEREST_DONE,
-                BufferName.EGO_VEHICLE_STATE_INTEREST,
                 BufferName.UNDER_THIS_VEHICLE_CONTROL,
             ):
                 initial_value = bool()
             elif bn in (
                 BufferName.EGO_VEHICLE_STATE_POSITION,
+                BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX,
+                BufferName.EGO_VEHICLE_STATE_LANE_POSITION,
+            ):
+                initial_value = (float(), float(), float())
+            elif bn in (
                 BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY,
                 BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY,
                 BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
@@ -922,24 +1092,16 @@ class Renderer(RendererBase):
                 BufferName.EGO_VEHICLE_STATE_LANE_ID,
             ):
                 initial_value = int()
-            elif bn in (
-                BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX,
-                BufferName.EGO_VEHICLE_STATE_LANE_POSITION,
-            ):
-                initial_value = (float(), float(), float())
 
             # Vector of NEIGHBORHOOD_VEHICLE_STATES
-            elif bn in (BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION,):
-                initial_value = [
-                    (float(), float()),
-                ]
             elif bn in (
+                BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
                 BufferName.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX,
                 BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION,
             ):
                 initial_value = [
                     (float(), float(), float()),
-                ]
+                ] * 20
             elif bn in (
                 BufferName.NEIGHBORHOOD_VEHICLE_STATES_HEADING,
                 BufferName.NEIGHBORHOOD_VEHICLE_STATES_SPEED,
@@ -1049,5 +1211,6 @@ class Renderer(RendererBase):
             else:
                 raise ValueError(f"Buffer `{bn}` is not yet implemented.")
 
-            shader_input = ShaderInput(name=svn, value=initial_value)
-            surface.set_shader_input(shader_input)
+            inputs[bn.value] = initial_value
+
+        surface.setShaderInputs(**inputs)

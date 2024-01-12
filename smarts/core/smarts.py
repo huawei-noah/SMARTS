@@ -368,12 +368,13 @@ class SMARTS(ProviderManager):
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after _sensor_manager.step() above, and before observe() below,
             # so that all updates are ready before rendering happens per
-            with timeit("Syncing the renderer", self._log.debug):
-                self.renderer_ref.sync(self.cached_frame)
+            # with timeit("Syncing the renderer", self._log.debug):
+            #     self.renderer_ref.sync(self.cached_frame)
 
             # TODO OBSERVATIONS: this needs to happen between the base and rendered observations
-            with timeit("Running through the render pipeline", self._log.debug):
-                self.renderer_ref.render()
+            # with timeit("Running through the render pipeline", self._log.debug):
+            #     self.renderer_ref.render()
+            pass
 
         # TODO OBSERVATIONS: Need to split the observation generation
         with timeit("Calculating observations and rewards", self._log.debug):
@@ -552,7 +553,9 @@ class SMARTS(ProviderManager):
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
         for actor_capture_manager in self._actor_capture_managers:
             actor_capture_manager.reset(scenario, self)
-        if self._renderer or any(a.requires_rendering for a in self._agent_manager.agent_interfaces.values()):
+        if self._renderer or any(
+            a.requires_rendering for a in self._agent_manager.agent_interfaces.values()
+        ):
             self.renderer.setup(scenario)
 
         self._harmonize_providers(provider_state)
@@ -1047,9 +1050,10 @@ class SMARTS(ProviderManager):
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
             try:
+                from smarts.core.renderer_base import DEBUG_MODE
                 from smarts.p3d.renderer import Renderer
 
-                self._renderer = Renderer(self._sim_id)
+                self._renderer = Renderer(self._sim_id, debug_mode=DEBUG_MODE.WARNING)
             except ImportError as exc:
                 raise RendererException.required_to("use camera observations") from exc
             except Exception as exc:

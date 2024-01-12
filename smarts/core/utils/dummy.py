@@ -316,6 +316,6 @@ def dummy_observation() -> Observation:
                 ],
             }
         ),
-        via_data=Vias(near_via_points=[], hit_via_points=[]),
+        via_data=Vias(near_via_points=[]),
         steps_completed=4,
     )

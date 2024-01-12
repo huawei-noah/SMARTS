@@ -29,11 +29,12 @@ import sys
 from collections import deque
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Collection, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
 from smarts.core import glsl
+from smarts.core.actor import ActorState
 from smarts.core.agent_interface import (
     CustomRenderBufferDependency,
     CustomRenderCameraDependency,
@@ -48,6 +49,7 @@ from smarts.core.observations import (
     DrivableAreaGridMap,
     GridMapMetadata,
     ObfuscationGridMap,
+    Observation,
     OccupancyGridMap,
     RoadWaypoints,
     SignalObservation,
@@ -63,6 +65,7 @@ from smarts.core.renderer_base import (
 from smarts.core.road_map import RoadMap, Waypoint
 from smarts.core.shader_buffer import BufferName, CameraSensorName
 from smarts.core.signals import SignalState
+from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.utils.core_math import squared_dist
 from smarts.core.vehicle_state import neighborhood_vehicles_around_vehicle
 
@@ -522,10 +525,37 @@ class CustomRenderSensor(CameraSensor):
             height=height,
         )
 
-    def teardown(self, **kwargs):
-        renderer: Optional[RendererBase] = kwargs.get("renderer")
+    def step(self, sim_frame: SimulationFrame, **kwargs):
+        if not self._target_actor in sim_frame.actor_states_by_id:
+            return
+        actor_state = sim_frame.actor_states_by_id[self._target_actor]
+        renderer = kwargs.get("renderer")
+        observations: Optional[Dict[str, Observation]] = kwargs.get("observations")
+
+        target = None
+        if isinstance(observations, dict):
+            for k, o in observations.items():
+                o: Observation
+                if o.ego_vehicle_state.id == self._target_actor:
+                    target = o
+            assert isinstance(target, Observation)
+
         if not renderer:
             return
+        renderer: RendererBase
+        camera = renderer.camera_for_id(self._camera_name)
+        pose = actor_state.get_pose()
+        dimensions = actor_state.get_dimensions()
+        if not target:
+            camera.update(pose=pose, height=dimensions.height + 10)
+        else:
+            camera.update(observation=target)
+
+    def teardown(self, **kwargs):
+        renderer = kwargs.get("renderer")
+        if not renderer:
+            return
+        renderer: RendererBase
         camera = renderer.camera_for_id(self._camera_name)
         camera.teardown()
 
@@ -977,32 +1007,29 @@ class ViaSensor(Sensor):
             if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
-            point = ViaPoint(
-                tuple(via.position),
-                lane_index=via.lane_index,
-                road_id=via.road_id,
-                required_speed=via.required_speed,
-            )
-
-            near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
-            if (
+            hit = (
                 dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
                     vehicle_state.speed, via.required_speed, atol=self._speed_accuracy
                 )
-            ):
-                self._consumed_via_points.add(via)
-                hit_points.append(point)
+            )
 
-        return (
-            sorted(
-                near_points,
-                key=lambda point: squared_dist(point.position, vehicle_position),
-            ),
-            hit_points,
-        )
+            point = ViaPoint(
+                tuple(via.position),
+                lane_index=via.lane_index,
+                road_id=via.road_id,
+                required_speed=via.required_speed,
+                hit=hit,
+            )
+
+            near_points.append((dist_from_point_sq, point))
+            if hit:
+                self._consumed_via_points.add(via)
+
+        near_points.sort(key=lambda dist, _: dist)
+        return [p for _, p in near_points]
 
     def teardown(self, **kwargs):
         pass

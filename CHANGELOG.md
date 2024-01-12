@@ -32,6 +32,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Waypoints now have a `position` property (which will eventually replace `pos`).
 - You must now implement `act()` for any agent inheriting from `smarts.core.agent.Agent`.
 - `FunctionAgent` is now no longer dynamically defined.
+- `Vias.hit_via_points` is now a property.
+- `ViaPoint` now has an attribute `hit` which determines if the point has been "collected".
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 - Deprecated a few things related to vehicles in the `Scenario` class, including the `vehicle_filepath`, `tire_parameters_filepath`, and `controller_parameters_filepath`. The functionality is now handled through the vehicle definitions.

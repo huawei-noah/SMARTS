@@ -26,11 +26,10 @@ from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple
 import numpy as np
 
 if TYPE_CHECKING:
+    from smarts.core import plan, signals
     from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
     from smarts.core.events import Events
-    from smarts.core import plan
     from smarts.core.road_map import Waypoint
-    from smarts.core import signals
 
 
 class VehicleObservation(NamedTuple):
@@ -181,6 +180,8 @@ class ViaPoint(NamedTuple):
     """Road id this collectible is associated with."""
     required_speed: float
     """Approximate speed required to collect this collectible."""
+    hit: bool
+    """If this via point was hit in the last step."""
 
 
 class Vias(NamedTuple):
@@ -188,8 +189,11 @@ class Vias(NamedTuple):
 
     near_via_points: List[ViaPoint]
     """Ordered list of nearby points that have not been hit."""
-    hit_via_points: List[ViaPoint]
-    """List of points that were hit in the previous step."""
+
+    @property
+    def hit_via_points(self) -> List[ViaPoint]:
+        """List of points that were hit in the previous step."""
+        return [vp for vp in self.near_via_points if vp.hit]
 
 
 class SignalObservation(NamedTuple):

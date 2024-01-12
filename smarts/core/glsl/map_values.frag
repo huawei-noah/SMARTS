@@ -10,6 +10,7 @@ uniform sampler2D iChannel0;
 uniform sampler2D iChannel1;
 
 uniform vec3 empty_color;
+uniform float elapsed_sim_time;
 
 
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -24,8 +25,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     fragColor = texture(iChannel1, p);
 
+    vec3 color = vec3(0.0, sin(elapsed_sim_time) * 0.5 + 1.0, 0.0);
+           //empty_color;
+
     if (fragColor.rgb == vec3(0.0, 0.0, 0.0)) {
-        fragColor = vec4(empty_color, 1.0);
+        fragColor = vec4(color, 1.0);
     }
 }
 

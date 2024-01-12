@@ -652,11 +652,16 @@ class AgentInterface:
         Waypoints(...)
         """
         return replace(self, **kwargs)
-    
+
     @property
     def requires_rendering(self):
         """If this agent interface requires a renderer."""
-        return bool(self.top_down_rgb or self.occupancy_grid_map or self.drivable_area_grid_map or self.custom_renders)
+        return bool(
+            self.top_down_rgb
+            or self.occupancy_grid_map
+            or self.drivable_area_grid_map
+            or self.custom_renders
+        )
 
     @property
     def ogm(self):

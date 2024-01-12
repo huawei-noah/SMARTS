@@ -19,16 +19,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dataclass
-from typing import Any
+from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from smarts.core.road_map import RoadMap
 
 # TODO MTA: Consider using EzPickle base
 @dataclass(frozen=True)
 class SimulationLocalConstants:
     """This is state that should only change every reset."""
 
-    road_map: Any
+    road_map: RoadMap
     road_map_hash: int
 
     def __eq__(self, __o: object) -> bool:

@@ -28,12 +28,15 @@ from smarts.core.agent import Agent
 from smarts.core.agent_interface import (
     OGM,
     RGB,
+    Accelerometer,
+    AgentInterface,
     CustomRender,
     CustomRenderBufferDependency,
     CustomRenderCameraDependency,
     CustomRenderConstantDependency,
     DoneCriteria,
     DrivableAreaGridMap,
+    NeighborhoodVehicles,
     OcclusionMap,
     RoadWaypoints,
     Waypoints,
@@ -740,7 +743,7 @@ class OcclusionAgentWrapper(AugmentationWrapper):
         return self._inner_agent.act(dowgraded_obs, **configs)
 
 
-def occlusion_main():
+def occlusion_main(steps):
     from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
     from smarts.zoo.registry import make
 
@@ -763,9 +766,9 @@ def occlusion_main():
     }
 
     with pkg_resources.path(glsl, "map_values.frag") as frag_shader:
-        agent_interface = replace(
+        agent_interface: AgentInterface = replace(
             agent_spec.interface,
-            neighborhood_vehicle_states=True,
+            neighborhood_vehicle_states=NeighborhoodVehicles(),
             drivable_area_grid_map=DrivableAreaGridMap(
                 width=w,
                 height=h,
@@ -787,6 +790,8 @@ def occlusion_main():
                 resolution=resolution,
                 surface_noise=True,
             ),
+            lane_positions=True,
+            accelerometer=Accelerometer(),
             road_waypoints=RoadWaypoints(horizon=50),
             waypoint_paths=Waypoints(lookahead=50),
             done_criteria=DoneCriteria(
@@ -804,6 +809,14 @@ def occlusion_main():
                         CustomRenderCameraDependency(
                             camera_dependency_name=CameraSensorName.TOP_DOWN_RGB,
                             variable_name="iChannel1",
+                        ),
+                        CustomRenderBufferDependency(
+                            buffer_dependency_name=BufferName.ELAPSED_SIM_TIME,
+                            variable_name=BufferName.ELAPSED_SIM_TIME.value,
+                        ),
+                        CustomRenderBufferDependency(
+                            buffer_dependency_name=BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
+                            variable_name=BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value,
                         ),
                         CustomRenderConstantDependency(
                             value=(0.1, 0.5, 0.1),
@@ -833,7 +846,7 @@ def occlusion_main():
     ) as env:
         terms = {"__all__": False}
         obs, info = env.reset()
-        for _ in range(70):
+        for _ in range(steps):
             if terms["__all__"]:
                 break
             acts = {a_id: a.act(obs.get(a_id)) for a_id, a in agents.items()}
@@ -848,6 +861,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser("Downgrader")
+    parser.add_argument(
+        "--steps",
+        help="The number of steps to take.",
+        type=int,
+        default=70,
+    )
     args = parser.parse_args()
 
-    occlusion_main()
+    occlusion_main(args.steps)

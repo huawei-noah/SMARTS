@@ -44,9 +44,9 @@ class BufferName(Enum):
     EVENTS_ON_SHOULDER = "events_on_shoulder"
     EVENTS_WRONG_WAY = "events_wrong_way"
     EVENTS_NOT_MOVING = "events_not_moving"
-    EVENTS_REACH_GOAL = "events_reached_goal"
+    EVENTS_REACHED_GOAL = "events_reached_goal"
     EVENTS_REACHED_MAX_EPISODE_STEPS = "events_reached_max_episode_steps"
-    EVENTS_AGENTS_DONE_ALIVE = "events_agents_done_alive"
+    EVENTS_AGENTS_ALIVE_DONE = "events_agents_done_alive"
     EVENTS_INTEREST_DONE = "events_interest_done"
 
     EGO_VEHICLE_STATE_POSITION = "ego_vehicle_state_position"
@@ -65,7 +65,6 @@ class BufferName(Enum):
     EGO_VEHICLE_STATE_LINEAR_JERK = "ego_vehicle_state_linear_jerk"
     EGO_VEHICLE_STATE_ANGULAR_JERK = "ego_vehicle_state_angular_jerk"
     EGO_VEHICLE_STATE_LANE_POSITION = "ego_vehicle_state_lane_position"
-    EGO_VEHICLE_STATE_INTEREST = "ego_vehicle_state_interest"
 
     UNDER_THIS_VEHICLE_CONTROL = "under_this_vehicle_control"
 

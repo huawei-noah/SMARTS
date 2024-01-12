@@ -252,7 +252,7 @@ class Sensors:
         bullet_client: bc.BulletClient,
     ) -> Tuple[Dict[str, Any], Dict[str, Sensor]]:
         """Run observations that can only be done on the main thread."""
-        vehicle_sensors: Dict[str, Any] = sim_frame.vehicle_sensors[vehicle_id]
+        vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
 
         vehicle_state = sim_frame.vehicle_states[vehicle_id]
         lidar = None
@@ -264,8 +264,6 @@ class Sensors:
         def get_camera_sensor_result(
             sensors: Dict[str, Sensor], sensor_name: str, renderer: RendererBase
         ):
-            if renderer is None:
-                return None
             if (sensor := sensors.get(sensor_name)) is not None:
                 return sensor(renderer=renderer)
             return None
@@ -424,17 +422,14 @@ class Sensors:
         )
 
         near_via_points = []
-        hit_via_points = []
 
         via_sensor = vehicle_sensors.get("via_sensor")
         if via_sensor:
-            (
-                near_via_points,
-                hit_via_points,
-            ) = via_sensor(vehicle_state, plan, sim_local_constants.road_map)
+            near_via_points = via_sensor(
+                vehicle_state, plan, sim_local_constants.road_map
+            )
         via_data = Vias(
             near_via_points=near_via_points,
-            hit_via_points=hit_via_points,
         )
 
         distance_travelled = 0

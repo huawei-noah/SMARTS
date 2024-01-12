@@ -17,25 +17,29 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 import logging
 import weakref
 from concurrent import futures
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 from envision.etypes import format_actor_id
 from smarts.core.actor import ActorRole
-from smarts.core.agent_interface import AgentInterface
 from smarts.core.bubble_manager import BubbleManager
 from smarts.core.data_model import SocialAgent
 from smarts.core.local_agent_buffer import LocalAgentBuffer
-from smarts.core.observations import Observation
 from smarts.core.plan import Plan
-from smarts.core.sensor_manager import SensorManager
 from smarts.core.utils.id import SocialAgentId
 from smarts.core.vehicle_state import VehicleState
 from smarts.sstudio.sstypes.actor.social_agent_actor import SocialAgentActor
 from smarts.zoo.registry import make as make_social_agent
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.observations import Observation
+    from smarts.core.sensor_manager import SensorManager
+    from smarts.core.smarts import SMARTS
 
 
 class AgentManager:
@@ -46,7 +50,7 @@ class AgentManager:
          time.
     """
 
-    def __init__(self, sim, interfaces):
+    def __init__(self, sim: SMARTS, interfaces: Dict[str, AgentInterface]):
         from smarts.core.vehicle_index import VehicleIndex
 
         self._log = logging.getLogger(self.__class__.__name__)
@@ -54,7 +58,7 @@ class AgentManager:
         self._vehicle_index: VehicleIndex = sim.vehicle_index
         self._sensor_manager: SensorManager = sim.sensor_manager
         self._agent_buffer = None
-        self._ego_agent_ids = set()
+        self._ego_agent_ids: Set[str] = set()
         self._social_agent_ids = set()
 
         # Initial interfaces are for agents that are spawned at the beginning of the
@@ -62,11 +66,11 @@ class AgentManager:
         # agents and social agents defined in SStudio. Hijacking agents in bubbles
         # would not be included
         self._initial_interfaces = interfaces
-        self._pending_agent_ids = set()
-        self._pending_social_agent_ids = set()
+        self._pending_agent_ids: Set[str] = set()
+        self._pending_social_agent_ids: Set[str] = set()
 
         # Agent interfaces are interfaces for _all_ active agents
-        self._agent_interfaces = {}
+        self._agent_interfaces: Dict[str, AgentInterface] = {}
 
         # TODO: This field is only for social agents, but is being used as if it were
         #       for any agent. Revisit the accessors.
@@ -111,7 +115,7 @@ class AgentManager:
         """A list of all agent to agent interface mappings."""
         return self._agent_interfaces
 
-    def agent_interface_for_agent_id(self, agent_id) -> AgentInterface:
+    def agent_interface_for_agent_id(self, agent_id: str) -> AgentInterface:
         """Get the agent interface of a specific agent."""
         return self._agent_interfaces[agent_id]
 
@@ -135,24 +139,24 @@ class AgentManager:
         """Get all agents that currently observe, but not control, a vehicle."""
         return self._vehicle_index.shadower_ids()
 
-    def is_ego(self, agent_id) -> bool:
+    def is_ego(self, agent_id: str) -> bool:
         """Test if the agent is an ego agent."""
         return agent_id in self.ego_agent_ids
 
-    def remove_pending_agent_ids(self, agent_ids):
+    def remove_pending_agent_ids(self, agent_ids: Set[str]):
         """Remove an agent from the group of agents waiting to enter the simulation."""
         assert agent_ids.issubset(self.agent_ids)
         self._pending_agent_ids -= agent_ids
 
-    def agent_for_vehicle(self, vehicle_id) -> str:
+    def agent_for_vehicle(self, vehicle_id: str) -> str:
         """Get the controlling agent for the given vehicle."""
         return self._vehicle_index.owner_id_from_vehicle_id(vehicle_id)
 
-    def agent_has_vehicle(self, agent_id) -> bool:
+    def agent_has_vehicle(self, agent_id: str) -> bool:
         """Test if an agent has an actor associated with it."""
         return len(self.vehicles_for_agent(agent_id)) > 0
 
-    def vehicles_for_agent(self, agent_id) -> List[str]:
+    def vehicles_for_agent(self, agent_id: str) -> List[str]:
         """Get the vehicles associated with an agent."""
         return self._vehicle_index.vehicle_ids_by_owner_id(
             agent_id, include_shadowers=True
@@ -218,7 +222,7 @@ class AgentManager:
         Dict[str, Union[Dict[str, bool], bool]],
     ]:
         """Generate observations from all vehicles associated with an active agent."""
-        sim = self._sim()
+        sim: Optional[SMARTS] = self._sim()
         assert sim
         observations = {}
         rewards = {}
@@ -340,7 +344,7 @@ class AgentManager:
     def _vehicle_score(self, vehicle_id: str) -> float:
         return self._vehicle_index.vehicle_by_id(vehicle_id).trip_meter_sensor()
 
-    def _filter_for_active_ego(self, dict_):
+    def _filter_for_active_ego(self, dict_: Dict[str, Observation]):
         return {
             id_: dict_[id_]
             for id_ in self._ego_agent_ids
@@ -694,7 +698,9 @@ class AgentManager:
         self._pending_agent_ids = self._pending_agent_ids - ids_
         return ids_
 
-    def reset_agents(self, observations: Dict[str, Observation]):
+    def reset_agents(
+        self, observations: Dict[str, Observation]
+    ) -> Dict[str, Observation]:
         """Reset agents, feeding in an initial observation."""
         self._send_observations_to_social_agents(observations)
 
