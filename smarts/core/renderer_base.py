@@ -71,7 +71,7 @@ class OffscreenCamera(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def update(self, pose: Pose, height: float):
+    def update(self, *args, **kwargs):
         """Update the location of the camera.
         Args:
             pose:

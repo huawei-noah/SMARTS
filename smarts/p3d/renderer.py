@@ -278,7 +278,7 @@ class _P3DCameraMixin:
 class P3DOffscreenCamera(_P3DCameraMixin, OffscreenCamera):
     """A camera used for rendering images to a graphics buffer."""
 
-    def update(self, pose: Pose, height: float):
+    def update(self, pose: Pose, height: float, *args, **kwargs):
         """Update the location of the camera.
         Args:
             pose:
@@ -302,7 +302,7 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
 
     fullscreen_quad_node: NodePath
 
-    def update(self, pose: Pose, height: float):
+    def update(self, pose: Pose=None, height: float=None, **kwargs):
         """Update the location of the shader directional values.
         Args:
             pose:
