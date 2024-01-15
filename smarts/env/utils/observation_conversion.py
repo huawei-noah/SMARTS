@@ -464,7 +464,7 @@ class Image8BSpaceFormat(BaseSpaceFormat):
 
 
 ego_box_space_format = StandardSpaceFormat(
-    lambda obs: np.array(obs.ego_vehicle_state.bounding_box.as_lwh).astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.bounding_box.as_lwh, dtype=np.float32),
     lambda _: True,
     "box",
     _VEC3_UNSIGNED_FLOAT32_SPACE,
@@ -485,21 +485,21 @@ ego_lane_index_space_format = StandardSpaceFormat(
 )
 
 ego_linear_velocity_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.linear_velocity.astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.linear_velocity, dtype=np.float32),
     lambda _: True,
     "linear_velocity",
     _VEC3_SIGNED_FLOAT32_SPACE,
 )
 
 ego_angular_velocity_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.angular_velocity.astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.angular_velocity, dtype=np.float32),
     lambda _: True,
     "angular_velocity",
     _VEC3_SIGNED_FLOAT32_SPACE,
 )
 
 ego_position_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.position.astype(np.float64),
+    lambda obs: np.array(obs.ego_vehicle_state.position, dtype=np.float64),
     lambda _: True,
     "position",
     _VEC3_SIGNED_FLOAT64_SPACE,
@@ -536,28 +536,28 @@ ego_yaw_rate_space_format = StandardSpaceFormat(
 )
 
 ego_angular_acceleration_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.angular_acceleration.astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.angular_acceleration, dtype=np.float32),
     lambda agent_interface: bool(agent_interface.accelerometer),
     "angular_acceleration",
     _VEC3_SIGNED_FLOAT32_SPACE,
 )
 
 ego_angular_jerk_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.angular_jerk.astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.angular_jerk, dtype=np.float32),
     lambda agent_interface: bool(agent_interface.accelerometer),
     "angular_jerk",
     _VEC3_SIGNED_FLOAT32_SPACE,
 )
 
 ego_linear_acceleration_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.linear_acceleration.astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.linear_acceleration, dtype=np.float32),
     lambda agent_interface: bool(agent_interface.accelerometer),
     "linear_acceleration",
     _VEC3_SIGNED_FLOAT32_SPACE,
 )
 
 ego_linear_jerk_space_format = StandardSpaceFormat(
-    lambda obs: obs.ego_vehicle_state.linear_jerk.astype(np.float32),
+    lambda obs: np.array(obs.ego_vehicle_state.linear_jerk, dtype=np.float32),
     lambda agent_interface: bool(agent_interface.accelerometer),
     "linear_jerk",
     _VEC3_SIGNED_FLOAT32_SPACE,

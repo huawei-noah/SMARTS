@@ -90,7 +90,7 @@ class Point(NamedTuple):
         """Factory for constructing a Point object from a numpy array."""
         assert 2 <= len(np_array) <= 3
         z = np_array[2] if len(np_array) > 2 else 0.0
-        return cls(np_array[0], np_array[1], z)
+        return cls(float(np_array[0]), float(np_array[1]), float(z))
 
     @property
     def as_np_array(self) -> np.ndarray:
@@ -342,6 +342,8 @@ class Pose:
         if "point" in self.__dict__:
             # clear the cached_property
             del self.__dict__["point"]
+        if "position_tuple" in self.__dict__:
+            del self.__dict__["position_tuple"]
         if heading != self.heading_:
             self.orientation = fast_quaternion_from_angle(heading)
             self.heading_ = heading
@@ -349,7 +351,12 @@ class Pose:
     @cached_property
     def point(self) -> Point:
         """The positional value of this pose as a point."""
-        return Point(*self.position)
+        return Point.from_np_array(self.position)
+
+    @cached_property
+    def position_tuple(self) -> Point:
+        """The position value of this pose as a tuple."""
+        return tuple(self.point)
 
     @classmethod
     def from_front_bumper(cls, front_bumper_position, heading, length) -> Pose:

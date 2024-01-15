@@ -112,7 +112,7 @@ def _make_vehicle_observation(
 
     return VehicleObservation(
         id=neighborhood_vehicle.actor_id,
-        position=neighborhood_vehicle.pose.position,
+        position=neighborhood_vehicle.pose.position_tuple,
         bounding_box=neighborhood_vehicle.dimensions,
         heading=neighborhood_vehicle.pose.heading,
         speed=neighborhood_vehicle.speed,
@@ -391,16 +391,19 @@ class Sensors:
                             "linear_jerk",
                             "angular_jerk",
                         ],
-                        acceleration_values,
+                        (
+                            (None if av is None else tuple(float(f) for f in av))
+                            for av in acceleration_values
+                        ),
                     )
                 )
             )
 
         ego_vehicle = EgoVehicleObservation(
             id=vehicle_state.actor_id,
-            position=vehicle_state.pose.point.as_np_array,
+            position=vehicle_state.pose.position_tuple,
             bounding_box=vehicle_state.dimensions,
-            heading=Heading(vehicle_state.pose.heading),
+            heading=vehicle_state.pose.heading,
             speed=vehicle_state.speed,
             steering=vehicle_state.steering,
             yaw_rate=vehicle_state.yaw_rate,
@@ -408,8 +411,8 @@ class Sensors:
             lane_id=ego_lane_id,
             lane_index=ego_lane_index,
             mission=plan.mission,
-            linear_velocity=vehicle_state.linear_velocity,
-            angular_velocity=vehicle_state.angular_velocity,
+            linear_velocity=vehicle_state.linear_velocity_tuple(),
+            angular_velocity=vehicle_state.angular_velocity_tuple(),
             lane_position=ego_lane_pos,
             **acceleration_params,
         )

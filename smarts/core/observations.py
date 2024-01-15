@@ -63,8 +63,8 @@ class EgoVehicleObservation(NamedTuple):
 
     id: str
     """Vehicle identifier."""
-    position: np.ndarray
-    """Center coordinate of the vehicle bounding box's bottom plane. `shape=(3,)`. `dtype=np.float64`."""
+    position: Tuple[float, float, float]
+    """Center coordinate of the vehicle bounding box's bottom plane."""
     bounding_box: Dimensions
     """Bounding box describing the length, width, and height, of the vehicle."""
     heading: Heading
@@ -83,18 +83,18 @@ class EgoVehicleObservation(NamedTuple):
     """Index of the nearest lane on the road nearest to this vehicle. Right most lane has index 0 and index increments to the left."""
     mission: plan.Mission
     """Vehicle's desired destination."""
-    linear_velocity: np.ndarray
-    """Velocity of vehicle along the global coordinate axes. Units=m/s. A numpy array of shape=(3,) and dtype=np.float64."""
-    angular_velocity: np.ndarray
-    """Velocity of vehicle-heading rotation about the z-axis. Equivalent vector representation of yaw_rate. Units=rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
-    linear_acceleration: Optional[np.ndarray]
-    """Acceleration of vehicle along the global coordinate axes. Units=m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
-    angular_acceleration: Optional[np.ndarray]
-    """Acceleration of vehicle-heading rotation about the z-axis. Units=rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    linear_jerk: Optional[np.ndarray]
-    """Jerk of vehicle along the global coordinate axes. Units=m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    angular_jerk: Optional[np.ndarray]
-    """Jerk of vehicle-heading rotation about the z-axis. Units=rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    linear_velocity: Tuple[float, float, float]
+    """Velocity of vehicle along the global coordinate axes. Units=m/s."""
+    angular_velocity: Tuple[float, float, float]
+    """Velocity of vehicle-heading rotation about the z-axis. Equivalent vector representation of yaw_rate. Units=rad/s."""
+    linear_acceleration: Optional[Tuple[float, float, float]]
+    """Acceleration of vehicle along the global coordinate axes. Units=m/s^2. Requires accelerometer sensor."""
+    angular_acceleration: Optional[Tuple[float, float, float]]
+    """Acceleration of vehicle-heading rotation about the z-axis. Units=rad/s^2. Requires accelerometer sensor."""
+    linear_jerk: Optional[Tuple[float, float, float]]
+    """Jerk of vehicle along the global coordinate axes. Units=m/s^3. Requires accelerometer sensor."""
+    angular_jerk: Optional[Tuple[float, float, float]]
+    """Jerk of vehicle-heading rotation about the z-axis. Units=rad/s^3. Requires accelerometer sensor."""
     lane_position: Optional[RefLinePoint] = None
     """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
     See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
