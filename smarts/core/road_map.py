@@ -809,6 +809,14 @@ class Waypoint:
     lane_offset: float
     """Longitudinal distance along lane center-line of this waypoint."""
 
+    def __post_init__(self):
+        if isinstance(self.lane_width, (np.floating)):
+            object.__setattr__(self, "lane_width", float(self.lane_width))
+        if isinstance(self.speed_limit, (np.floating)):
+            object.__setattr__(self, "speed_limit", float(self.speed_limit))
+        if isinstance(self.lane_offset, (np.floating)):
+            object.__setattr__(self, "lane_offset", float(self.lane_offset))
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
             return False
