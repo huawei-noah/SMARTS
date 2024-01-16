@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import importlib.resources as pkg_resources
+import itertools
 import logging
 import math
 import os
@@ -384,9 +385,9 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
                 observation.under_this_agent_control
             )
 
-            inputs[BufferName.EGO_VEHICLE_STATE_POSITION.value] = tuple(
-                observation.ego_vehicle_state.position
-            )
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_POSITION.value
+            ] = observation.ego_vehicle_state.position
             inputs[
                 BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX.value
             ] = observation.ego_vehicle_state.bounding_box.as_lwh
@@ -395,26 +396,26 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
                     lane_position
                 )
 
-            inputs[BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY.value] = tuple(
-                observation.ego_vehicle_state.linear_velocity
-            )
-            inputs[BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY.value] = tuple(
-                observation.ego_vehicle_state.angular_velocity
-            )
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY.value
+            ] = observation.ego_vehicle_state.linear_velocity
+            inputs[
+                BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY.value
+            ] = observation.ego_vehicle_state.angular_velocity
             if observation.ego_vehicle_state.linear_acceleration is not None:
-                inputs[BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION.value] = tuple(
-                    observation.ego_vehicle_state.linear_acceleration
-                )
-                inputs[BufferName.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION.value] = tuple(
-                    observation.ego_vehicle_state.angular_acceleration
-                )
+                inputs[
+                    BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION.value
+                ] = observation.ego_vehicle_state.linear_acceleration
+                inputs[
+                    BufferName.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION.value
+                ] = observation.ego_vehicle_state.angular_acceleration
             if observation.ego_vehicle_state.linear_jerk is not None:
-                inputs[BufferName.EGO_VEHICLE_STATE_LINEAR_JERK.value] = tuple(
-                    observation.ego_vehicle_state.linear_jerk
-                )
-                inputs[BufferName.EGO_VEHICLE_STATE_ANGULAR_JERK.value] = tuple(
-                    observation.ego_vehicle_state.angular_jerk
-                )
+                inputs[
+                    BufferName.EGO_VEHICLE_STATE_LINEAR_JERK.value
+                ] = observation.ego_vehicle_state.linear_jerk
+                inputs[
+                    BufferName.EGO_VEHICLE_STATE_ANGULAR_JERK.value
+                ] = observation.ego_vehicle_state.angular_jerk
 
             inputs[BufferName.EGO_VEHICLE_STATE_ROAD_ID.value] = hash(
                 observation.ego_vehicle_state.road_id
@@ -425,8 +426,7 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
 
             # XXX: Float cast is needed because Panda3D reacts badly to numpy types.
             nvs_positions = [
-                tuple(float(round(d, 4)) for d in vs.position)
-                for vs in observation.neighborhood_vehicle_states
+                vs.position for vs in observation.neighborhood_vehicle_states
             ]
             inputs[
                 BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value
@@ -451,11 +451,8 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
                 float(vs.heading) for vs in observation.neighborhood_vehicle_states
             ]
             inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_HEADING.value] = nvs_headings
-            nvs_speeds = [
-                float(vs.speed) for vs in observation.neighborhood_vehicle_states
-            ]
+            nvs_speeds = [vs.speed for vs in observation.neighborhood_vehicle_states]
             inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_SPEED.value] = nvs_speeds
-
             nvs_road_ids = [
                 hash(vs.road_id) for vs in observation.neighborhood_vehicle_states
             ]
@@ -476,6 +473,110 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
             inputs[
                 BufferName.NEIGHBORHOOD_VEHICLE_STATES_INTEREST.value
             ] = nvs_lane_interest
+
+            waypoint_paths_flattened = [
+                wp for wp in itertools.chain(*observation.waypoint_paths)
+            ]
+            inputs[BufferName.WAYPOINT_PATHS_POSITION.value] = [
+                wp.position.tolist() for wp in waypoint_paths_flattened
+            ]
+            inputs[BufferName.WAYPOINT_PATHS_HEADING.value] = [
+                float(wp.heading) for wp in waypoint_paths_flattened
+            ]
+            inputs[BufferName.WAYPOINT_PATHS_LANE_WIDTH.value] = [
+                wp.lane_width for wp in waypoint_paths_flattened
+            ]
+            inputs[BufferName.WAYPOINT_PATHS_SPEED_LIMIT.value] = [
+                wp.speed_limit for wp in waypoint_paths_flattened
+            ]
+            inputs[BufferName.WAYPOINT_PATHS_LANE_OFFSET.value] = [
+                wp.lane_offset for wp in waypoint_paths_flattened
+            ]
+
+            inputs[BufferName.WAYPOINT_PATHS_LANE_ID.value] = [
+                hash(wp.lane_id) for wp in waypoint_paths_flattened
+            ]
+            inputs[BufferName.WAYPOINT_PATHS_LANE_INDEX.value] = [
+                wp.lane_index for wp in waypoint_paths_flattened
+            ]
+
+            if observation.road_waypoints is not None and len(
+                observation.road_waypoints.lanes
+            ):
+                road_waypoints_flattened = [
+                    wp
+                    for wp in itertools.chain(
+                        *(
+                            wpl
+                            for wpl in itertools.chain(
+                                *observation.road_waypoints.lanes.values()
+                            )
+                        )
+                    )
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_POSITIONS.value] = [
+                    wp.position.tolist() for wp in road_waypoints_flattened
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_HEADING.value] = [
+                    float(wp.heading) for wp in road_waypoints_flattened
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_LANE_WIDTH.value] = [
+                    wp.lane_width for wp in road_waypoints_flattened
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_SPEED_LIMIT.value] = [
+                    wp.speed_limit for wp in road_waypoints_flattened
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_LANE_OFFSET.value] = [
+                    wp.lane_offset for wp in road_waypoints_flattened
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_LANE_ID.value] = [
+                    hash(wp.lane_id) for wp in road_waypoints_flattened
+                ]
+                inputs[BufferName.ROAD_WAYPOINTS_LANE_INDEX.value] = [
+                    wp.lane_index for wp in road_waypoints_flattened
+                ]
+
+            if len(observation.via_data.hit_via_points) == 0:
+                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_POSITION.value] = [
+                    via.position for via in observation.via_data.near_via_points
+                ]
+                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX.value] = [
+                    via.lane_index for via in observation.via_data.near_via_points
+                ]
+                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID.value] = [
+                    hash(via.road_id) for via in observation.via_data.near_via_points
+                ]
+                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_HIT.value] = [
+                    int(via.hit) for via in observation.via_data.near_via_points
+                ]
+                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED.value] = [
+                    via.required_speed for via in observation.via_data.near_via_points
+                ]
+
+            if observation.lidar_point_cloud is not None:
+                inputs[BufferName.LIDAR_POINT_CLOUD_POINTS.value] = [
+                    l.tolist() for l in observation.lidar_point_cloud[0]
+                ]
+                inputs[BufferName.LIDAR_POINT_CLOUD_HITS.value] = [
+                    int(h) for h in observation.lidar_point_cloud[1]
+                ]
+                inputs[BufferName.LIDAR_POINT_CLOUD_ORIGIN.value] = [
+                    o.tolist() for o, _ in observation.lidar_point_cloud[2]
+                ]
+                inputs[BufferName.LIDAR_POINT_CLOUD_DIRECTION.value] = [
+                    d.tolist() for _, d in observation.lidar_point_cloud[2]
+                ]
+
+            if observation.signals is not None and len(observation.signals) > 0:
+                inputs[BufferName.SIGNALS_LIGHT_STATE.value] = [
+                    int(l.state) for l in observation.signals
+                ]
+                inputs[BufferName.SIGNALS_STOP_POINT.value] = [
+                    tuple(l.stop_point) for l in observation.signals
+                ]
+                inputs[BufferName.SIGNALS_LAST_CHANGED.value] = [
+                    l.last_changed for l in observation.signals
+                ]
 
         if inputs:
             self.fullscreen_quad_node.setShaderInputs(**inputs)
