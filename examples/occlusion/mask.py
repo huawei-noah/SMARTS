@@ -45,7 +45,7 @@ from smarts.core.agent_interface import (
 from smarts.core.colors import Colors
 from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.road_map import Waypoint, interpolate_waypoints
-from smarts.core.shader_buffer import BufferID, CameraSensorName
+from smarts.core.shader_buffer import BufferID, CameraSensorID
 from smarts.core.utils.core_math import slope, squared_dist
 from smarts.core.utils.observations import points_to_pixels
 from smarts.env.utils.observation_conversion import ObservationOptions
@@ -806,11 +806,11 @@ def occlusion_main(steps):
                     fragment_shader_path=frag_shader,
                     dependencies=(
                         CustomRenderCameraDependency(
-                            camera_dependency_name=CameraSensorName.OCCLUSION,
+                            camera_dependency_name=CameraSensorID.OCCLUSION,
                             variable_name="iChannel0",
                         ),
                         CustomRenderCameraDependency(
-                            camera_dependency_name=CameraSensorName.TOP_DOWN_RGB,
+                            camera_dependency_name=CameraSensorID.TOP_DOWN_RGB,
                             variable_name="iChannel1",
                         ),
                         CustomRenderBufferDependency(
