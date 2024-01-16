@@ -34,7 +34,7 @@ import numpy as np
 from .coordinates import Pose
 
 if TYPE_CHECKING:
-    from smarts.core.shader_buffer import BufferName
+    from smarts.core.shader_buffer import BufferID
 
 
 class DEBUG_MODE(IntEnum):
@@ -131,14 +131,12 @@ class ShaderStepVariableDependency(ShaderStepDependencyBase):
 class ShaderStepBufferDependency(ShaderStepDependencyBase):
     """The base for shader dependencies."""
 
-    buffer_name: BufferName
-    script_variable_name: str
+    buffer_id: BufferID
+    script_uniform_name: str
 
     def __post_init__(self):
-        assert (
-            self.buffer_name
-        ), f"`{self.script_variable_name=}` cannot be None or empty."
-        assert self.script_variable_name
+        assert self.buffer_id, f"`{self.script_uniform_name=}` cannot be None or empty."
+        assert self.script_uniform_name
 
 
 @dataclass(frozen=True)

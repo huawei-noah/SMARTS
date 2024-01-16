@@ -22,7 +22,7 @@
 from enum import Enum
 
 
-class CameraSensorName(Enum):
+class CameraSensorID(Enum):
     """Describes default names for camera configuration."""
 
     DRIVABLE_AREA_GRID_MAP = "dagm"
@@ -31,7 +31,7 @@ class CameraSensorName(Enum):
     OCCLUSION = "occlusion"
 
 
-class BufferName(Enum):
+class BufferID(Enum):
     """The names of the different buffers available for camera rendering."""
 
     DELTA_TIME = "dt"
@@ -92,7 +92,7 @@ class BufferName(Enum):
 
     DISTANCE_TRAVELLED = "distance_travelled"
 
-    ROAD_WAYPOINTS_POSITIONS = "road_waypoints_lanes_pos"
+    ROAD_WAYPOINTS_POSITION = "road_waypoints_lanes_pos"
     ROAD_WAYPOINTS_HEADING = "road_waypoints_lanes_heading"
     ROAD_WAYPOINTS_LANE_ID = "road_waypoints_lane_id"
     ROAD_WAYPOINTS_LANE_WIDTH = "road_waypoints_lane_width"

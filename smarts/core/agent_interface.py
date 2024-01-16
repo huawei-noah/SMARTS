@@ -34,7 +34,7 @@ from smarts.core import config
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
 from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
-from smarts.core.shader_buffer import BufferName, CameraSensorName
+from smarts.core.shader_buffer import BufferID, CameraSensorID
 from smarts.core.utils import iteration_tools
 
 
@@ -134,7 +134,7 @@ class CustomRenderConstantDependency(RenderDependencyBase):
 class CustomRenderBufferDependency(RenderDependencyBase):
     """Base for referencing an observation buffer (other than a camera)."""
 
-    buffer_dependency_name: Union[str, BufferName]
+    buffer_dependency_name: Union[str, BufferID]
     """The identification of buffer to reference."""
     variable_name: str
     """The variable name inside the shader."""
@@ -150,7 +150,7 @@ class CustomRenderBufferDependency(RenderDependencyBase):
 class CustomRenderCameraDependency(RenderDependencyBase):
     """Provides a uniform texture access to an existing camera."""
 
-    camera_dependency_name: Union[str, CameraSensorName]
+    camera_dependency_name: Union[str, CameraSensorID]
     """The name of the camera (type) to target."""
     variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]
     """The name of the camera texture variable."""
@@ -168,7 +168,7 @@ class CustomRenderCameraDependency(RenderDependencyBase):
 
     def __post_init__(self):
         assert self.camera_dependency_name
-        if isinstance(self.camera_dependency_name, CameraSensorName):
+        if isinstance(self.camera_dependency_name, CameraSensorID):
             self.camera_dependency_name = self.camera_dependency_name.value
 
 

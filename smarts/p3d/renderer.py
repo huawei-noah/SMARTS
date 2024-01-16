@@ -30,6 +30,7 @@ import os
 import re
 import warnings
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from threading import Lock
 from typing import TYPE_CHECKING, Collection, Dict, Literal, Optional, Tuple, Union
@@ -78,12 +79,13 @@ from smarts.core.renderer_base import (
     ShaderStepVariableDependency,
 )
 from smarts.core.scenario import Scenario
-from smarts.core.shader_buffer import BufferName
+from smarts.core.shader_buffer import BufferID
 from smarts.core.signals import SignalState, signal_state_to_color
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.vehicle_state import VehicleState
 
 if TYPE_CHECKING:
+    from smarts.core.agent_interface import AgentInterface
     from smarts.core.observations import Observation
 
 
@@ -301,6 +303,336 @@ class P3DOffscreenCamera(_P3DCameraMixin, OffscreenCamera):
         return self.camera_np.getPos()
 
 
+class _BufferAccessor:
+    _static_methods = {}
+    _acceleration_set = {
+        BufferID.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
+        BufferID.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION,
+    }
+    _jerk_set = {
+        BufferID.EGO_VEHICLE_STATE_LINEAR_JERK,
+        BufferID.EGO_VEHICLE_STATE_ANGULAR_JERK,
+    }
+    _waypoints_set = {
+        BufferID.WAYPOINT_PATHS_POSITION,
+        BufferID.WAYPOINT_PATHS_HEADING,
+        BufferID.WAYPOINT_PATHS_LANE_ID,
+        BufferID.WAYPOINT_PATHS_LANE_INDEX,
+        BufferID.WAYPOINT_PATHS_LANE_OFFSET,
+        BufferID.WAYPOINT_PATHS_LANE_WIDTH,
+        BufferID.WAYPOINT_PATHS_SPEED_LIMIT,
+    }
+    _road_waypoints_set = {
+        BufferID.ROAD_WAYPOINTS_POSITION,
+        BufferID.ROAD_WAYPOINTS_HEADING,
+        BufferID.ROAD_WAYPOINTS_LANE_ID,
+        BufferID.ROAD_WAYPOINTS_LANE_INDEX,
+        BufferID.ROAD_WAYPOINTS_LANE_OFFSET,
+        BufferID.ROAD_WAYPOINTS_LANE_WIDTH,
+        BufferID.ROAD_WAYPOINTS_LANE_INDEX,
+    }
+    _via_near_set = {
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_POSITION,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID,
+    }
+    _lidar_set = {
+        BufferID.LIDAR_POINT_CLOUD_DIRECTION,
+        BufferID.LIDAR_POINT_CLOUD_HITS,
+        BufferID.LIDAR_POINT_CLOUD_ORIGIN,
+        BufferID.LIDAR_POINT_CLOUD_POINTS,
+    }
+    _signals_set = {
+        BufferID.SIGNALS_CONTROLLED_LANES,
+        BufferID.SIGNALS_LAST_CHANGED,
+        BufferID.SIGNALS_LIGHT_STATE,
+        BufferID.SIGNALS_STOP_POINT,
+    }
+
+    def __init__(self) -> None:
+        self._memos = {}
+
+    def should_get_data(self, buffer_id: BufferID, observation: Observation):
+        if (
+            buffer_id in self._acceleration_set
+            and observation.ego_vehicle_state.linear_acceleration is None
+        ):
+            return False
+        elif (
+            buffer_id in self._jerk_set
+            and observation.ego_vehicle_state.linear_jerk is None
+        ):
+            return False
+        elif buffer_id in self._waypoints_set and (
+            observation.waypoint_paths is None or len(observation.waypoint_paths) == 0
+        ):
+            return False
+        elif buffer_id in self._road_waypoints_set and (
+            observation.road_waypoints is None
+            or len(observation.road_waypoints.lanes) == 0
+        ):
+            return False
+        elif (
+            buffer_id in self._via_near_set
+            and len(observation.via_data.near_via_points) == 0
+        ):
+            return False
+        elif buffer_id in self._signals_set and (
+            observation.signals is None or len(observation.signals) > 0
+        ):
+            return False
+        elif buffer_id in self._lidar_set and (observation.lidar_point_cloud is None):
+            return False
+
+        return True
+
+    def get_data_for_buffer(self, buffer_id: BufferID, observation: Observation):
+        if len(self._static_methods) == 0:
+            self._gen_methods_for_buffer()
+        return self._static_methods.get(buffer_id, lambda o, m: None)(
+            observation, self._get_memo_for_buffer(buffer_id)
+        )
+
+    def _get_memo_for_buffer(self, buffer_id: BufferID):
+        if buffer_id in self._waypoints_set:
+            return self._waypoint_paths_flattened
+        elif buffer_id in self._road_waypoints_set:
+            return self._road_waypoints_flattened
+        return None
+
+    @lru_cache(maxsize=1)
+    def _road_waypoints_flattened(self, o: Observation):
+        return [
+            wp
+            for wp in itertools.chain(
+                *(wpl for wpl in itertools.chain(*o.road_waypoints.lanes.values()))
+            )
+        ]
+
+    @lru_cache(maxsize=1)
+    def _waypoint_paths_flattened(self, o: Observation):
+        return [wp for wp in itertools.chain(*o.waypoint_paths)]
+
+    @classmethod
+    def _gen_methods_for_buffer(cls):
+        cls._static_methods[BufferID.DELTA_TIME] = lambda o, m: o.dt
+        cls._static_methods[BufferID.ELAPSED_SIM_TIME] = lambda o, m: o.elapsed_sim_time
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_HEADING
+        ] = lambda o, m: o.ego_vehicle_state.heading
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_SPEED
+        ] = lambda o, m: o.ego_vehicle_state.speed
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_YAW_RATE
+        ] = lambda o, m: o.ego_vehicle_state.yaw_rate
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LANE_INDEX
+        ] = lambda o, m: o.ego_vehicle_state.yaw_rate
+        cls._static_methods[
+            BufferID.DISTANCE_TRAVELLED
+        ] = lambda o, m: o.distance_travelled
+
+        cls._static_methods[BufferID.STEP_COUNT] = lambda o, m: o.step_count
+        cls._static_methods[BufferID.STEPS_COMPLETED] = lambda o, m: o.steps_completed
+        cls._static_methods[BufferID.VEHICLE_TYPE] = (
+            lambda o, m: hash(o.ego_vehicle_state.mission.vehicle_spec.veh_config_type)
+            if o.ego_vehicle_state.mission.vehicle_spec
+            else -1
+        )
+
+        cls._static_methods[BufferID.EVENTS_OFF_ROAD] = lambda o, m: int(
+            o.events.off_road
+        )
+        cls._static_methods[BufferID.EVENTS_OFF_ROUTE] = lambda o, m: int(
+            o.events.off_route
+        )
+        cls._static_methods[BufferID.EVENTS_ON_SHOULDER] = lambda o, m: int(
+            o.events.on_shoulder
+        )
+        cls._static_methods[BufferID.EVENTS_WRONG_WAY] = lambda o, m: int(
+            o.events.wrong_way
+        )
+        cls._static_methods[BufferID.EVENTS_NOT_MOVING] = lambda o, m: int(
+            o.events.not_moving
+        )
+        cls._static_methods[BufferID.EVENTS_REACHED_GOAL] = lambda o, m: int(
+            o.events.reached_goal
+        )
+        cls._static_methods[
+            BufferID.EVENTS_REACHED_MAX_EPISODE_STEPS
+        ] = lambda o, m: int(o.events.reached_max_episode_steps)
+        cls._static_methods[BufferID.EVENTS_AGENTS_ALIVE_DONE] = lambda o, m: int(
+            o.events.agents_alive_done
+        )
+        cls._static_methods[BufferID.EVENTS_INTEREST_DONE] = lambda o, m: int(
+            o.events.interest_done
+        )
+        cls._static_methods[BufferID.UNDER_THIS_VEHICLE_CONTROL] = lambda o, m: int(
+            o.under_this_agent_control
+        )
+
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_POSITION
+        ] = lambda o, m: o.ego_vehicle_state.position
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_BOUNDING_BOX
+        ] = lambda o, m: o.ego_vehicle_state.bounding_box.as_lwh
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LANE_POSITION
+        ] = lambda o, m: tuple(o.ego_vehicle_state.lane_position)
+
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LINEAR_VELOCITY
+        ] = lambda o, m: o.ego_vehicle_state.linear_velocity
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_ANGULAR_VELOCITY
+        ] = lambda o, m: o.ego_vehicle_state.angular_velocity
+
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LINEAR_ACCELERATION
+        ] = lambda o, m: o.ego_vehicle_state.linear_acceleration
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION
+        ] = lambda o, m: o.ego_vehicle_state.angular_acceleration
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LINEAR_JERK
+        ] = lambda o, m: o.ego_vehicle_state.linear_jerk
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_ANGULAR_JERK
+        ] = lambda o, m: o.ego_vehicle_state.angular_jerk
+
+        cls._static_methods[BufferID.EGO_VEHICLE_STATE_ROAD_ID] = lambda o, m: hash(
+            o.ego_vehicle_state.road_id
+        )
+        cls._static_methods[BufferID.EGO_VEHICLE_STATE_LANE_ID] = lambda o, m: hash(
+            o.ego_vehicle_state.lane_id
+        )
+
+        # XXX: Float cast is sometimes needed because Panda3D reacts badly to non-standard types like numpy float64.
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION
+        ] = lambda o, m: [vs.position for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX
+        ] = lambda o, m: [
+            vs.bounding_box.as_lwh for vs in o.neighborhood_vehicle_states
+        ]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION
+        ] = lambda o, m: [
+            tuple(float(v) for v in vs.lane_position)
+            if vs.lane_position is not None
+            else (-1.0, -1.0, -1.0)
+            for vs in o.neighborhood_vehicle_states
+        ]
+
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_HEADING
+        ] = lambda o, m: [float(vs.heading) for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[BufferID.NEIGHBORHOOD_VEHICLE_STATES_SPEED] = lambda o, m: [
+            vs.speed for vs in o.neighborhood_vehicle_states
+        ]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID
+        ] = lambda o, m: [hash(vs.road_id) for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID
+        ] = lambda o, m: [hash(vs.lane_id) for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX
+        ] = lambda o, m: [vs.lane_index for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_INTEREST
+        ] = lambda o, m: [int(vs.interest) for vs in o.neighborhood_vehicle_states]
+
+        cls._static_methods[BufferID.WAYPOINT_PATHS_POSITION] = lambda o, m: [
+            wp.position.tolist() for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_HEADING] = lambda o, m: [
+            float(wp.heading) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_WIDTH] = lambda o, m: [
+            wp.lane_width for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_SPEED_LIMIT] = lambda o, m: [
+            wp.speed_limit for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_OFFSET] = lambda o, m: [
+            wp.lane_offset for wp in m(o)
+        ]
+
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_ID] = lambda o, m: [
+            hash(wp.lane_id) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_INDEX] = lambda o, m: [
+            wp.lane_index for wp in m(o)
+        ]
+
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_POSITION] = lambda o, m: [
+            wp.position.tolist() for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_HEADING] = lambda o, m: [
+            float(wp.heading) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_WIDTH] = lambda o, m: [
+            wp.lane_width for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_SPEED_LIMIT] = lambda o, m: [
+            wp.speed_limit for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_OFFSET] = lambda o, m: [
+            wp.lane_offset for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_ID] = lambda o, m: [
+            hash(wp.lane_id) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_INDEX] = lambda o, m: [
+            wp.lane_index for wp in m(o)
+        ]
+
+        cls._static_methods[BufferID.VIA_DATA_NEAR_VIA_POINTS_POSITION] = lambda o, m: [
+            via.position for via in o.via_data.near_via_points
+        ]
+        cls._static_methods[
+            BufferID.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX
+        ] = lambda o, m: [via.lane_index for via in o.via_data.near_via_points]
+        cls._static_methods[BufferID.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID] = lambda o, m: [
+            hash(via.road_id) for via in o.via_data.near_via_points
+        ]
+        cls._static_methods[BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT] = lambda o, m: [
+            int(via.hit) for via in o.via_data.near_via_points
+        ]
+        cls._static_methods[
+            BufferID.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED
+        ] = lambda o, m: [via.required_speed for via in o.via_data.near_via_points]
+
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_POINTS] = lambda o, m: [
+            l.tolist() for l in o.lidar_point_cloud[0]
+        ]
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_HITS] = lambda o, m: [
+            int(h) for h in o.lidar_point_cloud[1]
+        ]
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_ORIGIN] = lambda o, m: [
+            o.tolist() for o, _ in o.lidar_point_cloud[2]
+        ]
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_DIRECTION] = lambda o, m: [
+            d.tolist() for _, d in o.lidar_point_cloud[2]
+        ]
+
+        cls._static_methods[BufferID.SIGNALS_LIGHT_STATE] = lambda o, m: [
+            int(l.state) for l in o.signals
+        ]
+        cls._static_methods[BufferID.SIGNALS_STOP_POINT] = lambda o, m: [
+            tuple(l.stop_point) for l in o.signals
+        ]
+        cls._static_methods[BufferID.SIGNALS_LAST_CHANGED] = lambda o, m: [
+            l.last_changed for l in o.signals
+        ]
+
+
 @dataclass
 class P3DShaderStep(_P3DCameraMixin, ShaderStep):
     """A camera used for rendering images using a shader and a full-screen quad."""
@@ -329,255 +661,18 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
             # )
         if height:
             inputs["iElevation"] = height
+        if len(self.buffer_dependencies) == 0:
+            return
+
+        buffers = set(self.buffer_dependencies)
         if observation := kwargs.get("observation"):
             observation: Observation
-            inputs[BufferName.DELTA_TIME.value] = observation.dt
-            inputs[BufferName.ELAPSED_SIM_TIME.value] = observation.elapsed_sim_time
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_HEADING.value
-            ] = observation.ego_vehicle_state.heading
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_SPEED.value
-            ] = observation.ego_vehicle_state.speed
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_YAW_RATE.value
-            ] = observation.ego_vehicle_state.yaw_rate
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_LANE_INDEX.value
-            ] = observation.ego_vehicle_state.yaw_rate
-            inputs[BufferName.DISTANCE_TRAVELLED.value] = observation.distance_travelled
-
-            inputs[BufferName.STEP_COUNT.value] = observation.step_count
-            inputs[BufferName.STEPS_COMPLETED.value] = observation.steps_completed
-            if vehicle_spec := observation.ego_vehicle_state.mission.vehicle_spec:
-                inputs[BufferName.VEHICLE_TYPE.value] = hash(
-                    vehicle_spec.veh_config_type
-                )
-            else:
-                inputs[BufferName.VEHICLE_TYPE.value] = -1
-
-            inputs[BufferName.EVENTS_OFF_ROAD.value] = int(observation.events.off_road)
-            inputs[BufferName.EVENTS_OFF_ROUTE.value] = int(
-                observation.events.off_route
-            )
-            inputs[BufferName.EVENTS_ON_SHOULDER.value] = int(
-                observation.events.on_shoulder
-            )
-            inputs[BufferName.EVENTS_WRONG_WAY.value] = int(
-                observation.events.wrong_way
-            )
-            inputs[BufferName.EVENTS_NOT_MOVING.value] = int(
-                observation.events.not_moving
-            )
-            inputs[BufferName.EVENTS_REACHED_GOAL.value] = int(
-                observation.events.reached_goal
-            )
-            inputs[BufferName.EVENTS_REACHED_MAX_EPISODE_STEPS.value] = int(
-                observation.events.reached_max_episode_steps
-            )
-            inputs[BufferName.EVENTS_AGENTS_ALIVE_DONE.value] = int(
-                observation.events.agents_alive_done
-            )
-            inputs[BufferName.EVENTS_INTEREST_DONE.value] = int(
-                observation.events.interest_done
-            )
-            inputs[BufferName.UNDER_THIS_VEHICLE_CONTROL.value] = int(
-                observation.under_this_agent_control
-            )
-
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_POSITION.value
-            ] = observation.ego_vehicle_state.position
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX.value
-            ] = observation.ego_vehicle_state.bounding_box.as_lwh
-            if lane_position := observation.ego_vehicle_state.lane_position:
-                inputs[BufferName.EGO_VEHICLE_STATE_LANE_POSITION.value] = tuple(
-                    lane_position
-                )
-
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY.value
-            ] = observation.ego_vehicle_state.linear_velocity
-            inputs[
-                BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY.value
-            ] = observation.ego_vehicle_state.angular_velocity
-            if observation.ego_vehicle_state.linear_acceleration is not None:
-                inputs[
-                    BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION.value
-                ] = observation.ego_vehicle_state.linear_acceleration
-                inputs[
-                    BufferName.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION.value
-                ] = observation.ego_vehicle_state.angular_acceleration
-            if observation.ego_vehicle_state.linear_jerk is not None:
-                inputs[
-                    BufferName.EGO_VEHICLE_STATE_LINEAR_JERK.value
-                ] = observation.ego_vehicle_state.linear_jerk
-                inputs[
-                    BufferName.EGO_VEHICLE_STATE_ANGULAR_JERK.value
-                ] = observation.ego_vehicle_state.angular_jerk
-
-            inputs[BufferName.EGO_VEHICLE_STATE_ROAD_ID.value] = hash(
-                observation.ego_vehicle_state.road_id
-            )
-            inputs[BufferName.EGO_VEHICLE_STATE_LANE_ID.value] = hash(
-                observation.ego_vehicle_state.lane_id
-            )
-
-            # XXX: Float cast is needed because Panda3D reacts badly to numpy types.
-            nvs_positions = [
-                vs.position for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value
-            ] = nvs_positions
-            nvs_bounding_box = [
-                vs.bounding_box.as_lwh for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX.value
-            ] = nvs_bounding_box
-            nvs_lane_positions = [
-                tuple(float(v) for v in vs.lane_position)
-                if vs.lane_position is not None
-                else (-1.0, -1.0, -1.0)
-                for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION.value
-            ] = nvs_lane_positions
-
-            nvs_headings = [
-                float(vs.heading) for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_HEADING.value] = nvs_headings
-            nvs_speeds = [vs.speed for vs in observation.neighborhood_vehicle_states]
-            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_SPEED.value] = nvs_speeds
-            nvs_road_ids = [
-                hash(vs.road_id) for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID.value] = nvs_road_ids
-            nvs_lane_ids = [
-                hash(vs.lane_id) for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID.value] = nvs_lane_ids
-            nvs_lane_indices = [
-                vs.lane_index for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX.value
-            ] = nvs_lane_indices
-            nvs_lane_interest = [
-                int(vs.interest) for vs in observation.neighborhood_vehicle_states
-            ]
-            inputs[
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_INTEREST.value
-            ] = nvs_lane_interest
-
-            waypoint_paths_flattened = [
-                wp for wp in itertools.chain(*observation.waypoint_paths)
-            ]
-            inputs[BufferName.WAYPOINT_PATHS_POSITION.value] = [
-                wp.position.tolist() for wp in waypoint_paths_flattened
-            ]
-            inputs[BufferName.WAYPOINT_PATHS_HEADING.value] = [
-                float(wp.heading) for wp in waypoint_paths_flattened
-            ]
-            inputs[BufferName.WAYPOINT_PATHS_LANE_WIDTH.value] = [
-                wp.lane_width for wp in waypoint_paths_flattened
-            ]
-            inputs[BufferName.WAYPOINT_PATHS_SPEED_LIMIT.value] = [
-                wp.speed_limit for wp in waypoint_paths_flattened
-            ]
-            inputs[BufferName.WAYPOINT_PATHS_LANE_OFFSET.value] = [
-                wp.lane_offset for wp in waypoint_paths_flattened
-            ]
-
-            inputs[BufferName.WAYPOINT_PATHS_LANE_ID.value] = [
-                hash(wp.lane_id) for wp in waypoint_paths_flattened
-            ]
-            inputs[BufferName.WAYPOINT_PATHS_LANE_INDEX.value] = [
-                wp.lane_index for wp in waypoint_paths_flattened
-            ]
-
-            if observation.road_waypoints is not None and len(
-                observation.road_waypoints.lanes
-            ):
-                road_waypoints_flattened = [
-                    wp
-                    for wp in itertools.chain(
-                        *(
-                            wpl
-                            for wpl in itertools.chain(
-                                *observation.road_waypoints.lanes.values()
-                            )
-                        )
+            ba = _BufferAccessor()
+            for b in buffers:
+                if ba.should_get_data(b.buffer_id, observation):
+                    inputs[b.script_uniform_name] = ba.get_data_for_buffer(
+                        b.buffer_id, observation
                     )
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_POSITIONS.value] = [
-                    wp.position.tolist() for wp in road_waypoints_flattened
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_HEADING.value] = [
-                    float(wp.heading) for wp in road_waypoints_flattened
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_LANE_WIDTH.value] = [
-                    wp.lane_width for wp in road_waypoints_flattened
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_SPEED_LIMIT.value] = [
-                    wp.speed_limit for wp in road_waypoints_flattened
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_LANE_OFFSET.value] = [
-                    wp.lane_offset for wp in road_waypoints_flattened
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_LANE_ID.value] = [
-                    hash(wp.lane_id) for wp in road_waypoints_flattened
-                ]
-                inputs[BufferName.ROAD_WAYPOINTS_LANE_INDEX.value] = [
-                    wp.lane_index for wp in road_waypoints_flattened
-                ]
-
-            if len(observation.via_data.hit_via_points) == 0:
-                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_POSITION.value] = [
-                    via.position for via in observation.via_data.near_via_points
-                ]
-                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX.value] = [
-                    via.lane_index for via in observation.via_data.near_via_points
-                ]
-                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID.value] = [
-                    hash(via.road_id) for via in observation.via_data.near_via_points
-                ]
-                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_HIT.value] = [
-                    int(via.hit) for via in observation.via_data.near_via_points
-                ]
-                inputs[BufferName.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED.value] = [
-                    via.required_speed for via in observation.via_data.near_via_points
-                ]
-
-            if observation.lidar_point_cloud is not None:
-                inputs[BufferName.LIDAR_POINT_CLOUD_POINTS.value] = [
-                    l.tolist() for l in observation.lidar_point_cloud[0]
-                ]
-                inputs[BufferName.LIDAR_POINT_CLOUD_HITS.value] = [
-                    int(h) for h in observation.lidar_point_cloud[1]
-                ]
-                inputs[BufferName.LIDAR_POINT_CLOUD_ORIGIN.value] = [
-                    o.tolist() for o, _ in observation.lidar_point_cloud[2]
-                ]
-                inputs[BufferName.LIDAR_POINT_CLOUD_DIRECTION.value] = [
-                    d.tolist() for _, d in observation.lidar_point_cloud[2]
-                ]
-
-            if observation.signals is not None and len(observation.signals) > 0:
-                inputs[BufferName.SIGNALS_LIGHT_STATE.value] = [
-                    int(l.state) for l in observation.signals
-                ]
-                inputs[BufferName.SIGNALS_STOP_POINT.value] = [
-                    tuple(l.stop_point) for l in observation.signals
-                ]
-                inputs[BufferName.SIGNALS_LAST_CHANGED.value] = [
-                    l.last_changed for l in observation.signals
-                ]
-
         if inputs:
             self.fullscreen_quad_node.setShaderInputs(**inputs)
 
@@ -1140,171 +1235,171 @@ class Renderer(RendererBase):
             "iElevation": 0.0,
         }
 
-        for svn, bn in ((b.script_variable_name, b.buffer_name) for b in buffers):
+        for svn, bn in ((b.script_uniform_name, b.buffer_id) for b in buffers):
             initial_value = None
             # SINGLE VALUES
             if bn in (
-                BufferName.DELTA_TIME,
-                BufferName.ELAPSED_SIM_TIME,
-                BufferName.EGO_VEHICLE_STATE_HEADING,
-                BufferName.EGO_VEHICLE_STATE_SPEED,
-                BufferName.EGO_VEHICLE_STATE_STEERING,
-                BufferName.EGO_VEHICLE_STATE_YAW_RATE,
-                BufferName.EGO_VEHICLE_STATE_LANE_INDEX,
-                BufferName.DISTANCE_TRAVELLED,
+                BufferID.DELTA_TIME,
+                BufferID.ELAPSED_SIM_TIME,
+                BufferID.EGO_VEHICLE_STATE_HEADING,
+                BufferID.EGO_VEHICLE_STATE_SPEED,
+                BufferID.EGO_VEHICLE_STATE_STEERING,
+                BufferID.EGO_VEHICLE_STATE_YAW_RATE,
+                BufferID.EGO_VEHICLE_STATE_LANE_INDEX,
+                BufferID.DISTANCE_TRAVELLED,
             ):
                 initial_value = float()
             elif bn in (
-                BufferName.STEP_COUNT,
-                BufferName.STEPS_COMPLETED,
-                BufferName.VEHICLE_TYPE,
+                BufferID.STEP_COUNT,
+                BufferID.STEPS_COMPLETED,
+                BufferID.VEHICLE_TYPE,
             ):
                 initial_value = int()
             elif bn in (
-                BufferName.EVENTS_OFF_ROAD,
-                BufferName.EVENTS_OFF_ROUTE,
-                BufferName.EVENTS_ON_SHOULDER,
-                BufferName.EVENTS_WRONG_WAY,
-                BufferName.EVENTS_NOT_MOVING,
-                BufferName.EVENTS_REACHED_GOAL,
-                BufferName.EVENTS_REACHED_MAX_EPISODE_STEPS,
-                BufferName.EVENTS_AGENTS_ALIVE_DONE,
-                BufferName.EVENTS_INTEREST_DONE,
-                BufferName.UNDER_THIS_VEHICLE_CONTROL,
+                BufferID.EVENTS_OFF_ROAD,
+                BufferID.EVENTS_OFF_ROUTE,
+                BufferID.EVENTS_ON_SHOULDER,
+                BufferID.EVENTS_WRONG_WAY,
+                BufferID.EVENTS_NOT_MOVING,
+                BufferID.EVENTS_REACHED_GOAL,
+                BufferID.EVENTS_REACHED_MAX_EPISODE_STEPS,
+                BufferID.EVENTS_AGENTS_ALIVE_DONE,
+                BufferID.EVENTS_INTEREST_DONE,
+                BufferID.UNDER_THIS_VEHICLE_CONTROL,
             ):
                 initial_value = bool()
             elif bn in (
-                BufferName.EGO_VEHICLE_STATE_POSITION,
-                BufferName.EGO_VEHICLE_STATE_BOUNDING_BOX,
-                BufferName.EGO_VEHICLE_STATE_LANE_POSITION,
+                BufferID.EGO_VEHICLE_STATE_POSITION,
+                BufferID.EGO_VEHICLE_STATE_BOUNDING_BOX,
+                BufferID.EGO_VEHICLE_STATE_LANE_POSITION,
             ):
                 initial_value = (float(), float(), float())
             elif bn in (
-                BufferName.EGO_VEHICLE_STATE_LINEAR_VELOCITY,
-                BufferName.EGO_VEHICLE_STATE_ANGULAR_VELOCITY,
-                BufferName.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
-                BufferName.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION,
-                BufferName.EGO_VEHICLE_STATE_LINEAR_JERK,
-                BufferName.EGO_VEHICLE_STATE_ANGULAR_JERK,
+                BufferID.EGO_VEHICLE_STATE_LINEAR_VELOCITY,
+                BufferID.EGO_VEHICLE_STATE_ANGULAR_VELOCITY,
+                BufferID.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
+                BufferID.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION,
+                BufferID.EGO_VEHICLE_STATE_LINEAR_JERK,
+                BufferID.EGO_VEHICLE_STATE_ANGULAR_JERK,
             ):
                 initial_value = (float(), float())
             elif bn in (
-                BufferName.EGO_VEHICLE_STATE_ROAD_ID,
-                BufferName.EGO_VEHICLE_STATE_LANE_ID,
+                BufferID.EGO_VEHICLE_STATE_ROAD_ID,
+                BufferID.EGO_VEHICLE_STATE_LANE_ID,
             ):
                 initial_value = int()
 
             # Vector of NEIGHBORHOOD_VEHICLE_STATES
             elif bn in (
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX,
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION,
             ):
                 initial_value = [
                     (float(), float(), float()),
                 ] * 20
             elif bn in (
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_HEADING,
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_SPEED,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_HEADING,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_SPEED,
             ):
                 initial_value = [
                     float(),
                 ]
             elif bn in (
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID,
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID,
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX,
-                BufferName.NEIGHBORHOOD_VEHICLE_STATES_INTEREST,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_INTEREST,
             ):
                 initial_value = [
                     int(),
                 ]
 
             # Vector of waypoints from WAYPOINT_PATHS
-            elif bn in (BufferName.WAYPOINT_PATHS_POSITION,):
+            elif bn in (BufferID.WAYPOINT_PATHS_POSITION,):
                 initial_value = [(float(), float())]
             elif bn in (
-                BufferName.WAYPOINT_PATHS_HEADING,
-                BufferName.WAYPOINT_PATHS_LANE_WIDTH,
-                BufferName.WAYPOINT_PATHS_SPEED_LIMIT,
-                BufferName.WAYPOINT_PATHS_LANE_OFFSET,
+                BufferID.WAYPOINT_PATHS_HEADING,
+                BufferID.WAYPOINT_PATHS_LANE_WIDTH,
+                BufferID.WAYPOINT_PATHS_SPEED_LIMIT,
+                BufferID.WAYPOINT_PATHS_LANE_OFFSET,
             ):
                 initial_value = [
                     float(),
                 ]
             elif bn in (
-                BufferName.WAYPOINT_PATHS_LANE_ID,
-                BufferName.WAYPOINT_PATHS_LANE_INDEX,
+                BufferID.WAYPOINT_PATHS_LANE_ID,
+                BufferID.WAYPOINT_PATHS_LANE_INDEX,
             ):
                 initial_value = [
                     int(),
                 ]
 
             # Vector of waypoints from ROAD_WAYPOINTS
-            elif bn in (BufferName.ROAD_WAYPOINTS_POSITIONS,):
+            elif bn in (BufferID.ROAD_WAYPOINTS_POSITION,):
                 initial_value = [
                     (float(), float()),
                 ]
             elif bn in (
-                BufferName.ROAD_WAYPOINTS_HEADING,
-                BufferName.ROAD_WAYPOINTS_LANE_WIDTH,
-                BufferName.ROAD_WAYPOINTS_SPEED_LIMIT,
-                BufferName.ROAD_WAYPOINTS_LANE_OFFSET,
+                BufferID.ROAD_WAYPOINTS_HEADING,
+                BufferID.ROAD_WAYPOINTS_LANE_WIDTH,
+                BufferID.ROAD_WAYPOINTS_SPEED_LIMIT,
+                BufferID.ROAD_WAYPOINTS_LANE_OFFSET,
             ):
                 initial_value = [
                     float(),
                 ]
             elif bn in (
-                BufferName.ROAD_WAYPOINTS_LANE_ID,
-                BufferName.ROAD_WAYPOINTS_LANE_INDEX,
+                BufferID.ROAD_WAYPOINTS_LANE_ID,
+                BufferID.ROAD_WAYPOINTS_LANE_INDEX,
             ):
                 initial_value = [
                     int(),
                 ]
 
             # Vector of via data from VIA_DATA
-            elif bn in (BufferName.VIA_DATA_NEAR_VIA_POINTS_POSITION,):
+            elif bn in (BufferID.VIA_DATA_NEAR_VIA_POINTS_POSITION,):
                 initial_value = [
                     (float(), float()),
                 ]
             elif bn in (
-                BufferName.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX,
-                BufferName.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID,
-                BufferName.VIA_DATA_NEAR_VIA_POINTS_HIT,
+                BufferID.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX,
+                BufferID.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID,
+                BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT,
             ):
                 initial_value = [
                     int(),
                 ]
-            elif bn in (BufferName.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED,):
+            elif bn in (BufferID.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED,):
                 initial_value = [
                     float(),
                 ]
 
             # Vector of lidar point information from LIDAR_POINT_CLOUD
             elif bn in (
-                BufferName.LIDAR_POINT_CLOUD_POINTS,
-                BufferName.LIDAR_POINT_CLOUD_ORIGIN,
-                BufferName.LIDAR_POINT_CLOUD_DIRECTION,
+                BufferID.LIDAR_POINT_CLOUD_POINTS,
+                BufferID.LIDAR_POINT_CLOUD_ORIGIN,
+                BufferID.LIDAR_POINT_CLOUD_DIRECTION,
             ):
                 initial_value = [
                     (float(), float(), float()),
                 ]
-            elif bn in (BufferName.LIDAR_POINT_CLOUD_HITS,):
+            elif bn in (BufferID.LIDAR_POINT_CLOUD_HITS,):
                 initial_value = [
                     int(),
                 ]
 
             # SIGNALS
             elif bn in (
-                BufferName.SIGNALS_LIGHT_STATE,
+                BufferID.SIGNALS_LIGHT_STATE,
                 # BufferName.SIGNALS_CONTROLLED_LANES,
             ):
                 initial_value = [
                     int(),
                 ]
             elif bn in (
-                BufferName.SIGNALS_STOP_POINT,
-                BufferName.SIGNALS_LAST_CHANGED,
+                BufferID.SIGNALS_STOP_POINT,
+                BufferID.SIGNALS_LAST_CHANGED,
             ):
                 initial_value = [
                     float(),
@@ -1312,6 +1407,6 @@ class Renderer(RendererBase):
             else:
                 raise ValueError(f"Buffer `{bn}` is not yet implemented.")
 
-            inputs[bn.value] = initial_value
+            inputs[svn] = initial_value
 
         surface.setShaderInputs(**inputs)

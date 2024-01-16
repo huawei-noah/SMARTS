@@ -63,7 +63,7 @@ from smarts.core.renderer_base import (
     ShaderStepVariableDependency,
 )
 from smarts.core.road_map import RoadMap, Waypoint
-from smarts.core.shader_buffer import BufferName, CameraSensorName
+from smarts.core.shader_buffer import BufferID, CameraSensorID
 from smarts.core.signals import SignalState
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.utils.core_math import squared_dist
@@ -211,7 +211,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            CameraSensorName.DRIVABLE_AREA_GRID_MAP.value,
+            CameraSensorID.DRIVABLE_AREA_GRID_MAP.value,
             RenderMasks.DRIVABLE_AREA_HIDE,
             width,
             height,
@@ -254,7 +254,7 @@ class OGMSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            CameraSensorName.OCCUPANCY_GRID_MAP.value,
+            CameraSensorID.OCCUPANCY_GRID_MAP.value,
             RenderMasks.OCCUPANCY_HIDE,
             width,
             height,
@@ -296,7 +296,7 @@ class RGBSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            CameraSensorName.TOP_DOWN_RGB.value,
+            CameraSensorID.TOP_DOWN_RGB.value,
             RenderMasks.RGB_HIDE,
             width,
             height,
@@ -342,7 +342,7 @@ class OcclusionMapSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            CameraSensorName.OCCLUSION.value,
+            CameraSensorID.OCCLUSION.value,
             RenderMasks.NONE,
             width,
             height,
@@ -367,7 +367,7 @@ class OcclusionMapSensor(CameraSensor):
                         ),
                         ShaderStepCameraDependency(
                             _gen_sensor_name(
-                                CameraSensorName.DRIVABLE_AREA_GRID_MAP.value,
+                                CameraSensorID.DRIVABLE_AREA_GRID_MAP.value,
                                 vehicle_state,
                             ),
                             "iChannel0",
@@ -383,7 +383,7 @@ class OcclusionMapSensor(CameraSensor):
         # feed simplex and ogm to composite
         with pkg_resources.path(glsl, "occlusion.frag") as composite_shader_path:
             composite_camera_name = _gen_sensor_name(
-                CameraSensorName.OCCLUSION.value, vehicle_state
+                CameraSensorID.OCCLUSION.value, vehicle_state
             )
             renderer.build_shader_step(
                 name=composite_camera_name,
@@ -466,9 +466,9 @@ class CustomRenderSensor(CameraSensor):
 
         dependencies = []
         named_camera_sensors = (
-            (CameraSensorName.OCCUPANCY_GRID_MAP, ogm_sensor),
-            (CameraSensorName.TOP_DOWN_RGB, top_down_rgb_sensor),
-            (CameraSensorName.DRIVABLE_AREA_GRID_MAP, drivable_area_grid_map_sensor),
+            (CameraSensorID.OCCUPANCY_GRID_MAP, ogm_sensor),
+            (CameraSensorID.TOP_DOWN_RGB, top_down_rgb_sensor),
+            (CameraSensorID.DRIVABLE_AREA_GRID_MAP, drivable_area_grid_map_sensor),
         )
 
         def has_required(dependency_name, required_name, sensor) -> bool:
@@ -502,13 +502,13 @@ class CustomRenderSensor(CameraSensor):
                 )
             elif isinstance(d, CustomRenderBufferDependency):
                 if isinstance(d.buffer_dependency_name, str):
-                    buffer_name = BufferName(d.buffer_dependency_name)
+                    buffer_name = BufferID(d.buffer_dependency_name)
                 else:
                     buffer_name = d.buffer_dependency_name
 
                 dependency = ShaderStepBufferDependency(
-                    buffer_name=buffer_name,
-                    script_variable_name=d.variable_name,
+                    buffer_id=buffer_name,
+                    script_uniform_name=d.variable_name,
                 )
             else:
                 raise TypeError(

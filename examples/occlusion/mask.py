@@ -36,6 +36,7 @@ from smarts.core.agent_interface import (
     CustomRenderConstantDependency,
     DoneCriteria,
     DrivableAreaGridMap,
+    Lidar,
     NeighborhoodVehicles,
     OcclusionMap,
     RoadWaypoints,
@@ -44,7 +45,7 @@ from smarts.core.agent_interface import (
 from smarts.core.colors import Colors
 from smarts.core.observations import Observation, VehicleObservation
 from smarts.core.road_map import Waypoint, interpolate_waypoints
-from smarts.core.shader_buffer import BufferName, CameraSensorName
+from smarts.core.shader_buffer import BufferID, CameraSensorName
 from smarts.core.utils.core_math import slope, squared_dist
 from smarts.core.utils.observations import points_to_pixels
 from smarts.env.utils.observation_conversion import ObservationOptions
@@ -790,6 +791,8 @@ def occlusion_main(steps):
                 resolution=resolution,
                 surface_noise=True,
             ),
+            signals=True,
+            lidar_point_cloud=Lidar(),
             lane_positions=True,
             accelerometer=Accelerometer(),
             road_waypoints=RoadWaypoints(horizon=50),
@@ -811,12 +814,12 @@ def occlusion_main(steps):
                             variable_name="iChannel1",
                         ),
                         CustomRenderBufferDependency(
-                            buffer_dependency_name=BufferName.ELAPSED_SIM_TIME,
-                            variable_name=BufferName.ELAPSED_SIM_TIME.value,
+                            buffer_dependency_name=BufferID.ELAPSED_SIM_TIME,
+                            variable_name=BufferID.ELAPSED_SIM_TIME.value,
                         ),
                         CustomRenderBufferDependency(
-                            buffer_dependency_name=BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
-                            variable_name=BufferName.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value,
+                            buffer_dependency_name=BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
+                            variable_name=BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value,
                         ),
                         CustomRenderConstantDependency(
                             value=(0.1, 0.5, 0.1),
