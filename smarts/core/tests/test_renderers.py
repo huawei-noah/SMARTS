@@ -52,7 +52,7 @@ def _smarts_with_agent(agent) -> SMARTS:
 
 
 @pytest.fixture
-def smarts():
+def smarts_w_renderer():
     buddha = AgentInterface(
         debug=True,
         done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
@@ -94,20 +94,21 @@ def scenario():
     return scenario
 
 
-def test_optional_renderer(smarts: SMARTS, scenario):
-    assert not smarts.is_rendering
-    renderer = smarts.renderer
+def test_optional_renderer(smarts_w_renderer: SMARTS, scenario: Scenario):
+    assert not smarts_w_renderer.is_rendering
+    renderer = smarts_w_renderer.renderer
     assert renderer
 
-    smarts._renderer = None
-    smarts.reset(scenario)
-    assert smarts.is_rendering
+    smarts_w_renderer._renderer = None
+    smarts_w_renderer.reset(scenario)
+    assert smarts_w_renderer.is_rendering
 
-    smarts._renderer = None
-    for _ in range(10):
-        smarts.step({AGENT_ID: "keep_lane"})
+    smarts_w_renderer._renderer = None
 
-    assert not smarts.is_rendering
+    with pytest.raises(expected_exception=AttributeError, match=r"NoneType"):
+        smarts_w_renderer.step({AGENT_ID: "keep_lane"})
+
+    assert not smarts_w_renderer.is_rendering
 
 
 def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
