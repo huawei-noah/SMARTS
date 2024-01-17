@@ -265,7 +265,7 @@ def test_custom_render_sensor():
         heading_=Heading(0),
     )
 
-    with pkg_resources.path(glsl, "simplex.frag") as frag_shader:
+    with pkg_resources.path(glsl, "simplex_shader.frag") as frag_shader:
 
         sensor_gen = partial(
             CustomRenderSensor,

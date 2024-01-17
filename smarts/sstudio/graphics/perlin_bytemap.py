@@ -55,7 +55,7 @@ def generate_simplex_p3d_gpu(
         "noise renderer", debug_mode=DEBUG_MODE.ERROR, rendering_backend="p3headlessgl"
     )
 
-    with pkg_resources.path(glsl, "simplex.frag") as simplex_shader:
+    with pkg_resources.path(glsl, "simplex_shader.frag") as simplex_shader:
         camera_id = renderer.build_shader_step(
             "simplex_camera",
             simplex_shader,

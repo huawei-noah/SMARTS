@@ -355,7 +355,7 @@ class OcclusionMapSensor(CameraSensor):
 
         if add_surface_noise:
             # generate simplex camera
-            with pkg_resources.path(glsl, "simplex.frag") as simplex_shader_path:
+            with pkg_resources.path(glsl, "simplex_shader.frag") as simplex_shader_path:
                 simplex_camera_name = _gen_sensor_name("simplex", vehicle_state)
                 renderer.build_shader_step(
                     name=simplex_camera_name,
@@ -381,7 +381,7 @@ class OcclusionMapSensor(CameraSensor):
             occlusion_camera1 = simplex_camera_name
 
         # feed simplex and ogm to composite
-        with pkg_resources.path(glsl, "occlusion.frag") as composite_shader_path:
+        with pkg_resources.path(glsl, "occlusion_shader.frag") as composite_shader_path:
             composite_camera_name = _gen_sensor_name(
                 CameraSensorID.OCCLUSION.value, vehicle_state
             )

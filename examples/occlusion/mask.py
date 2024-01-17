@@ -766,7 +766,7 @@ def occlusion_main(steps):
         for c in range(1, agent_count + 1)
     }
 
-    with pkg_resources.path(glsl, "map_values.frag") as frag_shader:
+    with pkg_resources.path(glsl, "map_values_shader.frag") as frag_shader:
         agent_interface: AgentInterface = replace(
             agent_spec.interface,
             neighborhood_vehicle_states=NeighborhoodVehicles(),
