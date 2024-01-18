@@ -26,7 +26,7 @@ import math
 import numpy as np
 
 import smarts.sstudio.sstypes as t
-from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
 from smarts.core.events import Events
 from smarts.core.observations import (
     DrivableAreaGridMap,
@@ -35,12 +35,15 @@ from smarts.core.observations import (
     Observation,
     OccupancyGridMap,
     RoadWaypoints,
+    SignalObservation,
     TopDownRGB,
     VehicleObservation,
+    ViaPoint,
     Vias,
 )
 from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.road_map import Waypoint
+from smarts.core.signals import SignalLightState
 
 
 def dummy_observation() -> Observation:
@@ -50,7 +53,7 @@ def dummy_observation() -> Observation:
         step_count=1,
         elapsed_sim_time=0.2,
         events=Events(
-            collisions=[],
+            collisions=(2,),
             off_road=False,
             off_route=False,
             on_shoulder=False,
@@ -99,7 +102,7 @@ def dummy_observation() -> Observation:
             angular_jerk=(0.0, 0.0, 0.0),
         ),
         under_this_agent_control=True,
-        neighborhood_vehicle_states=[
+        neighborhood_vehicle_states=(
             VehicleObservation(
                 id="car-west_0_0-east_0_max-784511-726648-0-0.0",
                 position=(-1.33354215, -3.2, 0.0),
@@ -122,7 +125,7 @@ def dummy_observation() -> Observation:
                 lane_index=1,
                 lane_position=RefLinePoint(-1.47159011, 0.0, 0.0),
             ),
-        ],
+        ),
         waypoint_paths=[
             [
                 Waypoint(
@@ -316,6 +319,9 @@ def dummy_observation() -> Observation:
                 ],
             }
         ),
-        via_data=Vias(near_via_points=[]),
+        signals=(
+            SignalObservation(SignalLightState.GO, Point(181.0, 0.0), ("east_1",), None)
+        ),
+        via_data=Vias(near_via_points=(ViaPoint((181.0, 0.0), 1, "east", 5.0, False),)),
         steps_completed=4,
     )

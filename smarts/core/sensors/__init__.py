@@ -424,7 +424,7 @@ class Sensors:
             else None
         )
 
-        near_via_points = []
+        near_via_points = ()
 
         via_sensor = vehicle_sensors.get("via_sensor")
         if via_sensor:
@@ -498,7 +498,7 @@ class Sensors:
                 events=events,
                 ego_vehicle_state=ego_vehicle,
                 under_this_agent_control=agent_controls,
-                neighborhood_vehicle_states=neighborhood_vehicle_states,
+                neighborhood_vehicle_states=neighborhood_vehicle_states or (),
                 waypoint_paths=waypoint_paths,
                 distance_travelled=distance_travelled,
                 road_waypoints=road_waypoints,
@@ -667,7 +667,9 @@ class Sensors:
         )
 
         events = Events(
-            collisions=sim_frame.filtered_vehicle_collisions(vehicle_state.actor_id),
+            collisions=tuple(
+                sim_frame.filtered_vehicle_collisions(vehicle_state.actor_id)
+            ),
             off_road=is_off_road,
             reached_goal=reached_goal,
             reached_max_episode_steps=reached_max_episode_steps,

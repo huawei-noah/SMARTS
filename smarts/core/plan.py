@@ -67,6 +67,19 @@ class Start:
             from_front_bumper=False,
         )
 
+    def __hash__(self):
+        hash_ = getattr(self, "hash", None)
+        if not hash_:
+            hash_ = hash(
+                (
+                    tuple(self.position),
+                    self.heading,
+                    self.from_front_bumper,
+                )
+            )
+            object.__setattr__(self, "hash", hash_)
+        return hash_
+
 
 @dataclass(frozen=True, unsafe_hash=True)
 class Goal:

@@ -1029,7 +1029,7 @@ class ViaSensor(Sensor):
                 self._consumed_via_points.add(via)
 
         near_points.sort(key=lambda dist, _: dist)
-        return [p for _, p in near_points]
+        return tuple(p for _, p in near_points)
 
     def teardown(self, **kwargs):
         pass
@@ -1098,12 +1098,12 @@ class SignalsSensor(Sensor):
                 SignalObservation(
                     state=signal_state.state,
                     stop_point=signal_state.stopping_pos,
-                    controlled_lanes=controlled_lanes,
+                    controlled_lanes=tuple(controlled_lanes),
                     last_changed=signal_state.last_changed,
                 )
             )
 
-        return result
+        return tuple(result)
 
     def _find_signals_ahead(
         self,

@@ -540,7 +540,7 @@ def downgrade_waypoints(
 
 def downgrade_vehicles(
     center: Tuple[float, float],
-    neighborhood_vehicle_states: List[VehicleObservation],
+    neighborhood_vehicle_states: Tuple[VehicleObservation],
     mode=ObservationOptions.multi_agent,
 ):
     if mode:

@@ -39,6 +39,7 @@ class BufferID(Enum):
     STEPS_COMPLETED = "steps_completed"
     ELAPSED_SIM_TIME = "elapsed_sim_time"
 
+    EVENTS_COLLISIONS = "events_collisions"
     EVENTS_OFF_ROAD = "events_off_road"
     EVENTS_OFF_ROUTE = "events_off_route"
     EVENTS_ON_SHOULDER = "events_on_shoulder"
@@ -94,8 +95,8 @@ class BufferID(Enum):
 
     ROAD_WAYPOINTS_POSITION = "road_waypoints_lanes_pos"
     ROAD_WAYPOINTS_HEADING = "road_waypoints_lanes_heading"
-    ROAD_WAYPOINTS_LANE_ID = "road_waypoints_lane_id"
-    ROAD_WAYPOINTS_LANE_WIDTH = "road_waypoints_lane_width"
+    ROAD_WAYPOINTS_LANE_ID = "road_waypoints_lanes_lane_id"
+    ROAD_WAYPOINTS_LANE_WIDTH = "road_waypoints_lanes_width"
     ROAD_WAYPOINTS_SPEED_LIMIT = "road_waypoints_lanes_speed_limit"
     ROAD_WAYPOINTS_LANE_INDEX = "road_waypoints_lanes_lane_index"
     ROAD_WAYPOINTS_LANE_OFFSET = "road_waypoints_lanes_lane_offset"
@@ -115,5 +116,5 @@ class BufferID(Enum):
 
     SIGNALS_LIGHT_STATE = "signals_light_state"
     SIGNALS_STOP_POINT = "signals_stop_point"
-    SIGNALS_CONTROLLED_LANES = "signals_controlled_lanes"
+    # SIGNALS_CONTROLLED_LANES = "signals_controlled_lanes"
     SIGNALS_LAST_CHANGED = "signals_last_changed"

@@ -141,7 +141,7 @@ class SMARTS(ProviderManager):
     ):
         conf = config()
         self._log = logging.getLogger(self.__class__.__name__)
-        self._log.setLevel(level=logging.ERROR)
+        # self._log.setLevel(level=logging.DEBUG)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._is_destroyed = False
@@ -348,10 +348,12 @@ class SMARTS(ProviderManager):
         # want these during their observation/reward computations.
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
-        self._sync_smarts_and_provider_actor_states(provider_state)
-        self._sensor_manager.clean_up_sensors_for_actors(
-            set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
-        )
+        with timeit("Syncing provider state", self._log.debug):
+            self._sync_smarts_and_provider_actor_states(provider_state)
+            self._sensor_manager.clean_up_sensors_for_actors(
+                set(v.actor_id for v in self._vehicle_states),
+                renderer=self.renderer_ref,
+            )
 
         # Reset frame state
         try:
@@ -1387,39 +1389,47 @@ class SMARTS(ProviderManager):
     def _step_providers(self, actions) -> ProviderState:
         provider_vehicle_actions = dict()
         for provider in self.providers:
-            agent_actions, vehicle_actions = self._provider_actions(provider, actions)
-            provider_vehicle_actions[provider] = vehicle_actions
-            if isinstance(provider, AgentsProvider):
-                provider.perform_agent_actions(agent_actions)
+            with timeit(
+                f"Performing actions on {provider.__class__.__name__}", self._log.debug
+            ):
+                agent_actions, vehicle_actions = self._provider_actions(
+                    provider, actions
+                )
+                provider_vehicle_actions[provider] = vehicle_actions
+                if isinstance(provider, AgentsProvider):
+                    provider.perform_agent_actions(agent_actions)
 
-        self._check_ground_plane()
-        self._step_pybullet()
-        self._process_collisions()
+        with timeit("Stepping physics", self._log.debug):
+            self._check_ground_plane()
+            self._step_pybullet()
+            self._process_collisions()
 
         accumulated_provider_state = ProviderState()
 
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for provider in self.providers:
-            try:
-                provider_state = provider.step(
-                    provider_vehicle_actions[provider],
-                    self._last_dt,
-                    self._elapsed_sim_time,
-                )
-            except Exception as provider_error:
-                provider_state = self._handle_provider(provider, provider_error)
-                raise
+            with timeit(f"Stepping {provider.__class__.__name__}", self._log.debug):
+                try:
+                    provider_state = provider.step(
+                        provider_vehicle_actions[provider],
+                        self._last_dt,
+                        self._elapsed_sim_time,
+                    )
+                except Exception as provider_error:
+                    provider_state = self._handle_provider(provider, provider_error)
+                    raise
 
-            # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
-            assert not isinstance(
-                provider, TrafficProvider
-            ) or not provider_state.intersects(
-                agent_vehicle_ids
-            ), f"{agent_vehicle_ids} in {provider_state.actors}"
+                # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
+                assert not isinstance(
+                    provider, TrafficProvider
+                ) or not provider_state.intersects(
+                    agent_vehicle_ids
+                ), f"{agent_vehicle_ids} in {provider_state.actors}"
 
-            accumulated_provider_state.merge(provider_state)
+                accumulated_provider_state.merge(provider_state)
 
-        self._harmonize_providers(accumulated_provider_state)
+        with timeit("Harmonizing provider state", self._log.debug):
+            self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
     def _sync_smarts_and_provider_actor_states(

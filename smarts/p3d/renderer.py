@@ -178,7 +178,8 @@ class _ShowBaseInstance(ShowBase):
         if "__it__" not in cls.__dict__:
             cls._rendering_backend = rendering_backend
         else:
-            warnings.warn("Cannot apply rendering backend after setup.")
+            if cls._rendering_backend != rendering_backend:
+                warnings.warn("Cannot apply rendering backend after setup.")
 
     def destroy(self):
         """Destroy this renderer and clean up all remaining resources."""
@@ -330,6 +331,7 @@ class _BufferAccessor:
         BufferID.ROAD_WAYPOINTS_LANE_OFFSET,
         BufferID.ROAD_WAYPOINTS_LANE_WIDTH,
         BufferID.ROAD_WAYPOINTS_LANE_INDEX,
+        BufferID.ROAD_WAYPOINTS_SPEED_LIMIT,
     }
     _via_near_set = {
         BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT,
@@ -345,7 +347,7 @@ class _BufferAccessor:
         BufferID.LIDAR_POINT_CLOUD_POINTS,
     }
     _signals_set = {
-        BufferID.SIGNALS_CONTROLLED_LANES,
+        # BufferID.SIGNALS_CONTROLLED_LANES,
         BufferID.SIGNALS_LAST_CHANGED,
         BufferID.SIGNALS_LIGHT_STATE,
         BufferID.SIGNALS_STOP_POINT,
@@ -419,15 +421,18 @@ class _BufferAccessor:
     def _gen_methods_for_buffer(cls):
         cls._static_methods[BufferID.DELTA_TIME] = lambda o, m: o.dt
         cls._static_methods[BufferID.ELAPSED_SIM_TIME] = lambda o, m: o.elapsed_sim_time
-        cls._static_methods[
-            BufferID.EGO_VEHICLE_STATE_HEADING
-        ] = lambda o, m: o.ego_vehicle_state.heading
+        cls._static_methods[BufferID.EGO_VEHICLE_STATE_HEADING] = lambda o, m: float(
+            o.ego_vehicle_state.heading
+        )
         cls._static_methods[
             BufferID.EGO_VEHICLE_STATE_SPEED
         ] = lambda o, m: o.ego_vehicle_state.speed
         cls._static_methods[
             BufferID.EGO_VEHICLE_STATE_YAW_RATE
         ] = lambda o, m: o.ego_vehicle_state.yaw_rate
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_STEERING
+        ] = lambda o, m: o.ego_vehicle_state.steering
         cls._static_methods[
             BufferID.EGO_VEHICLE_STATE_LANE_INDEX
         ] = lambda o, m: o.ego_vehicle_state.yaw_rate
@@ -443,6 +448,9 @@ class _BufferAccessor:
             else -1
         )
 
+        cls._static_methods[BufferID.EVENTS_COLLISIONS] = lambda o, m: len(
+            o.events.collisions
+        )
         cls._static_methods[BufferID.EVENTS_OFF_ROAD] = lambda o, m: int(
             o.events.off_road
         )
@@ -639,7 +647,13 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
 
     fullscreen_quad_node: NodePath
 
-    def update(self, pose: Pose = None, height: float = None, **kwargs):
+    def update(
+        self,
+        pose: Pose = None,
+        height: float = None,
+        observation: Optional[Observation] = None,
+        **kwargs,
+    ):
         """Update the location of the shader directional values.
         Args:
             pose:
@@ -648,7 +662,7 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
                 The height of the camera above the camera target.
         """
         inputs = {}
-        if pose:
+        if pose is not None:
             self.fullscreen_quad_node.setShaderInputs(
                 iHeading=pose.heading,
                 iTranslation=(pose.point.x, pose.point.y),
@@ -659,14 +673,13 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
             # self.fullscreen_quad_node.setShaderInput(
             #     "iTranslation", n1=pose.point.x, n2=pose.point.y
             # )
-        if height:
+        if height is not None:
             inputs["iElevation"] = height
         if len(self.buffer_dependencies) == 0:
             return
 
         buffers = set(self.buffer_dependencies)
-        if observation := kwargs.get("observation"):
-            observation: Observation
+        if observation is not None:
             ba = _BufferAccessor()
             for b in buffers:
                 if ba.should_get_data(b.buffer_id, observation):
@@ -852,10 +865,12 @@ class Renderer(RendererBase):
 
     def reset(self):
         """Reset the render back to initialized state."""
-        self._vehicles_np.removeNode()
-        self._vehicles_np = self._root_np.attachNewNode("vehicles")
-        self._signals_np.removeNode()
-        self._signals_np = self._root_np.attachNewNode("signals")
+        if self._vehicles_np is not None:
+            self._vehicles_np.removeNode()
+            self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        if self._signals_np is not None:
+            self._signals_np.removeNode()
+            self._signals_np = self._root_np.attachNewNode("signals")
         self._vehicle_nodes = {}
         self._signal_nodes = {}
 
@@ -1245,7 +1260,6 @@ class Renderer(RendererBase):
                 BufferID.EGO_VEHICLE_STATE_SPEED,
                 BufferID.EGO_VEHICLE_STATE_STEERING,
                 BufferID.EGO_VEHICLE_STATE_YAW_RATE,
-                BufferID.EGO_VEHICLE_STATE_LANE_INDEX,
                 BufferID.DISTANCE_TRAVELLED,
             ):
                 initial_value = float()
@@ -1256,6 +1270,7 @@ class Renderer(RendererBase):
             ):
                 initial_value = int()
             elif bn in (
+                BufferID.EVENTS_COLLISIONS,
                 BufferID.EVENTS_OFF_ROAD,
                 BufferID.EVENTS_OFF_ROUTE,
                 BufferID.EVENTS_ON_SHOULDER,
@@ -1286,6 +1301,7 @@ class Renderer(RendererBase):
             elif bn in (
                 BufferID.EGO_VEHICLE_STATE_ROAD_ID,
                 BufferID.EGO_VEHICLE_STATE_LANE_ID,
+                BufferID.EGO_VEHICLE_STATE_LANE_INDEX,
             ):
                 initial_value = int()
 
@@ -1397,10 +1413,9 @@ class Renderer(RendererBase):
                 initial_value = [
                     int(),
                 ]
-            elif bn in (
-                BufferID.SIGNALS_STOP_POINT,
-                BufferID.SIGNALS_LAST_CHANGED,
-            ):
+            elif bn in (BufferID.SIGNALS_STOP_POINT,):
+                initial_value = [float(), float()]
+            elif bn in (BufferID.SIGNALS_LAST_CHANGED,):
                 initial_value = [
                     float(),
                 ]

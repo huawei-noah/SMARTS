@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 
+from smarts.core.utils.cache import cache
+
 if TYPE_CHECKING:
     from smarts.core import plan, signals
     from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
@@ -106,6 +108,9 @@ class RoadWaypoints(NamedTuple):
     lanes: Dict[str, List[List[Waypoint]]]
     """Mapping of road ids to their lane waypoints."""
 
+    def __hash__(self) -> int:
+        return hash(tuple((k, len(v)) for k, v in self.lanes.items()))
+
 
 class GridMapMetadata(NamedTuple):
     """Map grid metadata."""
@@ -130,6 +135,9 @@ class TopDownRGB(NamedTuple):
     data: np.ndarray
     """A RGB image with the ego vehicle at the center."""
 
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
 
 class OccupancyGridMap(NamedTuple):
     """Occupancy map."""
@@ -141,6 +149,9 @@ class OccupancyGridMap(NamedTuple):
     
     See https://en.wikipedia.org/wiki/Occupancy_grid_mapping."""
 
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
 
 class ObfuscationGridMap(NamedTuple):
     """Obfuscation map."""
@@ -149,6 +160,9 @@ class ObfuscationGridMap(NamedTuple):
     """Map metadata."""
     data: np.ndarray
     """A map showing what is visible from the ego vehicle"""
+
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
 
 
 class DrivableAreaGridMap(NamedTuple):
@@ -159,6 +173,9 @@ class DrivableAreaGridMap(NamedTuple):
     data: np.ndarray
     """A grid map that shows the static drivable area around the ego vehicle."""
 
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
 
 class CustomRenderData(NamedTuple):
     """Describes information about a custom render."""
@@ -167,6 +184,9 @@ class CustomRenderData(NamedTuple):
     """Render metadata."""
     data: np.ndarray
     """The image data from the render."""
+
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
 
 
 class ViaPoint(NamedTuple):
@@ -187,13 +207,13 @@ class ViaPoint(NamedTuple):
 class Vias(NamedTuple):
     """Listing of nearby collectible ViaPoints and ViaPoints collected in the last step."""
 
-    near_via_points: List[ViaPoint]
+    near_via_points: Tuple[ViaPoint]
     """Ordered list of nearby points that have not been hit."""
 
     @property
-    def hit_via_points(self) -> List[ViaPoint]:
+    def hit_via_points(self) -> Tuple[ViaPoint]:
         """List of points that were hit in the previous step."""
-        return [vp for vp in self.near_via_points if vp.hit]
+        return tuple(vp for vp in self.near_via_points if vp.hit)
 
 
 class SignalObservation(NamedTuple):
@@ -204,7 +224,7 @@ class SignalObservation(NamedTuple):
     stop_point: Point
     """The stopping point for traffic controlled by the signal, i.e., the
     point where actors should stop when the signal is in a stop state."""
-    controlled_lanes: List[str]
+    controlled_lanes: Tuple[str]
     """If known, the lane_ids of all lanes controlled-by this signal.
     May be empty if this is not easy to determine."""
     last_changed: Optional[float]
@@ -228,7 +248,7 @@ class Observation(NamedTuple):
     """Ego vehicle status."""
     under_this_agent_control: bool
     """Whether this agent currently has control of the vehicle."""
-    neighborhood_vehicle_states: Optional[List[VehicleObservation]]
+    neighborhood_vehicle_states: Optional[Tuple[VehicleObservation]]
     """List of neighborhood vehicle states."""
     waypoint_paths: Optional[List[List[Waypoint]]]
     """Dynamic evenly-spaced points on the road ahead of the vehicle, showing potential routes ahead."""
@@ -250,9 +270,31 @@ class Observation(NamedTuple):
     """Occupancy map."""
     top_down_rgb: Optional[TopDownRGB] = None
     """RGB camera observation."""
-    signals: Optional[List[SignalObservation]] = None
+    signals: Optional[Tuple[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this time-step."""
     obfuscation_grid_map: Optional[ObfuscationGridMap] = None
     """Observable area map."""
     custom_renders: Tuple[CustomRenderData, ...] = tuple()
     """Custom renders."""
+
+    def __hash__(self):
+        return hash(
+            (
+                self.dt,
+                self.step_count,
+                self.elapsed_sim_time,
+                self.events,
+                self.ego_vehicle_state,
+                # self.waypoint_paths, # likely redundant
+                self.neighborhood_vehicle_states,
+                self.distance_travelled,
+                self.road_waypoints,
+                self.via_data,
+                self.drivable_area_grid_map,
+                self.occupancy_grid_map,
+                self.top_down_rgb,
+                self.signals,
+                self.obfuscation_grid_map,
+                self.custom_renders,
+            )
+        )

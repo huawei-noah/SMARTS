@@ -183,7 +183,7 @@ def _format_signals(signals: List[SignalObservation]):
 
 
 def _format_neighborhood_vehicle_states(
-    neighborhood_vehicle_states: List[VehicleObservation],
+    neighborhood_vehicle_states: Tuple[VehicleObservation],
 ):
     des_shp = _NEIGHBOR_SHP
     rcv_shp = len(neighborhood_vehicle_states)
