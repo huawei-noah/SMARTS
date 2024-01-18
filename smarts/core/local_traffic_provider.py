@@ -28,12 +28,14 @@ from bisect import bisect_left, bisect_right, insort
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from typing import Any, Deque, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Deque, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
+
+from smarts.core.utils.core_logging import timeit
 
 from .actor import ActorRole, ActorState
 from .controllers import ActionSpaceType
@@ -57,8 +59,13 @@ from .utils.kinematics import (
 )
 from .vehicle import VEHICLE_CONFIGS, VehicleState
 
-MAX_IMPATIENCE = 3.0
+if TYPE_CHECKING:
+    from shapely.geometry import Polygon
 
+    from smarts.core.controllers import ActionSpaceType
+    from smarts.core.scenario import Scenario
+
+MAX_IMPATIENCE = 3.0
 
 def _safe_division(n: float, d: float, default=math.inf):
     """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
@@ -73,6 +80,7 @@ class LocalTrafficProvider(TrafficProvider):
 
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger.setLevel(logging.DEBUG)
         self._sim = None
         self._scenario = None
         self.road_map: RoadMap = None
@@ -237,20 +245,28 @@ class LocalTrafficProvider(TrafficProvider):
             hhx, hhy = radians_to_vec(ovs.pose.heading) * (0.5 * length)
             back = Point(center.x - hhx, center.y - hhy)
             front = Point(center.x + hhx, center.y + hhy)
-            back_lane = self.road_map.nearest_lane(back, radius=length)
-            front_lane = self.road_map.nearest_lane(front, radius=length)
-            if back_lane:
-                back_offset = back_lane.offset_along_lane(back)
-                lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
-                insort(lbc, (back_offset, ovs, 1))
-            if front_lane:
-                front_offset = front_lane.offset_along_lane(front)
-                lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
-                insort(lbc, (front_offset, ovs, 2))
-            if front_lane and back_lane != front_lane:
-                # it's changing lanes, don't misjudge the target lane...
-                fake_back_offset = front_lane.offset_along_lane(back)
-                insort(self._lane_bumpers_cache[front_lane], (fake_back_offset, ovs, 0))
+            with timeit("backlane", self._logger.debug):
+                back_lane = self.road_map.nearest_lane(back, radius=length * 0.5)
+            with timeit("frontlane", self._logger.debug):
+                front_lane = self.road_map.nearest_lane(front, radius=length * 0.5)
+            with timeit("the rest", self._logger.debug):
+                if back_lane:
+                    back_offset = back_lane.offset_along_lane(back)
+                    lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
+                    lbc.append((back_offset, ovs, 1))
+                    # insort(lbc, (back_offset, ovs, 1))
+                if front_lane:
+                    front_offset = front_lane.offset_along_lane(front)
+                    lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
+                    lbc.append((front_offset, ovs, 2))
+                if front_lane and back_lane != front_lane:
+                    # it's changing lanes, don't misjudge the target lane...
+                    fake_back_offset = front_lane.offset_along_lane(back)
+                    self._lane_bumpers_cache[front_lane].append(
+                        (fake_back_offset, ovs, 0)
+                    )
+        for cache in self._lane_bumpers_cache.values():
+            cache.sort()
 
     def _cached_lane_offset(self, vs: VehicleState, lane: RoadMap.Lane):
         lane_offsets = self._offsets_cache.setdefault(vs.actor_id, dict())
@@ -271,49 +287,53 @@ class LocalTrafficProvider(TrafficProvider):
     def step(self, actions, dt: float, elapsed_sim_time: float) -> ProviderState:
         sim = self._sim()
         assert sim
-        self._add_actors_for_time(elapsed_sim_time, dt)
-        for other in self._other_vehicle_states:
-            if other.actor_id in self._reserved_areas:
-                del self._reserved_areas[other.actor_id]
+        with timeit("Adding actors", self._logger.debug):
+            self._add_actors_for_time(elapsed_sim_time, dt)
+            for other in self._other_vehicle_states:
+                if other.actor_id in self._reserved_areas:
+                    del self._reserved_areas[other.actor_id]
 
         # precompute nearest lanes and offsets for all vehicles and cache
         # (this prevents having to do it O(ovs^2) times)
-        self._create_actor_caches()
+        with timeit("Generating caches", self._logger.debug):
+            self._create_actor_caches()
 
         # Do state update in two passes so that we don't use next states in the
         # computations for actors encountered later in the iterator.
-        for actor in self._my_actors.values():
-            actor.compute_next_state(dt)
+        with timeit("Computing states", self._logger.debug):
+            for actor in self._my_actors.values():
+                actor.compute_next_state(dt)
 
         dones = set()
         losts = set()
         removed = set()
         remap_ids: Dict[str, str] = dict()
-        for actor_id, actor in self._my_actors.items():
-            actor.step(dt)
-            if actor.finished_route:
-                dones.add(actor.actor_id)
-            elif actor.off_route:
-                losts.add(actor)
-            elif actor.teleporting:
-                # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
-                # so we need to give teleporting vehicles a new id and thus a new chassis.
-                actor.bump_id()
-                remap_ids[actor_id] = actor.actor_id
-        for actor in losts - removed:
-            removed.add(actor.actor_id)
-            self._relinquish_actor(actor.state)
-        for actor_id in dones - removed:
-            actor = self._my_actors.get(actor_id)
-            if actor:
-                sim.provider_removing_actor(self, actor_id)
-            # The following is not really necessary due to the above calling teardown(),
-            # but it doesn't hurt...
-            if actor_id in self._my_actors:
-                del self._my_actors[actor_id]
-        for orig_id, new_id in remap_ids.items():
-            self._my_actors[new_id] = self._my_actors[orig_id]
-            del self._my_actors[orig_id]
+        with timeit("Stepping actors", self._logger.debug):
+            for actor_id, actor in self._my_actors.items():
+                actor.step(dt)
+                if actor.finished_route:
+                    dones.add(actor.actor_id)
+                elif actor.off_route:
+                    losts.add(actor)
+                elif actor.teleporting:
+                    # pybullet doesn't like it when a vehicle jumps from one side of the map to another,
+                    # so we need to give teleporting vehicles a new id and thus a new chassis.
+                    actor.bump_id()
+                    remap_ids[actor_id] = actor.actor_id
+            for actor in losts - removed:
+                removed.add(actor.actor_id)
+                self._relinquish_actor(actor.state)
+            for actor_id in dones - removed:
+                actor = self._my_actors.get(actor_id)
+                if actor:
+                    sim.provider_removing_actor(self, actor_id)
+                # The following is not really necessary due to the above calling teardown(),
+                # but it doesn't hurt...
+                if actor_id in self._my_actors:
+                    del self._my_actors[actor_id]
+            for orig_id, new_id in remap_ids.items():
+                self._my_actors[new_id] = self._my_actors[orig_id]
+                del self._my_actors[orig_id]
 
         return self._provider_state
 
