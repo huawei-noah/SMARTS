@@ -55,6 +55,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The via sensor and trip meter sensor now work without a mission.
 - Fixed a bug with `VehicleIndex.attach_sensors_to_vehicle()` that would generate an invalid plan.
 - Fixed a bug where vehicle sensor meta attributes would reference the wrong vehicle.
+- Squashed TraCI "retrying" stdout messages.
 ### Removed
 ### Security
 
