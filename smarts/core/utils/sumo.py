@@ -83,11 +83,14 @@ class TraciConn:
         sumo_port: Optional[int],
         base_params: List[str],
         sumo_binary: str = "sumo",  # Literal["sumo", "sumo-gui"]
+        host: str = "localhost",
     ):
         self._sumo_proc = None
         self._traci_conn = None
         self._sumo_port = None
         self._sumo_version: Tuple[int, ...] = tuple()
+        self._host = host
+        self._log = logging.Logger(self.__class__.__name__)
 
         if sumo_port is None:
             sumo_port = networking.find_free_port()
@@ -98,7 +101,7 @@ class TraciConn:
             *base_params,
         ]
 
-        logging.debug("Starting sumo process:\n\t %s", sumo_cmd)
+        self._log.debug("Starting sumo process:\n\t %s", sumo_cmd)
         self._sumo_proc = subprocess.Popen(
             sumo_cmd,
             stdin=subprocess.PIPE,
@@ -124,22 +127,23 @@ class TraciConn:
         """Attempt a connection with the SUMO process."""
         traci_conn = None
         try:
-            with suppress_output(stderr=not debug, stdout=False):
+            with suppress_output(stderr=not debug, stdout=True):
                 traci_conn = traci.connect(
                     self._sumo_port,
+                    host=self._host,
                     numRetries=max(0, int(20 * timeout)),
                     proc=self._sumo_proc,
                     waitBetweenRetries=0.05,
                 )  # SUMO must be ready within timeout seconds
         # We will retry since this is our first sumo command
         except traci.exceptions.FatalTraCIError:
-            logging.debug("TraCI could not connect in time.")
+            self._log.debug("TraCI could not connect in time.")
             raise
         except traci.exceptions.TraCIException:
-            logging.error("SUMO process died.")
+            self._log.warning("SUMO process died.")
             raise
         except ConnectionRefusedError:
-            logging.error(
+            self._log.warning(
                 "Connection refused. Tried to connect to an unpaired TraCI client."
             )
             raise
@@ -155,8 +159,12 @@ class TraciConn:
             )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
             if self._sumo_version < minimum_sumo_version:
                 raise OSError(f"SUMO version must be >= SUMO {minimum_sumo_version}")
-        except traci.exceptions.FatalTraCIError as err:
-            logging.debug("TraCI disconnected, process may have died.")
+        except (traci.exceptions.FatalTraCIError, TypeError) as err:
+            logging.error(
+                "TraCI disconnected from '%s:%s', process may have died.",
+                self._host,
+                self._sumo_port,
+            )
             # XXX: the error type is changed to TraCIException to make it consistent with the
             # process died case of `traci.connect`.
             raise traci.exceptions.TraCIException(err)
@@ -217,6 +225,7 @@ class TraciConn:
                 pass
 
         if self._traci_conn:
+            self._log.debug("Closing TraCI connection to %s", self._sumo_port)
             __safe_close(self._traci_conn)
 
         if self._sumo_proc:
