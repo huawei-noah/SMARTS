@@ -242,7 +242,7 @@ class TraciConn:
         return self._sumo_port
 
     @property
-    def hostname(self) -> Optional[int]:
+    def hostname(self) -> str:
         """Get the used TraCI port."""
         return self._host
 
