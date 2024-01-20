@@ -209,7 +209,7 @@ class SumoTrafficSimulation(TrafficProvider):
             )
 
             try:
-                while self._traci_conn.viable and not self._traci_conn.connected:
+                while not self._traci_conn.connected:
                     try:
                         self._traci_conn.connect(
                             timeout=5,
@@ -224,15 +224,10 @@ class SumoTrafficSimulation(TrafficProvider):
             except traci.exceptions.TraCIException:
                 # SUMO process died... unsure why this is not a fatal traci error
                 current_retries += 1
-
-                self._traci_conn.close_traci_and_pipes()
                 continue
             except ConnectionRefusedError:
                 # Some other process somehow owns the port... sumo needs to be restarted.
                 continue
-            except OSError:
-                # TraCI or SUMO version are not at the minimum required version.
-                raise
             except KeyboardInterrupt:
                 self._log.debug("Keyboard interrupted TraCI connection.")
                 self._traci_conn.close_traci_and_pipes()
@@ -378,7 +373,7 @@ class SumoTrafficSimulation(TrafficProvider):
         self._handling_error = True
         if isinstance(error, traci.exceptions.TraCIException):
             # XXX: Needs further investigation whenever this happens.
-            self._log.warning("TraCI has provided a warning %s", error)
+            self._log.debug("TraCI has provided a warning %s", error)
             return
         if isinstance(error, traci.exceptions.FatalTraCIError):
             self._log.error(
@@ -435,6 +430,8 @@ class SumoTrafficSimulation(TrafficProvider):
                 self._remove_vehicles()
             except traci.exceptions.FatalTraCIError:
                 pass
+        if self._traci_conn is not None:
+            self._traci_conn.close_traci_and_pipes()
 
         self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
