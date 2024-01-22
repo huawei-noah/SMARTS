@@ -98,9 +98,7 @@ class TraciConn:
         self._sumo_version: Tuple[int, ...] = tuple()
         self._host = host
         self._name = name
-        # self._log = logging
         self._log = logging.Logger(self.__class__.__name__)
-        # self._log.setLevel(logging.ERROR)
         self._connected = False
 
         if sumo_port is None:
@@ -124,7 +122,7 @@ class TraciConn:
     def __del__(self) -> None:
         # We should not raise in delete.
         try:
-            self.close_traci_and_pipes()
+            self.close_traci_and_pipes(wait=False)
         except Exception:
             pass
 
@@ -171,7 +169,7 @@ class TraciConn:
                 self._sumo_port,
                 err,
             )
-            self.close_traci_and_pipes(kill=True)
+            self.close_traci_and_pipes()
             raise
         except ConnectionRefusedError:
             self._log.error(
@@ -180,7 +178,7 @@ class TraciConn:
                 self._host,
                 self._sumo_port,
             )
-            self.close_traci_and_pipes(kill=True)
+            self.close_traci_and_pipes()
             raise
         self._connected = True
         self._traci_conn = traci_conn
@@ -205,7 +203,7 @@ class TraciConn:
             )
             # XXX: the error type is changed to TraCIException to make it consistent with the
             # process died case of `traci.connect`. Since TraCIException is fatal just in this case...
-            self.close_traci_and_pipes(kill=True)
+            self.close_traci_and_pipes()
             raise traci.exceptions.TraCIException(err)
         except OSError as err:
             self._log.error(
@@ -215,7 +213,7 @@ class TraciConn:
                 self._sumo_port,
                 err,
             )
-            self.close_traci_and_pipes(kill=True)
+            self.close_traci_and_pipes()
             raise traci.exceptions.TraCIException(err)
         except ValueError:
             self.close_traci_and_pipes()
@@ -272,11 +270,8 @@ class TraciConn:
         """If the version of sumo will have errors if just reloading such that it must be reset."""
         return self._sumo_version > (1, 12, 0)
 
-    def close_traci_and_pipes(self, wait: Optional[float] = 0, kill: bool = False):
+    def close_traci_and_pipes(self, wait: bool = True, kill: bool = True):
         """Safely closes all connections. We should expect this method to always work without throwing"""
-        assert wait is None or isinstance(wait, (int, float))
-        if isinstance(wait, (int, float)):
-            wait = max(0.0, wait)
 
         def __safe_close(conn, **kwargs):
             try:
@@ -295,27 +290,16 @@ class TraciConn:
 
         if self._connected:
             self._log.debug("Closing TraCI connection to %s", self._sumo_port)
-            __safe_close(self._traci_conn, wait=bool(wait))
+            __safe_close(self._traci_conn, wait=wait)
 
         if self._sumo_proc:
             __safe_close(self._sumo_proc.stdin)
             __safe_close(self._sumo_proc.stdout)
             __safe_close(self._sumo_proc.stderr)
-            if wait:
-                try:
-                    self._sumo_proc.wait(timeout=wait)
-                except subprocess.TimeoutExpired as err:
-                    kill = True
-                    self._log.error(
-                        "TraCI server process shutdown timed out '%s:%s' [%s]",
-                        self._host,
-                        self._sumo_port,
-                        err,
-                    )
             if kill:
                 self._sumo_proc.kill()
                 self._sumo_proc = None
-                self._log.error(
+                self._log.info(
                     "Killed TraCI server process '%s:%s", self._host, self._sumo_port
                 )
 
@@ -342,7 +326,7 @@ def _wrap_traci_method(
             err,
         )
         # TraCI cannot continue
-        traci_conn.close_traci_and_pipes(kill=True)
+        traci_conn.close_traci_and_pipes()
         raise traci.exceptions.FatalTraCIError("TraCI died.") from err
     except OSError as err:
         logging.error(
@@ -353,11 +337,11 @@ def _wrap_traci_method(
             attribute_name,
             err,
         )
-        traci_conn.close_traci_and_pipes(kill=True)
+        traci_conn.close_traci_and_pipes()
         raise OSError("Connection dropped.") from err
     except traci.exceptions.TraCIException as err:
         # Case where TraCI/SUMO can theoretically continue
         raise traci.exceptions.TraCIException("TraCI can continue.") from err
     except KeyboardInterrupt:
-        traci_conn.close_traci_and_pipes(kill=True)
+        traci_conn.close_traci_and_pipes(wait=False)
         raise

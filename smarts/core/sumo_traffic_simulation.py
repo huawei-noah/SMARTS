@@ -125,6 +125,8 @@ class SumoTrafficSimulation(TrafficProvider):
         self._sim = None
         self._handling_error = False
         self._traci_retries = traci_retries
+        # XXX: This is used to try to avoid interrupting other instances in race condition (see GH #2139)
+        self._foreign_traci_servers: List[TraciConn] = []
 
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
@@ -209,18 +211,25 @@ class SumoTrafficSimulation(TrafficProvider):
             )
 
             try:
-                while not self._traci_conn.connected:
-                    try:
-                        self._traci_conn.connect(
-                            timeout=5,
-                            minimum_traci_version=20,
-                            minimum_sumo_version=(1, 10, 0),
-                            debug=self._debug,
-                        )
-                    except traci.exceptions.FatalTraCIError:
-                        # Could not connect in time just retry connection
-                        pass
+                self._traci_conn.connect(
+                    timeout=5,
+                    minimum_traci_version=20,
+                    minimum_sumo_version=(1, 10, 0),
+                    debug=self._debug,
+                )
 
+                if not self._traci_conn.connected:
+                    # Save the connection to try to avoid closing it for the other client.
+                    self._foreign_traci_servers.append(self._traci_conn)
+                    self._traci_conn = None
+                    raise traci.exceptions.TraCIException(
+                        "TraCI server was likely taken by other client."
+                    )
+
+            except traci.exceptions.FatalTraCIError:
+                # Could not connect in time just retry connection
+                current_retries += 1
+                continue
             except traci.exceptions.TraCIException:
                 # SUMO process died... unsure why this is not a fatal traci error
                 current_retries += 1
@@ -230,7 +239,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 continue
             except KeyboardInterrupt:
                 self._log.debug("Keyboard interrupted TraCI connection.")
-                self._traci_conn.close_traci_and_pipes()
+                self._traci_conn.close_traci_and_pipes(wait=False)
                 raise
             break
         else:
@@ -257,7 +266,7 @@ class SumoTrafficSimulation(TrafficProvider):
             "--net-file=%s" % self._scenario.road_map.source,
             "--quit-on-end",
             "--log=%s" % self._log_file,
-            "--error-log=%s" % self._log_file,
+            "--error-log=%s.err" % self._log_file,
             "--no-step-log",
             "--no-warnings=1",
             "--seed=%s" % random.randint(0, 2147483648),
@@ -293,6 +302,13 @@ class SumoTrafficSimulation(TrafficProvider):
 
         return load_params
 
+    def _restart_sumo(self):
+        engine_config = config()
+        traci_retries = self._traci_retries or engine_config(
+            "sumo", "traci_retries", default=5, cast=int
+        )
+        self._initialize_traci_conn(num_retries=traci_retries)
+
     def setup(self, scenario) -> ProviderState:
         """Initialize the simulation with a new scenario."""
         self._log.debug("Setting up SumoTrafficSim %s", self)
@@ -316,24 +332,19 @@ class SumoTrafficSimulation(TrafficProvider):
         ), "SumoTrafficSimulation requires a SumoRoadNetwork"
         self._log_file = scenario.unique_sumo_log_file()
 
-        if restart_sumo:
-            try:
-                engine_config = config()
-                traci_retries = self._traci_retries or engine_config(
-                    "sumo", "traci_retries", default=5, cast=int
-                )
-                self._initialize_traci_conn(num_retries=traci_retries)
-            except traci.exceptions.FatalTraCIError:
-                return ProviderState()
-        elif self._allow_reload:
-            assert (
-                self._traci_conn is not None
-            ), "TraCI should be connected at this point."
-            try:
-                self._traci_conn.load(self._base_sumo_load_params())
-            except traci.exceptions.FatalTraCIError as err:
-                self._handle_traci_exception(err, actors_relinquishable=False)
-                return ProviderState()
+        try:
+            if restart_sumo:
+                self._restart_sumo()
+            elif self._allow_reload:
+                assert (
+                    self._traci_conn is not None
+                ), "TraCI should be connected at this point."
+                try:
+                    self._traci_conn.load(self._base_sumo_load_params())
+                except traci.exceptions.FatalTraCIError:
+                    self._restart_sumo()
+        except traci.exceptions.FatalTraCIError:
+            return ProviderState()
 
         assert self._traci_conn is not None, "No active TraCI connection"
 
@@ -430,8 +441,18 @@ class SumoTrafficSimulation(TrafficProvider):
                 self._remove_vehicles()
             except traci.exceptions.FatalTraCIError:
                 pass
-        if self._traci_conn is not None:
+        if not self._allow_reload and self._traci_conn is not None:
             self._traci_conn.close_traci_and_pipes()
+
+        for i, trc in reversed(
+            [
+                (j, trc)
+                for j, trc in enumerate(self._foreign_traci_servers)
+                if not trc.viable
+            ]
+        ):
+            self._foreign_traci_servers.pop(i)
+            trc.close_traci_and_pipes(wait=False)
 
         self._cumulative_sim_seconds = 0
         self._non_sumo_vehicle_ids = set()
