@@ -67,6 +67,7 @@ if TYPE_CHECKING:
 
 MAX_IMPATIENCE = 3.0
 
+
 def _safe_division(n: float, d: float, default=math.inf):
     """This method uses a short circuit form where `and` converts right side to true|false (as 1|0) in which cases are:
     True and # == #
@@ -254,7 +255,6 @@ class LocalTrafficProvider(TrafficProvider):
                     back_offset = back_lane.offset_along_lane(back)
                     lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
                     lbc.append((back_offset, ovs, 1))
-                    # insort(lbc, (back_offset, ovs, 1))
                 if front_lane:
                     front_offset = front_lane.offset_along_lane(front)
                     lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
