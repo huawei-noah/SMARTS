@@ -189,7 +189,6 @@ class LocalSumoProcess(SumoProcess):
     def generate(
         self, base_params: List[str], sumo_binary: Literal["sumo", "sumo-gui"] = "sumo"
     ):
-        """Generate the process."""
         if self._sumo_port is None:
             self._sumo_port = networking.find_free_port()
         sumo_cmd = [
@@ -215,8 +214,6 @@ class LocalSumoProcess(SumoProcess):
         return "localhost"
 
     def terminate(self, kill):
-        """Terminate this process."""
-
         if self._sumo_proc:
             _safe_close(self._sumo_proc.stdin)
             _safe_close(self._sumo_proc.stdout)
@@ -226,11 +223,9 @@ class LocalSumoProcess(SumoProcess):
             self._sumo_proc = None
 
     def poll(self):
-        """Poll the underlying process."""
         return self._sumo_proc.poll()
 
     def wait(self, timeout=None):
-        """Wait on the underlying process."""
         return self._sumo_proc.wait(timeout=timeout)
 
 

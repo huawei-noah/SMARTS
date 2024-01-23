@@ -49,12 +49,13 @@ from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
-from smarts.core.utils.sumo_utils import (
+from smarts.core.utils.sumo_utils import (  # isort:skip
     LocalSumoProcess,
     RemoteSumoProcess,
-    traci,
     TraciConn,
+    traci,
 )  # isort:skip
+
 import traci.constants as tc  # isort:skip
 
 

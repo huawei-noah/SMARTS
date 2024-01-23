@@ -26,6 +26,7 @@ import asyncio
 import json
 import os
 import subprocess
+from asyncio.streams import StreamReader, StreamWriter
 from typing import Dict, Set
 
 from smarts.core import config
@@ -65,9 +66,7 @@ class SumoServer:
             _sumo_proc = None
             del self._sumo_servers[port]
 
-    async def handle_client(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ):
+    async def handle_client(self, reader: StreamReader, writer: StreamWriter):
         """Read data from the client."""
         addr = writer.get_extra_info("peername")
         print(f"Received connection from {addr}")
