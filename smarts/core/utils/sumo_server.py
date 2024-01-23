@@ -79,7 +79,7 @@ class SumoServer:
                 message = data.decode("utf-8")
                 # print(f"Received {message!r} from {addr}")
                 if message.startswith("sumo"):
-                    while {port := find_free_port()} in self._used_ports:
+                    while (port := find_free_port()) in self._used_ports:
                         pass
                     self._used_ports.add(port)
                     # Send a response back to the client
