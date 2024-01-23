@@ -22,11 +22,14 @@ for convenience and to reduce code duplication as sumolib lives under SUMO_HOME.
 """
 from __future__ import annotations
 
+import abc
 import functools
 import inspect
+import json
 import logging
 import multiprocessing
 import os
+import socket
 import subprocess
 import sys
 from typing import Any, List, Literal, Optional, Tuple
@@ -57,6 +60,22 @@ except ModuleNotFoundError as e:
     ) from e
 
 
+def _safe_close(conn, **kwargs):
+    try:
+        conn.close(**kwargs)
+    except (subprocess.SubprocessError, multiprocessing.ProcessError):
+        # Subprocess or process failed
+        pass
+    except traci.exceptions.FatalTraCIError:
+        # TraCI connection is already dead.
+        pass
+    except AttributeError:
+        # Socket was destroyed internally, likely due to an error.
+        pass
+    except Exception as err:
+        pass
+
+
 class DomainWrapper:
     """Wraps `traci.Domain` type for the `TraciConn` utility"""
 
@@ -79,50 +98,166 @@ class DomainWrapper:
         return attribute
 
 
+class SumoProcess(metaclass=abc.ABCMeta):
+    """A simplified utility representing a SUMO process."""
+
+    @abc.abstractmethod
+    def generate(
+        self, base_params: List[str], sumo_binary: Literal["sumo", "sumo-gui"] = "sumo"
+    ):
+        """Generate the process."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def terminate(self, kill: bool):
+        """Terminate this process."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def poll(self) -> int:
+        """Poll the underlying process."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def wait(self, timeout: Optional[float] = None) -> int:
+        """Wait on the underlying process."""
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def port(self) -> int:
+        """The port this process is associated with."""
+        raise NotImplementedError
+
+    @property
+    @abc.abstractmethod
+    def host(self) -> str:
+        """The port this process is associated with."""
+        raise NotImplementedError
+
+
+class RemoteSumoProcess(SumoProcess):
+    """Connects to a sumo server."""
+
+    def __init__(self, remote_host, remote_port) -> None:
+        self._remote_host = remote_host
+        self._remote_port = remote_port
+        self._port = None
+        self._host = None
+        self._client_socket = None
+
+    def generate(
+        self, base_params: List[str], sumo_binary: Literal["sumo", "sumo-gui"] = "sumo"
+    ):
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect((self._remote_host, self._remote_port))
+
+        client_socket.send(f"{sumo_binary}:{json.dumps(base_params)}\n".encode("utf-8"))
+
+        self._client_socket = client_socket
+
+        response = client_socket.recv(1024)
+        self._host, _, port = response.decode("utf-8").partition(":")
+        self._port = int(port)
+
+    def terminate(self, kill: bool):
+        self._client_socket.send("e:".encode("utf-8"))
+        self._client_socket.close()
+
+    @property
+    def port(self) -> int:
+        return self._port or 0
+
+    @property
+    def host(self) -> str:
+        return self._host or "-1"
+
+    def poll(self) -> Optional[int]:
+        return None
+
+    def wait(self, timeout: float | None = None) -> int:
+        return 0
+
+
+class LocalSumoProcess(SumoProcess):
+    """Connects to a local sumo process."""
+
+    def __init__(self, sumo_port) -> None:
+        self._sumo_proc = None
+        self._sumo_port = sumo_port
+
+    def generate(
+        self, base_params: List[str], sumo_binary: Literal["sumo", "sumo-gui"] = "sumo"
+    ):
+        """Generate the process."""
+        if self._sumo_port is None:
+            self._sumo_port = networking.find_free_port()
+        sumo_cmd = [
+            os.path.join(SUMO_PATH, "bin", sumo_binary),
+            f"--remote-port={self._sumo_port}",
+            *base_params,
+        ]
+        self._sumo_proc = subprocess.Popen(
+            sumo_cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True,
+        )
+
+    @property
+    def port(self) -> int:
+        assert self._sumo_port is not None
+        return self._sumo_port
+
+    @property
+    def host(self) -> str:
+        return "localhost"
+
+    def terminate(self, kill):
+        """Terminate this process."""
+
+        if self._sumo_proc:
+            _safe_close(self._sumo_proc.stdin)
+            _safe_close(self._sumo_proc.stdout)
+            _safe_close(self._sumo_proc.stderr)
+        if kill:
+            self._sumo_proc.kill()
+            self._sumo_proc = None
+
+    def poll(self):
+        """Poll the underlying process."""
+        return self._sumo_proc.poll()
+
+    def wait(self, timeout=None):
+        """Wait on the underlying process."""
+        return self._sumo_proc.wait(timeout=timeout)
+
+
 class TraciConn:
     """A simplified utility for connecting to a SUMO process."""
 
     def __init__(
         self,
-        sumo_port: Optional[int],
-        base_params: List[str],
-        sumo_binary: Literal[
-            "sumo", "sumo-gui"
-        ] = "sumo",  # Literal["sumo", "sumo-gui"]
         host: str = "localhost",
         name: str = "",
+        sumo_process: SumoProcess = False,
     ):
-        self._sumo_proc = None
         self._traci_conn = None
         self._sumo_port = None
         self._sumo_version: Tuple[int, ...] = tuple()
         self._host = host
         self._name = name
         self._log = logging.Logger(self.__class__.__name__)
+        self._log = logging
         self._connected = False
 
-        if sumo_port is None:
-            sumo_port = networking.find_free_port()
-        self._sumo_port = sumo_port
-        sumo_cmd = [
-            os.path.join(SUMO_PATH, "bin", sumo_binary),
-            f"--remote-port={sumo_port}",
-            *base_params,
-        ]
-
-        self._log.debug("Starting sumo process:\n\t %s", sumo_cmd)
-        self._sumo_proc = subprocess.Popen(
-            sumo_cmd,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            close_fds=True,
-        )
+        self._sumo_process = sumo_process
 
     def __del__(self) -> None:
         # We should not raise in delete.
         try:
-            self.close_traci_and_pipes(wait=False)
+            self.close_traci_and_pipes()
         except Exception:
             pass
 
@@ -135,19 +270,16 @@ class TraciConn:
     ):
         """Attempt a connection with the SUMO process."""
         traci_conn = None
+        self._host = self._sumo_process.host
+        self._sumo_port = self._sumo_process.port
         try:
             # See if the process is still alive before attempting a connection.
-            if self._sumo_proc.poll() is not None:
-                raise traci.exceptions.TraCIException(
-                    "TraCI server already finished before connection!!!"
-                )
-
             with suppress_output(stderr=not debug, stdout=True):
                 traci_conn = traci.connect(
-                    self._sumo_port,
-                    host=self._host,
+                    self._sumo_process.port,
+                    host=self._sumo_process.host,
                     numRetries=max(0, int(20 * timeout)),
-                    proc=self._sumo_proc,
+                    proc=self._sumo_process,
                     waitBetweenRetries=0.05,
                 )  # SUMO must be ready within timeout seconds
         # We will retry since this is our first sumo command
@@ -180,9 +312,12 @@ class TraciConn:
             )
             self.close_traci_and_pipes()
             raise
+
         self._connected = True
         self._traci_conn = traci_conn
         try:
+            if not self.viable:
+                raise traci.exceptions.TraCIException("TraCI server already finished!?")
             vers, vers_str = traci_conn.getVersion()
             if vers < minimum_traci_version:
                 raise ValueError(
@@ -222,12 +357,12 @@ class TraciConn:
     @property
     def connected(self) -> bool:
         """Check if the connection is still valid."""
-        return self._sumo_proc is not None and self._connected
+        return self._sumo_process is not None and self._connected
 
     @property
     def viable(self) -> bool:
         """If making a connection to the sumo process is still viable."""
-        return self._sumo_proc is not None and self._sumo_proc.poll() is None
+        return self._sumo_process is not None and self._sumo_process.poll() is None
 
     @property
     def sumo_version(self) -> Tuple[int, ...]:
@@ -273,41 +408,23 @@ class TraciConn:
     def close_traci_and_pipes(self, wait: bool = True, kill: bool = True):
         """Safely closes all connections. We should expect this method to always work without throwing"""
 
-        def __safe_close(conn, **kwargs):
-            try:
-                conn.close(**kwargs)
-            except (subprocess.SubprocessError, multiprocessing.ProcessError):
-                # Subprocess or process failed
-                pass
-            except traci.exceptions.FatalTraCIError:
-                # TraCI connection is already dead.
-                pass
-            except AttributeError:
-                # Socket was destroyed internally, likely due to an error.
-                pass
-            except Exception as err:
-                self._log.error("Different error occurred: [%s]", err)
-
         if self._connected:
             self._log.debug("Closing TraCI connection to %s", self._sumo_port)
-            __safe_close(self._traci_conn, wait=wait)
+            _safe_close(self._traci_conn, wait=wait)
 
-        if self._sumo_proc:
-            __safe_close(self._sumo_proc.stdin)
-            __safe_close(self._sumo_proc.stdout)
-            __safe_close(self._sumo_proc.stderr)
-            if kill:
-                self._sumo_proc.kill()
-                self._sumo_proc = None
-                self._log.info(
-                    "Killed TraCI server process '%s:%s", self._host, self._sumo_port
-                )
+        if self._sumo_process:
+            self._sumo_process.terminate(kill=kill)
+            self._log.info(
+                "Killed TraCI server process '%s:%s'", self._host, self._sumo_port
+            )
+            self._sumo_process = None
 
         self._connected = False
 
     def teardown(self):
         """Clean up all resources."""
-        self.close_traci_and_pipes()
+        self.close_traci_and_pipes(True)
+        self._traci_conn = None
 
 
 def _wrap_traci_method(

@@ -23,12 +23,15 @@ from __future__ import annotations
 
 import logging
 import multiprocessing
+import os
 import random
 import time
 from multiprocessing.pool import AsyncResult
 from typing import List, Tuple
 
-from smarts.core.utils.sumo import TraciConn
+from smarts.core import config
+from smarts.core.utils.file import make_dir_in_smarts_log_dir
+from smarts.core.utils.sumo_utils import RemoteSumoProcess, TraciConn
 
 load_params = [
     "--net-file=%s" % "./scenarios/sumo/loop/map.net.xml",
@@ -53,13 +56,27 @@ load_params = [
 ]
 
 MAX_PARALLEL = 32
-ITERATIONS = 800000  # 64512 ports available by Ubuntu standard
+ITERATIONS = 60000  # 64512 ports available by Ubuntu standard
 LOGGING_STEP = 1000
 
 
 def run_client(t):
-    conn = TraciConn(None, load_params, sumo_binary="sumo", name=f"Client@{t}")
     try:
+        f = os.path.abspath(make_dir_in_smarts_log_dir("_sumo_run_logs")) + f"/{t}"
+        lsp = RemoteSumoProcess(
+            remote_host=config()("sumo", "server_host"),
+            remote_port=config()("sumo", "server_port", cast=int),
+        )
+        lsp.generate(
+            base_params=load_params
+            + [
+                "--log=%s.log" % f,
+                "--message-log=%s" % f,
+                "--error-log=%s.err" % f,
+            ],
+            sumo_binary="sumo",
+        )
+        conn = TraciConn(sumo_binary="sumo", name=f"Client@{t}", sumo_process=lsp)
         conn.connect(
             timeout=5,
             minimum_traci_version=20,
@@ -68,10 +85,11 @@ def run_client(t):
         time.sleep(0.1)
         conn.getVersion()
     except KeyboardInterrupt:
-        conn.close_traci_and_pipes()
+        conn.close_traci_and_pipes(False)
         raise
     except Exception as err:
-        logging.error("Primary occurred. [%s]", err)
+        # logging.error("Primary occurred. [%s]", err)
+        # logging.exception(err)
         raise
     finally:
         # try:
@@ -81,35 +99,37 @@ def run_client(t):
         diff = time.time() - t
         if diff > 9:
             logging.error("Client took %ss to close", diff)
+        conn.teardown()
 
 
 def test_traffic_sim_with_multi_client():
-    pool = multiprocessing.Pool(processes=MAX_PARALLEL)
-    clients: List[Tuple[AsyncResult, float]] = []
-    start = time.time()
-    # Attempt to run out of ports.
-    for i in range(ITERATIONS):
-        while len(clients) > MAX_PARALLEL:
-            for j, (c, t) in reversed(
-                [(j, (c, t)) for j, (c, t) in enumerate(clients) if c.ready()]
-            ):
-                clients.pop(j)
-        current = time.time()
-        if i % LOGGING_STEP == 0:
-            logging.error("Working on %s at %ss", i, current - start)
-        clients.append((pool.apply_async(run_client, args=(current,)), current))
+    with multiprocessing.Pool(processes=MAX_PARALLEL) as pool:
+        clients: List[Tuple[AsyncResult, float]] = []
+        start = time.time()
+        # Attempt to run out of ports.
+        for i in range(ITERATIONS):
+            while len(clients) > MAX_PARALLEL:
+                for j, (c, t) in reversed(
+                    [(j, (c, t)) for j, (c, t) in enumerate(clients) if c.ready()]
+                ):
+                    clients.pop(j)
+            current = time.time()
+            if i % LOGGING_STEP == 0:
+                logging.error("Working on %s at %ss", i, current - start)
+            clients.append((pool.apply_async(run_client, args=(current,)), current))
 
-    for j, (c, t) in reversed(
-        [(j, (c, t)) for j, (c, t) in enumerate(clients) if c.ready()]
-    ):
-        clients.pop(j)
-        logging.error("Popping remaining ready clients %s", t)
+        for j, (c, t) in reversed(
+            [(j, (c, t)) for j, (c, t) in enumerate(clients) if c.ready()]
+        ):
+            clients.pop(j)
+            logging.error("Popping remaining ready clients %s", t)
 
-    for (c, t) in clients:
-        logging.error("Stuck clients %s", t)
+        for (c, t) in clients:
+            if time.time() - t > 0.2:
+                logging.error("Stuck clients %s", t)
 
-    logging.error("Finished")
-    pool.close()
-    logging.error("Closed")
-    pool.join()
-    logging.error("Joined")
+        logging.error("Finished")
+        pool.close()
+        logging.error("Closed")
+        pool.join()
+        logging.error("Joined")

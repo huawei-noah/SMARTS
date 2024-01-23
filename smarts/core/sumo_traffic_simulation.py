@@ -22,6 +22,7 @@ import logging
 import random
 import time
 import weakref
+from functools import partial
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Tuple
 
@@ -48,7 +49,12 @@ from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
-from smarts.core.utils.sumo import traci, TraciConn  # isort:skip
+from smarts.core.utils.sumo_utils import (
+    LocalSumoProcess,
+    RemoteSumoProcess,
+    traci,
+    TraciConn,
+)  # isort:skip
 import traci.constants as tc  # isort:skip
 
 
@@ -128,6 +134,15 @@ class SumoTrafficSimulation(TrafficProvider):
         # XXX: This is used to try to avoid interrupting other instances in race condition (see GH #2139)
         self._foreign_traci_servers: List[TraciConn] = []
 
+        if (sumo_serve_mode := config()("sumo", "serve_mode")) == "local":
+            self._process_factory = partial(LocalSumoProcess, self._sumo_port)
+        elif sumo_serve_mode == "remote":
+            self._process_factory = partial(
+                RemoteSumoProcess,
+                remote_host=config()("sumo", "server_host"),
+                remote_port=config()("sumo", "server_port", cast=int),
+            )
+
         # start with the default recovery flags...
         self._recovery_flags = super().recovery_flags
 
@@ -204,10 +219,12 @@ class SumoTrafficSimulation(TrafficProvider):
             sumo_port = self._sumo_port
             sumo_binary = "sumo" if self._headless else "sumo-gui"
 
+            sumo_process = self._process_factory()
+            sumo_process.generate(
+                base_params=self._base_sumo_load_params(), sumo_binary=sumo_binary
+            )
             self._traci_conn = TraciConn(
-                sumo_port=sumo_port,
-                base_params=self._base_sumo_load_params(),
-                sumo_binary=sumo_binary,
+                sumo_process=sumo_process,
             )
 
             try:
