@@ -81,7 +81,9 @@ class SumoRoadNetwork(RoadMap):
         self._load_traffic_lights()
         self._rtree_roads = None
 
-    def _init_rtree(self, shapeList: List[sumolib.net.edge.Edge], includeJunctions=True):
+    def _init_rtree(
+        self, shapeList: List[sumolib.net.edge.Edge], includeJunctions=True
+    ):
         import rtree
 
         result = rtree.index.Index()
@@ -381,7 +383,12 @@ class SumoRoadNetwork(RoadMap):
     class Lane(RoadMap.Lane, Surface):
         """Describes a Sumo lane surface."""
 
-        def __init__(self, lane_id: str, sumo_lane: sumolib.net.lane.Lane, road_map: SumoRoadNetwork):
+        def __init__(
+            self,
+            lane_id: str,
+            sumo_lane: sumolib.net.lane.Lane,
+            road_map: SumoRoadNetwork,
+        ):
             super().__init__(lane_id, road_map)
             self._lane_id = lane_id
             self._sumo_lane = sumo_lane
@@ -389,9 +396,9 @@ class SumoRoadNetwork(RoadMap):
             assert self._road
 
             self._rtree_lane_fragments = None
-            self._lane_fragments: Optional[List[
-                Tuple[Tuple[float, float], Tuple[float, float]]
-            ]] = None
+            self._lane_fragments: Optional[
+                List[Tuple[Tuple[float, float], Tuple[float, float]]]
+            ] = None
 
         def __hash__(self) -> int:
             return hash(self.lane_id) ^ hash(self._map)
@@ -414,7 +421,7 @@ class SumoRoadNetwork(RoadMap):
                 )
             return result
 
-        def get_distance(self, point: Point, radius: float) -> float:
+        def get_distance(self, point: Point, radius: float, get_offset=False) -> float:
             x = point[0]
             y = point[1]
             r = radius
@@ -424,6 +431,8 @@ class SumoRoadNetwork(RoadMap):
 
             dist = math.inf
             INVALID_DISTANCE = -1
+            INVALID_INDEX = -1
+            found_index = INVALID_INDEX
             for i in self._rtree_lane_fragments.intersection(
                 (x - r, y - r, x + r, y + r)
             ):
@@ -433,6 +442,7 @@ class SumoRoadNetwork(RoadMap):
                     self._lane_fragments[i][1],
                     perpendicular=False,
                 )
+
                 if d == INVALID_DISTANCE and i != 0:
                     # distance to inner corner
                     dist = min(
@@ -442,6 +452,11 @@ class SumoRoadNetwork(RoadMap):
                 if d != INVALID_DISTANCE:
                     if dist is None or d < dist:
                         dist = d
+            if get_offset and found_index != INVALID_INDEX:
+                offset = sumolib.geomhelper.lineOffsetWithMinimumDistanceToPoint(
+                    point, self._lane_fragments[i][0], self._lane_fragments[i][1], False
+                )
+                return dist, offset
             return dist
 
         @cached_property
