@@ -158,7 +158,7 @@ class RemoteSumoProcess(SumoProcess):
             try:
                 client_socket.connect((self._remote_host, self._remote_port))
             except OSError as err:
-                time.sleep(0.1)
+                time.sleep(1)
                 error = err
                 continue
             break
