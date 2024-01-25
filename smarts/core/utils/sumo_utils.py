@@ -32,6 +32,7 @@ import os
 import socket
 import subprocess
 import sys
+import time
 from typing import Any, List, Literal, Optional, Tuple
 
 from smarts.core.utils import networking
@@ -150,7 +151,21 @@ class RemoteSumoProcess(SumoProcess):
         self, base_params: List[str], sumo_binary: Literal["sumo", "sumo-gui"] = "sumo"
     ):
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect((self._remote_host, self._remote_port))
+
+        # Wait on server to start if it needs to.
+        error = None
+        for _ in range(5):
+            try:
+                client_socket.connect((self._remote_host, self._remote_port))
+            except OSError as err:
+                time.sleep(0.1)
+                error = err
+                continue
+            break
+        else:
+            raise error or OSError(
+                f"Unable to connect to server {self._remote_host}:{self._remote_port}"
+            )
 
         client_socket.send(f"{sumo_binary}:{json.dumps(base_params)}\n".encode("utf-8"))
 

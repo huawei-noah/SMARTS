@@ -22,6 +22,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import asyncio.streams
 import json
@@ -166,9 +167,9 @@ def spawn_if_not(remote_host: str, remote_port: int):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client_socket.connect((remote_host, remote_port))
-    except socket.error:
+    except (OSError):
         if remote_host in ("localhost", "127.0.0.1"):
-            command = ["python", "-m", __name__]
+            command = ["python", "-m", __name__, "--timeout", "600"]
 
             # Use subprocess.Popen to start the process in the background
             _ = subprocess.Popen(
@@ -177,11 +178,9 @@ def spawn_if_not(remote_host: str, remote_port: int):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 shell=False,
+                close_fds=True,
             )
-            # Wait for process to start
-            client_socket.settimeout(5.0)
-            client_socket.connect((remote_host, remote_port))
-            client_socket.close()
+
     else:
         client_socket.close()
 
@@ -199,4 +198,13 @@ def main(*_, _host=None, _port=None, timeout: Optional[float] = 10 * 60):
 
 
 if __name__ == "__main__":
-    main(timeout=None)
+    parser = argparse.ArgumentParser(__name__)
+    parser.add_argument(
+        "--timeout",
+        help="Duration of time until server shuts down if not in use.",
+        type=float,
+        default=None,
+    )
+    args = parser.parse_args()
+
+    main(timeout=args.timeout)
