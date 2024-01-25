@@ -20,11 +20,10 @@
 
 import logging
 import random
-import time
 import weakref
 from functools import partial
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Final, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -49,12 +48,15 @@ from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
-from smarts.core.utils.sumo_utils import (  # isort:skip
+NO_CHECKS: Final = 0b00000
+
+# isort:skip
+from smarts.core.utils.sumo_utils import (
     LocalSumoProcess,
     RemoteSumoProcess,
     TraciConn,
     traci,
-)  # isort:skip
+)
 
 import traci.constants as tc  # isort:skip
 
@@ -135,7 +137,10 @@ class SumoTrafficSimulation(TrafficProvider):
         # XXX: This is used to try to avoid interrupting other instances in race condition (see GH #2139)
         self._foreign_traci_servers: List[TraciConn] = []
 
-        if (sumo_serve_mode := config()("sumo", "serve_mode")) == "local":
+        if (
+            self._sumo_port is not None
+            or (sumo_serve_mode := config()("sumo", "serve_mode")) == "local"
+        ):
             self._process_factory = partial(LocalSumoProcess, self._sumo_port)
         elif sumo_serve_mode == "remote":
             self._process_factory = partial(
@@ -217,7 +222,6 @@ class SumoTrafficSimulation(TrafficProvider):
                 self._traci_conn.close_traci_and_pipes()
                 self._traci_conn = None
 
-            sumo_port = self._sumo_port
             sumo_binary = "sumo" if self._headless else "sumo-gui"
 
             sumo_process = self._process_factory()
@@ -602,7 +606,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
             )
             self._create_vehicle(vehicle_id, dimensions, vehicle_state.role)
-            no_checks = 0b00000
+            no_checks = NO_CHECKS
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
 
         # update the state of all current managed vehicles
@@ -647,7 +651,7 @@ class SumoTrafficSimulation(TrafficProvider):
                 )
 
         for vehicle_id in vehicles_that_have_become_external:
-            no_checks = 0b00000
+            no_checks = NO_CHECKS
             self._traci_conn.vehicle.setSpeedMode(vehicle_id, no_checks)
             self._traci_conn.vehicle.setColor(
                 vehicle_id, SumoTrafficSimulation._color_for_role(ActorRole.SocialAgent)

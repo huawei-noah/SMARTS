@@ -114,7 +114,7 @@ class SumoProcess(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def poll(self) -> int:
+    def poll(self) -> Optional[int]:
         """Poll the underlying process."""
         raise NotImplementedError
 
@@ -175,7 +175,7 @@ class RemoteSumoProcess(SumoProcess):
     def poll(self) -> Optional[int]:
         return None
 
-    def wait(self, timeout: float | None = None) -> int:
+    def wait(self, timeout: Optional[float] = None) -> int:
         return 0
 
 
@@ -222,7 +222,7 @@ class LocalSumoProcess(SumoProcess):
             self._sumo_proc.kill()
             self._sumo_proc = None
 
-    def poll(self):
+    def poll(self) -> Optional[int]:
         return self._sumo_proc.poll()
 
     def wait(self, timeout=None):
@@ -234,9 +234,9 @@ class TraciConn:
 
     def __init__(
         self,
+        sumo_process: SumoProcess,
         host: str = "localhost",
         name: str = "",
-        sumo_process: SumoProcess = False,
     ):
         self._traci_conn = None
         self._sumo_port = None

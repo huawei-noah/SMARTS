@@ -76,7 +76,10 @@ def run_client(t):
             ],
             sumo_binary="sumo",
         )
-        conn = TraciConn(sumo_binary="sumo", name=f"Client@{t}", sumo_process=lsp)
+        conn = TraciConn(
+            sumo_process=lsp,
+            name=f"Client@{t}",
+        )
         conn.connect(
             timeout=5,
             minimum_traci_version=20,
@@ -88,8 +91,8 @@ def run_client(t):
         conn.close_traci_and_pipes(False)
         raise
     except Exception as err:
-        # logging.error("Primary occurred. [%s]", err)
-        # logging.exception(err)
+        logging.error("Primary occurred. [%s]", err)
+        logging.exception(err)
         raise
     finally:
         # try:

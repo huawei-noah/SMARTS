@@ -28,10 +28,12 @@ import json
 import multiprocessing
 import os
 import subprocess
+import time
 from asyncio.streams import StreamReader, StreamWriter
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Set
 
 from smarts.core import config
+from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.core.utils.networking import find_free_port
 from smarts.core.utils.sumo_utils import SUMO_PATH
 
@@ -44,10 +46,7 @@ class SumoServer:
         self._port = port
 
         self._used_ports: Set[int] = set()
-        self._sumo_servers: Dict[int, subprocess.Popen[bytes]] = {}
-
         self._reserve_count: float = reserved_count
-        self._server_pool: multiprocessing.Queue()
 
     async def start(self):
         """Start the server."""
@@ -57,104 +56,81 @@ class SumoServer:
         address = server.sockets[0].getsockname()
         print(f"Server listening on `{address = }`")
 
-        resource_pooling_task = asyncio.create_task(self._resource_pooling_loop())
-
         async with server:
-            try:
-                await asyncio.gather(server.serve_forever(), resource_pooling_task)
-            except KeyboardInterrupt:
-                for port in self._sumo_servers:
-                    self._handle_disconnect(port)
+            await server.serve_forever()
 
-    async def _resource_pooling_loop(
-        self,
-    ):
-        # Get the current event loop.
-        loop = asyncio.get_running_loop()
-        futures: Dict[Any, asyncio.Future[Any]] = {}
-        while True:
-            for _ in range(self._reserve_count - len(self._sumo_servers)):
-                # Create a new Future object.
-                fut = loop.create_future()
-                while (port := find_free_port()) in self._used_ports:
-                    pass
-                futures[port] = fut
-                loop.create_task(self.open_sumo(fut, port))
+    async def _process_manager(self, binary, args, f: asyncio.Future):
+        """Manages the lifecycle of the TraCI server."""
+        _sumo_proc = None
+        try:
+            # Create a new Future object.
+            while (port := find_free_port()) in self._used_ports:
+                pass
+            self._used_ports.add(port)
+            _sumo_proc = await asyncio.create_subprocess_exec(
+                *[
+                    os.path.join(SUMO_PATH, "bin", binary),
+                    f"--remote-port={port}",
+                ],
+                *args,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True,
+            )
+            loop = asyncio.get_event_loop()
+            future = loop.create_future()
+            f.set_result(
+                {
+                    "port": port,
+                    "future": future,
+                }
+            )
 
-            for p, f in futures.copy().items():
-                if f.done():
-                    if f.cancelled():
-                        del futures[p]
-                        continue
-                    poll, port, _sumo_process = f.result()
-                    if poll is not None:
-                        continue
-                    print(f"sumo pooled {port = }, {poll = }")
-                    self._server_pool.put((port, _sumo_process))
-
-    async def open_sumo(self, future: asyncio.futures.Future, port: int):
-        _sumo_proc = subprocess.Popen(
-            [
-                os.path.join(
-                    SUMO_PATH,
-                    "bin",
-                ),
-                f"--remote-port={port}",
-            ],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            close_fds=True,
-        )
-        await asyncio.sleep(0.1)
-        if (poll := _sumo_proc.poll()) is None:
-            self._server_pool[port] = _sumo_proc
-        future.set_result((poll, port, _sumo_proc))
-
-    def _handle_disconnect(self, port: int):
-        _sumo_proc = self._sumo_servers.get(port)
-        if _sumo_proc is not None:
-            _sumo_proc.kill()
-            _sumo_proc = None
-            del self._sumo_servers[port]
-        self._used_ports.discard(port)
+            result = await asyncio.wait_for(future, None)
+        finally:
+            if port is not None:
+                self._used_ports.discard(port)
+            if _sumo_proc is not None and _sumo_proc.returncode is None:
+                _sumo_proc.kill()
 
     async def handle_client(self, reader: StreamReader, writer: StreamWriter):
         """Read data from the client."""
-        addr = writer.get_extra_info("peername")
-        print(f"Received connection from {addr}")
+        address = writer.get_extra_info("peername")
+        print(f"Received connection from {address}")
+        loop = asyncio.get_event_loop()
         try:
             port = None
-            _sumo_proc = None
+            _traci_server_info = None
             while True:
                 data = await reader.readline()
                 message = data.decode("utf-8")
                 # print(f"Received {message!r} from {addr}")
                 if message.startswith("sumo"):
-                    while (port := find_free_port()) in self._used_ports:
-                        pass
-                    self._used_ports.add(port)
-                    # Send a response back to the client
+                    kill_f = loop.create_future()
                     sumo_binary, _, sumo_cmd = message.partition(":")
                     response_list = json.loads(sumo_cmd)
-                    _sumo_proc = subprocess.Popen(
-                        [
-                            os.path.join(SUMO_PATH, "bin", sumo_binary),
-                            f"--remote-port={port}",
-                            *response_list,
-                        ],
-                        stdin=subprocess.DEVNULL,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL,
-                        close_fds=True,
+                    command_args = [
+                        *response_list,
+                    ]
+                    asyncio.create_task(
+                        self._process_manager(sumo_binary, command_args, kill_f)
                     )
-                    self._sumo_servers[port] = _sumo_proc
+                    if _traci_server_info is not None:
+                        print("Duplicate start request received.")
+                        continue
+                    _traci_server_info = await asyncio.wait_for(kill_f, None)
+                    port = _traci_server_info["port"]
 
                     response = f"{self._host}:{port}"
-                    print(f"Send: {response!r}")
+                    print(f"Send TraCI address: {response!r}")
                     writer.write(response.encode("utf-8"))
+
                 if message.startswith("e:"):
-                    self._handle_disconnect(port)
+                    if _traci_server_info is None:
+                        print("Kill received for uninitialized process.")
+                    else:
+                        _traci_server_info["future"].set_result("kill")
                     break
                 if len(message) == 0:
                     break
@@ -164,8 +140,7 @@ class SumoServer:
             writer.close()
         except asyncio.CancelledError:
             # Handle client disconnect
-            self._handle_disconnect(port)
-            print(f"Client {addr} disconnected unexpectedly.")
+            pass
 
 
 if __name__ == "__main__":
@@ -175,7 +150,8 @@ if __name__ == "__main__":
         "sumo", "server_host"
     )  # Use '0.0.0.0' to listen on all available interfaces
     _port = config()("sumo", "server_port")
-    _server_pool_size = config()("sumo", "server_pool_size")
+    _server_pool_size = 2
+    config()("sumo", "server_pool_size")
 
     ss = SumoServer(_host, _port, _server_pool_size)
     asyncio.run(ss.start())
