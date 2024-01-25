@@ -72,6 +72,7 @@ _config_defaults: Final = {
     ("ray", "num_gpus"): 0,
     ("ray", "num_cpus"): None,
     ("ray", "log_to_driver"): False,
+    ("sumo", "server_pool_size"): 12,
     ("sumo", "server_port"): 62232,
     ("sumo", "server_host"): "localhost",
     ("sumo", "serve_mode"): "local",  # local|remote
