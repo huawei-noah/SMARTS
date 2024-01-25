@@ -25,17 +25,16 @@ from __future__ import annotations
 import asyncio
 import asyncio.streams
 import json
-import multiprocessing
 import os
 import subprocess
-import time
-from asyncio.streams import StreamReader, StreamWriter
-from typing import Any, Dict, List, Set
+from typing import TYPE_CHECKING, Set
 
 from smarts.core import config
-from smarts.core.utils.file import make_dir_in_smarts_log_dir
 from smarts.core.utils.networking import find_free_port
 from smarts.core.utils.sumo_utils import SUMO_PATH
+
+if TYPE_CHECKING:
+    from asyncio.streams import StreamReader, StreamWriter
 
 
 class SumoServer:
@@ -94,7 +93,7 @@ class SumoServer:
             if _sumo_proc is not None and _sumo_proc.returncode is None:
                 _sumo_proc.kill()
 
-    async def handle_client(self, reader: StreamReader, writer: StreamWriter):
+    async def handle_client(self, reader, writer):
         """Read data from the client."""
         address = writer.get_extra_info("peername")
         print(f"Received connection from {address}")
@@ -150,8 +149,7 @@ if __name__ == "__main__":
         "sumo", "server_host"
     )  # Use '0.0.0.0' to listen on all available interfaces
     _port = config()("sumo", "server_port")
-    _server_pool_size = 2
-    config()("sumo", "server_pool_size")
+    _server_pool_size = config()("sumo", "server_pool_size")
 
     ss = SumoServer(_host, _port, _server_pool_size)
     asyncio.run(ss.start())
