@@ -61,6 +61,7 @@ LOGGING_STEP = 1000
 
 
 def run_client(t):
+    conn = None
     try:
         f = os.path.abspath(make_dir_in_smarts_log_dir("_sumo_run_logs")) + f"/{t}"
         lsp = RemoteSumoProcess(
@@ -88,7 +89,8 @@ def run_client(t):
         time.sleep(0.1)
         conn.getVersion()
     except KeyboardInterrupt:
-        conn.close_traci_and_pipes(False)
+        if conn is not None:
+            conn.close_traci_and_pipes(False)
         raise
     except Exception as err:
         logging.error("Primary occurred. [%s]", err)
@@ -102,7 +104,8 @@ def run_client(t):
         diff = time.time() - t
         if diff > 9:
             logging.error("Client took %ss to close", diff)
-        conn.teardown()
+        if conn is not None:
+            conn.teardown()
 
 
 def test_traffic_sim_with_multi_client():

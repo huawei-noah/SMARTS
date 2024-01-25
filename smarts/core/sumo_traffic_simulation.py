@@ -46,6 +46,7 @@ from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
 from smarts.core.utils.core_logging import suppress_output
+from smarts.core.utils.sumo_server import spawn_if_not
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 NO_CHECKS: Final = 0b00000
@@ -143,10 +144,13 @@ class SumoTrafficSimulation(TrafficProvider):
         ):
             self._process_factory = partial(LocalSumoProcess, self._sumo_port)
         elif sumo_serve_mode == "remote":
+            remote_host = config()("sumo", "server_host")
+            remote_port = config()("sumo", "server_port", cast=int)
+            spawn_if_not(remote_host, remote_port)
             self._process_factory = partial(
                 RemoteSumoProcess,
-                remote_host=config()("sumo", "server_host"),
-                remote_port=config()("sumo", "server_port", cast=int),
+                remote_host=remote_host,
+                remote_port=remote_port,
             )
 
         # start with the default recovery flags...

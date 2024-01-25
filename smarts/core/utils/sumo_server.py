@@ -26,50 +26,63 @@ import asyncio
 import asyncio.streams
 import json
 import os
+import socket
 import subprocess
-from typing import TYPE_CHECKING, Set
+import time
+from typing import Optional, Set
 
 from smarts.core import config
 from smarts.core.utils.networking import find_free_port
 from smarts.core.utils.sumo_utils import SUMO_PATH
 
-if TYPE_CHECKING:
-    from asyncio.streams import StreamReader, StreamWriter
-
 
 class SumoServer:
     """A centralized server for handling SUMO instances to prevent race conditions."""
 
-    def __init__(self, host, port, reserved_count) -> None:
+    def __init__(self, host, port) -> None:
         self._host = host
         self._port = port
 
         self._used_ports: Set[int] = set()
-        self._reserve_count: float = reserved_count
+        self._last_client: float = time.time()
 
-    async def start(self):
+    async def start(self, timeout: Optional[float] = 60.0 * 60.0):
         """Start the server."""
         # Create a socket object
         server = await asyncio.start_server(self.handle_client, self._host, self._port)
 
         address = server.sockets[0].getsockname()
         print(f"Server listening on `{address = }`")
-
         async with server:
-            await server.serve_forever()
+            waitable = server.serve_forever()
+            if timeout is not None:
+                _timeout_watcher = asyncio.create_task(self._timeout_watcher(timeout))
+                waitable = asyncio.gather(waitable, _timeout_watcher)
+            await waitable
+
+    async def _timeout_watcher(self, timeout: float):
+        """Closes the server if it is not in use for `timeout` length of time."""
+
+        while True:
+            await asyncio.sleep(60)
+            if time.time() - self._last_client > timeout and len(self._used_ports) == 0:
+                print(f"Closing because `{timeout=}` was reached.")
+                loop = asyncio.get_event_loop()
+                loop.stop()
 
     async def _process_manager(self, binary, args, f: asyncio.Future):
         """Manages the lifecycle of the TraCI server."""
         _sumo_proc = None
+        _port = None
         try:
             # Create a new Future object.
-            while (port := find_free_port()) in self._used_ports:
+            while (_port := find_free_port()) in self._used_ports:
                 pass
-            self._used_ports.add(port)
+            self._used_ports.add(_port)
             _sumo_proc = await asyncio.create_subprocess_exec(
                 *[
                     os.path.join(SUMO_PATH, "bin", binary),
-                    f"--remote-port={port}",
+                    f"--remote-port={_port}",
                 ],
                 *args,
                 stdin=subprocess.DEVNULL,
@@ -81,17 +94,18 @@ class SumoServer:
             future = loop.create_future()
             f.set_result(
                 {
-                    "port": port,
+                    "port": _port,
                     "future": future,
                 }
             )
 
             result = await asyncio.wait_for(future, None)
         finally:
-            if port is not None:
-                self._used_ports.discard(port)
+            if _port is not None:
+                self._used_ports.discard(_port)
             if _sumo_proc is not None and _sumo_proc.returncode is None:
                 _sumo_proc.kill()
+            self._last_client = time.time()
 
     async def handle_client(self, reader, writer):
         """Read data from the client."""
@@ -142,14 +156,47 @@ class SumoServer:
             pass
 
 
-if __name__ == "__main__":
+def spawn_if_not(remote_host: str, remote_port: int):
+    """Create a new server if it does not already exist.
 
+    Args:
+        remote_host (str): The host name.
+        remote_port (int): The host port.
+    """
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        client_socket.connect((remote_host, remote_port))
+    except socket.error:
+        if remote_host in ("localhost", "127.0.0.1"):
+            command = ["python", "-m", __name__]
+
+            # Use subprocess.Popen to start the process in the background
+            _ = subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                shell=False,
+            )
+            # Wait for process to start
+            client_socket.settimeout(5.0)
+            client_socket.connect((remote_host, remote_port))
+            client_socket.close()
+    else:
+        client_socket.close()
+
+
+def main(*_, _host=None, _port=None, timeout: Optional[float] = 10 * 60):
+    """The program entrypoint."""
     # Define the host and port on which the server will listen
-    _host = config()(
+    _host = _host or config()(
         "sumo", "server_host"
     )  # Use '0.0.0.0' to listen on all available interfaces
-    _port = config()("sumo", "server_port")
-    _server_pool_size = config()("sumo", "server_pool_size")
+    _port = _port or config()("sumo", "server_port")
 
-    ss = SumoServer(_host, _port, _server_pool_size)
-    asyncio.run(ss.start())
+    ss = SumoServer(_host, _port)
+    asyncio.run(ss.start(timeout=timeout))
+
+
+if __name__ == "__main__":
+    main(timeout=None)
