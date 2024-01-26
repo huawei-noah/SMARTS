@@ -163,9 +163,9 @@ class RemoteSumoProcess(SumoProcess):
                 continue
             break
         else:
-            raise error or OSError(
-                f"Unable to connect to server {self._remote_host}:{self._remote_port}"
-            )
+            raise OSError(
+                f"Unable to connect to server {self._remote_host}:{self._remote_port}. Try running again or running the server using `python -m smarts.core.utils.sumo_server`."
+            ) from error
 
         client_socket.send(f"{sumo_binary}:{json.dumps(base_params)}\n".encode("utf-8"))
 
@@ -338,7 +338,7 @@ class TraciConn:
             )  # e.g. "SUMO 1.11.0" -> (1, 11, 0)
             if self._sumo_version < minimum_sumo_version:
                 raise ValueError(f"SUMO version must be >= SUMO {minimum_sumo_version}")
-        except (traci.exceptions.FatalTraCIError) as err:
+        except traci.exceptions.FatalTraCIError as err:
             self._log.error(
                 "[%s] TraCI disconnected for connection attempt '%s:%s': [%s]",
                 self._name,
