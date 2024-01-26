@@ -74,14 +74,14 @@ def _comfort() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
         jerk = 0
         acc = 0
         if len(vehicle_pos) >= 3:
-            disp_0 = np.linalg.norm(vehicle_pos[0] - vehicle_pos[1])
-            disp_1 = np.linalg.norm(vehicle_pos[1] - vehicle_pos[2])
+            disp_0 = np.linalg.norm(np.subtract(vehicle_pos[0], vehicle_pos[1]))
+            disp_1 = np.linalg.norm(np.subtract(vehicle_pos[1], vehicle_pos[2]))
             speed_0 = disp_0 / dt
             speed_1 = disp_1 / dt
             if valid_0 := (disp_0 > min_disp and disp_1 > min_disp):
                 acc = (speed_0 - speed_1) / dt
             if valid_0 and len(vehicle_pos) == 4:
-                disp_2 = np.linalg.norm(vehicle_pos[2] - vehicle_pos[3])
+                disp_2 = np.linalg.norm(np.subtract(vehicle_pos[2], vehicle_pos[3]))
                 speed_2 = disp_2 / dt
                 acc_1 = (speed_1 - speed_2) / dt
                 if disp_2 > min_disp:
@@ -238,7 +238,8 @@ def _dist_to_obstacles(
 
         # Filter neighbors by distance.
         nghbs_state = [
-            (nghb, np.linalg.norm(nghb.position - ego_pos)) for nghb in nghbs
+            (nghb, np.linalg.norm(np.subtract(nghb.position, ego_pos)))
+            for nghb in nghbs
         ]
         nghbs_state = [
             nghb_state
@@ -261,7 +262,7 @@ def _dist_to_obstacles(
             # Neighbors's angle with respect to the ego's position.
             # Note: In np.angle(), angle is zero at positive x axis, and increases anti-clockwise.
             #       Hence, map_angle = np.angle() - π/2
-            rel_pos = np.array(nghb_state[0].position) - ego_pos
+            rel_pos = np.subtract(nghb_state[0].position, ego_pos)
             obstacle_angle = np.angle(rel_pos[0] + 1j * rel_pos[1]) - np.pi / 2
             obstacle_angle = (obstacle_angle + np.pi) % (2 * np.pi) - np.pi
             # Relative angle is the angle rotation required by ego agent to face the obstacle.
