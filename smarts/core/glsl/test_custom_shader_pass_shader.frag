@@ -4,6 +4,7 @@
 
 uniform int step_count;
 uniform int steps_completed;
+uniform int events_collisions;
 uniform int events_off_road;
 uniform int events_off_route;
 uniform int events_on_shoulder;
@@ -93,7 +94,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 #ifndef SHADERTOY
 void main(){
-    int a = step_count + steps_completed + events_off_road + events_off_route 
+    int a = step_count + steps_completed + events_collisions + events_off_road + events_off_route 
         + events_on_shoulder + events_wrong_way + events_not_moving 
         + events_reached_goal + events_reached_max_episode_steps 
         + events_agents_done_alive + events_interest_done + ego_vehicle_state_road_id 
