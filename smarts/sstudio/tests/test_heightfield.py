@@ -140,20 +140,3 @@ def test_heightfield_line_of_sight(map_image):
         resolution=0.2,
         coordinate_sample_mode=CoordinateSampleMode.FOUR_POINTS,
     ), "Line of sight should be unbroken"
-
-
-def test_to_line_of_sight(map_image2):
-    hf = HeightField(map_image2, (5, 3))
-
-    tlos = hf.to_line_of_sight((0, 0), 0)
-
-    # 0 1 0 1 0
-    # 0 1 0 0 0
-    # 2 1 2 0 0
-    assert np.all(
-        np.array(
-            [[0, 255, 255, 255, 0], [0, 255, 255, 255, 255], [0, 255, 255, 255, 0]],
-            dtype=np.uint8,
-        )
-        == tlos.data
-    )

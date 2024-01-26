@@ -49,11 +49,6 @@ from smarts.core.shader_buffer import BufferID, CameraSensorID
 from smarts.core.utils.core_math import slope, squared_dist
 from smarts.core.utils.observations import points_to_pixels
 from smarts.env.utils.observation_conversion import ObservationOptions
-from smarts.sstudio.graphics.bytemap2edge import (
-    far_kernel,
-    generate_edge_from_heightfield,
-)
-from smarts.sstudio.graphics.heightfield import CoordinateSampleMode, HeightField
 
 T = TypeVar("T")
 VIDEO_PREFIX: Final[str] = "A1_"
@@ -680,8 +675,6 @@ class OcclusionAgentWrapper(AugmentationWrapper):
             img_height * 0.5,
         ]
 
-        vehicle_hf = HeightField(obs.obfuscation_grid_map.data, (img_width, img_height))
-
         rgb_ego = obs.custom_renders[0].data.copy()
         waypoint_paths = np.array(self._pa.waypoint_position_accessor(obs))
 
@@ -709,7 +702,6 @@ class OcclusionAgentWrapper(AugmentationWrapper):
                 .rotate_deg(math.degrees(ego_heading))
                 .translate(*_observation_center)
             )
-            image_data = vehicle_hf.data
             ax.imshow(
                 rgb_ego,
                 # cmap="gray",
@@ -718,14 +710,6 @@ class OcclusionAgentWrapper(AugmentationWrapper):
                 transform=tr + ax.transData,
                 extent=extent,
             )
-            # ax.imshow(
-            #     image_data,
-            #     cmap="gray",
-            #     vmin=0,
-            #     vmax=255,
-            #     transform=tr + ax.transData,
-            #     extent=extent,
-            # )
 
             for vehicle in self._pa.nvs_accessor(obs):
                 vehicle_pos = np.array(self._pa.position_accessor(vehicle))[:2]

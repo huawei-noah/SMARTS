@@ -241,32 +241,6 @@ class HeightField(ABC):
             coordinate_sample_mode,
         )
 
-    def to_line_of_sight(
-        self,
-        viewer_coordinate: Tuple[float, float],
-        altitude_mod: float,
-        resolution: float = 1,
-        coordinate_sample_mode=CoordinateSampleMode.FOUR_POINTS,
-    ):
-
-        viewer_coordinate = self.convert_to_data_coordinate(viewer_coordinate)
-        assert np.all(
-            self.data.shape == tuple(reversed(self.size))
-        ), f"Only currently works for images that are the same size as resolution. {self.data.shape=} and {self.size=}"
-
-        out = np.empty(self.data.shape, self.data.dtype)
-        for v in range(self.resolution[1]):
-            for u in range(self.resolution[0]):
-                test = self.data_line_of_sight(
-                    viewer_coordinate,
-                    (u, v),
-                    altitude_mod,
-                    resolution,
-                    coordinate_sample_mode,
-                )
-                out[v][u] = np.uint8(test * 255)
-        return HeightField(out, self.size)
-
     def apply_kernel(
         self, kernel: np.ndarray, min_val=-np.inf, max_val=np.inf, pad_mode="edge"
     ):

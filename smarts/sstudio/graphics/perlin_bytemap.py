@@ -26,7 +26,7 @@ from typing import Tuple
 import numpy as np
 
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.renderer_base import ShaderStep
+from smarts.core.renderer_base import ShaderStep, ShaderStepVariableDependency
 from smarts.sstudio.graphics.heightfield import HeightField
 
 
@@ -38,12 +38,6 @@ def get_image_dimensions(image_file):
 def generate_simplex_p3d_gpu(
     width: int,
     height: int,
-    seed,
-    shift: Tuple[float, float],
-    octaves: float = 2,
-    granularity=0.02,
-    amplitude=4,
-    transformation_matrix: np.ndarray = np.identity(4),
 ):
     assert height % 16 == 0
     assert width % 16 == 0
@@ -59,7 +53,7 @@ def generate_simplex_p3d_gpu(
         camera_id = renderer.build_shader_step(
             "simplex_camera",
             simplex_shader,
-            dependencies=(),
+            dependencies=(ShaderStepVariableDependency(1.0, "scale"),),
             priority=10,
             width=width,
             height=height,
@@ -88,14 +82,6 @@ if __name__ == "__main__":
     parser.add_argument("--width", help="the width pixels", type=int, default=256)
     parser.add_argument("--height", help="the height pixels", type=int, default=256)
     parser.add_argument(
-        "--smooth_iterations", help="smooth the output", type=int, default=0
-    )
-    parser.add_argument("--seed", help="the generator seed", type=int, default=87)
-    parser.add_argument(
-        "--table_dim", help="the perlin permutation table", type=int, default=2048
-    )
-    parser.add_argument("--shift", help="the shift on the noise", type=float, default=0)
-    parser.add_argument(
         "--match_file_dimensions",
         help="uses an image file as the base for dimensions",
         type=str,
@@ -111,8 +97,6 @@ if __name__ == "__main__":
     f_hf = generate_simplex_p3d_gpu(
         a_width,
         a_height,
-        args.seed,
-        args.shift,
     )
 
     image_data = f_hf.data
