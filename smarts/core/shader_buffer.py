@@ -25,10 +25,10 @@ from enum import Enum
 class CameraSensorID(Enum):
     """Describes default names for camera configuration."""
 
-    DRIVABLE_AREA_GRID_MAP = "dagm"
+    DRIVABLE_AREA_GRID_MAP = "drivable_area_grid_map"
     TOP_DOWN_RGB = "top_down_rgb"
     OCCUPANCY_GRID_MAP = "ogm"
-    OCCLUSION = "occlusion"
+    OCCLUSION = "occlusion_map"
 
 
 class BufferID(Enum):

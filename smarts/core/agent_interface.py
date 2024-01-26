@@ -108,13 +108,13 @@ class RenderDependencyBase(metaclass=abc.ABCMeta):
 
 
 @dataclass
-class CustomRenderConstantDependency(RenderDependencyBase):
-    """Base for renderer constants to pass directly to the shader."""
+class CustomRenderVariableDependency(RenderDependencyBase):
+    """Base for renderer value to pass directly to the shader."""
 
     value: Union[int, float, bool, np.ndarray, list, tuple]
-    """The value of the constant to pass to the shader."""
+    """The value to pass to the shader."""
     variable_name: str
-    """The variable name inside the shader."""
+    """The uniform name inside the shader."""
 
     @property
     def name(self) -> str:
@@ -152,7 +152,7 @@ class CustomRenderCameraDependency(RenderDependencyBase):
 
     camera_dependency_name: Union[str, CameraSensorID]
     """The name of the camera (type) to target."""
-    variable_name: Literal["iChannel0", "iChannel1", "iChannel2", "iChannel3"]
+    variable_name: str
     """The name of the camera texture variable."""
 
     target_actor: Union[str, Literal[_DEFAULTS.SELF]] = _DEFAULTS.SELF

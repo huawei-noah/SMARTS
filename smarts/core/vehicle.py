@@ -74,7 +74,7 @@ class Vehicle:
         "driven_path_sensor",
         "trip_meter_sensor",
         "drivable_area_grid_map_sensor",
-        "occlusion_sensor",
+        "occlusion_map_sensor",
         "neighborhood_vehicle_states_sensor",
         "waypoints_sensor",
         "road_waypoints_sensor",
@@ -354,7 +354,9 @@ class Vehicle:
             condition: bool = True,
             **kwargs,
         ):
-            assert sensor_name in cls._sensor_names
+            assert (
+                sensor_name in cls._sensor_names
+            ), f"{sensor_name}:{cls._sensor_names}"
             if (
                 replace
                 or has_no_sensors
@@ -432,7 +434,7 @@ class Vehicle:
             else:
                 add_sensor_if_needed(
                     OcclusionMapSensor,
-                    "occlusion_sensor",
+                    "occlusion_map_sensor",
                     vehicle_state=vehicle_state,
                     width=agent_interface.occlusion_map.width,
                     height=agent_interface.occlusion_map.height,
@@ -472,7 +474,10 @@ class Vehicle:
                     ogm_sensor=vehicle.sensor_property("ogm_sensor", None),
                     top_down_rgb_sensor=vehicle.sensor_property("rgb_sensor", None),
                     drivable_area_grid_map_sensor=vehicle.sensor_property(
-                        "dagm_sensor", default=None
+                        "drivable_area_grid_map_sensor", default=None
+                    ),
+                    occlusion_map_sensor=vehicle.sensor_property(
+                        "occlusion_map_sensor", default=None
                     ),
                     name=program.name,
                 )

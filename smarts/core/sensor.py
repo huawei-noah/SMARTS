@@ -38,7 +38,7 @@ from smarts.core.actor import ActorState
 from smarts.core.agent_interface import (
     CustomRenderBufferDependency,
     CustomRenderCameraDependency,
-    CustomRenderConstantDependency,
+    CustomRenderVariableDependency,
     RenderDependencyBase,
 )
 from smarts.core.coordinates import Dimensions, Pose, RefLinePoint
@@ -451,6 +451,7 @@ class CustomRenderSensor(CameraSensor):
         ogm_sensor: Optional[OGMSensor],
         top_down_rgb_sensor: Optional[RGBSensor],
         drivable_area_grid_map_sensor: Optional[DrivableAreaGridMapSensor],
+        occlusion_map_sensor: Optional[OcclusionMapSensor],
         name: str,
     ):
         super().__init__(
@@ -469,6 +470,7 @@ class CustomRenderSensor(CameraSensor):
             (CameraSensorID.OCCUPANCY_GRID_MAP, ogm_sensor),
             (CameraSensorID.TOP_DOWN_RGB, top_down_rgb_sensor),
             (CameraSensorID.DRIVABLE_AREA_GRID_MAP, drivable_area_grid_map_sensor),
+            (CameraSensorID.OCCLUSION, occlusion_map_sensor),
         )
 
         def has_required(dependency_name, required_name, sensor) -> bool:
@@ -495,7 +497,7 @@ class CustomRenderSensor(CameraSensor):
                     camera_id,
                     d.variable_name,
                 )
-            elif isinstance(d, CustomRenderConstantDependency):
+            elif isinstance(d, CustomRenderVariableDependency):
                 dependency = ShaderStepVariableDependency(
                     value=d.value,
                     script_variable_name=d.variable_name,

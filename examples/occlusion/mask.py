@@ -33,7 +33,7 @@ from smarts.core.agent_interface import (
     CustomRender,
     CustomRenderBufferDependency,
     CustomRenderCameraDependency,
-    CustomRenderConstantDependency,
+    CustomRenderVariableDependency,
     DoneCriteria,
     DrivableAreaGridMap,
     Lidar,
@@ -805,7 +805,7 @@ def occlusion_main(steps):
                             buffer_dependency_name=BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
                             variable_name=BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION.value,
                         ),
-                        CustomRenderConstantDependency(
+                        CustomRenderVariableDependency(
                             value=(0.1, 0.5, 0.1),
                             variable_name="empty_color",
                         ),
