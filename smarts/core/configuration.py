@@ -74,7 +74,7 @@ _config_defaults: Final = {
     ("ray", "log_to_driver"): False,
     ("sumo", "server_port"): 8619,
     ("sumo", "server_host"): "localhost",
-    ("sumo", "serve_mode"): "remote",  # local|remote
+    ("sumo", "serve_mode"): "local",  # local|remote
 }
 
 
