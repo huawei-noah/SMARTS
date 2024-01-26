@@ -64,7 +64,7 @@ _config_defaults: Final = {
         _assets_path, "vehicles/vehicle_definitions_list.yaml"
     ),
     ("core", "observation_workers"): 0,
-    ("core", "max_custom_image_sensors"): 4,
+    ("core", "max_custom_image_sensors"): 32,
     ("core", "sensor_parallelization"): "mp",
     ("core", "debug"): False,
     ("core", "reset_retries"): 0,
@@ -72,6 +72,7 @@ _config_defaults: Final = {
     ("ray", "num_gpus"): 0,
     ("ray", "num_cpus"): None,
     ("ray", "log_to_driver"): False,
+    ("traffic", "traci_retries"): 5,
 }
 
 
