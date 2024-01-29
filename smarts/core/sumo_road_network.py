@@ -78,8 +78,8 @@ class SumoRoadNetwork(RoadMap):
         self._roads: Dict[str, SumoRoadNetwork.Road] = dict()
         self._features = dict()
         self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
-        self._load_traffic_lights()
         self._rtree_roads = None
+        self._load_traffic_lights()
 
     def _init_rtree(
         self, shapeList: List[sumolib.net.edge.Edge], includeJunctions=True
