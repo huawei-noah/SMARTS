@@ -246,25 +246,20 @@ class LocalTrafficProvider(TrafficProvider):
             hhx, hhy = radians_to_vec(ovs.pose.heading) * (0.5 * length)
             back = Point(center.x - hhx, center.y - hhy)
             front = Point(center.x + hhx, center.y + hhy)
-            with timeit("backlane", self._logger.debug):
-                back_lane = self.road_map.nearest_lane(back, radius=length * 0.5)
-            with timeit("frontlane", self._logger.debug):
-                front_lane = self.road_map.nearest_lane(front, radius=length * 0.5)
-            with timeit("the rest", self._logger.debug):
-                if back_lane:
-                    back_offset = back_lane.offset_along_lane(back)
-                    lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
-                    lbc.append((back_offset, ovs, 1))
-                if front_lane:
-                    front_offset = front_lane.offset_along_lane(front)
-                    lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
-                    lbc.append((front_offset, ovs, 2))
-                if front_lane and back_lane != front_lane:
-                    # it's changing lanes, don't misjudge the target lane...
-                    fake_back_offset = front_lane.offset_along_lane(back)
-                    self._lane_bumpers_cache[front_lane].append(
-                        (fake_back_offset, ovs, 0)
-                    )
+            back_lane = self.road_map.nearest_lane(back, radius=length * 0.5)
+            front_lane = self.road_map.nearest_lane(front, radius=length * 0.5)
+            if back_lane:
+                back_offset = back_lane.offset_along_lane(back)
+                lbc = self._lane_bumpers_cache.setdefault(back_lane, [])
+                lbc.append((back_offset, ovs, 1))
+            if front_lane:
+                front_offset = front_lane.offset_along_lane(front)
+                lbc = self._lane_bumpers_cache.setdefault(front_lane, [])
+                lbc.append((front_offset, ovs, 2))
+            if front_lane and back_lane != front_lane:
+                # it's changing lanes, don't misjudge the target lane...
+                fake_back_offset = front_lane.offset_along_lane(back)
+                self._lane_bumpers_cache[front_lane].append((fake_back_offset, ovs, 0))
         for cache in self._lane_bumpers_cache.values():
             cache.sort()
 

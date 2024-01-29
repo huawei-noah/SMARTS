@@ -27,7 +27,7 @@ import random
 from functools import cached_property, lru_cache
 from pathlib import Path
 from subprocess import check_output
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union, overload
 
 import numpy as np
 from shapely.geometry import Point as shPoint
@@ -127,7 +127,8 @@ class SumoRoadNetwork(RoadMap):
             bb = (cxmin, cymin, cxmax, cymax)
             rtree_.add(ri, bb)
 
-    def near_roads(self, point: Point, radius: float):
+    def nearest_roads(self, point: Point, radius: float):
+        """Finds the nearest roads to the given point within the given radius."""
         x = point[0]
         y = point[1]
         r = radius
@@ -421,13 +422,55 @@ class SumoRoadNetwork(RoadMap):
                 )
             return result
 
-        def get_distance(self, point: Point, radius: float, get_offset=False) -> float:
-            x = point[0]
-            y = point[1]
-            r = radius
+        def _ensure_rtree(self):
             if self._rtree_lane_fragments is None:
                 self._lane_fragments = list(pairwise(self._sumo_lane.getShape(False)))
                 self._rtree_lane_fragments = self._init_rtree(self._lane_fragments)
+
+        @lru_cache(maxsize=None)
+        def _segment_offset(self, end_index: int, start_index: int = 0) -> float:
+            dist = 0.0
+            for index in range(start_index, end_index):
+                dist = np.linalg.norm(
+                    np.subtract(
+                        self._lane_fragments[index][1], self._lane_fragments[index][0]
+                    )
+                )
+            return dist
+
+        @lru_cache(maxsize=None)
+        def _segment_offset_by_point(self, point):
+            self._ensure_rtree()
+            dist = 0.0
+            for f, s in self._lane_fragments:
+                dist += np.linalg.norm(np.subtract(s, f))
+                if s == point:
+                    break
+            else:
+                if len(self._lane_fragments) and point != self._lane_fragments[0][0]:
+                    raise ValueError(f"`{point=}` not found in lane shape!")
+            return dist
+
+        @overload
+        def get_distance(self, point: Point, radius: float) -> float:
+            ...
+
+        @overload
+        def get_distance(
+            self, point: Point, radius: float, get_offset: bool
+        ) -> Tuple[float, float]:
+            ...
+
+        def get_distance(
+            self, point: Point, radius: float, get_offset=...
+        ) -> Union[float, Tuple[float, float]]:
+            """Get the distance on the lane from the given point within the given radius.
+            Specifying to get the offset returns the offset value.
+            """
+            x = point[0]
+            y = point[1]
+            r = radius
+            self._ensure_rtree()
 
             dist = math.inf
             INVALID_DISTANCE = -1
@@ -443,19 +486,29 @@ class SumoRoadNetwork(RoadMap):
                     perpendicular=False,
                 )
 
-                if d == INVALID_DISTANCE and i != 0:
+                if d == INVALID_DISTANCE and i != 0 and dist == math.inf:
                     # distance to inner corner
                     dist = min(
                         sumolib.geomhelper.distance(point, self._lane_fragments[i][0]),
                         sumolib.geomhelper.distance(point, self._lane_fragments[i][1]),
                     )
-                if d != INVALID_DISTANCE:
-                    if dist is None or d < dist:
-                        dist = d
-            if get_offset and found_index != INVALID_INDEX:
-                offset = sumolib.geomhelper.lineOffsetWithMinimumDistanceToPoint(
-                    point, self._lane_fragments[i][0], self._lane_fragments[i][1], False
-                )
+                    found_index = i
+                elif d != INVALID_DISTANCE and (dist is None or d < dist):
+                    dist = d
+                    found_index = i
+
+            if get_offset is not ...:
+                if get_offset is False:
+                    return dist, None
+                offset = -1
+                if found_index != INVALID_INDEX:
+                    offset = self._segment_offset(found_index)
+                    offset += sumolib.geomhelper.lineOffsetWithMinimumDistanceToPoint(
+                        point,
+                        self._lane_fragments[found_index][0],
+                        self._lane_fragments[found_index][1],
+                        False,
+                    )
                 return dist, offset
             return dist
 
@@ -692,16 +745,16 @@ class SumoRoadNetwork(RoadMap):
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
             if point not in shape:
-                return sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
-                    point, shape, perpendicular=False
+                # return sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
+                #     point, shape, perpendicular=False
+                # )
+                _, offset = self.get_distance(
+                    world_point, radius=self._map._default_lane_width, get_offset=True
                 )
+                return offset
             # SUMO geomhelper.polygonOffset asserts when the point is part of the shape.
             # We get around the assertion with a check if the point is part of the shape.
-            offset = 0
-            for i in range(len(shape) - 1):
-                if shape[i] == point:
-                    break
-                offset += sumolib.geomhelper.distance(shape[i], shape[i + 1])
+            offset = self._segment_offset_by_point(point)
             return offset
 
         def width_at_offset(self, offset: float) -> Tuple[float, float]:
@@ -962,7 +1015,7 @@ class SumoRoadNetwork(RoadMap):
         #         allowFallback=False,  # makes this call fail if rtree is not installed
         #     )
         candidate_lanes = []
-        for r in self.near_roads(point, radius):
+        for r in self.nearest_roads(point, radius):
             for l in r.lanes:
                 l: SumoRoadNetwork.Lane
                 if (distance := l.get_distance(point, radius)) < math.inf:
