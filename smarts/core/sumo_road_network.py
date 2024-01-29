@@ -51,7 +51,7 @@ from smarts.core.utils.sumo import sumolib  # isort:skip
 def pairwise(iterable):
     """Generates pairs of neighboring elements.
     >>> list(pairwise('ABCDEFG'))
-    [(AB), (BC), (CD), (DE), (EF), (FG)]
+    [('A','B'), ('B','C'), ('C','D'), ('D','E'), ('E','F'), ('F','G')]
     """
     a, b = itertools.tee(iterable)
     next(b, None)
@@ -135,7 +135,7 @@ class SumoRoadNetwork(RoadMap):
         edges: List[sumolib.net.edge.Edge] = self._graph.getEdges()
         if self._rtree_roads is None:
             self._rtree_roads = self._init_rtree(edges)
-        near_roads: List[SumoRoadNetwork.Road] = []
+        near_roads: List[RoadMap.Road] = []
         for i in self._rtree_roads.intersection((x - r, y - r, x + r, y + r)):
             near_roads.append(self.road_by_id(edges[i].getID()))
         return near_roads
@@ -458,12 +458,12 @@ class SumoRoadNetwork(RoadMap):
         @overload
         def get_distance(
             self, point: Point, radius: float, get_offset: bool
-        ) -> Tuple[float, float]:
+        ) -> Tuple[float, Optional[float]]:
             ...
 
         def get_distance(
             self, point: Point, radius: float, get_offset=...
-        ) -> Union[float, Tuple[float, float]]:
+        ) -> Union[float, Tuple[float, Optional[float]]]:
             """Get the distance on the lane from the given point within the given radius.
             Specifying to get the offset returns the offset value.
             """
@@ -969,7 +969,7 @@ class SumoRoadNetwork(RoadMap):
             bline = buffered_shape(line, 0.0)
             return line if bline.is_empty else bline
 
-    def road_by_id(self, road_id: str) -> RoadMap.Road:
+    def road_by_id(self, road_id: str) -> SumoRoadNetwork.Road:
         road = self._roads.get(road_id)
         if road:
             return road
