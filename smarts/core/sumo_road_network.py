@@ -51,7 +51,7 @@ from smarts.core.utils.sumo import sumolib  # isort:skip
 def pairwise(iterable):
     """Generates pairs of neighboring elements.
     >>> list(pairwise('ABCDEFG'))
-    [('A','B'), ('B','C'), ('C','D'), ('D','E'), ('E','F'), ('F','G')]
+    [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E'), ('E', 'F'), ('F', 'G')]
     """
     a, b = itertools.tee(iterable)
     next(b, None)
@@ -429,28 +429,15 @@ class SumoRoadNetwork(RoadMap):
                 self._lane_fragments = list(pairwise(self._sumo_lane.getShape(False)))
                 self._rtree_lane_fragments = self._init_rtree(self._lane_fragments)
 
-        @lru_cache(maxsize=None)
+        @lru_cache(maxsize=128)
         def _segment_offset(self, end_index: int, start_index: int = 0) -> float:
             dist = 0.0
             for index in range(start_index, end_index):
-                dist = np.linalg.norm(
+                dist += np.linalg.norm(
                     np.subtract(
                         self._lane_fragments[index][1], self._lane_fragments[index][0]
                     )
                 )
-            return dist
-
-        @lru_cache(maxsize=None)
-        def _segment_offset_by_point(self, point):
-            self._ensure_rtree()
-            dist = 0.0
-            for f, s in self._lane_fragments:
-                dist += np.linalg.norm(np.subtract(s, f))
-                if s == point:
-                    break
-            else:
-                if len(self._lane_fragments) and point != self._lane_fragments[0][0]:
-                    raise ValueError(f"`{point=}` not found in lane shape!")
             return dist
 
         @overload
@@ -502,7 +489,7 @@ class SumoRoadNetwork(RoadMap):
             if get_offset is not ...:
                 if get_offset is False:
                     return dist, None
-                offset = -1
+                offset = 0.0
                 if found_index != INVALID_INDEX:
                     offset = self._segment_offset(found_index)
                     offset += sumolib.geomhelper.lineOffsetWithMinimumDistanceToPoint(
@@ -747,16 +734,18 @@ class SumoRoadNetwork(RoadMap):
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
             if point not in shape:
-                # return sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
+                # offset = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
                 #     point, shape, perpendicular=False
                 # )
-                _, offset = self.get_distance(
-                    world_point, radius=self._map._default_lane_width, get_offset=True
-                )
+                _, offset = self.get_distance(world_point, radius=8, get_offset=True)
                 return offset
             # SUMO geomhelper.polygonOffset asserts when the point is part of the shape.
             # We get around the assertion with a check if the point is part of the shape.
-            offset = self._segment_offset_by_point(point)
+            offset = 0
+            for i in range(len(shape) - 1):
+                if shape[i] == point:
+                    break
+                offset += sumolib.geomhelper.distance(shape[i], shape[i + 1])
             return offset
 
         def width_at_offset(self, offset: float) -> Tuple[float, float]:
