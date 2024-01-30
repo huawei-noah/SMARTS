@@ -112,6 +112,7 @@ The current list of engine settings are as follows:
      - core
      - core
      - core
+     - core
      - physics
      - ray
      - ray
@@ -125,6 +126,7 @@ The current list of engine settings are as follows:
    * - **Type**
      - string
      - string
+     - string
      - boolean
      - integer
      - integer
@@ -137,9 +139,9 @@ The current list of engine settings are as follows:
      - string
      - string
      - integer
-     - bool
-     - str
-     - int
+     - boolean
+     - string
+     - integer
    * - **Default**
      - ``"<SMARTS>/assets"``
      - ``"sedan"``
