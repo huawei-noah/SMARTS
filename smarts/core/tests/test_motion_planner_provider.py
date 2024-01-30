@@ -26,7 +26,7 @@ import pytest
 
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface, DoneCriteria
 from smarts.core.coordinates import Heading
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 
@@ -48,7 +48,7 @@ def smarts():
 
 @pytest.fixture
 def loop_scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((0, 0, 0.5)), Heading(0)),
         goal=EndlessGoal(),
     )

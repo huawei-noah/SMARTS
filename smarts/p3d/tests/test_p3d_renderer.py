@@ -30,7 +30,7 @@ from panda3d.core import Thread as p3dThread
 import smarts.assets
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.utils.custom_exceptions import RendererException
 
@@ -39,7 +39,7 @@ AGENT_ID = "Agent-007"
 
 @pytest.fixture
 def scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
     )

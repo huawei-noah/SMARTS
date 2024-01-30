@@ -30,7 +30,7 @@ import numpy as np
 
 from smarts.core.agent_interface import AgentInterface
 from smarts.core.observations import Observation, SignalObservation, VehicleObservation
-from smarts.core.plan import Mission
+from smarts.core.plan import NavigationMission
 from smarts.core.road_map import Waypoint
 
 _LIDAR_SHP = 300
@@ -80,7 +80,7 @@ def _format_id(lane_id: str, max_length, type_):
     return lane_name[:max_length]
 
 
-def _format_mission(mission: Mission):
+def _format_mission(mission: NavigationMission):
     if hasattr(mission.goal, "position"):
         goal_pos = np.array(mission.goal.position, dtype=np.float64)
     else:

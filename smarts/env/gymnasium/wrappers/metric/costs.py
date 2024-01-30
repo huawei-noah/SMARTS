@@ -27,7 +27,7 @@ import numpy as np
 
 from smarts.core.coordinates import Heading, Point, RefLinePoint
 from smarts.core.observations import Observation
-from smarts.core.plan import Mission, Plan, PositionalGoal, Start
+from smarts.core.plan import NavigationMission, Plan, PositionalGoal, Start
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.core_math import running_mean
 from smarts.core.vehicle_index import VehicleIndex
@@ -627,7 +627,7 @@ def get_dist(
         RoadMap.Route: Planned route between point_a and point_b.
     """
 
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(
             position=point_a.as_np_array,
             heading=Heading(0),

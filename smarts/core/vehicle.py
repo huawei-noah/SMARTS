@@ -302,7 +302,7 @@ class Vehicle:
 
     @staticmethod
     def agent_vehicle_dims(
-        mission: "plan.Mission", default: Optional[str] = None
+        mission: "plan.NavigationMission", default: Optional[str] = None
     ) -> Dimensions:
         """Get the vehicle dimensions from the mission requirements.
         Args:

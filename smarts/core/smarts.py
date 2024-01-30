@@ -76,7 +76,7 @@ from .provider import (
     ProviderState,
 )
 from .road_map import RoadMap
-from .scenario import Mission, Scenario
+from .scenario import NavigationMission, Scenario
 from .sensor_manager import SensorManager
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
@@ -604,7 +604,7 @@ class SMARTS(ProviderManager):
         self._is_setup = False
 
     def add_agent_with_mission(
-        self, agent_id: str, agent_interface: AgentInterface, mission: Mission
+        self, agent_id: str, agent_interface: AgentInterface, mission: NavigationMission
     ):
         """Add an agent to the simulation. The simulation will attempt to provide a vehicle for
         the agent.
@@ -625,7 +625,7 @@ class SMARTS(ProviderManager):
         vehicle_id: str,
         agent_id: str,
         agent_interface: AgentInterface,
-        mission: Mission,
+        mission: NavigationMission,
     ) -> Vehicle:
         """Add the new specified ego agent and then take over control of the specified vehicle."""
         self._check_valid()
@@ -641,7 +641,7 @@ class SMARTS(ProviderManager):
         self,
         vehicle_id: str,
         agent_id: str,
-        mission: Mission,
+        mission: NavigationMission,
         recreate: bool,
         is_hijacked: bool,
     ) -> Vehicle:

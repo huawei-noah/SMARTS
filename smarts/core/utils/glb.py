@@ -19,16 +19,26 @@
 # THE SOFTWARE.
 
 import math
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Final, List, Tuple, Union
 
 import numpy as np
-import trimesh
 from shapely.geometry import Polygon
-from trimesh.exchange import gltf
 
 from smarts.core.coordinates import BoundingBox
 from smarts.core.utils.geometry import triangulate_polygon
+
+# Suppress trimesh deprecation warning
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message="Please use `coo_matrix` from the `scipy.sparse` namespace, the `scipy.sparse.coo` namespace is deprecated.",
+        category=DeprecationWarning,
+    )
+    import trimesh  # only suppress the warnings caused by trimesh
+    from trimesh.exchange import gltf
+    from trimesh.visual.material import PBRMaterial
 
 OLD_TRIMESH: Final[bool] = tuple(int(d) for d in trimesh.__version__.split(".")) <= (
     3,
@@ -135,9 +145,7 @@ def make_map_glb(
     scene = trimesh.Scene(metadata=metadata)
 
     meshes = _generate_meshes_from_polygons(polygons)
-    material = trimesh.visual.material.PBRMaterial(
-        albedo=[1.0, 0.0, 1.0], metallic=0.0, roughness=1.0
-    )
+    material = PBRMaterial("RoadDefault")
     for mesh in meshes:
         mesh.visual = trimesh.visual.TextureVisuals(material=material)
         road_id = mesh.metadata["road_id"]

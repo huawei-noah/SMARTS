@@ -28,7 +28,7 @@ from .actor import ActorState
 from .controllers import ActionSpaceType
 
 if TYPE_CHECKING:
-    from smarts.core import scenario
+    import smarts.core.scenario
 
 
 class ProviderRecoveryFlags(IntFlag):
@@ -289,7 +289,7 @@ class Provider:
 
     def recover(
         self,
-        scenario,
+        scenario: smarts.core.scenario.Scenario,
         elapsed_sim_time: float,
         error: Optional[Exception] = None,
     ) -> Tuple[ProviderState, bool]:

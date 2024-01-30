@@ -731,7 +731,7 @@ class VehicleIndex:
         action: Optional[ActionSpaceType],
         vehicle_type: str,
         vehicle_class: str,
-        mission: plan.Mission,
+        mission: plan.NavigationMission,
         vehicle_dynamics_filepath: Optional[str],
         tire_filepath: str,
         visual_model_filepath: str,

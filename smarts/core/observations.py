@@ -83,7 +83,7 @@ class EgoVehicleObservation(NamedTuple):
     """Identifier for the lane nearest to this vehicle."""
     lane_index: int
     """Index of the nearest lane on the road nearest to this vehicle. Right most lane has index 0 and index increments to the left."""
-    mission: plan.Mission
+    mission: plan.NavigationMission
     """Vehicle's desired destination."""
     linear_velocity: Tuple[float, float, float]
     """Velocity of vehicle along the global coordinate axes. Units=m/s."""

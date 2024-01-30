@@ -78,7 +78,7 @@ from smarts.core.renderer_base import (
     ShaderStepDependencyBase,
     ShaderStepVariableDependency,
 )
-from smarts.core.scenario import Scenario
+from smarts.core.scenario import Scenario as StaticScenario
 from smarts.core.shader_buffer import BufferID
 from smarts.core.signals import SignalState, signal_state_to_color
 from smarts.core.simulation_frame import SimulationFrame
@@ -809,7 +809,7 @@ class Renderer(RendererBase):
         self._is_setup = True
         return map_np.getBounds()
 
-    def setup(self, scenario: Scenario):
+    def setup(self, scenario: StaticScenario):
         """Initialize this renderer."""
         self._ensure_root()
         self._vehicles_np = self._root_np.attachNewNode("vehicles")

@@ -36,7 +36,7 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.renderer_base import (
     RendererBase,
     RendererNotSetUpWarning,
@@ -92,7 +92,7 @@ def smarts_wo_renderer():
 
 @pytest.fixture
 def scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
     )

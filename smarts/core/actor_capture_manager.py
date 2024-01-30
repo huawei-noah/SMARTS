@@ -26,27 +26,36 @@ from collections import namedtuple
 from dataclasses import replace
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from smarts.core.plan import Plan
+import smarts
+from smarts.core.plan import NavigationMission, Plan
 from smarts.sstudio.sstypes import ConditionRequires
 
 if TYPE_CHECKING:
+    import smarts.core.scenario
     from smarts.core.actor import ActorState
+    from smarts.core.smarts import SMARTS
     from smarts.core.vehicle import Vehicle
 
 
 class ActorCaptureManager:
     """The base for managers that handle transition of control of actors."""
 
-    def step(self, sim):
+    def step(self, sim: SMARTS):
         """Step the manager. Assume modification of existence and control of the simulation actors.
 
         Args:
-            sim (SMARTS): The smarts simulation instance.
+            sim (smarts.core.smarts.SMARTS): The smarts simulation instance.
         """
         raise NotImplementedError()
 
-    def reset(self, scenario, sim):
-        """Reset this manager."""
+    def reset(self, scenario: smarts.core.scenario.Scenario, sim: SMARTS):
+        """Reset this manager.
+
+        :param scenario: The scenario to initialize from.
+        :type scenario: smarts.core.scenario.Scenario
+        :param sim: The simulation this is associated to.
+        :type scenario: smarts.core.smarts.SMARTS
+        """
         raise NotImplementedError()
 
     def teardown(self):
@@ -55,11 +64,8 @@ class ActorCaptureManager:
 
     @classmethod
     def _make_new_vehicle(
-        cls, sim, agent_id, mission, initial_speed, social=False
+        cls, sim: SMARTS, agent_id, mission, initial_speed, social=False
     ) -> Optional[Vehicle]:
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
         if social:
             return cls.__make_new_social_vehicle(sim, agent_id, initial_speed)
         agent_interface = sim.agent_manager.agent_interface_for_agent_id(agent_id)
@@ -95,11 +101,12 @@ class ActorCaptureManager:
 
     @staticmethod
     def _take_existing_vehicle(
-        sim, vehicle_id, agent_id, mission, social=False
+        sim: SMARTS,
+        vehicle_id: str,
+        agent_id: str,
+        mission: NavigationMission,
+        social=False,
     ) -> Optional[Vehicle]:
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
         if social:
             # MTA: TODO implement this section of actor capture.
             warnings.warn(
@@ -118,8 +125,8 @@ class ActorCaptureManager:
     def _gen_all_condition_kwargs(
         cls,
         agent_id: str,
-        mission,
-        sim,
+        mission: NavigationMission,
+        sim: SMARTS,
         actor_state: ActorState,
         condition_requires: ConditionRequires,
     ):
@@ -133,7 +140,7 @@ class ActorCaptureManager:
 
     @staticmethod
     def _gen_mission_condition_kwargs(
-        agent_id: str, mission, condition_requires: ConditionRequires
+        agent_id: str, mission: NavigationMission, condition_requires: ConditionRequires
     ) -> Dict[str, Any]:
         out_kwargs = dict()
 
@@ -150,7 +157,7 @@ class ActorCaptureManager:
 
     @staticmethod
     def _gen_simulation_condition_kwargs(
-        sim, condition_requires: ConditionRequires
+        sim: SMARTS, condition_requires: ConditionRequires
     ) -> Dict[str, Any]:
         out_kwargs = dict()
 

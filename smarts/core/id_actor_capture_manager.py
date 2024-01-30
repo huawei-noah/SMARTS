@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Dict, Set, Tuple
 
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.condition_state import ConditionState
-from smarts.core.plan import Mission
+from smarts.core.plan import NavigationMission
 from smarts.sstudio.sstypes import IdEntryTactic
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ class IdActorCaptureManager(ActorCaptureManager):
 
     def __init__(self) -> None:
         self._log = logging.getLogger(self.__class__.__name__)
-        self._actor_for_agent: Dict[str, Tuple[str, Mission]] = {}
+        self._actor_for_agent: Dict[str, Tuple[str, NavigationMission]] = {}
 
     def step(self, sim: SMARTS):
         if not (
@@ -97,7 +97,7 @@ class IdActorCaptureManager(ActorCaptureManager):
 
     def reset(self, scenario, sim: SMARTS):
         self._actor_for_agent.clear()
-        missions: Dict[str, Mission] = scenario.missions
+        missions: Dict[str, NavigationMission] = scenario.missions
         cancelled_agents = set()
         for agent_id, mission in missions.items():
             if mission is None:

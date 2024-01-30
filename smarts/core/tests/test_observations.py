@@ -44,7 +44,12 @@ from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.observations import DrivableAreaGridMap as ObsDrivableAreaGridMap
 from smarts.core.observations import GridMapMetadata, Observation, TopDownRGB
-from smarts.core.plan import Mission, PositionalGoal, Start, default_entry_tactic
+from smarts.core.plan import (
+    NavigationMission,
+    PositionalGoal,
+    Start,
+    default_entry_tactic,
+)
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalLightState
 from smarts.core.smarts import SMARTS
@@ -264,7 +269,7 @@ def test_observations(env, agent_spec):
 
 @pytest.fixture
 def scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((20.40, 68.40)), Heading(-0.5 * math.pi)),
         goal=PositionalGoal(Point(128.40, 0), 10),
         entry_tactic=default_entry_tactic(1.0),

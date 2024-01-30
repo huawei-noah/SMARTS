@@ -41,7 +41,7 @@ from smarts.core.observations import (
     ViaPoint,
     Vias,
 )
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.road_map import Waypoint
 from smarts.core.signals import SignalLightState
 from smarts.core.vehicle_state import Collision
@@ -77,7 +77,7 @@ def dummy_observation() -> Observation:
             lane_id="east_2",
             lane_index=2,
             lane_position=RefLinePoint(161.23485529, 0.0, 0.0),
-            mission=Mission(
+            mission=NavigationMission(
                 start=Start(
                     position=np.array([163.07485529, 3.2]),
                     heading=Heading(-1.5707963267948966),

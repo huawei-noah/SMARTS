@@ -17,13 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 import logging
 import random
 import time
 import weakref
 from pathlib import Path
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -50,6 +51,9 @@ from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 from smarts.core.utils.sumo import traci, TraciConn  # isort:skip
 import traci.constants as tc  # isort:skip
+
+if TYPE_CHECKING:
+    import smarts.core.scenario
 
 
 class SumoTrafficSimulation(TrafficProvider):
@@ -460,7 +464,10 @@ class SumoTrafficSimulation(TrafficProvider):
         pass
 
     def recover(
-        self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
+        self,
+        scenario: smarts.core.scenario.Scenario,
+        elapsed_sim_time: float,
+        error: Optional[Exception] = None,
     ) -> Tuple[ProviderState, bool]:
         if isinstance(error, self._traci_exceptions):
             self._handle_traci_exception(error)

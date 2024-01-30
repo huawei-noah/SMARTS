@@ -30,7 +30,7 @@ import pytest
 from smarts.core.agent_interface import AgentInterface, DoneCriteria
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
-from smarts.core.plan import EndlessGoal, Goal, Mission, PositionalGoal, Start
+from smarts.core.plan import EndlessGoal, Goal, NavigationMission, PositionalGoal, Start
 from smarts.env.gymnasium.wrappers.metric.metrics import Metrics, MetricsError
 from smarts.zoo.agent_spec import AgentSpec
 
@@ -146,7 +146,7 @@ def test_init(make_env):
 
 def _mock_mission(start: Start, goal: Goal):
     def func(scenario_root, agents_to_be_briefed):
-        return [Mission(start=start, goal=goal)]
+        return [NavigationMission(start=start, goal=goal)]
 
     return func
 

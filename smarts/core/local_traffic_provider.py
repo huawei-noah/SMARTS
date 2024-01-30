@@ -59,7 +59,7 @@ from .vehicle import VEHICLE_CONFIGS, VehicleState
 if TYPE_CHECKING:
     from shapely.geometry import Polygon
 
-    from smarts.core import scenario
+    import smarts.core.scenario
     from smarts.core.controllers import ActionSpaceType
 
 
@@ -212,7 +212,7 @@ class LocalTrafficProvider(TrafficProvider):
     def _provider_state(self) -> ProviderState:
         return ProviderState(actors=self._my_actor_states)
 
-    def setup(self, scenario) -> ProviderState:
+    def setup(self, scenario: smarts.core.scenario.Scenario) -> ProviderState:
         assert self._sim() is not None
         self._scenario = scenario
         self.road_map = scenario.road_map
@@ -371,7 +371,7 @@ class LocalTrafficProvider(TrafficProvider):
     def reserve_traffic_location_for_vehicle(
         self,
         vehicle_id: str,
-        reserved_location: Polygon,
+        reserved_location,
     ):
         self._reserved_areas[vehicle_id] = reserved_location
 

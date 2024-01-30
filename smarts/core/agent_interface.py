@@ -41,7 +41,7 @@ from smarts.core.utils import iteration_tools
 class _DEFAULTS(Enum):
     """The base defaults for the agent interface."""
 
-    SELF = auto()
+    SELF = "_SELF"
     """Self-target the agent."""
 
 
@@ -137,7 +137,7 @@ class CustomRenderBufferDependency(RenderDependencyBase):
     variable_name: str
     """The variable name inside the shader."""
 
-    target_actor: Union[str, Literal[_DEFAULTS.SELF]] = _DEFAULTS.SELF
+    target_actor: str = _DEFAULTS.SELF.value
 
     @property
     def name(self) -> str:
@@ -153,7 +153,7 @@ class CustomRenderCameraDependency(RenderDependencyBase):
     variable_name: str
     """The name of the camera texture variable."""
 
-    target_actor: Union[str, Literal[_DEFAULTS.SELF]] = _DEFAULTS.SELF
+    target_actor: str = _DEFAULTS.SELF.value
     """The target actor to target. Defaults to targeting this vehicle."""
 
     @property
@@ -162,7 +162,7 @@ class CustomRenderCameraDependency(RenderDependencyBase):
 
     def is_self_targetted(self):
         """If the dependency is drawing from one of this agent's cameras."""
-        return self.target_actor is _DEFAULTS.SELF
+        return self.target_actor == _DEFAULTS.SELF.value
 
     def __post_init__(self):
         assert self.camera_dependency_name
