@@ -549,7 +549,9 @@ class CustomRenderSensor(CameraSensor):
         pose = actor_state.get_pose()
         dimensions = actor_state.get_dimensions()
         if not target:
-            camera.update(pose=pose, height=dimensions.height + 10)
+            camera.update(
+                pose=pose, height=(dimensions.height + 10) if dimensions else None
+            )
         else:
             camera.update(observation=target)
 
@@ -987,11 +989,10 @@ class ViaSensor(Sensor):
         )
 
     def __call__(self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap):
-        near_points: List[ViaPoint] = list()
-        hit_points: List[ViaPoint] = list()
         if plan.mission is None:
-            return (near_points, hit_points)
+            return ()
 
+        near_points: List[Tuple[float, ViaPoint]] = []
         vehicle_position = vehicle_state.pose.position[:2]
 
         @lru_cache()
@@ -1062,10 +1063,10 @@ class SignalsSensor(Sensor):
         state: VehicleState,
         plan: Plan,
         provider_state: ProviderState,
-    ) -> List[SignalObservation]:
-        result = []
+    ) -> Tuple[SignalObservation, ...]:
         if not lane:
-            return result
+            return ()
+        result = []
         upcoming_signals = []
         for feat in lane.features:
             if not self._is_signal_type(feat):

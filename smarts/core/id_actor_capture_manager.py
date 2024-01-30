@@ -95,7 +95,7 @@ class IdActorCaptureManager(ActorCaptureManager):
         for actor_id in used_actors:
             del self._actor_for_agent[actor_id]
 
-    def reset(self, scenario: Scenario, sim: SMARTS):
+    def reset(self, scenario, sim: SMARTS):
         self._actor_for_agent.clear()
         missions: Dict[str, Mission] = scenario.missions
         cancelled_agents = set()

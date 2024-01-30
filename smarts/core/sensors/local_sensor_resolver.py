@@ -72,7 +72,6 @@ class LocalSensorResolver(SensorResolver):
                 )
 
         if renderer:
-            renderer.sync(sim_frame)
             renderer.render()
 
         # While observation processes are operating do rendering

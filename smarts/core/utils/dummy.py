@@ -44,6 +44,7 @@ from smarts.core.observations import (
 from smarts.core.plan import EndlessGoal, Mission, Start
 from smarts.core.road_map import Waypoint
 from smarts.core.signals import SignalLightState
+from smarts.core.vehicle_state import Collision
 
 
 def dummy_observation() -> Observation:
@@ -53,7 +54,7 @@ def dummy_observation() -> Observation:
         step_count=1,
         elapsed_sim_time=0.2,
         events=Events(
-            collisions=(2,),
+            collisions=(Collision("v", "2"),),
             off_road=False,
             off_route=False,
             on_shoulder=False,
@@ -320,7 +321,9 @@ def dummy_observation() -> Observation:
             }
         ),
         signals=(
-            SignalObservation(SignalLightState.GO, Point(181.0, 0.0), ("east_1",), None)
+            SignalObservation(
+                SignalLightState.GO, Point(181.0, 0.0), ("east_1",), None
+            ),
         ),
         via_data=Vias(near_via_points=(ViaPoint((181.0, 0.0), 1, "east", 5.0, False),)),
         steps_completed=4,

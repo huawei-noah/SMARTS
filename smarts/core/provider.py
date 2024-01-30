@@ -245,7 +245,7 @@ class Provider:
         """The action spaces of the provider."""
         raise NotImplementedError
 
-    def setup(self, scenario: Scenario) -> ProviderState:
+    def setup(self, scenario) -> ProviderState:
         """Initialize the provider with a scenario."""
         raise NotImplementedError
 
@@ -289,7 +289,7 @@ class Provider:
 
     def recover(
         self,
-        scenario: Scenario,
+        scenario,
         elapsed_sim_time: float,
         error: Optional[Exception] = None,
     ) -> Tuple[ProviderState, bool]:

@@ -369,13 +369,12 @@ class SMARTS(ProviderManager):
             # runs through the render pipeline (for camera-based sensors)
             # MUST perform this after _sensor_manager.step() above, and before observe() below,
             # so that all updates are ready before rendering happens per
-            # with timeit("Syncing the renderer", self._log.debug):
-            #     self.renderer_ref.sync(self.cached_frame)
+            with timeit("Syncing the renderer", self._log.debug):
+                self.renderer_ref.sync(self.cached_frame)
 
             # TODO OBSERVATIONS: this needs to happen between the base and rendered observations
             # with timeit("Running through the render pipeline", self._log.debug):
             #     self.renderer_ref.render()
-            pass
 
         # TODO OBSERVATIONS: Need to split the observation generation
         with timeit("Calculating observations and rewards", self._log.debug):

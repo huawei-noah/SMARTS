@@ -212,7 +212,7 @@ class LocalTrafficProvider(TrafficProvider):
     def _provider_state(self) -> ProviderState:
         return ProviderState(actors=self._my_actor_states)
 
-    def setup(self, scenario: Scenario) -> ProviderState:
+    def setup(self, scenario) -> ProviderState:
         assert self._sim() is not None
         self._scenario = scenario
         self.road_map = scenario.road_map

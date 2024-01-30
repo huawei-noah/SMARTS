@@ -661,8 +661,8 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
 
     def update(
         self,
-        pose: Pose = None,
-        height: float = None,
+        pose: Optional[Pose] = None,
+        height: Optional[float] = None,
         observation: Optional[Observation] = None,
         **kwargs,
     ):
@@ -788,7 +788,7 @@ class Renderer(RendererBase):
         if self._root_np is None:
             self._root_np = self._showbase_instance.setup_sim_root(self._simid)
 
-    def load_road_map(self, map_path: Path):
+    def load_road_map(self, map_path: Union[str, Path]):
         """Load the road map from its path."""
         # Load map
         self._ensure_root()

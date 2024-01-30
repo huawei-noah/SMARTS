@@ -113,6 +113,7 @@ def renderer(request: pytest.FixtureRequest):
 
         renderer = Renderer("n/a", debug_mode=DEBUG_MODE.WARNING)
 
+    assert renderer is not None
     yield renderer
 
     renderer.destroy()
@@ -120,8 +121,7 @@ def renderer(request: pytest.FixtureRequest):
 
 @pytest.fixture
 def observation_buffers() -> Set[BufferID]:
-
-    return [v for v in BufferID]
+    return {v for v in BufferID}
 
 
 def test_optional_renderer(smarts_w_renderer: SMARTS, scenario: Scenario):

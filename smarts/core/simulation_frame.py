@@ -61,7 +61,7 @@ class SimulationFrame:
     vehicle_states: Dict[str, VehicleState]
     vehicle_sensors: Dict[str, Dict[str, Sensor]]
 
-    sensor_states: SensorState
+    sensor_states: Dict[str, SensorState]
     interest_filter: re.Pattern
     # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None

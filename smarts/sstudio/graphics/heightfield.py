@@ -21,24 +21,16 @@
 # THE SOFTWARE.
 from __future__ import annotations
 
-import enum
-import math
 from abc import ABC
-from enum import IntEnum
 from pathlib import Path
 from typing import BinaryIO, Callable, Dict, Optional, Tuple, Union
 
 import numpy as np
 
-from smarts.core.utils.core_math import line_of_sight_test
-
-
-class CoordinateSampleMode(IntEnum):
-    POINT = enum.auto()
-    FOUR_POINTS = enum.auto()
-
 
 class HeightField(ABC):
+    """A utility for working with greyscale values."""
+
     def __init__(
         self,
         data: np.ndarray,
@@ -60,22 +52,27 @@ class HeightField(ABC):
 
     @property
     def data(self):
+        """The raw underlying data."""
         return self._data
 
     @property
     def dtype(self):
+        """The per element data type."""
         return self._data.dtype
 
     @property
     def size(self):
+        """The width and height."""
         return self._size
 
     @property
     def resolution(self):
+        """Resolution of this height field."""
         return self._resolution
 
     @property
     def metadata(self):
+        """Additional metadata."""
         return self._metadata
 
     def _check_match(self, other: HeightField):
@@ -84,15 +81,18 @@ class HeightField(ABC):
         )
 
     def add(self, other: HeightField) -> HeightField:
+        """Add by element."""
         assert self._check_match(other)
         return HeightField(np.add(self._data, other._data), self._size)
 
     def subtract(self, other: HeightField) -> HeightField:
+        """Subtract by element."""
         assert self._check_match(other)
         data = np.subtract(self._data, other._data)
         return HeightField(data, self.size)
 
     def scale_by(self, other: HeightField) -> HeightField:
+        """Scale this height field by another height field."""
         assert self._check_match(other)
         inplace_array = np.multiply(
             other._data,
@@ -104,147 +104,27 @@ class HeightField(ABC):
         return HeightField(inplace_array.astype(self.dtype), self.size)
 
     def multiply(self, other: HeightField) -> HeightField:
+        """Multiply the byte values between these height fields"""
         assert self._check_match(other)
         return HeightField(np.multiply(self._data, other._data), self.size)
 
     def max(self, other: HeightField) -> HeightField:
+        """Get the maximum value of overlapping height fields."""
         assert self._check_match(other)
         return HeightField(np.max([self._data, other._data], axis=0), self.size)
 
     def inverted(self) -> HeightField:
+        """Invert this height field assuming 8 bit."""
         data = np.invert(self._data)
         return HeightField(data, self._size, self._metadata)
-
-    def convert_to_data_coordinate(self, coordinate):
-        return np.array(
-            (
-                (coordinate[0] * self._inverse_size[0] + 0.5)
-                * (self._resolution[0] - 1),
-                (coordinate[1] * self._inverse_size[1] + 0.5)
-                * (self._resolution[1] - 1),
-            ),
-            dtype=np.float64,
-        )
-
-    def _direct_coordinate_sample(
-        self, coordinate: Union[Tuple[float, float], np.ndarray]
-    ) -> float:
-        # average the nearest 3 pixel coordinates
-        u, v = coordinate
-        return self._data[int(v)][int(u)]
-
-    def _direct_4_point_coordinate_sample(self, coordinate) -> float:
-        u1 = int(coordinate[0])
-        v1 = int(coordinate[1])
-
-        ur = coordinate[0] - u1
-        vr = coordinate[1] - v1
-
-        u2 = min(u1 + 1, int(self._resolution[0] - 1))
-        v2 = min(v1 + 1, int(self._resolution[1] - 1))
-
-        bottom_left = self._data[v1][u1]
-        blw = (1 - ur) * (1 - vr)
-        bottom_right = self._data[v1][u2]
-        brw = (ur) * (1 - vr)
-        top_left = self._data[v2][u1]
-        tlw = (1 - ur) * (vr)
-        top_right = self._data[v2][u2]
-        trw = (ur) * (vr)
-
-        return bottom_left * blw + bottom_right * brw + top_left * tlw + top_right * trw
-
-    def _get_sample_averaging_function(
-        self, coordinate_sample_mode: CoordinateSampleMode
-    ) -> Callable[[Union[Tuple[float, float], np.ndarray]], float]:
-        if coordinate_sample_mode is CoordinateSampleMode.POINT:
-            return self._direct_coordinate_sample
-        if coordinate_sample_mode is CoordinateSampleMode.FOUR_POINTS:
-            return self._direct_4_point_coordinate_sample
-
-        return self._direct_4_point_coordinate_sample
-
-    def _data_sample_line(
-        self,
-        change_normalized: np.ndarray,
-        resolution: float,
-        magnitude: float,
-        sample_function: Callable,
-        viewer_coordinate: Union[Tuple[float, float], np.ndarray],
-        factor: float,
-    ):
-        """Generates samples on the line between `viewer_coordinate`(excluded) and the end point `viewer_coordinate*magnitude*change_normalized`(excluded)"""
-        dist = int(magnitude * np.reciprocal(resolution))
-        for i in range(1, dist - 1):
-            intermediary_coordinate = change_normalized * i + viewer_coordinate
-            yield sample_function(intermediary_coordinate), i * factor
-
-    def data_line_of_sight(
-        self,
-        data_viewer_coordinate: Union[Tuple[float, float], np.ndarray],
-        data_target_coordinate: Union[Tuple[float, float], np.ndarray],
-        altitude_mod: float,
-        resolution: float = 1,
-        coordinate_sample_mode=CoordinateSampleMode.POINT,
-    ):
-        # assert np.all(viewer_coordinate < self._resolution / 2) and np.all(
-        #     viewer_coordinate > self._resolution / -2
-        # ), f"{viewer_coordinate=} is not within bounds."
-        # assert np.all(target_coordinate < self._resolution / 2) and np.all(
-        #     target_coordinate > self._resolution / -2
-        # ), f"{target_coordinate=} is not within bounds."
-
-        sample_function = self._get_sample_averaging_function(coordinate_sample_mode)
-
-        viewer_height = sample_function(data_viewer_coordinate) + altitude_mod
-        target_height = sample_function(data_target_coordinate)
-
-        change = np.subtract(data_target_coordinate, data_viewer_coordinate)
-        magnitude: float = np.linalg.norm(change)
-        if magnitude == 0:
-            return True
-        factor = resolution / magnitude
-
-        uv_slope_normalized = np.multiply(change, factor)
-        # MTA TODO: reverse iteration
-        # Cull opposite facing surfaces (on target surface) to short circuit ray marching
-        return line_of_sight_test(
-            viewer_height,
-            target_height,
-            magnitude,
-            self._data_sample_line(
-                uv_slope_normalized,
-                resolution,
-                magnitude,
-                sample_function,
-                data_viewer_coordinate,
-                factor,
-            ),
-        )
-
-    def line_of_sight(
-        self,
-        viewer_coordinate: Tuple[float, float],
-        target_coordinate: Tuple[float, float],
-        altitude_mod: float,
-        resolution: float = 1,
-        coordinate_sample_mode=CoordinateSampleMode.POINT,
-    ):
-        viewer_coordinate = self.convert_to_data_coordinate(viewer_coordinate)
-        target_coordinate = self.convert_to_data_coordinate(target_coordinate)
-
-        return self.data_line_of_sight(
-            viewer_coordinate,
-            target_coordinate,
-            altitude_mod,
-            resolution,
-            coordinate_sample_mode,
-        )
 
     def apply_kernel(
         self, kernel: np.ndarray, min_val=-np.inf, max_val=np.inf, pad_mode="edge"
     ):
-        # kernel can be asymmetric but still needs to be odd
+        """Apply a kernel to the whole height field.
+
+        The kernel can be asymmetric but still needs each dimension to be an odd value.
+        """
         assert len(kernel.shape) == 2 and np.all(
             [k % 2 for k in kernel.shape]
         ), "Kernel shape must be 2D and shape dimension values must be odd"
@@ -274,6 +154,7 @@ class HeightField(ABC):
         min_val=-np.inf,
         max_val=np.inf,
     ):
+        """Apply a function to each element."""
         output = np.empty_like(self.data)
         for i in range(self.data.shape[0]):
             for j in range(self.data.shape[1]):
@@ -282,6 +163,7 @@ class HeightField(ABC):
         return HeightField(output, self.size)
 
     def write_image(self, file: Union[str, Path, BinaryIO]):
+        """Write this out to a greyscale image."""
         from PIL import Image
 
         a = self.data.astype(np.uint8)
@@ -290,6 +172,7 @@ class HeightField(ABC):
 
     @classmethod
     def load_image(cls, file: Union[str, Path]):
+        """Load from any image."""
         from PIL import Image
 
         with Image.open(file) as im:
@@ -299,5 +182,6 @@ class HeightField(ABC):
 
     @classmethod
     def from_rgb(cls, data: np.ndarray):
+        """Load from an rgb array."""
         d = np.min(data, axis=2)
         return HeightField(d, size=(data.shape[1], data.shape[0]))

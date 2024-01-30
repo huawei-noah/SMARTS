@@ -680,34 +680,6 @@ def slope(horizontal, vertical, default=math.inf):
     return safe_division(vertical, horizontal, default=default)
 
 
-def line_of_sight_test(
-    viewer_altitude: float,
-    target_altitude: float,
-    horizontal_dist: float,
-    intermediary_altitude_iterator: Generator[Tuple[float, float], None, None],
-):
-    """Check if line of sight is broken along a 1 dimensional cast.
-
-    Args:
-        viewer_altitude (float): The initial altitude to cast from.
-        target_altitude (float): The altitude of the target
-        horizontal_dist (float): The distance to check towards.
-        intermediary_altitude_iterator (Generator[Tuple[float, float], None, None]): An iterator that generates each new altitude to compare.
-
-    Returns:
-        bool: If the line of sight is unbroken.
-    """
-    slope_to_target = slope(horizontal_dist, target_altitude - viewer_altitude)
-    for (
-        intermediary_altitude,
-        intermediary_horizontal_dist,
-    ) in intermediary_altitude_iterator:
-        s = slope(intermediary_horizontal_dist, intermediary_altitude - viewer_altitude)
-        if slope_to_target < s:
-            return False
-    return True
-
-
 def is_power_of_2(value: int) -> bool:
     """Test if the given value is a power of 2 greater than 2**0. (e.g. 2**4)"""
     return (value & (value - 1) == 0) and value != 0

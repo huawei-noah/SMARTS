@@ -24,7 +24,7 @@ import os
 import numpy as np
 import pytest
 
-from smarts.sstudio.graphics.heightfield import CoordinateSampleMode, HeightField
+from smarts.sstudio.graphics.heightfield import HeightField
 
 
 @pytest.fixture
@@ -81,62 +81,8 @@ def test_heightfield_kernel(map_data, kernel):
     assert isinstance(field, HeightField)
 
 
-def test_heightfield_recoordinate(map_image):
-    hf = HeightField(map_image, (100, 100))
-
-    assert np.all(hf.resolution == (3, 3))
-    assert np.all(np.equal(hf.convert_to_data_coordinate((-50, -50)), (0, 0)))
-    assert np.all(np.equal(hf.convert_to_data_coordinate((0, 0)), (1, 1)))
-    assert np.all(np.equal(hf.convert_to_data_coordinate((50, 50)), (2, 2)))
-
-
 def test_heightfield_inverted(map_image):
     hf = HeightField(data=map_image, size=(3, 3))
     ihf: HeightField = hf.inverted()
 
     assert np.all(hf.data == ihf.inverted().data)
-
-
-def test_heightfield_line_of_sight(map_image):
-    hf = HeightField(map_image, (100, 100))
-
-    # 2, 1, 2
-    # 0, 1, 0
-    # 0, 1, 0
-    assert np.all(np.array(hf.convert_to_data_coordinate((-50, 49))).round() == (0, 2))
-    # With point sampling the mapping on the coordinates like ledges
-    #  viewing flat from the surface downward might be blocked
-    # _ _ _
-    #    |
-    #    _ _ _
-    assert hf.data_line_of_sight(
-        data_viewer_coordinate=np.array((0, 2)),
-        data_target_coordinate=np.array((0, 0)),
-        altitude_mod=0,
-        resolution=1,
-        coordinate_sample_mode=CoordinateSampleMode.POINT,
-    ), "Line of sight should be broken from strict coordinate mapping"
-    # With 4 point sampling the height is averaged to be smooth
-    # \   _
-    #  \_/ \
-    assert hf.line_of_sight(
-        viewer_coordinate=(-50, 50),
-        target_coordinate=(-50, 0),
-        altitude_mod=0,
-        resolution=1,
-        coordinate_sample_mode=CoordinateSampleMode.FOUR_POINTS,
-    ), "Line of sight should be unbroken"
-    assert not hf.line_of_sight(
-        viewer_coordinate=(-50, -50),
-        target_coordinate=(50, -50),
-        altitude_mod=0,
-        resolution=0.2,
-        coordinate_sample_mode=CoordinateSampleMode.FOUR_POINTS,
-    ), "Line of sight should be broken"
-    assert hf.line_of_sight(
-        viewer_coordinate=(-50, 50),
-        target_coordinate=(50, 50),
-        altitude_mod=0,
-        resolution=0.2,
-        coordinate_sample_mode=CoordinateSampleMode.FOUR_POINTS,
-    ), "Line of sight should be unbroken"

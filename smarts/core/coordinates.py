@@ -354,7 +354,7 @@ class Pose:
         return Point.from_np_array(self.position)
 
     @cached_property
-    def position_tuple(self) -> Point:
+    def position_tuple(self) -> Tuple[Optional[float], ...]:
         """The position value of this pose as a tuple."""
         return tuple(self.point)
 
