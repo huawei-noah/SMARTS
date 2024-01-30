@@ -30,7 +30,10 @@ import pytest
 from helpers.scenario import temp_scenario
 
 from smarts.core import glsl
-from smarts.core.agent_interface import CustomRenderCameraDependency
+from smarts.core.agent_interface import (
+    CustomRenderCameraDependency,
+    CustomRenderVariableDependency,
+)
 from smarts.core.coordinates import Heading, Pose, RefLinePoint
 from smarts.core.observations import CustomRenderData
 from smarts.core.plan import Plan
@@ -275,10 +278,16 @@ def test_custom_render_sensor():
             resolution=1,
             fragment_shader_path=frag_shader,
             renderer=renderer,
-            render_dependencies=(),
+            render_dependencies=(
+                CustomRenderVariableDependency(
+                    value=1.0,
+                    variable_name="scale",
+                ),
+            ),
             ogm_sensor=None,
             top_down_rgb_sensor=None,
-            dagm_sensor=None,
+            drivable_area_grid_map_sensor=None,
+            occlusion_map_sensor=None,
         )
         sensor = sensor_gen(name="simplex")
         sensor2 = sensor_gen(
@@ -286,6 +295,10 @@ def test_custom_render_sensor():
             render_dependencies=(
                 CustomRenderCameraDependency(
                     camera_dependency_name=sensor.name, variable_name="iChannel0"
+                ),
+                CustomRenderVariableDependency(
+                    value=10.0,
+                    variable_name="scale",
                 ),
             ),
         )
