@@ -62,8 +62,6 @@ class OGM:
     """The width and height are in "pixels" and the resolution is the "size of a
     pixel". E.g. if you wanted 100m x 100m `OGM` but a 64x64 image representation
     you would do `OGM(width=64, height=64, resolution=100/64)`
-
-    "obfuscation" generates an additional binary render that indicates what is in view.
     """
 
     width: int = 256
@@ -86,8 +84,8 @@ class RGB:
 @dataclass
 class OcclusionMap:
     """The width and height are in "pixels" and the resolution is the "size of a
-    pixel". E.g. if you wanted 100m x 100m `ObfuscationMap` but a 64x64 image representation
-    you would do `ObfuscationMap(width=64, height=64, resolution=100/64)`
+    pixel". E.g. if you wanted 100m x 100m `OcclusionMap` but a 64x64 image representation
+    you would do `OcclusionMap(width=64, height=64, resolution=100/64)`
     """
 
     width: int = 256
@@ -177,8 +175,8 @@ class CustomRender:
     """Utility render option that allows for a custom render output.
 
     The width and height are in "pixels" and the resolution is the "size of a
-    pixel". E.g. if you wanted 100m x 100m `ObfuscationMap` but a 64x64 image representation
-    you would do `ObfuscationMap(width=64, height=64, resolution=100/64)`
+    pixel". E.g. if you wanted 100m x 100m map but a 64x64 image representation
+    you would do `CustomRender(width=64, height=64, resolution=100/64)`
     """
 
     name: str

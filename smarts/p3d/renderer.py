@@ -82,6 +82,7 @@ from smarts.core.scenario import Scenario
 from smarts.core.shader_buffer import BufferID
 from smarts.core.signals import SignalState, signal_state_to_color
 from smarts.core.simulation_frame import SimulationFrame
+from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle_state import VehicleState
 
 if TYPE_CHECKING:
@@ -132,6 +133,7 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "audio-library-name null")
             loadPrcFileData("", "gl-version 3 3")
             loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
+            loadPrcFileData("", f"default-directnotify-level {cls._debug_mode.name.lower()}")
             loadPrcFileData("", "print-pipe-types false")
             # loadPrcFileData("", "basic-shaders-only #t")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
@@ -168,6 +170,7 @@ class _ShowBaseInstance(ShowBase):
         """Set rendering debug information verbosity."""
         cls._debug_mode = debug_mode
         loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
+        loadPrcFileData("", f"default-directnotify-level {cls._debug_mode.name.lower()}")
 
     @classmethod
     def set_rendering_backend(
@@ -357,6 +360,7 @@ class _BufferAccessor:
         self._memos = {}
 
     def should_get_data(self, buffer_id: BufferID, observation: Observation):
+        """If the buffer can and should get data from the observation."""
         if (
             buffer_id in self._acceleration_set
             and observation.ego_vehicle_state.linear_acceleration is None
@@ -669,10 +673,6 @@ class P3DShaderStep(_P3DCameraMixin, ShaderStep):
             )
             inputs["iHeading"] = pose.heading
             inputs["iTranslation"] = (pose.point.x, pose.point.y)
-            # self.fullscreen_quad_node.setShaderInput("iHeading", pose.heading)
-            # self.fullscreen_quad_node.setShaderInput(
-            #     "iTranslation", n1=pose.point.x, n2=pose.point.y
-            # )
         if height is not None:
             inputs["iElevation"] = height
         if len(self.buffer_dependencies) == 0:
@@ -790,7 +790,8 @@ class Renderer(RendererBase):
                 self._road_map_np,
                 map_path,
             )
-        map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
+        with suppress_output():
+            map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
         node_path = self._root_np.attachNewNode("road_map")
         map_np.reparent_to(node_path)
         node_path.hide(RenderMasks.OCCUPANCY_HIDE)
@@ -810,7 +811,6 @@ class Renderer(RendererBase):
 
         # Load map
         self.load_road_map(map_path)
-
         # Road lines (solid, yellow)
         road_lines_path = map_dir / "road_lines.glb"
         if road_lines_path.exists():
@@ -819,7 +819,6 @@ class Renderer(RendererBase):
             solid_lines_np.setColor(SceneColors.EdgeDivider.value)
             solid_lines_np.hide(RenderMasks.OCCUPANCY_HIDE)
             solid_lines_np.setRenderModeThickness(2)
-
         # Lane lines (dashed, white)
         lane_lines_path = map_dir / "lane_lines.glb"
         if lane_lines_path.exists():
@@ -957,7 +956,7 @@ class Renderer(RendererBase):
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
-        if color in (Colors.Red, SceneColors.Agent):
+        if color in (SceneColors.Agent,):
             node_path.hide(RenderMasks.OCCUPANCY_HIDE)
         self._vehicle_nodes[vid] = node_path
         return True

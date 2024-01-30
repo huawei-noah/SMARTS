@@ -656,7 +656,7 @@ class OcclusionAgentWrapper(AugmentationWrapper):
     def act(self, obs: Optional[Observation], **configs):
         if obs is None:
             return None
-        assert obs.obfuscation_grid_map is not None
+        assert obs.occlusion_map is not None
         assert obs.drivable_area_grid_map is not None
 
         fig, ax = plt.subplots(subplot_kw=dict(aspect="equal"))
@@ -685,9 +685,9 @@ class OcclusionAgentWrapper(AugmentationWrapper):
                 points=path,
                 center_position=position,
                 heading=heading,
-                width=obs.obfuscation_grid_map.metadata.width,
-                height=obs.obfuscation_grid_map.metadata.height,
-                resolution=obs.obfuscation_grid_map.metadata.resolution,
+                width=obs.occlusion_map.metadata.width,
+                height=obs.occlusion_map.metadata.height,
+                resolution=obs.occlusion_map.metadata.resolution,
             )
             for point in wps_valid:
                 img_x, img_y = point[0], point[1]

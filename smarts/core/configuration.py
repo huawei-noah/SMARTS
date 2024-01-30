@@ -76,6 +76,9 @@ _config_defaults: Final = {
     ("sumo", "server_host"): "localhost",
     ("sumo", "serve_mode"): "remote",  # local|remote
     ("traffic", "traci_retries"): 5,
+    ("visdom", "enabled"): False,
+    ("visdom", "hostname"): "http://localhost",
+    ("visdom", "port"): 8097,
 }
 
 

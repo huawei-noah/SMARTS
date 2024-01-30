@@ -285,7 +285,7 @@ class Sensors:
                 top_down_rgb=get_camera_sensor_result(
                     vehicle_sensors, "rgb_sensor", renderer
                 ),
-                obfuscation_grid_map=get_camera_sensor_result(
+                occlusion_map=get_camera_sensor_result(
                     vehicle_sensors, "occlusion_map_sensor", renderer
                 ),
                 custom_renders=tuple(

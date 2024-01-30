@@ -101,6 +101,9 @@ The current list of engine settings are as follows:
      - ``SMARTS_SUMO_SERVER_HOST``
      - ``SMARTS_SUMO_SERVE_MODE``
      - ``SMARTS_SUMO_SERVER_PORT``
+     - ``SMARTS_VISDOM_ENABLED``
+     - ``SMARTS_VISDOM_HOSTNAME``
+     - ``SMARTS_VISDOM_PORT``
    * - **Section**
      - assets
      - assets
@@ -116,6 +119,9 @@ The current list of engine settings are as follows:
      - sumo
      - sumo
      - sumo
+     - visdom
+     - visdom
+     - visdom
    * - **Type**
      - string
      - string
@@ -131,6 +137,9 @@ The current list of engine settings are as follows:
      - string
      - string
      - integer
+     - bool
+     - str
+     - int
    * - **Default**
      - ``"<SMARTS>/assets"``
      - ``"sedan"``
@@ -147,6 +156,9 @@ The current list of engine settings are as follows:
      - 8619
      - ``"localhost"``
      - ``"local"``
+     - False
+     - ``"http://localhost"``
+     - 8097
    * - **Values**
      - Any existing path (not recommended to change)
      - Any defined vehicle name.
@@ -160,8 +172,11 @@ The current list of engine settings are as follows:
      - 0 or greater | None
      - 0 or greater | None
      - True|False
-     - [``"localhost"``  ``"x.x.x.x"``  ``https://...``]
+     - [``"localhost"``  ``"x.x.x.x"``  ``"https://..."``]
      - [``"local"``  ``"remote"``]
+     - As dictated by OS.
+     - True|False
+     - [``localhost`` ``"x.x.x.x"`` ``"http://..."``]
      - As dictated by OS.
    * - **Description**
      - The path to SMARTS package assets.
@@ -179,5 +194,7 @@ The current list of engine settings are as follows:
      - If ``SMARTS_SUMO_SERVE_MODE=remote``, the host name of the remote ``TraCI`` management server host.
      - If ``SMARTS_SUMO_SERVE_MODE=remote``, the port that the ``TraCI`` management server communicates on.
      - The ``TraCI`` server spin-up mode to use. ``"local"`` generates the ``TraCI`` server from the local process. ``"remote"`` uses an intermediary server to generate ``TraCI`` servers and prevent race conditions between process connections.
-
+     - If to enable `visdom <https://github.com/fossasia/visdom>`_ visualization.
+     - The host name for the ``visdom`` instance.
+     - The port of the ``visdom`` instance.
 

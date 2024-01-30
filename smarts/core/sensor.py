@@ -48,8 +48,8 @@ from smarts.core.observations import (
     CustomRenderData,
     DrivableAreaGridMap,
     GridMapMetadata,
-    ObfuscationGridMap,
     Observation,
+    OcclusionRender,
     OccupancyGridMap,
     RoadWaypoints,
     SignalObservation,
@@ -417,7 +417,7 @@ class OcclusionMapSensor(CameraSensor):
             camera = renderer.camera_for_id(effect_name)
             camera.teardown()
 
-    def __call__(self, renderer: RendererBase) -> ObfuscationGridMap:
+    def __call__(self, renderer: RendererBase) -> OcclusionRender:
         effect_camera = renderer.camera_for_id(self._effect_cameras[-1])
 
         ram_image = effect_camera.wait_for_ram_image("RGB")
@@ -433,7 +433,7 @@ class OcclusionMapSensor(CameraSensor):
             camera_position=(math.inf, math.inf, math.inf),
             camera_heading=math.inf,
         )
-        return ObfuscationGridMap(data=grid, metadata=metadata)
+        return OcclusionRender(data=grid, metadata=metadata)
 
 
 class CustomRenderSensor(CameraSensor):

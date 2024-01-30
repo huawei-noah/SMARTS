@@ -428,7 +428,7 @@ class Vehicle:
         if agent_interface.occlusion_map:
             if not vehicle.subscribed_to("ogm_sensor"):
                 warnings.warn(
-                    "Occupancy grid map sensor must be attached to use obfuscation sensor.",
+                    "Occupancy grid map sensor must be attached to use occlusion sensor.",
                     category=UserWarning,
                 )
             else:

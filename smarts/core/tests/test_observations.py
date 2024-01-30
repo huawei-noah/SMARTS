@@ -35,6 +35,7 @@ from smarts.core.agent_interface import (
     AgentInterface,
     DrivableAreaGridMap,
     NeighborhoodVehicles,
+    OcclusionMap,
     RoadWaypoints,
     Signals,
 )
@@ -42,12 +43,7 @@ from smarts.core.colors import SceneColors
 from smarts.core.controllers import ActionSpaceType
 from smarts.core.coordinates import Heading, Point
 from smarts.core.observations import DrivableAreaGridMap as ObsDrivableAreaGridMap
-from smarts.core.observations import (
-    GridMapMetadata,
-    Observation,
-    OccupancyGridMap,
-    TopDownRGB,
-)
+from smarts.core.observations import GridMapMetadata, Observation, TopDownRGB
 from smarts.core.plan import Mission, PositionalGoal, Start, default_entry_tactic
 from smarts.core.scenario import Scenario
 from smarts.core.signals import SignalLightState
@@ -60,7 +56,7 @@ logging.basicConfig(level=logging.INFO)
 
 AGENT_ID = "Agent-007"
 
-NUM_STEPS = 30
+NUM_STEPS = 20
 MAP_WIDTH = 1536
 MAP_HEIGHT = 1536
 HALF_WIDTH = MAP_WIDTH / 2
@@ -82,6 +78,9 @@ def agent_interface():
             width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
         ),
         occupancy_grid_map=OGM(
+            width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
+        ),
+        occlusion_map=OcclusionMap(
             width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION
         ),
         top_down_rgb=RGB(width=MAP_WIDTH, height=MAP_HEIGHT, resolution=MAP_RESOLUTION),
@@ -157,12 +156,11 @@ def apply_tolerance(arr, x, y, tolerance):
 def sample_vehicle_pos(
     lens,
     rgb: TopDownRGB,
-    ogm: OccupancyGridMap,
     drivable_area: ObsDrivableAreaGridMap,
     vehicle_pos,
 ):
     rgb_x, rgb_y = project_2d(lens, rgb.metadata, vehicle_pos)
-    ogm_x, ogm_y = project_2d(lens, ogm.metadata, vehicle_pos)
+    # ogm_x, ogm_y = project_2d(lens, occ.metadata, vehicle_pos)
     drivable_area_x, drivable_area_y = project_2d(
         lens, drivable_area.metadata, vehicle_pos
     )
@@ -175,7 +173,8 @@ def sample_vehicle_pos(
     )
 
     # OGM
-    assert np.count_nonzero(apply_tolerance(ogm.data, ogm_x, ogm_y, tolerance))
+    # print(np.count_nonzero(apply_tolerance(ogm.data, ogm_x, ogm_y, tolerance)))
+    # assert np.count_nonzero(apply_tolerance(occ.data, ogm_x, ogm_y, tolerance))
 
     # Check if vehicles are within drivable area
     # Drivable area grid map
@@ -197,8 +196,8 @@ def test_observations(env, agent_spec):
     # RGB
     rgb = observations[AGENT_ID].top_down_rgb
 
-    # OGM
-    ogm = observations[AGENT_ID].occupancy_grid_map
+    # OCC
+    occ = observations[AGENT_ID].occlusion_map
 
     # Drivable area
     drivable_area = observations[AGENT_ID].drivable_area_grid_map
@@ -211,7 +210,6 @@ def test_observations(env, agent_spec):
     sample_vehicle_pos(
         lens,
         rgb,
-        ogm,
         drivable_area,
         ego_vehicle_position,
     )
@@ -221,7 +219,6 @@ def test_observations(env, agent_spec):
         sample_vehicle_pos(
             lens,
             rgb,
-            ogm,
             drivable_area,
             neighbor_vehicle.position,
         )

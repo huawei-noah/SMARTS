@@ -135,11 +135,11 @@ def make_map_glb(
     scene = trimesh.Scene(metadata=metadata)
 
     meshes = _generate_meshes_from_polygons(polygons)
+    material = trimesh.visual.material.PBRMaterial(
+        albedo=[1.0, 0.0, 1.0], metallic=0.0, roughness=1.0
+    )
     for mesh in meshes:
-        mesh.visual = trimesh.visual.TextureVisuals(
-            material=trimesh.visual.material.PBRMaterial()
-        )
-
+        mesh.visual = trimesh.visual.TextureVisuals(material=material)
         road_id = mesh.metadata["road_id"]
         lane_id = mesh.metadata.get("lane_id")
         name = str(road_id)
@@ -148,13 +148,14 @@ def make_map_glb(
         if OLD_TRIMESH:
             scene.add_geometry(mesh, name, extras=mesh.metadata)
         else:
-            scene.add_geometry(mesh, name, metadata=mesh.metadata)
+            scene.add_geometry(mesh, name, geom_name=name, metadata=mesh.metadata)
     return GLBData(gltf.export_glb(scene, include_normals=True))
 
 
 def make_road_line_glb(lines: List[List[Tuple[float, float]]]) -> GLBData:
     """Create a GLB file from a list of road/lane lines."""
     scene = trimesh.Scene()
+    material = trimesh.visual.material.PBRMaterial()
     for line_pts in lines:
         vertices = [(*pt, 0.1) for pt in line_pts]
         point_cloud = trimesh.PointCloud(vertices=vertices)

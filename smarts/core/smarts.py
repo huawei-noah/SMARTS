@@ -141,7 +141,6 @@ class SMARTS(ProviderManager):
     ):
         conf = config()
         self._log = logging.getLogger(self.__class__.__name__)
-        # self._log.setLevel(level=logging.DEBUG)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._is_destroyed = False
@@ -156,12 +155,12 @@ class SMARTS(ProviderManager):
             visdom = None
 
         self._visdom: Any = None
-        if conf("visdom", "enabled", default=False, cast=bool) or visdom is True:
+        if conf("visdom", "enabled", cast=bool) or visdom is True:
             from smarts.visdom.visdom_client import VisdomClient
 
             self._visdom = VisdomClient(
-                hostname=conf("visdom", "hostname", default="http://localhost"),
-                port=conf("visdom", "port", default=8097),
+                hostname=conf("visdom", "hostname"),
+                port=conf("visdom", "port"),
             )
         elif not isinstance(self._visdom, bool):
             self._visdom = visdom
@@ -1055,7 +1054,7 @@ class SMARTS(ProviderManager):
                 from smarts.core.renderer_base import DEBUG_MODE
                 from smarts.p3d.renderer import Renderer
 
-                self._renderer = Renderer(self._sim_id, debug_mode=DEBUG_MODE.WARNING)
+                self._renderer = Renderer(self._sim_id, debug_mode=DEBUG_MODE.ERROR)
             except ImportError as exc:
                 raise RendererException.required_to("use camera observations") from exc
             except Exception as exc:

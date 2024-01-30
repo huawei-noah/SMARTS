@@ -153,8 +153,8 @@ class OccupancyGridMap(NamedTuple):
         return self.metadata.__hash__()
 
 
-class ObfuscationGridMap(NamedTuple):
-    """Obfuscation map."""
+class OcclusionRender(NamedTuple):
+    """Occlusion map."""
 
     metadata: GridMapMetadata
     """Map metadata."""
@@ -272,7 +272,7 @@ class Observation(NamedTuple):
     """RGB camera observation."""
     signals: Optional[Tuple[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this time-step."""
-    obfuscation_grid_map: Optional[ObfuscationGridMap] = None
+    occlusion_map: Optional[OcclusionRender] = None
     """Observable area map."""
     custom_renders: Tuple[CustomRenderData, ...] = tuple()
     """Custom renders."""
@@ -294,7 +294,7 @@ class Observation(NamedTuple):
                 self.occupancy_grid_map,
                 self.top_down_rgb,
                 self.signals,
-                self.obfuscation_grid_map,
+                self.occlusion_map,
                 self.custom_renders,
             )
         )
