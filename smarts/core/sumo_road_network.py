@@ -132,7 +132,9 @@ class SumoRoadNetwork(RoadMap):
         x = point[0]
         y = point[1]
         r = radius
-        edges: List[sumolib.net.edge.Edge] = self._graph.getEdges()
+        edges: List[sumolib.net.edge.Edge] = sorted(
+            self._graph.getEdges(), key=lambda e: e.getID()
+        )
         if self._rtree_roads is None:
             self._rtree_roads = self._init_rtree(edges)
         near_roads: List[RoadMap.Road] = []
