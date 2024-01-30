@@ -140,7 +140,9 @@ class ActorCaptureManager:
 
     @staticmethod
     def _gen_mission_condition_kwargs(
-        agent_id: str, mission: Optional[NavigationMission], condition_requires: ConditionRequires
+        agent_id: str,
+        mission: Optional[NavigationMission],
+        condition_requires: ConditionRequires,
     ) -> Dict[str, Any]:
         out_kwargs = dict()
 

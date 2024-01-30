@@ -71,5 +71,5 @@ def test_we_reach_target_pose_at_given_time(smarts, loop_scenario):
         observations, _, dones, _ = smarts.step(actions)
 
     ego_state = observations[AGENT_ID].ego_vehicle_state
-    assert np.linalg.norm(ego_state.position[:2] - np.array(target_position)) < 1e-16
+    assert np.linalg.norm(np.subtract(ego_state.position[:2], target_position)) < 1e-16
     assert np.isclose(ego_state.heading, target_heading)

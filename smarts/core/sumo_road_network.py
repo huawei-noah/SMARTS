@@ -343,7 +343,7 @@ class SumoRoadNetwork(RoadMap):
             length = 0
             shape = self._sumo_lane.getShape()
             for p1, p2 in zip(shape, shape[1:]):
-                length += np.linalg.norm(np.array(p2) - np.array(p1))
+                length += np.linalg.norm(np.subtract(p2, p1))
             return length
 
         @cached_property
@@ -584,7 +584,7 @@ class SumoRoadNetwork(RoadMap):
                 )
                 dx = dv * (x2 - x)
                 dy = dv * (y2 - y)
-                dd = lane_point.t / np.linalg.norm((dx, dy))
+                dd = (lane_point.t or 0) / np.linalg.norm((dx, dy))
                 x -= dy * dd
                 y += dx * dd
             return Point(x=x, y=y)
@@ -1024,7 +1024,7 @@ class SumoRoadNetwork(RoadMap):
 
                     def _angle_between(pose, wp):
                         heading_vec = pose.heading.direction_vector()
-                        wp_vec = wp.pos - pose.position[:2]
+                        wp_vec = np.subtract(wp.pos, pose.position[:2])
                         angle = np.arccos(
                             np.dot(heading_vec, wp_vec)
                             / (np.linalg.norm(heading_vec) * np.linalg.norm(wp_vec))
@@ -1039,7 +1039,8 @@ class SumoRoadNetwork(RoadMap):
                     # Only include paths that start in the junction, or are close to the vehicle
                     if (
                         self.lane_by_id(path[0].lane_id).in_junction
-                        or np.linalg.norm(path[0].pos - pose.position[:2]) < 7.0
+                        or np.linalg.norm(np.subtract(path[0].pos, pose.position[:2]))
+                        < 7.0
                     ):
                         waypoint_paths.append(path)
 

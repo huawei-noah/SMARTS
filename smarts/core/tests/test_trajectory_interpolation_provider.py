@@ -271,6 +271,6 @@ def test_trajectory_interpolation_provider(smarts, agent_spec, scenario):
     init_position = init_ego_state.position
     init_heading = init_ego_state.heading
     init_speed = init_ego_state.speed
-    assert np.linalg.norm(curr_position[:2] - init_position[:2]) > 1e-16
+    assert np.linalg.norm(np.subtract(curr_position[:2], init_position[:2])) > 1e-16
     assert not np.isclose(curr_heading, init_heading)
     assert not np.isclose(curr_speed, init_speed)
