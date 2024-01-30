@@ -111,13 +111,13 @@ class SumoRoadNetwork(RoadMap):
         import rtree
 
         rtree_: rtree.index.Index
-
+        MAX_VAL = 1e100
         for ri, shape in enumerate(shapeList):
             sumo_lanes: List[sumolib.net.lane.Lane] = shape.getLanes()
             lane_bbs = list(
                 lane.getBoundingBox(includeJunctions) for lane in sumo_lanes
             )
-            cxmin, cymin, cxmax, cymax = 1e400, 1e400, -1e400, -1e400
+            cxmin, cymin, cxmax, cymax = MAX_VAL, MAX_VAL, -MAX_VAL, -MAX_VAL
             for xmin, ymin, xmax, ymax in lane_bbs:
                 cxmin = min(cxmin, xmin)
                 cxmax = max(cxmax, xmax)
