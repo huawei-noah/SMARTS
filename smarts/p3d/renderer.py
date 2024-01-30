@@ -133,7 +133,9 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "audio-library-name null")
             loadPrcFileData("", "gl-version 3 3")
             loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
-            loadPrcFileData("", f"default-directnotify-level {cls._debug_mode.name.lower()}")
+            loadPrcFileData(
+                "", f"default-directnotify-level {cls._debug_mode.name.lower()}"
+            )
             loadPrcFileData("", "print-pipe-types false")
             # loadPrcFileData("", "basic-shaders-only #t")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
@@ -170,7 +172,9 @@ class _ShowBaseInstance(ShowBase):
         """Set rendering debug information verbosity."""
         cls._debug_mode = debug_mode
         loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
-        loadPrcFileData("", f"default-directnotify-level {cls._debug_mode.name.lower()}")
+        loadPrcFileData(
+            "", f"default-directnotify-level {cls._debug_mode.name.lower()}"
+        )
 
     @classmethod
     def set_rendering_backend(
@@ -261,10 +265,12 @@ class _P3DCameraMixin:
 
     @property
     def image_dimensions(self):
+        """The dimensions of the output camera image."""
         return (self.tex.getXSize(), self.tex.getYSize())
 
     @property
     def position(self) -> Tuple[float, float, float]:
+        """The position of the camera."""
         raise NotImplementedError()
 
     @property
@@ -274,6 +280,7 @@ class _P3DCameraMixin:
 
     @property
     def heading(self) -> float:
+        """The heading of this camera."""
         return np.radians(self.camera_np.getH())
 
     def teardown(self):
@@ -395,6 +402,7 @@ class _BufferAccessor:
         return True
 
     def get_data_for_buffer(self, buffer_id: BufferID, observation: Observation):
+        """Retrieve the data buffer from the observation."""
         if len(self._static_methods) == 0:
             self._gen_methods_for_buffer()
         return self._static_methods.get(buffer_id, lambda o, m: None)(
@@ -781,6 +789,7 @@ class Renderer(RendererBase):
             self._root_np = self._showbase_instance.setup_sim_root(self._simid)
 
     def load_road_map(self, map_path: Path):
+        """Load the road map from its path."""
         # Load map
         self._ensure_root()
         if self._road_map_np:
