@@ -19,7 +19,11 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-def duplicates(iterable, key=None):
+from typing import Callable, Optional
+
+
+def duplicates(iterable, key: Optional[Callable] = None):
+    """Finds all values that are duplicates."""
     seen = set()
 
     matcher = iterable
