@@ -274,10 +274,10 @@ class SMARTS(ProviderManager):
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
-            if not config()("core", "debug", cast=bool):
-                self.destroy()
+            self.destroy()
             raise  # re-raise the KeyboardInterrupt
         except RendererException:
+            self.destroy()
             raise  # re-raise renderer not found exceptions without retrying.
         except Exception as e:
             self._log.error(
