@@ -184,10 +184,10 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
         if "error" in vehicle_id:
             assert has_error
         elif vehicle_id == "budda":
-            assert np.linalg.norm(new_pos - original_position) < 1e-16
+            assert np.linalg.norm(np.subtract(new_pos, original_position)) < 1e-16
             assert np.isclose(vehicle.heading, original_heading)
         else:
-            assert not np.linalg.norm(new_pos - original_position) < 1e-16
+            assert np.linalg.norm(np.subtract(new_pos, original_position)) >= 1e-16
             assert not np.isclose(vehicle.heading, original_heading)
 
 
