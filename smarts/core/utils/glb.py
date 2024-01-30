@@ -147,7 +147,7 @@ def make_map_glb(
     meshes = _generate_meshes_from_polygons(polygons)
     material = PBRMaterial("RoadDefault")
     for mesh in meshes:
-        mesh.visual = trimesh.visual.TextureVisuals(material=material)
+        mesh.visual.material = material
         road_id = mesh.metadata["road_id"]
         lane_id = mesh.metadata.get("lane_id")
         name = str(road_id)
