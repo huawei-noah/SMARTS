@@ -453,7 +453,7 @@ class SumoRoadNetwork(RoadMap):
         @overload
         def get_distance(
             self, point: Point, radius: float, *, perpendicular: bool
-        ) -> Tuple[float, Optional[float]]:
+        ) -> float:
             ...
 
         @overload
@@ -518,6 +518,7 @@ class SumoRoadNetwork(RoadMap):
                         self._lane_shape_for_rtree[found_index + 1],
                         False,
                     )
+                    assert isinstance(offset, float)
                 return dist, offset
             return dist
 
