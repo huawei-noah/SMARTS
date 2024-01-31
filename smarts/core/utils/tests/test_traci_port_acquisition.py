@@ -65,8 +65,8 @@ def run_client(t):
     try:
         f = os.path.abspath(make_dir_in_smarts_log_dir("_sumo_run_logs")) + f"/{t}"
         lsp = RemoteSumoProcess(
-            remote_host=config()("sumo", "server_host"),
-            remote_port=config()("sumo", "server_port", cast=int),
+            remote_host=config()("sumo", "central_host"),
+            remote_port=config()("sumo", "central_port", cast=int),
         )
         lsp.generate(
             base_params=load_params

@@ -37,7 +37,7 @@ from smarts.core.utils.networking import find_free_port
 from smarts.core.utils.sumo_utils import SUMO_PATH
 
 
-class SumoServer:
+class CentralizedTraCIServer:
     """A centralized server for handling SUMO instances to prevent race conditions."""
 
     def __init__(self, host, port) -> None:
@@ -169,7 +169,15 @@ def spawn_if_not(remote_host: str, remote_port: int):
         client_socket.connect((remote_host, remote_port))
     except (OSError):
         if remote_host in ("localhost", "127.0.0.1"):
-            command = ["python", "-m", __name__, "--timeout", "600"]
+            command = [
+                "python",
+                "-m",
+                __name__,
+                "--timeout",
+                "600",
+                "--port",
+                remote_port,
+            ]
 
             # Use subprocess.Popen to start the process in the background
             _ = subprocess.Popen(
@@ -189,11 +197,11 @@ def main(*_, _host=None, _port=None, timeout: Optional[float] = 10 * 60):
     """The program entrypoint."""
     # Define the host and port on which the server will listen
     _host = _host or config()(
-        "sumo", "server_host"
+        "sumo", "central_host"
     )  # Use '0.0.0.0' to listen on all available interfaces
-    _port = _port or config()("sumo", "server_port")
+    _port = _port or config()("sumo", "central_port")
 
-    ss = SumoServer(_host, _port)
+    ss = CentralizedTraCIServer(_host, _port)
     asyncio.run(ss.start(timeout=timeout))
 
 
@@ -205,6 +213,12 @@ if __name__ == "__main__":
         type=float,
         default=None,
     )
+    parser.add_argument(
+        "--port",
+        help="The port to host on.",
+        type=int,
+        default=None,
+    )
     args = parser.parse_args()
 
-    main(timeout=args.timeout)
+    main(_port=args.port, timeout=args.timeout)

@@ -72,9 +72,9 @@ _config_defaults: Final = {
     ("ray", "num_gpus"): 0,
     ("ray", "num_cpus"): None,
     ("ray", "log_to_driver"): False,
-    ("sumo", "server_port"): 8619,
-    ("sumo", "server_host"): "localhost",
-    ("sumo", "serve_mode"): "local",  # local|remote
+    ("sumo", "central_port"): 8619,
+    ("sumo", "central_host"): "localhost",
+    ("sumo", "traci_serve_mode"): "local",  # local|central
 }
 
 
