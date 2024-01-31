@@ -45,8 +45,8 @@ from smarts.core.route_cache import RouteWithCache
 from smarts.core.signals import SignalLightState, SignalState
 from smarts.core.sumo_road_network import SumoRoadNetwork
 from smarts.core.traffic_provider import TrafficProvider
-from smarts.core.utils.core_logging import suppress_output
 from smarts.core.utils.centralized_traci_server import spawn_if_not
+from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle import VEHICLE_CONFIGS, VehicleState
 
 NO_CHECKS: Final = 0b00000
