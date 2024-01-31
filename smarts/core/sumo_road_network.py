@@ -399,9 +399,7 @@ class SumoRoadNetwork(RoadMap):
             assert self._road
 
             self._rtree_lane_fragments = None
-            self._lane_fragments: Optional[
-                List[Tuple[Tuple[float, float], Tuple[float, float]]]
-            ] = None
+            self._lane_shape_for_rtree: Optional[List[Tuple[float, float]]] = None
 
         def __hash__(self) -> int:
             return hash(self.lane_id) ^ hash(self._map)
@@ -426,8 +424,9 @@ class SumoRoadNetwork(RoadMap):
 
         def _ensure_rtree(self):
             if self._rtree_lane_fragments is None:
-                self._lane_fragments = list(pairwise(self._sumo_lane.getShape(False)))
-                self._rtree_lane_fragments = self._init_rtree(self._lane_fragments)
+                self._lane_shape_for_rtree = self._sumo_lane.getShape(False)
+                lane_fragments = list(pairwise(self._sumo_lane.getShape(False)))
+                self._rtree_lane_fragments = self._init_rtree(lane_fragments)
 
         @lru_cache(maxsize=128)
         def _segment_offset(self, end_index: int, start_index: int = 0) -> float:
@@ -435,7 +434,8 @@ class SumoRoadNetwork(RoadMap):
             for index in range(start_index, end_index):
                 dist += np.linalg.norm(
                     np.subtract(
-                        self._lane_fragments[index][1], self._lane_fragments[index][0]
+                        self._lane_shape_for_rtree[index + 1],
+                        self._lane_shape_for_rtree[index],
                     )
                 )
             return dist
@@ -446,12 +446,28 @@ class SumoRoadNetwork(RoadMap):
 
         @overload
         def get_distance(
-            self, point: Point, radius: float, get_offset: bool
+            self, point: Point, radius: float, *, get_offset: bool
+        ) -> Tuple[float, Optional[float]]:
+            ...
+
+        @overload
+        def get_distance(
+            self, point: Point, radius: float, *, perpendicular: bool
+        ) -> Tuple[float, Optional[float]]:
+            ...
+
+        @overload
+        def get_distance(
+            self, point: Point, radius: float, /, get_offset: bool, perpendicular: bool
         ) -> Tuple[float, Optional[float]]:
             ...
 
         def get_distance(
-            self, point: Point, radius: float, get_offset=...
+            self,
+            point: Point,
+            radius: float,
+            get_offset=...,
+            perpendicular: bool = False,
         ) -> Union[float, Tuple[float, Optional[float]]]:
             """Get the distance on the lane from the given point within the given radius.
             Specifying to get the offset returns the offset value.
@@ -470,16 +486,20 @@ class SumoRoadNetwork(RoadMap):
             ):
                 d = sumolib.geomhelper.distancePointToLine(
                     point,
-                    self._lane_fragments[i][0],
-                    self._lane_fragments[i][1],
-                    perpendicular=False,
+                    self._lane_shape_for_rtree[i],
+                    self._lane_shape_for_rtree[i + 1],
+                    perpendicular=perpendicular,
                 )
 
                 if d == INVALID_DISTANCE and i != 0 and dist == math.inf:
                     # distance to inner corner
                     dist = min(
-                        sumolib.geomhelper.distance(point, self._lane_fragments[i][0]),
-                        sumolib.geomhelper.distance(point, self._lane_fragments[i][1]),
+                        sumolib.geomhelper.distance(
+                            point, self._lane_shape_for_rtree[i]
+                        ),
+                        sumolib.geomhelper.distance(
+                            point, self._lane_shape_for_rtree[i + 1]
+                        ),
                     )
                     found_index = i
                 elif d != INVALID_DISTANCE and (dist is None or d < dist):
@@ -494,8 +514,8 @@ class SumoRoadNetwork(RoadMap):
                     offset = self._segment_offset(found_index)
                     offset += sumolib.geomhelper.lineOffsetWithMinimumDistanceToPoint(
                         point,
-                        self._lane_fragments[found_index][0],
-                        self._lane_fragments[found_index][1],
+                        self._lane_shape_for_rtree[found_index],
+                        self._lane_shape_for_rtree[found_index + 1],
                         False,
                     )
                 return dist, offset
@@ -734,10 +754,14 @@ class SumoRoadNetwork(RoadMap):
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
             if point not in shape:
-                # offset = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
-                #     point, shape, perpendicular=False
-                # )
-                _, offset = self.get_distance(world_point, radius=8, get_offset=True)
+                if self._lane_shape_for_rtree is None and len(shape) < 5:
+                    offset = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
+                        point, shape, perpendicular=False
+                    )
+                else:
+                    _, offset = self.get_distance(
+                        world_point, 8, get_offset=True, perpendicular=False
+                    )
                 return offset
             # SUMO geomhelper.polygonOffset asserts when the point is part of the shape.
             # We get around the assertion with a check if the point is part of the shape.
@@ -761,7 +785,7 @@ class SumoRoadNetwork(RoadMap):
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)
             x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
-            if lane_point.t != 0:
+            if lane_point.t != 0 and lane_point.t is not None:
                 dv = 1 if lane_point.s < self.length else -1
                 x2, y2 = sumolib.geomhelper.positionAtShapeOffset(
                     shape, lane_point.s + dv
