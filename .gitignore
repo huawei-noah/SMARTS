@@ -66,6 +66,9 @@ target/
 # VSCode
 .vscode
 
+# panda3d
+.panda3d_cache
+
 # pyenv
 .python-version
 
