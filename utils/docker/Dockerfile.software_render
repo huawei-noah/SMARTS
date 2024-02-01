@@ -7,7 +7,7 @@
 # $ docker push huaweinoah/smarts:$VERSION-minimal
 # ```
 
-FROM ubuntu:focal
+FROM ubuntu:bionic
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -23,10 +23,16 @@ RUN apt-get update --fix-missing && \
         python3.8 \
         python3.8-venv \
         libenchant-dev \
+        mesa-utils \
         wget \
+        xserver-xorg-video-dummy \
+        x11-apps \
         xorg && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
+
+# Set environment variable to enable software rendering
+ENV LIBGL_ALWAYS_SOFTWARE=1
 
 # Update default python version
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
@@ -36,10 +42,23 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
     python get-pip.py && \
     pip install --upgrade pip
 
+# Get xorg dummy
+# Setup DISPLAY
+ENV DISPLAY :1
+# VOLUME /tmp/.X11-unix
+RUN wget -O /etc/X11/xorg.conf http://xpra.org/xorg.conf && \
+    cp /etc/X11/xorg.conf /usr/share/X11/xorg.conf.d/xorg.conf
+
 # For Envision
 EXPOSE 8081
 # For centralized TraCI management server
 EXPOSE 8097
+
+# TODO: Find a better place to put this (e.g. through systemd). As it stands now ctrl-c
+#       could close x-server. Even though it's "running in the background".
+RUN echo "/usr/bin/Xorg " \
+    "-noreset +extension GLX +extension RANDR +extension RENDER" \
+    "-logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch $DISPLAY &" >> ~/.bashrc
 
 # Suppress message of missing /dev/input folder
 RUN echo "mkdir -p /dev/input" >> ~/.bashrc
