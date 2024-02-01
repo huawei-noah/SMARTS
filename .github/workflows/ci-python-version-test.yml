@@ -27,4 +27,4 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install .[camera_obs,rllib,sumo,test,torch,train]
+          pip install .[camera-obs,rllib,sumo,test,torch,train]

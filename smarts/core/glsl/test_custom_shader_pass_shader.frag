@@ -92,7 +92,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     fragColor = vec4(0.0, 0.0, 0.0, 0.0);
 }
 
-#ifndef SHADERTOY
 void main(){
     int a = step_count + steps_completed + events_collisions + events_off_road + events_off_route 
         + events_on_shoulder + events_wrong_way + events_not_moving 
@@ -125,4 +124,3 @@ void main(){
     
     mainImage( p3d_Color, gl_FragCoord.xy );
 }
-#endif
