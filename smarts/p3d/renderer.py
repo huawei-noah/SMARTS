@@ -787,8 +787,12 @@ class Renderer(RendererBase):
     def _ensure_root(self):
         if self._root_np is None:
             self._root_np = self._showbase_instance.setup_sim_root(self._simid)
-            if self._log.getEffectiveLevel() <= logging.DEBUG:
-                self._log.debug("Renderer started with backend %s", self._showbase_instance.pipe.get_type())
+            # if self._log.getEffectiveLevel() <= logging.DEBUG:
+            #     self._log.debug(
+            print(
+                "Renderer started with backend %s",
+                self._showbase_instance.pipe.get_type(),
+            )
 
     def load_road_map(self, map_path: Union[str, Path]):
         """Load the road map from its path."""

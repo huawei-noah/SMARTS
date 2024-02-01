@@ -50,6 +50,7 @@ jobs:
             scenarios/sumo/zoo_intersection
       - name: Run smoke tests
         run: |
+          /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch :1 &
           . ${{env.venv_dir}}/bin/activate
           PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
