@@ -124,31 +124,31 @@ def observation_buffers() -> Set[BufferID]:
     return {v for v in BufferID}
 
 
-# def test_optional_renderer(smarts_w_renderer: SMARTS, scenario: Scenario):
-#     assert not smarts_w_renderer.is_rendering
-#     renderer = smarts_w_renderer.renderer
-#     assert renderer
+def test_optional_renderer(smarts_w_renderer: SMARTS, scenario: Scenario):
+    assert not smarts_w_renderer.is_rendering
+    renderer = smarts_w_renderer.renderer
+    assert renderer
 
-#     smarts_w_renderer._renderer = None
-#     smarts_w_renderer.reset(scenario)
-#     assert smarts_w_renderer.is_rendering
+    smarts_w_renderer._renderer = None
+    smarts_w_renderer.reset(scenario)
+    assert smarts_w_renderer.is_rendering
 
-#     smarts_w_renderer._renderer = None
+    smarts_w_renderer._renderer = None
 
-#     with pytest.raises(expected_exception=AttributeError, match=r"NoneType"):
-#         smarts_w_renderer.step({AGENT_ID: "keep_lane"})
+    with pytest.raises(expected_exception=AttributeError, match=r"NoneType"):
+        smarts_w_renderer.step({AGENT_ID: "keep_lane"})
 
-#     assert not smarts_w_renderer.is_rendering
+    assert not smarts_w_renderer.is_rendering
 
 
-# def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
-#     assert not smarts_wo_renderer.is_rendering
-#     smarts_wo_renderer.reset(scenario)
-#     assert not smarts_wo_renderer.is_rendering
-#     for _ in range(10):
-#         smarts_wo_renderer.step({AGENT_ID: "keep_lane"})
+def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
+    assert not smarts_wo_renderer.is_rendering
+    smarts_wo_renderer.reset(scenario)
+    assert not smarts_wo_renderer.is_rendering
+    for _ in range(10):
+        smarts_wo_renderer.step({AGENT_ID: "keep_lane"})
 
-#     assert not smarts_wo_renderer.is_rendering
+    assert not smarts_wo_renderer.is_rendering
 
 
 def test_custom_shader_pass_buffers(
