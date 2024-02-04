@@ -7,6 +7,7 @@ test: build-all-scenarios
 		--doctest-modules \
 		--forked \
 		--dist=loadscope \
+		--durations=0 \
 		-n `expr \( \`nproc\` \/ 2 \& \`nproc\` \> 3 \) \| 2` \
 		--nb-exec-timeout 65536 \
 		./examples/tests ./smarts/env ./envision ./smarts/core ./smarts/sstudio \
@@ -48,6 +49,7 @@ test-long-determinism:
 	scl scenario build --clean scenarios/sumo/minicity
 	PYTHONHASHSEED=42 pytest -v \
 		--forked \
+		--durations=0 \
 		./smarts/env/tests/test_determinism.py::test_long_determinism
 
 .PHONY: test-memory-growth
@@ -63,7 +65,7 @@ test-memory-growth: build-all-scenarios
 
 .PHONY: benchmark
 benchmark: build-all-scenarios
-	pytest -v ./smarts/env/tests/test_benchmark.py
+	pytest -v --durations=0 ./smarts/env/tests/test_benchmark.py
 
 .PHONY: test-zoo
 test-zoo: build-all-scenarios
