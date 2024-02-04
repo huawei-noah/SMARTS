@@ -1,3 +1,11 @@
+# Steps to build and push the SMARTS docker image
+# ```bash
+# $ cd </path/to/SMARTS>
+# export VERSION=v0.5.0
+# $ docker build --no-cache -f ./utils/docker/Dockerfile -t huaweinoah/smarts:$VERSION .
+# $ docker login
+# $ docker push huaweinoah/smarts:$VERSION
+# ```
 FROM ubuntu:focal
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -18,10 +26,10 @@ RUN apt-get update --fix-missing && \
     apt-get update && \
     apt-get install -y \
         git \
+        libenchant-dev \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
-        libenchant-dev \
         xorg && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
