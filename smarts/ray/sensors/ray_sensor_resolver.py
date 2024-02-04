@@ -107,9 +107,49 @@ class RaySensorResolver(SensorResolver):
         ray_actors = self.get_ray_worker_actors(self._num_observation_workers)
         len_workers = len(ray_actors)
 
+        tasks = self._gen_tasks_for_serializable_sensors(
+            sim_frame, sim_local_constants, agent_ids, ray_actors, len_workers
+        )
+        phys_observations = self._gen_phys_observations(
+            sim_frame, sim_local_constants, agent_ids, bullet_client
+        )
+
+        # Collect futures
+        with timeit("waiting for observations", logger.debug):
+            for fut in concurrent.futures.as_completed(
+                [task.future() for task in tasks]
+            ):
+                obs, ds, u_sens = fut.result()
+                observations.update(obs)
+                dones.update(ds)
+                for v_id, values in u_sens.items():
+                    updated_sensors[v_id].update(values)
+
+        # Merge physics sensor information
+        for agent_id, p_obs in phys_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **p_obs)
+
+        self._sync_custom_camera_sensors(sim_frame, renderer, observations)
+
+        if renderer:
+            renderer.render()
+
+        rendering_observations = self._gen_rendered_observations(
+            sim_frame, sim_local_constants, agent_ids, renderer, updated_sensors
+        )
+
+        # Merge sensor information
+        for agent_id, r_obs in rendering_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
+
+    def _gen_tasks_for_serializable_sensors(
+        self, sim_frame, sim_local_constants, agent_ids, ray_actors, len_workers
+    ):
         tasks = []
         with timeit(
-            f"parallizable observations with {len(agent_ids)} and {len(ray_actors)}",
+            f"setting up parallizable observations with {len(agent_ids)} and {len(ray_actors)}",
             logger.debug,
         ):
             # Update remote state (if necessary)
@@ -138,42 +178,7 @@ class RaySensorResolver(SensorResolver):
                         )
                     )
 
-            # While observation processes are operating do rendering
-            with timeit("rendering", logger.debug):
-                rendering = {}
-                for agent_id in agent_ids:
-                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        (
-                            rendering[agent_id],
-                            updated_unsafe_sensors,
-                        ) = Sensors.process_serialization_unsafe_sensors(
-                            sim_frame,
-                            sim_local_constants,
-                            sim_frame.agent_interfaces[agent_id],
-                            sim_frame.sensor_states[vehicle_id],
-                            vehicle_id,
-                            renderer,
-                            bullet_client,
-                        )
-                        updated_sensors[vehicle_id].update(updated_unsafe_sensors)
-
-            # Collect futures
-            with timeit("waiting for observations", logger.debug):
-                for fut in concurrent.futures.as_completed(
-                    [task.future() for task in tasks]
-                ):
-                    obs, ds, u_sens = fut.result()
-                    observations.update(obs)
-                    dones.update(ds)
-                    for v_id, values in u_sens.items():
-                        updated_sensors[v_id].update(values)
-
-            with timeit("merging observations", logger.debug):
-                # Merge sensor information
-                for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = replace(observations[agent_id], **r_obs)
-
-        return observations, dones, updated_sensors
+        return tasks
 
     def step(self, sim_frame: SimulationFrame, sensor_states: Iterable[SensorState]):
         """Step the sensor state."""

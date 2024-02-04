@@ -59,6 +59,7 @@ from smarts.core.renderer_base import RendererBase
 from smarts.core.sensor import (
     AccelerometerSensor,
     CameraSensor,
+    CustomRenderSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
     LanePositionSensor,
@@ -73,6 +74,7 @@ from smarts.core.sensor import (
     ViaSensor,
     WaypointsSensor,
 )
+from smarts.core.utils.core_logging import timeit
 
 if TYPE_CHECKING:
     from smarts.core.agent_interface import (
@@ -185,6 +187,7 @@ class SensorResolver:
     """An interface describing sensor observation and update systems."""
 
     # TODO: Remove renderer and bullet client from the arguments
+    # TODO: Remove updated sensors from the return. No sensors should be modified in observe!!!
     def observe(
         self,
         sim_frame: SimulationFrame,
@@ -207,6 +210,67 @@ class SensorResolver:
     def step(self, sim_frame: SimulationFrame, sensor_states: Iterable[SensorState]):
         """Step the sensor state."""
         raise NotImplementedError()
+
+    def _gen_phys_observations(
+        self,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids: Set[str],
+        bullet_client: bc.BulletClient,
+    ):
+        with timeit("physics sensors", logger.debug):
+            phys_observations = {}
+            for agent_id in agent_ids:
+                for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
+                    (
+                        phys_observations[agent_id],
+                        updated_phys_sensors,
+                    ) = Sensors.process_physics_sensors(
+                        sim_frame,
+                        sim_local_constants,
+                        sim_frame.sensor_states[vehicle_id],
+                        vehicle_id,
+                        bullet_client,
+                    )
+
+        return phys_observations
+
+    def _gen_rendered_observations(
+        self,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids: Set[str],
+        renderer: RendererBase,
+        updated_sensors: Dict[str, Dict[str, Sensor]],
+    ):
+        with timeit("rendered observations", logger.debug):
+            rendering_observations = {}
+            for agent_id in agent_ids:
+                for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
+                    (
+                        rendering_observations[agent_id],
+                        updated_unsafe_sensors,
+                    ) = Sensors.process_rendering_sensors(
+                        sim_frame,
+                        sim_local_constants,
+                        sim_frame.agent_interfaces[agent_id],
+                        sim_frame.sensor_states[vehicle_id],
+                        vehicle_id,
+                        renderer,
+                    )
+                    updated_sensors[vehicle_id].update(updated_unsafe_sensors)
+        return rendering_observations
+
+    def _sync_custom_camera_sensors(
+        self, sim_frame: SimulationFrame, renderer: RendererBase, observations
+    ):
+        for v_id, sensors in sim_frame.vehicle_sensors.items():
+            for s_id, sensor in sensors.items():
+                if sensor.serializable or not isinstance(sensor, CustomRenderSensor):
+                    continue
+                sensor.step(
+                    sim_frame=sim_frame, renderer=renderer, observations=observations
+                )
 
 
 class Sensors:
@@ -242,24 +306,16 @@ class Sensors:
         return observations, dones, updated_sensors
 
     @staticmethod
-    def process_serialization_unsafe_sensors(
+    def process_rendering_sensors(
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         interface: AgentInterface,
         sensor_state: SensorState,
         vehicle_id: str,
         renderer: RendererBase,
-        bullet_client: bc.BulletClient,
     ) -> Tuple[Dict[str, Any], Dict[str, Sensor]]:
         """Run observations that can only be done on the main thread."""
         vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
-
-        vehicle_state = sim_frame.vehicle_states[vehicle_id]
-        lidar = None
-        lidar_sensor = vehicle_sensors.get("lidar_sensor")
-        if lidar_sensor:
-            lidar_sensor.follow_vehicle(vehicle_state)
-            lidar = lidar_sensor(bullet_client)
 
         def get_camera_sensor_result(
             sensors: Dict[str, Sensor], sensor_name: str, renderer: RendererBase
@@ -271,7 +327,7 @@ class Sensors:
         updated_sensors = {
             sensor_name: sensor
             for sensor_name, sensor in vehicle_sensors.items()
-            if sensor.mutable and not sensor.serializable
+            if isinstance(sensor, CameraSensor)
         }
 
         return (
@@ -294,10 +350,66 @@ class Sensors:
                     )
                     for i, _ in enumerate(interface.custom_renders)
                 ),
+            ),
+            updated_sensors,
+        )
+
+    @staticmethod
+    def process_physics_sensors(
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        sensor_state: SensorState,
+        vehicle_id: str,
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Any], Dict[str, Sensor]]:
+        """Run observations that can only be done on the main thread."""
+        vehicle_sensors = sim_frame.vehicle_sensors[vehicle_id]
+
+        vehicle_state = sim_frame.vehicle_states[vehicle_id]
+        lidar = None
+        lidar_sensor = vehicle_sensors.get("lidar_sensor")
+        if lidar_sensor:
+            lidar_sensor.follow_vehicle(vehicle_state)
+            lidar = lidar_sensor(bullet_client)
+
+        updated_sensors = {"lidar_sensor": lidar_sensor}
+
+        return (
+            dict(
                 lidar_point_cloud=lidar,
             ),
             updated_sensors,
         )
+
+    @classmethod
+    def process_serialization_unsafe_sensors(
+        cls,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        interface: AgentInterface,
+        sensor_state: SensorState,
+        vehicle_id: str,
+        renderer: RendererBase,
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Any], Dict[str, Sensor]]:
+        """Run observations that can only be done on the main thread."""
+        p_sensors, p_updated_sensors = cls.process_physics_sensors(
+            sim_frame=sim_frame,
+            sim_local_constants=sim_local_constants,
+            sensor_state=sensor_state,
+            vehicle_id=vehicle_id,
+            bullet_client=bullet_client,
+        )
+        r_sensors, r_updated_sensors = cls.process_rendering_sensors(
+            sim_frame=sim_frame,
+            sim_local_constants=sim_local_constants,
+            interface=interface,
+            sensor_state=sensor_state,
+            vehicle_id=vehicle_id,
+            renderer=renderer,
+        )
+
+        return {**p_sensors, **r_sensors}, {**p_updated_sensors, **r_updated_sensors}
 
     @staticmethod
     def process_serialization_safe_sensors(

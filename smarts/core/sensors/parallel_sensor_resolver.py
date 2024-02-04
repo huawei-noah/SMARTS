@@ -91,12 +91,59 @@ class ParallelSensorResolver(SensorResolver):
             else max(1, self._process_count_override)
         )
 
+        used_workers = self._gen_workers_for_serializable_sensors(
+            sim_frame, sim_local_constants, agent_ids, used_processes
+        )
+        phys_observations = self._gen_phys_observations(
+            sim_frame, sim_local_constants, agent_ids, bullet_client
+        )
+
+        # Collect futures
+        with timeit("waiting for observations", logger.debug):
+            if used_workers:
+                while agent_ids != set(observations):
+                    assert all(
+                        w.running for w in used_workers
+                    ), "A process worker crashed."
+                    for result in mp.connection.wait(
+                        [worker.connection for worker in used_workers], timeout=5
+                    ):
+                        # pytype: disable=attribute-error
+                        obs, ds, u_sens = result.recv()
+                        # pytype: enable=attribute-error
+                        observations.update(obs)
+                        dones.update(ds)
+                        for v_id, values in u_sens.items():
+                            updated_sensors[v_id].update(values)
+
+        # Merge physics sensor information
+        for agent_id, p_obs in phys_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **p_obs)
+
+        self._sync_custom_camera_sensors(sim_frame, renderer, observations)
+
+        if renderer:
+            renderer.render()
+
+        rendering_observations = self._gen_rendered_observations(
+            sim_frame, sim_local_constants, agent_ids, renderer, updated_sensors
+        )
+
+        # Merge sensor information
+        for agent_id, r_obs in rendering_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
+
+    def _gen_workers_for_serializable_sensors(
+        self, sim_frame, sim_local_constants, agent_ids, used_processes
+    ):
         workers: List[SensorsWorker] = self.get_workers(
             used_processes, sim_local_constants=sim_local_constants
         )
         used_workers: List[SensorsWorker] = []
         with timeit(
-            f"parallizable observations with {len(agent_ids)} and {len(workers)}",
+            f"setting up parallizable observations with {len(agent_ids)} and {len(workers)}",
             logger.debug,
         ):
             agent_ids_for_grouping = list(agent_ids)
@@ -115,50 +162,7 @@ class ParallelSensorResolver(SensorResolver):
                         )
                     )
                     used_workers.append(workers[i])
-
-            # While observation processes are operating do rendering
-            with timeit("rendering", logger.debug):
-                rendering = {}
-                for agent_id in agent_ids:
-                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        (
-                            rendering[agent_id],
-                            updated_unsafe_sensors,
-                        ) = Sensors.process_serialization_unsafe_sensors(
-                            sim_frame,
-                            sim_local_constants,
-                            sim_frame.agent_interfaces[agent_id],
-                            sim_frame.sensor_states[vehicle_id],
-                            vehicle_id,
-                            renderer,
-                            bullet_client,
-                        )
-                        updated_sensors[vehicle_id].update(updated_unsafe_sensors)
-
-            # Collect futures
-            with timeit("waiting for observations", logger.debug):
-                if used_workers:
-                    while agent_ids != set(observations):
-                        assert all(
-                            w.running for w in used_workers
-                        ), "A process worker crashed."
-                        for result in mp.connection.wait(
-                            [worker.connection for worker in used_workers], timeout=5
-                        ):
-                            # pytype: disable=attribute-error
-                            obs, ds, u_sens = result.recv()
-                            # pytype: enable=attribute-error
-                            observations.update(obs)
-                            dones.update(ds)
-                            for v_id, values in u_sens.items():
-                                updated_sensors[v_id].update(values)
-
-            with timeit(f"merging observations", logger.debug):
-                # Merge sensor information
-                for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = replace(observations[agent_id], **r_obs)
-
-        return observations, dones, updated_sensors
+        return used_workers
 
     def __del__(self):
         try:
