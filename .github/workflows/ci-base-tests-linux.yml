@@ -34,6 +34,7 @@ jobs:
           if echo ${{matrix.tests}} | grep -q -e "test_rllib_hiway_env.py"; then pip install -e .[rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "test_examples.py"; then pip install -e .[examples,rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "/smarts/ray"; then pip install -e .[ray]; fi
+          if echo ${{matrix.tests}} | grep -q -e "/smarts/core"; then (/usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch :1 &); fi
       - name: Build scenarios
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -50,7 +51,6 @@ jobs:
             scenarios/sumo/zoo_intersection
       - name: Run smoke tests
         run: |
-          /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch :1 &
           . ${{env.venv_dir}}/bin/activate
           PYTHONPATH=$PWD PYTHONHASHSEED=42 pytest -v \
             --doctest-modules \
