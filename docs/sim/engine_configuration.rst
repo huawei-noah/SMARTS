@@ -16,6 +16,8 @@ Configuration of the engine can come from several sources. These locations take 
 3. Local user engine configuration, ``~/.smarts/engine.ini``, if local directory configuration is not found.
 4. Global engine configuration, ``/etc/smarts/engine.ini``, if local configuration is not found.
 5. Package default configuration, ``$PYTHON_PATH/smarts/engine.ini``, if global configuration is not found.
+6. Code default, ``config(section, option, default=4)``, if global configuration is not found.
+7. Value default, see :ref:`engine_configuration_defaults`, if code default is not given.
 
 Note that configuration files resolve all settings at the first found configuration file (they do not layer.)
 
@@ -80,6 +82,7 @@ prefixed environment variables.
 Engine settings
 ---------------
 
+.. _engine_configuration_defaults:
 The current list of engine settings are as follows:
 
 .. list-table::
@@ -98,9 +101,9 @@ The current list of engine settings are as follows:
      - ``SMARTS_RAY_NUM_CPUS``
      - ``SMARTS_RAY_NUM_GPUS``
      - ``SMARTS_RAY_LOG_TO_DRIVER``
-     - ``SMARTS_SUMO_SERVER_HOST``
-     - ``SMARTS_SUMO_SERVE_MODE``
-     - ``SMARTS_SUMO_SERVER_PORT``
+     - ``SMARTS_SUMO_CENTRAL_HOST``
+     - ``SMARTS_SUMO_TRACI_SERVE_MODE``
+     - ``SMARTS_SUMO_CENTRAL_PORT``
      - ``SMARTS_VISDOM_ENABLED``
      - ``SMARTS_VISDOM_HOSTNAME``
      - ``SMARTS_VISDOM_PORT``
@@ -175,7 +178,7 @@ The current list of engine settings are as follows:
      - 0 or greater | None
      - True|False
      - [``"localhost"``  ``"x.x.x.x"``  ``"https://..."``]
-     - [``"local"``  ``"remote"``]
+     - [``"local"``  ``"central"``]
      - As dictated by OS.
      - True|False
      - [``localhost`` ``"x.x.x.x"`` ``"http://..."``]
