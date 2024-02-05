@@ -82,9 +82,9 @@ prefixed environment variables.
 Engine settings
 ---------------
 
-.. _engine_configuration_defaults:
 The current list of engine settings are as follows:
 
+.. _engine_configuration_defaults:
 .. list-table::
    :header-rows: 1
 
