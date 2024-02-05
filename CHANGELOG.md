@@ -8,7 +8,16 @@ All text added must be human-readable.
 
 Copy and pasting the git commit messages is __NOT__ enough.
 
-## [Unreleased] - XXXX-XX-XX
+
+## [Version] - XXXX-XX-XX
+### Added
+### Changed
+### Deprecated
+### Fixed
+### Removed
+### Security
+
+## [v2.0.0] - 2024-02-04
 ### Added
 - Added a utility method `SMARTS.prepare_observe_from()` which allows safely adding sensors to vehicles.
 - The following methods now exist explicitly `Vehicle.{add_sensor|detach_sensor|subscribed_to|sensor_property|}`.
