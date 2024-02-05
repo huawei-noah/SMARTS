@@ -14,6 +14,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The following methods now exist explicitly `Vehicle.{add_sensor|detach_sensor|subscribed_to|sensor_property|}`.
 - Resources loaded with `load_yaml_config_with_substitution()` now substitute in SMARTS configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration and vehicle configuration.
 - Default vehicle definitions can be now modified using `assets:default_vehicle_definitions_list`/`SMARTS_ASSSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST` or by providing a `vehicle_definitions_list.yaml` in the scenario. These vehicle types are related to the `AgentInterface.vehicle_type` attribute.
+- New `CustomRender` agent interface option added. This allows using `glsl` fragment scripts to generate images from camera textures and simulation buffers.
+- New `ObfuscationMap` agent interface option added. This uses the `OccupancyGridMap` to help generate an image of ground viewable area from the ego vehicle's perspective.
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
@@ -131,6 +133,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 - Added `TrafficEngineActor` to describe a scenario studio defined actor that is controlled by a traffic engine.
+- Docker images from now on out base from ``ubuntu:focal``.
+- A new Docker image has been added for software rendering for use cases where there is no display and GPU.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.
@@ -231,8 +235,6 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Included `RelativeTargetPose` action space to the set of allowed action spaces in `platoon-v0` env.
 - `Collision.collidee_id` now gives the vehicle id rather than the name of the owner of the vehicle (usually the agent id.) `Collision.collidee_owner_id` now provides the id of the controlling `agent` (or other controlling entity in the future.) This is because 1) `collidee_id` should refer to the body and 2) in most cases the owner name would be `None`.
 - Entry tactics now use conditions to determine when they should capture an actor.
-- Docker images from now on out base from ``ubuntu:focal``.
-- A new Docker image has been added for software rendering for use cases where there is no display and GPU.
 ### Deprecated
 ### Fixed
 - Fixed issues related to waypoints in junctions on Argoverse maps. Waypoints will now be generated for all paths leading through the lane(s) the vehicle is on.
