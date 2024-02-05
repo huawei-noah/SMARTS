@@ -120,8 +120,8 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
             loadPrcFileData("", "aux-display pandadx8")
-            # loadPrcFileData("", "aux-display pandagles")
-            # loadPrcFileData("", "aux-display pandagles2")
+            loadPrcFileData("", "aux-display pandagles")
+            loadPrcFileData("", "aux-display pandagles2")
             loadPrcFileData("", "aux-display p3headlessgl")
             loadPrcFileData("", "aux-display p3tinydisplay")
 

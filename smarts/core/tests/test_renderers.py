@@ -21,7 +21,6 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import math
-import threading
 from typing import Optional, Set
 
 import numpy as np
@@ -160,12 +159,10 @@ def test_custom_shader_pass_buffers(
     # Construct the renderer
     # Construct the shader pass
     # Use a shader that uses all buffers
-    # Each buffer in the shader is assigned to a pixel.
     # Assign all shader buffers in the pass.
-    # Update the shader pass using the observation
+    # Update the shader pass using the current observation
     # Render
-    # Get the render texture from the shader pass
-    # Test each pixel for the expected value.
+    # Test that the pixels default to white. (black is error)
 
     assert renderer
     renderer.reset()
