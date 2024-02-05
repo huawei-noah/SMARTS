@@ -24,3 +24,6 @@ This is a list of frequently asked questions.  Feel free to suggest new entries!
         # Set xorg server
         $ sudo wget -O /etc/X11/xorg.conf http://xpra.org/xorg.conf
         $ sudo /usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf $DISPLAY & 0
+
+4. The simulation keeps crashing on connection in ``SumoTrafficSimulation``. How do I fix this?
+    This is likely due to using large scale parallelization. You will want to use the centralized management server. See :ref:`centralized_traci_management`.

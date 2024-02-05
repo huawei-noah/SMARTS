@@ -8,7 +8,7 @@ from pathlib import Path
 from tools.argument_parser import empty_parser
 
 from smarts.core.agent_interface import AgentInterface, AgentType
-from smarts.core.utils.string import truncate
+from smarts.core.utils.strings import truncate
 from smarts.env.configs.hiway_env_configs import EnvReturnMode
 from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1
 from smarts.env.utils.action_conversion import ActionOptions

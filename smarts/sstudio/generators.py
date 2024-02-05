@@ -184,7 +184,7 @@ class TrafficGenerator:
             log_path = f"{self._log_dir}/{scenario_name}"
             os.makedirs(log_path, exist_ok=True)
 
-            from smarts.core.utils.sumo import sumolib
+            from smarts.core.utils.sumo_utils import sumolib
 
             int32_limits = np.iinfo(np.int32)
             duarouter_path = sumolib.checkBinary("duarouter")
