@@ -45,7 +45,7 @@ from smarts.core.coordinates import Dimensions, Heading, Point, Pose
 from smarts.core.observations import Observation
 from smarts.core.plan import (
     EndlessGoal,
-    Mission,
+    NavigationMission,
     PositionalGoal,
     Start,
     VehicleSpec,
@@ -327,7 +327,7 @@ class ROSDriver:
             )
         else:
             goal = EndlessGoal()
-        mission = Mission(
+        mission = NavigationMission(
             start=Start.from_pose(ROSDriver._pose_from_ros(ros_agent_spec.start_pose)),
             goal=goal,
             # TODO:  how to prevent them from spawning on top of another existing vehicle? (see how it's done in SUMO traffic)

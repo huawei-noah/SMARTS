@@ -17,13 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 import logging
 import random
 import weakref
 from functools import partial
 from pathlib import Path
-from typing import Final, Iterable, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Final, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 from shapely.affinity import rotate as shapely_rotate
@@ -61,6 +62,9 @@ from smarts.core.utils.sumo_utils import (
 
 import traci.constants as tc  # isort:skip
 
+if TYPE_CHECKING:
+    import smarts.core.scenario
+
 
 class SumoTrafficSimulation(TrafficProvider):
     """
@@ -85,7 +89,7 @@ class SumoTrafficSimulation(TrafficProvider):
             Remove only agent vehicles used by SMARTS and not delete other SUMO
             vehicles when the traffic simulation calls to tear-down
         traci_retries:
-            The number of times to retry acquisition of a TraCI server before erroring.
+            The number of times to retry acquisition of a TraCI server before throwing an exception.
     """
 
     _HAS_DYNAMIC_ATTRIBUTES = True
@@ -504,7 +508,10 @@ class SumoTrafficSimulation(TrafficProvider):
         pass
 
     def recover(
-        self, scenario, elapsed_sim_time: float, error: Optional[Exception] = None
+        self,
+        scenario: smarts.core.scenario.Scenario,
+        elapsed_sim_time: float,
+        error: Optional[Exception] = None,
     ) -> Tuple[ProviderState, bool]:
         if isinstance(error, self._traci_exceptions):
             self._handle_traci_exception(error)

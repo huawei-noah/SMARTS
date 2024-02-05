@@ -19,12 +19,13 @@
 # THE SOFTWARE.
 import logging
 import warnings
+from abc import ABCMeta, abstractmethod
 from typing import Any, Callable
 
 logger = logging.getLogger(__name__)
 
 
-class Agent:
+class Agent(metaclass=ABCMeta):
     """The base class for agents"""
 
     @classmethod
@@ -35,16 +36,9 @@ class Agent:
 
             keep_lane_agent = Agent.from_function(lambda obs: "keep_lane")
         """
-        assert callable(agent_function)
+        return FunctionAgent(agent_function)
 
-        class FunctionAgent(Agent):
-            """An agent generated from a function."""
-
-            def act(self, obs):
-                return agent_function(obs)
-
-        return FunctionAgent()
-
+    @abstractmethod
     def act(self, obs, **configs):
         """The agent action. See documentation on observations, `AgentSpec`, and `AgentInterface`.
 
@@ -52,6 +46,17 @@ class Agent:
         """
 
         raise NotImplementedError
+
+
+class FunctionAgent(Agent):
+    """An agent generated from a function."""
+
+    def __init__(self, agent_function) -> None:
+        assert callable(agent_function)
+        self._agent_function = agent_function
+
+    def act(self, obs, **configs):
+        return self._agent_function(obs)
 
 
 def deprecated_agent_spec(*args, **kwargs):

@@ -63,7 +63,7 @@ def config(
     .. note::
 
         This searches the following locations and loads the first one it finds:
-        Supplied config_path. default: `./smarts_engine.ini`
+        Supplied ``config_path``. Default: `./smarts_engine.ini`
         `~/.smarts/engine.ini`
         `/etc/smarts/engine.ini`
         `$PYTHON_PATH/smarts/engine.ini`

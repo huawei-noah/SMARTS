@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import glob
 import logging
 import os
@@ -28,6 +30,7 @@ from functools import lru_cache
 from itertools import cycle, product
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -49,7 +52,7 @@ from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
     LapMission,
-    Mission,
+    NavigationMission,
     PositionalGoal,
     Start,
     TraverseGoal,
@@ -57,7 +60,6 @@ from smarts.core.plan import (
     Via,
     default_entry_tactic,
 )
-from smarts.core.road_map import RoadMap
 from smarts.core.traffic_history import TrafficHistory
 from smarts.core.utils.core_math import (
     combination_pairs_with_unique_indices,
@@ -82,6 +84,9 @@ with warnings.catch_warnings():
     )
     import trimesh  # only suppress the warnings caused by trimesh
 
+if TYPE_CHECKING:
+    from smarts.core.road_map import RoadMap
+
 
 class Scenario:
     """The purpose of the Scenario is to provide an aggregate of all
@@ -105,7 +110,7 @@ class Scenario:
         self,
         scenario_root: str,
         traffic_specs: Sequence[str] = [],
-        missions: Optional[Dict[str, Mission]] = None,
+        missions: Optional[Dict[str, NavigationMission]] = None,
         social_agents: Optional[Dict[str, Tuple[Any, SocialAgent]]] = None,
         log_dir: Optional[str] = None,
         surface_patches: Optional[Sequence[Dict[str, Any]]] = None,
@@ -361,8 +366,8 @@ class Scenario:
     @staticmethod
     @lru_cache(maxsize=16)
     def _discover_social_agents_info(
-        scenario,
-    ) -> Sequence[Dict[str, Tuple[SocialAgent, Mission]]]:
+        scenario: Union[str, Scenario],
+    ) -> Sequence[Dict[str, Tuple[SocialAgent, NavigationMission]]]:
         """Loops through the social agent mission pickles, instantiating corresponding
         implementations for the given types. The output is a list of
         {agent_id: (mission, locator)}, where each dictionary corresponds to the
@@ -559,7 +564,7 @@ class Scenario:
             metadata = yaml.load(f, yaml.Loader)
             return metadata
 
-    def set_ego_missions(self, ego_missions: Dict[str, Mission]):
+    def set_ego_missions(self, ego_missions: Dict[str, NavigationMission]):
         """Replaces the ego missions within the scenario.
         Args:
             ego_missions: Ego agent ids mapped to missions.
@@ -597,7 +602,7 @@ class Scenario:
         final_pos_x, final_pos_y, _, _ = final_pose
         return Point(final_pos_x, final_pos_y)
 
-    def discover_missions_of_traffic_histories(self) -> Dict[str, Mission]:
+    def discover_missions_of_traffic_histories(self) -> Dict[str, NavigationMission]:
         """Retrieves the missions of traffic history vehicles."""
         vehicle_missions = {}
         for row in self._traffic_history.first_seen_times():
@@ -607,7 +612,7 @@ class Scenario:
             entry_tactic = default_entry_tactic(speed)
             veh_config_type = self._traffic_history.vehicle_config_type(v_id)
             veh_dims = self._traffic_history.vehicle_dims(v_id)
-            vehicle_missions[v_id] = Mission(
+            vehicle_missions[v_id] = NavigationMission(
                 start=start,
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_map),
@@ -622,7 +627,7 @@ class Scenario:
 
     def create_dynamic_traffic_history_mission(
         self, vehicle_id: str, trigger_time: float, positional_radius: int
-    ) -> Tuple[Mission, Mission]:
+    ) -> Tuple[NavigationMission, NavigationMission]:
         """Builds missions out of the given vehicle information.
         Args:
             vehicle_id:
@@ -632,7 +637,7 @@ class Scenario:
             positional_radius:
                 The goal radius for the positional goal.
         Returns:
-            (smarts.core.plan.Mission, smarts.core.plan.Mission): A positional mission that follows the initial
+            (smarts.core.plan.NavigationMission, smarts.core.plan.NavigationMission): A positional mission that follows the initial
              original vehicle's travel as well as a traverse style mission which is done when the
              vehicle leaves the map.
         """
@@ -640,12 +645,12 @@ class Scenario:
         veh_goal = self.get_vehicle_goal(vehicle_id)
         entry_tactic = default_entry_tactic(speed)
         # create a positional mission and a traverse mission
-        positional_mission = Mission(
+        positional_mission = NavigationMission(
             start=start,
             entry_tactic=entry_tactic,
             goal=PositionalGoal(veh_goal, radius=positional_radius),
         )
-        traverse_mission = Mission(
+        traverse_mission = NavigationMission(
             start=start,
             entry_tactic=entry_tactic,
             goal=TraverseGoal(self._road_map),
@@ -663,7 +668,7 @@ class Scenario:
                 Iterable[VehicleWindow],
             ]
         ] = None,
-    ) -> Sequence[Mission]:
+    ) -> Sequence[NavigationMission]:
         """Discovers vehicle missions for the given window of time.
 
         :param exists_at_or_after: The starting time of any vehicles to query for.
@@ -677,7 +682,7 @@ class Scenario:
         :param filter: A filter in the form of ``(func(Sequence[TrafficHistoryVehicleWindow]) -> Sequence[TrafficHistoryVehicleWindow])``,
             which passes in traffic vehicle information and then should be used purely to filter the sequence down.
         :return: A set of missions derived from the traffic history.
-        :rtype: List[smarts.core.plan.Mission]
+        :rtype: List[smarts.core.plan.NavigationMission]
         """
         vehicle_windows = self._traffic_history.vehicle_windows_in_range(
             exists_at_or_after, ends_before, minimum_vehicle_window
@@ -696,7 +701,7 @@ class Scenario:
             entry_tactic = default_entry_tactic(vw.start_speed)
             veh_config_type = vw.vehicle_type
             veh_dims = vw.dimensions
-            vehicle_mission = Mission(
+            vehicle_mission = NavigationMission(
                 start=start,
                 entry_tactic=entry_tactic,
                 goal=TraverseGoal(self.road_map),
@@ -796,7 +801,7 @@ class Scenario:
 
             entry_tactic = mission.entry_tactic
             start_time = Scenario._extract_mission_start_time(mission, entry_tactic)
-            return Mission(
+            return NavigationMission(
                 start=start,
                 route_vias=mission.route.via,
                 goal=goal,
@@ -813,7 +818,7 @@ class Scenario:
 
             entry_tactic = mission.entry_tactic
             start_time = Scenario._extract_mission_start_time(mission, entry_tactic)
-            return Mission(
+            return NavigationMission(
                 start=start,
                 goal=EndlessGoal(),
                 start_time=start_time,
@@ -1063,7 +1068,7 @@ class Scenario:
         return True
 
     @property
-    def missions(self) -> Dict[str, Mission]:
+    def missions(self) -> Dict[str, NavigationMission]:
         """Agent missions contained within this scenario."""
         return self._missions
 
@@ -1077,7 +1082,7 @@ class Scenario:
         """Bubbles within this scenario."""
         return self._bubbles
 
-    def mission(self, agent_id) -> Optional[Mission]:
+    def mission(self, agent_id) -> Optional[NavigationMission]:
         """Get the mission assigned to the given agent."""
         return self._missions.get(agent_id, None)
 

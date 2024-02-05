@@ -17,12 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import logging
 import math
 import os
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import yaml
@@ -49,7 +51,10 @@ from smarts.core.utils.core_math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
-from smarts.core.utils.pybullet import bullet_client as bc
+
+if TYPE_CHECKING:
+    from smarts.core.utils.pybullet import bullet_client as bc
+
 
 with pkg_resources.path(
     smarts.assets.vehicles.dynamics_model, "generic_sedan.urdf"
@@ -69,7 +74,9 @@ with open(chassis_filepath, "r") as chassis_file:
     DEFAULT_CHASSIS_PARAMETERS = yaml.safe_load(chassis_file)
 
 
-def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
+def _query_bullet_contact_points(
+    bullet_client: bc.BulletClient, bullet_id: str, link_index: int
+):
     contact_objects = set()
     # Give 0.05 meter leeway
     LEEWAY = 0.05
@@ -163,7 +170,7 @@ class Chassis:
         """The turning rate of the chassis in radians."""
         raise NotImplementedError
 
-    def inherit_physical_values(self, other: "Chassis"):
+    def inherit_physical_values(self, other: Chassis):
         """Apply GCD between the two chassis."""
         raise NotImplementedError
 
@@ -329,7 +336,7 @@ class BoxChassis(Chassis):
         self.speed = other.speed
         # ignore physics
 
-    def step(self, current_simulation_time):
+    def step(self, current_simulation_time: float):
         pass
 
     def teardown(self):
@@ -346,12 +353,12 @@ class AckermannChassis(Chassis):
         self,
         pose: Pose,
         bullet_client: bc.BulletClient,
-        vehicle_dynamics_filepath=DEFAULT_VEHICLE_FILEPATH,
-        tire_parameters_filepath=None,
-        friction_map=None,
-        controller_parameters=DEFAULT_CONTROLLER_PARAMETERS,
-        chassis_parameters=DEFAULT_CHASSIS_PARAMETERS,
-        initial_speed=None,
+        vehicle_dynamics_filepath: Optional[str] = DEFAULT_VEHICLE_FILEPATH,
+        tire_parameters_filepath: Optional[str] = None,
+        friction_map: Optional[Sequence[Dict[str, Any]]] = None,
+        controller_parameters: Dict[str, Any] = DEFAULT_CONTROLLER_PARAMETERS,
+        chassis_parameters: Dict[str, Any] = DEFAULT_CHASSIS_PARAMETERS,
+        initial_speed: Optional[float] = None,
     ):
         assert isinstance(pose, Pose)
         self._log = logging.getLogger(self.__class__.__name__)

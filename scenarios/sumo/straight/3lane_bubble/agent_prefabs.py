@@ -13,7 +13,9 @@ class PoseBoidAgent(Agent):
 
     def _single_act(self, obs):
         wp = obs.waypoint_paths[0][:5][-1]
-        dist_to_wp = np.linalg.norm(wp.pos - obs.ego_vehicle_state.position[:2])
+        dist_to_wp = np.linalg.norm(
+            np.subtract(wp.pos, obs.ego_vehicle_state.position[:2])
+        )
         target_speed = 5  # m/s
         return np.array([*wp.pos, wp.heading, dist_to_wp / target_speed])
 

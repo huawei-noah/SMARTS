@@ -19,15 +19,22 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
 import re
 from dataclasses import dataclass
 from functools import cached_property, lru_cache
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
-from smarts.core.actor import ActorState
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.vehicle_state import Collision, VehicleState
+if TYPE_CHECKING:
+    from smarts.core.actor import ActorState
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.provider import ProviderState
+    from smarts.core.sensor import Sensor
+    from smarts.core.sensors import SensorState
+    from smarts.core.vehicle_state import Collision, VehicleState
+    from smarts.sstudio.sstypes import MapSpec
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +51,17 @@ class SimulationFrame:
     elapsed_sim_time: float
     fixed_timestep: float
     resetting: bool
-    map_spec: Any
+    map_spec: MapSpec
     last_dt: float
-    last_provider_state: Any
+    last_provider_state: ProviderState
     step_count: int
     vehicle_collisions: Dict[str, List[Collision]]
     vehicles_for_agents: Dict[str, List[str]]
     vehicle_ids: Set[str]
     vehicle_states: Dict[str, VehicleState]
-    vehicle_sensors: Dict[str, Dict[str, Any]]
+    vehicle_sensors: Dict[str, Dict[str, Sensor]]
 
-    sensor_states: Any
+    sensor_states: Dict[str, SensorState]
     interest_filter: re.Pattern
     # TODO MTA: renderer can be allowed here as long as it is only type information
     # renderer_type: Any = None
@@ -100,7 +107,7 @@ class SimulationFrame:
         return {}
 
     def actor_is_interest(
-        self, actor_id, extension: Optional[re.Pattern] = None
+        self, actor_id: str, extension: Optional[re.Pattern] = None
     ) -> bool:
         """Determine if the actor is of interest.
 
@@ -112,7 +119,7 @@ class SimulationFrame:
         """
         return actor_id in self.interest_actors(extension)
 
-    def vehicle_did_collide(self, vehicle_id) -> bool:
+    def vehicle_did_collide(self, vehicle_id: str) -> bool:
         """Test if the given vehicle had any collisions in the last physics update."""
         vehicle_collisions = self.vehicle_collisions.get(vehicle_id, [])
         for c in vehicle_collisions:
@@ -120,7 +127,7 @@ class SimulationFrame:
                 return True
         return False
 
-    def filtered_vehicle_collisions(self, vehicle_id) -> List[Collision]:
+    def filtered_vehicle_collisions(self, vehicle_id: str) -> List[Collision]:
         """Get a list of all collisions the given vehicle was involved in during the last
         physics update.
         """

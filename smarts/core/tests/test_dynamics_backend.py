@@ -69,5 +69,5 @@ def test_set_pose(chassis):
     chassis.set_pose(Pose.from_center([137, -5.8, 1], Heading(1.8)))
     position, heading = chassis.pose.position, chassis.pose.heading
 
-    assert np.linalg.norm(position - np.array([137, -5.8, 1])) < 1e-16
+    assert np.linalg.norm(np.subtract(position, np.array([137, -5.8, 1]))) < 1e-16
     assert np.isclose(heading, 1.8)

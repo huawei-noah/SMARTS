@@ -33,7 +33,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # Copy source files and install.
 COPY . /SMARTS
 WORKDIR /SMARTS
-RUN pip install -e .[camera_obs,argoverse]
+RUN pip install -e .[camera-obs,argoverse]
 RUN pip install -e ./examples/e10_drive/inference
 
 SHELL ["/bin/bash", "-c", "-l"]

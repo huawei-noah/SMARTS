@@ -17,17 +17,20 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import itertools
 import random
-from typing import List, Sequence, Tuple
+from typing import TYPE_CHECKING, List, Sequence, Tuple
 
 import numpy as np
 import psutil
 
-from .lidar_sensor_params import SensorParams
 from .utils import pybullet
 from .utils.core_math import batches, rotate_quat
-from .utils.pybullet import bullet_client as bc
+
+if TYPE_CHECKING:
+    from .lidar_sensor_params import SensorParams
 
 
 class Lidar:
@@ -96,9 +99,9 @@ class Lidar:
 
             yaws = -1 * self._sensor_params.laser_angles
             rolls = np.arange(n_rays) * self._sensor_params.angle_resolution
+            origin = np.array([0, 0, 0])
             for yaw, roll in itertools.product(yaws, rolls):
                 rot = pybullet.getQuaternionFromEuler((roll, 0, yaw))
-                origin = np.array([0, 0, 0])
 
                 direction = rotate_quat(
                     np.asarray(rot, dtype=float),

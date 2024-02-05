@@ -64,17 +64,21 @@ _config_defaults: Final = {
         _assets_path, "vehicles/vehicle_definitions_list.yaml"
     ),
     ("core", "observation_workers"): 0,
-    ("core", "max_custom_image_sensors"): 4,
+    ("core", "max_custom_image_sensors"): 32,
     ("core", "sensor_parallelization"): "mp",
     ("core", "debug"): False,
     ("core", "reset_retries"): 0,
-    # ("physics", "max_pybullet_freq"): 240,
+    ("physics", "max_pybullet_freq"): 240,
     ("ray", "num_gpus"): 0,
     ("ray", "num_cpus"): None,
     ("ray", "log_to_driver"): False,
     ("sumo", "central_port"): 8619,
     ("sumo", "central_host"): "localhost",
     ("sumo", "traci_serve_mode"): "local",  # local|central
+    ("traffic", "traci_retries"): 5,
+    ("visdom", "enabled"): False,
+    ("visdom", "hostname"): "http://localhost",
+    ("visdom", "port"): 8097,
 }
 
 
@@ -153,7 +157,7 @@ class Config:
             value = self._config[section][option]
         except (configparser.NoSectionError, KeyError) as exc:
             if default is _UNSET:
-                if value := _config_defaults.get((section, option)):
+                if (value := _config_defaults.get((section, option), _UNSET)) != _UNSET:
                     return value
                 raise EnvironmentError(
                     f"Setting `${env_variable}` cannot be found in environment or configuration."

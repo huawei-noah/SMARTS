@@ -17,14 +17,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import warnings
-from typing import NamedTuple, Sequence
+from typing import TYPE_CHECKING, NamedTuple, Tuple
+
+if TYPE_CHECKING:
+    from smarts.core.vehicle_state import Collision
 
 
 class Events(NamedTuple):
     """Classified observations that can trigger agent done status."""
 
-    collisions: Sequence  # Sequence[Collision]
+    collisions: Tuple[Collision]
     """Collisions with other vehicles (if any)."""
     off_road: bool
     """True if vehicle is off the road, else False."""

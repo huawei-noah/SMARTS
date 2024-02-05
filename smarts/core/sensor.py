@@ -19,45 +19,86 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
+import abc
+import importlib.resources as pkg_resources
 import logging
+import math
 import sys
 from collections import deque
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Collection, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from smarts.core.coordinates import Pose, RefLinePoint
+from smarts.core import glsl
+from smarts.core.actor import ActorState
+from smarts.core.agent_interface import (
+    CustomRenderBufferDependency,
+    CustomRenderCameraDependency,
+    CustomRenderVariableDependency,
+    RenderDependencyBase,
+)
+from smarts.core.coordinates import Dimensions, Pose, RefLinePoint
 from smarts.core.lidar import Lidar
-from smarts.core.lidar_sensor_params import SensorParams
 from smarts.core.masks import RenderMasks
 from smarts.core.observations import (
+    CustomRenderData,
     DrivableAreaGridMap,
     GridMapMetadata,
+    Observation,
+    OcclusionRender,
     OccupancyGridMap,
     RoadWaypoints,
     SignalObservation,
     TopDownRGB,
     ViaPoint,
 )
-from smarts.core.plan import Plan
-from smarts.core.renderer_base import RendererBase
+from smarts.core.renderer_base import (
+    RendererBase,
+    ShaderStepBufferDependency,
+    ShaderStepCameraDependency,
+    ShaderStepVariableDependency,
+)
 from smarts.core.road_map import RoadMap, Waypoint
+from smarts.core.shader_buffer import BufferID, CameraSensorID
 from smarts.core.signals import SignalState
+from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.utils.core_math import squared_dist
-from smarts.core.vehicle_state import VehicleState, neighborhood_vehicles_around_vehicle
+from smarts.core.vehicle_state import neighborhood_vehicles_around_vehicle
+
+if TYPE_CHECKING:
+    from smarts.core.actor import ActorState
+    from smarts.core.lidar_sensor_params import SensorParams
+    from smarts.core.plan import Plan
+    from smarts.core.provider import ProviderState
+    from smarts.core.simulation_frame import SimulationFrame
+    from smarts.core.vehicle_state import VehicleState
 
 
-class Sensor:
+def _gen_sensor_name(base_name: str, vehicle_state: VehicleState):
+    return _gen_base_sensor_name(base_name, vehicle_state.actor_id)
+
+
+def _gen_base_sensor_name(base_name: str, actor_id: str):
+    return f"{base_name}_{actor_id}"
+
+
+class Sensor(metaclass=abc.ABCMeta):
     """The sensor base class."""
 
-    def step(self, sim_frame, **kwargs):
+    def step(self, sim_frame: SimulationFrame, **kwargs):
         """Update sensor state."""
-        pass
 
+    @abc.abstractmethod
     def teardown(self, **kwargs):
         """Clean up internal resources"""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
         raise NotImplementedError
 
     @property
@@ -83,20 +124,24 @@ class CameraSensor(Sensor):
         width: int,
         height: int,
         resolution: float,
+        build_camera: bool = True,
     ):
         assert renderer
         self._log = logging.getLogger(self.__class__.__name__)
-        self._camera_name = renderer.build_offscreen_camera(
-            f"{name}_{vehicle_state.actor_id}",
-            mask,
-            width,
-            height,
-            resolution,
-        )
+        self._name = name
+        self._camera_name = _gen_sensor_name(name, vehicle_state)
+        if build_camera:
+            renderer.build_offscreen_camera(
+                self._camera_name,
+                mask,
+                width,
+                height,
+                resolution,
+            )
+            self._follow_actor(
+                vehicle_state, renderer
+            )  # ensure we have a correct initial camera position
         self._target_actor = vehicle_state.actor_id
-        self._follow_actor(
-            vehicle_state, renderer
-        )  # ensure we have a correct initial camera position
         self._mask = mask
         self._width = width
         self._height = height
@@ -120,18 +165,32 @@ class CameraSensor(Sensor):
         camera = renderer.camera_for_id(self._camera_name)
         camera.teardown()
 
-    def step(self, sim_frame, **kwargs):
+    def step(self, sim_frame: SimulationFrame, **kwargs):
         if not self._target_actor in sim_frame.actor_states_by_id:
             return
         self._follow_actor(
             sim_frame.actor_states_by_id[self._target_actor], kwargs.get("renderer")
         )
 
-    def _follow_actor(self, vehicle_state: VehicleState, renderer: RendererBase):
+    def _follow_actor(self, actor_state: ActorState, renderer: RendererBase):
         if not renderer:
             return
         camera = renderer.camera_for_id(self._camera_name)
-        camera.update(vehicle_state.pose, vehicle_state.dimensions.height + 10)
+        pose = actor_state.get_pose()
+        dimensions = actor_state.get_dimensions()
+        if pose == None or dimensions == None:
+            return
+        camera.update(pose, dimensions.height + 10)
+
+    @property
+    def camera_name(self) -> str:
+        """The name of the camera this sensor is using."""
+        return self._camera_name
+
+    @property
+    def name(self) -> str:
+        """The name of this sensor."""
+        return self._name
 
     @property
     def serializable(self) -> bool:
@@ -152,7 +211,7 @@ class DrivableAreaGridMapSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            "drivable_area_grid_map",
+            CameraSensorID.DRIVABLE_AREA_GRID_MAP.value,
             RenderMasks.DRIVABLE_AREA_HIDE,
             width,
             height,
@@ -195,22 +254,21 @@ class OGMSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            "ogm",
+            CameraSensorID.OCCUPANCY_GRID_MAP.value,
             RenderMasks.OCCUPANCY_HIDE,
             width,
             height,
             resolution,
         )
-        self._resolution = resolution
 
     def __call__(self, renderer: RendererBase) -> OccupancyGridMap:
-        camera = renderer.camera_for_id(self._camera_name)
-        assert camera is not None, "OGM has not been initialized"
+        base_camera = renderer.camera_for_id(self._camera_name)
+        assert base_camera is not None, "OGM has not been initialized"
 
-        ram_image = camera.wait_for_ram_image(img_format="A")
+        ram_image = base_camera.wait_for_ram_image(img_format="A")
         mem_view = memoryview(ram_image)
         grid: np.ndarray = np.frombuffer(mem_view, np.uint8)
-        width, height = camera.image_dimensions
+        width, height = base_camera.image_dimensions
         grid.shape = (height, width, 1)
         grid = np.flipud(grid)
 
@@ -218,8 +276,8 @@ class OGMSensor(CameraSensor):
             resolution=self._resolution,
             height=grid.shape[0],
             width=grid.shape[1],
-            camera_position=camera.position,
-            camera_heading=camera.heading,
+            camera_position=base_camera.position,
+            camera_heading=base_camera.heading,
         )
         return OccupancyGridMap(data=grid, metadata=metadata)
 
@@ -238,7 +296,7 @@ class RGBSensor(CameraSensor):
         super().__init__(
             vehicle_state,
             renderer,
-            "top_down_rgb",
+            CameraSensorID.TOP_DOWN_RGB.value,
             RenderMasks.RGB_HIDE,
             width,
             height,
@@ -265,6 +323,263 @@ class RGBSensor(CameraSensor):
             camera_heading=camera.heading,
         )
         return TopDownRGB(data=image, metadata=metadata)
+
+
+class OcclusionMapSensor(CameraSensor):
+    """A sensor that demonstrates only the areas that can be seen by the vehicle."""
+
+    def __init__(
+        self,
+        vehicle_state: VehicleState,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: RendererBase,
+        ogm_sensor: OGMSensor,
+        add_surface_noise: bool,
+    ):
+        self._effect_cameras = []
+        super().__init__(
+            vehicle_state,
+            renderer,
+            CameraSensorID.OCCLUSION.value,
+            RenderMasks.NONE,
+            width,
+            height,
+            resolution,
+            build_camera=False,
+        )
+
+        occlusion_camera0 = ogm_sensor.camera_name
+        occlusion_camera1 = occlusion_camera0
+
+        if add_surface_noise:
+            # generate simplex camera
+            with pkg_resources.path(glsl, "simplex_shader.frag") as simplex_shader_path:
+                simplex_camera_name = _gen_sensor_name("simplex", vehicle_state)
+                renderer.build_shader_step(
+                    name=simplex_camera_name,
+                    fshader_path=simplex_shader_path,
+                    dependencies=(
+                        ShaderStepVariableDependency(
+                            value=1.0 / resolution,
+                            script_variable_name="scale",
+                        ),
+                        ShaderStepCameraDependency(
+                            _gen_sensor_name(
+                                CameraSensorID.DRIVABLE_AREA_GRID_MAP.value,
+                                vehicle_state,
+                            ),
+                            "iChannel0",
+                        ),
+                    ),
+                    priority=10,
+                    width=width,
+                    height=height,
+                )
+            self._effect_cameras.append(simplex_camera_name)
+            occlusion_camera1 = simplex_camera_name
+
+        # feed simplex and ogm to composite
+        with pkg_resources.path(glsl, "occlusion_shader.frag") as composite_shader_path:
+            composite_camera_name = _gen_sensor_name(
+                CameraSensorID.OCCLUSION.value, vehicle_state
+            )
+            renderer.build_shader_step(
+                name=composite_camera_name,
+                fshader_path=composite_shader_path,
+                dependencies=(
+                    ShaderStepCameraDependency(occlusion_camera0, "iChannel0"),
+                    ShaderStepCameraDependency(occlusion_camera1, "iChannel1"),
+                ),
+                priority=30,
+                width=width,
+                height=height,
+            )
+        self._effect_cameras.append(composite_camera_name)
+
+    def _follow_actor(self, actor_state: ActorState, renderer: RendererBase):
+        if not renderer:
+            return
+        for effect_name in self._effect_cameras:
+            pose = actor_state.get_pose()
+            dimensions = actor_state.get_dimensions()
+            if pose == None or dimensions == None:
+                continue
+            camera = renderer.camera_for_id(effect_name)
+            camera.update(pose, dimensions.height)
+
+    def teardown(self, **kwargs):
+        renderer: Optional[RendererBase] = kwargs.get("renderer")
+        if not renderer:
+            return
+        for effect_name in self._effect_cameras:
+            camera = renderer.camera_for_id(effect_name)
+            camera.teardown()
+
+    def __call__(self, renderer: RendererBase) -> OcclusionRender:
+        effect_camera = renderer.camera_for_id(self._effect_cameras[-1])
+
+        ram_image = effect_camera.wait_for_ram_image("RGB")
+        mem_view = memoryview(ram_image)
+        grid: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
+        grid.shape = effect_camera.image_dimensions
+        grid = np.flipud(grid)
+
+        metadata = GridMapMetadata(
+            resolution=self._resolution,
+            height=grid.shape[0],
+            width=grid.shape[1],
+            camera_position=(math.inf, math.inf, math.inf),
+            camera_heading=math.inf,
+        )
+        return OcclusionRender(data=grid, metadata=metadata)
+
+
+class CustomRenderSensor(CameraSensor):
+    """Defines a configurable image sensor."""
+
+    def __init__(
+        self,
+        vehicle_state: VehicleState,
+        width: int,
+        height: int,
+        resolution: float,
+        renderer: RendererBase,
+        fragment_shader_path: str,
+        render_dependencies: Tuple[RenderDependencyBase, ...],
+        ogm_sensor: Optional[OGMSensor],
+        top_down_rgb_sensor: Optional[RGBSensor],
+        drivable_area_grid_map_sensor: Optional[DrivableAreaGridMapSensor],
+        occlusion_map_sensor: Optional[OcclusionMapSensor],
+        name: str,
+    ):
+        super().__init__(
+            vehicle_state,
+            renderer,
+            name,
+            RenderMasks.NONE,
+            width,
+            height,
+            resolution,
+            build_camera=False,
+        )
+
+        dependencies = []
+        named_camera_sensors = (
+            (CameraSensorID.OCCUPANCY_GRID_MAP, ogm_sensor),
+            (CameraSensorID.TOP_DOWN_RGB, top_down_rgb_sensor),
+            (CameraSensorID.DRIVABLE_AREA_GRID_MAP, drivable_area_grid_map_sensor),
+            (CameraSensorID.OCCLUSION, occlusion_map_sensor),
+        )
+
+        def has_required(dependency_name, required_name, sensor) -> bool:
+            if dependency_name == required_name:
+                if sensor:
+                    return True
+                raise UserWarning(
+                    f"Custom render depency requires `{d.name}` but the sensor is not attached in the interface."
+                )
+            return False
+
+        for d in render_dependencies:
+            if isinstance(d, CustomRenderCameraDependency):
+                for csn, sensor in named_camera_sensors:
+                    if has_required(d.camera_dependency_name, csn.value, sensor):
+                        break
+
+                camera_id = (
+                    _gen_sensor_name(d.camera_dependency_name, vehicle_state)
+                    if d.is_self_targetted()
+                    else _gen_base_sensor_name(d.camera_dependency_name, d.target_actor)
+                )
+                dependency = ShaderStepCameraDependency(
+                    camera_id,
+                    d.variable_name,
+                )
+            elif isinstance(d, CustomRenderVariableDependency):
+                dependency = ShaderStepVariableDependency(
+                    value=d.value,
+                    script_variable_name=d.variable_name,
+                )
+            elif isinstance(d, CustomRenderBufferDependency):
+                if isinstance(d.buffer_dependency_name, str):
+                    buffer_name = BufferID(d.buffer_dependency_name)
+                else:
+                    buffer_name = d.buffer_dependency_name
+
+                dependency = ShaderStepBufferDependency(
+                    buffer_id=buffer_name,
+                    script_uniform_name=d.variable_name,
+                )
+            else:
+                raise TypeError(
+                    f"Dependency must be a subtype of `{RenderDependencyBase}`"
+                )
+            dependencies.append(dependency)
+
+        renderer.build_shader_step(
+            name=self._camera_name,
+            fshader_path=fragment_shader_path,
+            dependencies=dependencies,
+            priority=40,
+            width=width,
+            height=height,
+        )
+
+    def step(self, sim_frame: SimulationFrame, **kwargs):
+        if not self._target_actor in sim_frame.actor_states_by_id:
+            return
+        actor_state = sim_frame.actor_states_by_id[self._target_actor]
+        renderer = kwargs.get("renderer")
+        observations: Optional[Dict[str, Observation]] = kwargs.get("observations")
+
+        target = None
+        if isinstance(observations, dict):
+            for k, o in observations.items():
+                o: Observation
+                if o.ego_vehicle_state.id == self._target_actor:
+                    target = o
+            assert isinstance(target, Observation)
+
+        if not renderer:
+            return
+        renderer: RendererBase
+        camera = renderer.camera_for_id(self._camera_name)
+        pose = actor_state.get_pose()
+        dimensions = actor_state.get_dimensions()
+        if not target:
+            camera.update(
+                pose=pose, height=(dimensions.height + 10) if dimensions else None
+            )
+        else:
+            camera.update(observation=target)
+
+    def teardown(self, **kwargs):
+        renderer = kwargs.get("renderer")
+        if not renderer:
+            return
+        renderer: RendererBase
+        camera = renderer.camera_for_id(self._camera_name)
+        camera.teardown()
+
+    def __call__(self, renderer: RendererBase) -> CustomRenderData:
+        effect_camera = renderer.camera_for_id(self._camera_name)
+
+        ram_image = effect_camera.wait_for_ram_image("RGB")
+        mem_view = memoryview(ram_image)
+        grid: np.ndarray = np.frombuffer(mem_view, np.uint8)
+        grid.shape = effect_camera.image_dimensions + (3,)
+        grid = np.flipud(grid)
+
+        metadata = GridMapMetadata(
+            resolution=self._resolution,
+            height=grid.shape[0],
+            width=grid.shape[1],
+            camera_position=(math.inf, math.inf, math.inf),  # has no position
+            camera_heading=math.inf,  # has no heading
+        )
+        return CustomRenderData(data=grid, metadata=metadata)
 
 
 class LidarSensor(Sensor):
@@ -382,7 +697,11 @@ class TripMeterSensor(Sensor):
         )
 
     def update_distance_wps_record(
-        self, waypoint_paths, vehicle, plan: Plan, road_map: RoadMap
+        self,
+        waypoint_paths: List[List[Waypoint]],
+        vehicle_state: VehicleState,
+        plan: Plan,
+        road_map: RoadMap,
     ):
         """Append a waypoint to the history if it is not already counted."""
         # Distance calculation. Intention is the shortest trip travelled at the lane
@@ -402,7 +721,7 @@ class TripMeterSensor(Sensor):
         )
 
         if not self._wps_for_distance:
-            self._last_actor_position = vehicle.pose.position
+            self._last_actor_position = vehicle_state.pose.position
             if should_count_wp:
                 self._wps_for_distance.append(new_wp)
             return  # sensor does not have enough history
@@ -418,11 +737,11 @@ class TripMeterSensor(Sensor):
         additional_distance = TripMeterSensor._compute_additional_dist_travelled(
             most_recent_wp,
             new_wp,
-            vehicle.pose.position,
+            vehicle_state.pose.position,
             self._last_actor_position,
         )
         self._dist_travelled += additional_distance
-        self._last_actor_position = vehicle.pose.position
+        self._last_actor_position = vehicle_state.pose.position
 
     @staticmethod
     def _compute_additional_dist_travelled(
@@ -441,7 +760,7 @@ class TripMeterSensor(Sensor):
         distance = np.dot(position_disp_vec, wp_unit_vec)
         return distance
 
-    def __call__(self, increment=False):
+    def __call__(self, increment: bool = False):
         if increment:
             return self._dist_travelled - self._last_dist_travelled
 
@@ -454,15 +773,17 @@ class TripMeterSensor(Sensor):
 class NeighborhoodVehiclesSensor(Sensor):
     """Detects other vehicles around the sensor equipped vehicle."""
 
-    def __init__(self, radius=None):
+    def __init__(self, radius: Optional[float] = None):
         self._radius = radius
 
     @property
-    def radius(self):
+    def radius(self) -> float:
         """Radius to check for nearby vehicles."""
         return self._radius
 
-    def __call__(self, vehicle_state: VehicleState, vehicle_states):
+    def __call__(
+        self, vehicle_state: VehicleState, vehicle_states: Collection[VehicleState]
+    ) -> List[VehicleState]:
         return neighborhood_vehicles_around_vehicle(
             vehicle_state, vehicle_states, radius=self._radius
         )
@@ -484,10 +805,10 @@ class NeighborhoodVehiclesSensor(Sensor):
 class WaypointsSensor(Sensor):
     """Detects waypoints leading forward along the vehicle plan."""
 
-    def __init__(self, lookahead=32):
+    def __init__(self, lookahead: int = 32):
         self._lookahead = lookahead
 
-    def __call__(self, vehicle_state: VehicleState, plan: Plan, road_map):
+    def __call__(self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap):
         return road_map.waypoint_paths(
             pose=vehicle_state.pose,
             lookahead=self._lookahead,
@@ -511,10 +832,12 @@ class WaypointsSensor(Sensor):
 class RoadWaypointsSensor(Sensor):
     """Detects waypoints from all paths nearby the vehicle."""
 
-    def __init__(self, horizon=32):
+    def __init__(self, horizon: int = 32):
         self._horizon = horizon
 
-    def __call__(self, vehicle_state: VehicleState, plan, road_map) -> RoadWaypoints:
+    def __call__(
+        self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap
+    ) -> RoadWaypoints:
         veh_pt = vehicle_state.pose.point
         lane = road_map.nearest_lane(veh_pt)
         if not lane:
@@ -532,7 +855,11 @@ class RoadWaypointsSensor(Sensor):
         return RoadWaypoints(lanes=lane_paths)
 
     def _paths_for_lane(
-        self, lane, vehicle_state: VehicleState, plan, overflow_offset=None
+        self,
+        lane: RoadMap.Lane,
+        vehicle_state: VehicleState,
+        plan: Plan,
+        overflow_offset: Optional[float] = None,
     ):
         """Gets waypoint paths along the given lane."""
         # XXX: the following assumes waypoint spacing is 1m
@@ -543,22 +870,21 @@ class RoadWaypointsSensor(Sensor):
             start_offset = lane.length + overflow_offset
 
         incoming_lanes = lane.incoming_lanes
+        paths = []
         if start_offset < 0 and len(incoming_lanes) > 0:
-            paths = []
             for lane in incoming_lanes:
                 paths += self._paths_for_lane(lane, vehicle_state, plan, start_offset)
-            return paths
-        else:
-            start_offset = max(0, start_offset)
-            wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
-            adj_pose = Pose.from_center(wp_start, vehicle_state.pose.heading)
-            wps_to_lookahead = self._horizon * 2
-            paths = lane.waypoint_paths_for_pose(
-                pose=adj_pose,
-                lookahead=wps_to_lookahead,
-                route=plan.route,
-            )
-            return paths
+
+        start_offset = max(0, start_offset)
+        wp_start = lane.from_lane_coord(RefLinePoint(start_offset))
+        adj_pose = Pose.from_center(wp_start, vehicle_state.pose.heading)
+        wps_to_lookahead = self._horizon * 2
+        paths += lane.waypoint_paths_for_pose(
+            pose=adj_pose,
+            lookahead=wps_to_lookahead,
+            route=plan.route,
+        )
+        return paths
 
     def __eq__(self, __value: object) -> bool:
         return isinstance(__value, RoadWaypoints) and self._horizon == __value._horizon
@@ -633,7 +959,7 @@ class LanePositionSensor(Sensor):
     def __init__(self):
         pass
 
-    def __call__(self, lane: RoadMap.Lane, vehicle_state):
+    def __call__(self, lane: RoadMap.Lane, vehicle_state: VehicleState):
         return lane.to_lane_coord(vehicle_state.pose.point)
 
     def __eq__(self, __value: object) -> bool:
@@ -662,12 +988,11 @@ class ViaSensor(Sensor):
             and self._speed_accuracy == __value._speed_accuracy
         )
 
-    def __call__(self, vehicle_state: VehicleState, plan, road_map):
-        near_points: List[ViaPoint] = list()
-        hit_points: List[ViaPoint] = list()
+    def __call__(self, vehicle_state: VehicleState, plan: Plan, road_map: RoadMap):
         if plan.mission is None:
-            return (near_points, hit_points)
+            return ()
 
+        near_points: List[Tuple[float, ViaPoint]] = []
         vehicle_position = vehicle_state.pose.position[:2]
 
         @lru_cache()
@@ -685,32 +1010,29 @@ class ViaSensor(Sensor):
             if dist_from_lane_sq > self._acquisition_range**2:
                 continue
 
-            point = ViaPoint(
-                tuple(via.position),
-                lane_index=via.lane_index,
-                road_id=via.road_id,
-                required_speed=via.required_speed,
-            )
-
-            near_points.append(point)
             dist_from_point_sq = squared_dist(vehicle_position, via.position)
-            if (
+            hit = (
                 dist_from_point_sq <= via.hit_distance**2
                 and via not in self._consumed_via_points
                 and np.isclose(
                     vehicle_state.speed, via.required_speed, atol=self._speed_accuracy
                 )
-            ):
-                self._consumed_via_points.add(via)
-                hit_points.append(point)
+            )
 
-        return (
-            sorted(
-                near_points,
-                key=lambda point: squared_dist(point.position, vehicle_position),
-            ),
-            hit_points,
-        )
+            point = ViaPoint(
+                tuple(via.position),
+                lane_index=via.lane_index,
+                road_id=via.road_id,
+                required_speed=via.required_speed,
+                hit=hit,
+            )
+
+            near_points.append((dist_from_point_sq, point))
+            if hit:
+                self._consumed_via_points.add(via)
+
+        near_points.sort(key=lambda dist, _: dist)
+        return tuple(p for _, p in near_points)
 
     def teardown(self, **kwargs):
         pass
@@ -740,11 +1062,11 @@ class SignalsSensor(Sensor):
         lane_pos: RefLinePoint,
         state: VehicleState,
         plan: Plan,
-        provider_state,  # ProviderState
-    ) -> List[SignalObservation]:
-        result = []
+        provider_state: ProviderState,
+    ) -> Tuple[SignalObservation, ...]:
         if not lane:
-            return result
+            return ()
+        result = []
         upcoming_signals = []
         for feat in lane.features:
             if not self._is_signal_type(feat):
@@ -779,12 +1101,12 @@ class SignalsSensor(Sensor):
                 SignalObservation(
                     state=signal_state.state,
                     stop_point=signal_state.stopping_pos,
-                    controlled_lanes=controlled_lanes,
+                    controlled_lanes=tuple(controlled_lanes),
                     last_changed=signal_state.last_changed,
                 )
             )
 
-        return result
+        return tuple(result)
 
     def _find_signals_ahead(
         self,

@@ -19,14 +19,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import logging
-from typing import Set
+from __future__ import annotations
 
-from smarts.core.sensors import SensorResolver, Sensors
-from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.simulation_local_constants import SimulationLocalConstants
+import logging
+from typing import TYPE_CHECKING, Dict, Iterable, Optional, Set, Tuple
+
+from smarts.core.sensor import CustomRenderSensor
+from smarts.core.sensors import SensorResolver, Sensors, SensorState
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.file import replace
+
+if TYPE_CHECKING:
+    from smarts.core.observations import Observation
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.sensor import Sensor
+    from smarts.core.simulation_frame import SimulationFrame
+    from smarts.core.simulation_local_constants import SimulationLocalConstants
+    from smarts.core.utils.pybullet import bullet_client as bc
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +49,50 @@ class LocalSensorResolver(SensorResolver):
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
-        renderer,
-        bullet_client,
-    ):
+        renderer: Optional[RendererBase],
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool], Dict[str, Dict[str, Sensor]]]:
+        # If render buffer sensors:
+        # Call serializable sensors
+        # Call unserializable non-render results
+        # Collect unserializable non-render results
+        # Collect serializable results
+        # Update renderable sensor buffers
+        # Render
+        # Collect renderable sensors
+        # else:
+        # Render
+        # Call serializable sensors
+        # Collect unserializable non-render sensors
+        # Collect renderable sensors
+        # Collect serializable sensors
+        observations, dones, updated_sensors = self._gen_serialized_obs(
+            sim_frame, sim_local_constants, agent_ids
+        )
+        phys_observations = self._gen_phys_observations(
+            sim_frame, sim_local_constants, agent_ids, bullet_client, updated_sensors
+        )
+
+        # Merge physics sensor information
+        for agent_id, p_obs in phys_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **p_obs)
+
+        self._sync_custom_camera_sensors(sim_frame, renderer, observations)
+
+        if renderer:
+            renderer.render()
+
+        rendering_observations = self._gen_rendered_observations(
+            sim_frame, sim_local_constants, agent_ids, renderer, updated_sensors
+        )
+
+        # Merge sensor information
+        for agent_id, r_obs in rendering_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
+
+    def _gen_serialized_obs(self, sim_frame, sim_local_constants, agent_ids):
         with timeit("serial run", logger.debug):
             (
                 observations,
@@ -53,33 +104,9 @@ class LocalSensorResolver(SensorResolver):
                 agent_ids,
             )
 
-        # While observation processes are operating do rendering
-        with timeit("rendering", logger.debug):
-            rendering = {}
-            for agent_id in agent_ids:
-                for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                    (
-                        rendering[agent_id],
-                        updated_unsafe_sensors,
-                    ) = Sensors.process_serialization_unsafe_sensors(
-                        sim_frame,
-                        sim_local_constants,
-                        agent_id,
-                        sim_frame.sensor_states[vehicle_id],
-                        vehicle_id,
-                        renderer,
-                        bullet_client,
-                    )
-                    updated_sensors[vehicle_id].update(updated_unsafe_sensors)
-
-        with timeit(f"merging observations", logger.debug):
-            # Merge sensor information
-            for agent_id, r_obs in rendering.items():
-                observations[agent_id] = replace(observations[agent_id], **r_obs)
-
         return observations, dones, updated_sensors
 
-    def step(self, sim_frame, sensor_states):
+    def step(self, sim_frame: SimulationFrame, sensor_states: Iterable[SensorState]):
         """Step the sensor state."""
         for sensor_state in sensor_states:
             sensor_state.step()

@@ -17,15 +17,18 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import IntFlag
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from smarts.core.colors import SceneColors
 
 from .actor import ActorState
-from .coordinates import Point
-from .road_map import RoadMap
+
+if TYPE_CHECKING:
+    from smarts.core import coordinates
 
 
 class SignalLightState(IntFlag):
@@ -58,7 +61,7 @@ class SignalState(ActorState):
     """Traffic signal state information."""
 
     state: Optional[SignalLightState] = None
-    stopping_pos: Optional[Point] = None
+    stopping_pos: Optional[coordinates.Point] = None
     controlled_lanes: Optional[List[str]] = None
     last_changed: Optional[float] = None  # will be None if not known
 

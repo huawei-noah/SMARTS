@@ -17,16 +17,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
+import abc
 import re
 import warnings
 from dataclasses import dataclass, field, replace
-from enum import IntEnum
+from enum import Enum, IntEnum, auto
 from functools import cached_property
-from typing import List, Literal, Optional, Tuple, Union
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, List, Literal, Optional, Tuple, Union
 
+import numpy as np
+
+from smarts.core import config
 from smarts.core.controllers.action_space_type import ActionSpaceType
 from smarts.core.lidar_sensor_params import BasicLidar
 from smarts.core.lidar_sensor_params import SensorParams as LidarSensorParams
+from smarts.core.shader_buffer import BufferID, CameraSensorID
+from smarts.core.utils import iteration_tools
+
+
+class _DEFAULTS(Enum):
+    """The base defaults for the agent interface."""
+
+    SELF = "_SELF"
+    """Self-target the agent."""
 
 
 @dataclass
@@ -66,6 +82,124 @@ class RGB:
 
 
 @dataclass
+class OcclusionMap:
+    """The width and height are in "pixels" and the resolution is the "size of a
+    pixel". E.g. if you wanted 100m x 100m `OcclusionMap` but a 64x64 image representation
+    you would do `OcclusionMap(width=64, height=64, resolution=100/64)`
+    """
+
+    width: int = 256
+    height: int = 256
+    resolution: float = 50 / 256
+    surface_noise: bool = True
+
+
+@dataclass
+class RenderDependencyBase(metaclass=abc.ABCMeta):
+    """Base class for render dependencies"""
+
+    @property
+    @abc.abstractmethod
+    def name(self) -> str:
+        """The name of this dependency."""
+        raise NotImplementedError()
+
+
+@dataclass
+class CustomRenderVariableDependency(RenderDependencyBase):
+    """Base for renderer value to pass directly to the shader."""
+
+    value: Union[int, float, bool, np.ndarray, list, tuple]
+    """The value to pass to the shader."""
+    variable_name: str
+    """The uniform name inside the shader."""
+
+    @property
+    def name(self) -> str:
+        return self.variable_name
+
+    def __post_init__(self):
+        assert self.value, f"`{self.variable_name=}` cannot be None or empty."
+        assert self.variable_name
+        assert (
+            0 < len(self.value) < 5
+            if isinstance(self.value, (np.ndarray, list, tuple))
+            else True
+        )
+
+
+@dataclass
+class CustomRenderBufferDependency(RenderDependencyBase):
+    """Base for referencing an observation buffer (other than a camera)."""
+
+    buffer_dependency_name: Union[str, BufferID]
+    """The identification of buffer to reference."""
+    variable_name: str
+    """The variable name inside the shader."""
+
+    target_actor: str = _DEFAULTS.SELF.value
+
+    @property
+    def name(self) -> str:
+        return self.variable_name
+
+
+@dataclass
+class CustomRenderCameraDependency(RenderDependencyBase):
+    """Provides a uniform texture access to an existing camera."""
+
+    camera_dependency_name: Union[str, CameraSensorID]
+    """The name of the camera (type) to target."""
+    variable_name: str
+    """The name of the camera texture variable."""
+
+    target_actor: str = _DEFAULTS.SELF.value
+    """The target actor to target. Defaults to targeting this vehicle."""
+
+    @property
+    def name(self) -> str:
+        return self.variable_name
+
+    def is_self_targetted(self):
+        """If the dependency is drawing from one of this agent's cameras."""
+        return self.target_actor == _DEFAULTS.SELF.value
+
+    def __post_init__(self):
+        assert self.camera_dependency_name
+        if isinstance(self.camera_dependency_name, CameraSensorID):
+            self.camera_dependency_name = self.camera_dependency_name.value
+
+
+@dataclass
+class CustomRender:
+    """Utility render option that allows for a custom render output.
+
+    The width and height are in "pixels" and the resolution is the "size of a
+    pixel". E.g. if you wanted 100m x 100m map but a 64x64 image representation
+    you would do `CustomRender(width=64, height=64, resolution=100/64)`
+    """
+
+    name: str
+    """The name used to generate the camera."""
+    fragment_shader_path: Union[str, Path]
+    """The path string to the fragment shader."""
+    dependencies: Tuple[RenderDependencyBase, ...]
+    """Inputs used by the fragment program."""
+    width: int = 256
+    """The number of pixels for the range of u."""
+    height: int = 256
+    """The number of pixels for the range of v."""
+    resolution: float = 50 / 256
+    """Scales the resolution to the given size. Resolution 1 matches width and height."""
+
+    def __post_init__(self):
+        assert len(self.dependencies) == len(
+            {d.name for d in self.dependencies}
+        ), f"Dependencies must have a unique name {list(iteration_tools.duplicates(self.dependencies, key=lambda d: d.name))}"
+        assert self.resolution > 0, "Resolution must result in at least 1 pixel."
+
+
+@dataclass
 class Lidar:
     """Lidar point cloud observations."""
 
@@ -90,8 +224,8 @@ class RoadWaypoints:
     that lane.
     """
 
-    # The distance in meters to include waypoints for (both behind and in front of the agent)
     horizon: int = 20
+    """The distance in meters to include waypoints for (both behind and in front of the agent)"""
 
 
 @dataclass
@@ -106,14 +240,10 @@ class NeighborhoodVehicles:
 class Accelerometer:
     """Requires detection of motion changes within the agents vehicle."""
 
-    pass
-
 
 @dataclass
 class LanePositions:
     """Computation and reporting of lane-relative RefLine (Frenet) coordinates for all vehicles."""
-
-    pass
 
 
 @dataclass
@@ -343,6 +473,14 @@ class AgentInterface:
     Enable the signals sensor.
     """
 
+    occlusion_map: Union[OcclusionMap, bool] = False
+    """Enable the `OcclusionMap` for the current vehicle. This image represents what the current vehicle can see.
+    """
+
+    custom_renders: Tuple[CustomRender, ...] = tuple()
+    """Add custom renderer outputs.
+    """
+
     def __post_init__(self):
         self.neighborhood_vehicle_states = AgentInterface._resolve_config(
             self.neighborhood_vehicle_states, NeighborhoodVehicles
@@ -382,8 +520,29 @@ class AgentInterface:
             self.vehicle_class = self.vehicle_type
         assert isinstance(self.vehicle_class, str)
 
+        assert len(self.custom_renders) <= config()(
+            "core", "max_custom_image_sensors", cast=int
+        )
+
+        self.occlusion_map = AgentInterface._resolve_config(
+            self.occlusion_map, OcclusionMap
+        )
+        if self.occlusion_map:
+            assert self.occupancy_grid_map and isinstance(
+                self.occupancy_grid_map, OGM
+            ), "Occupancy grid map must also be attached to use occlusion map."
+            assert isinstance(
+                self.occlusion_map, OcclusionMap
+            ), "Occlusion map should have resolved to the datatype."
+            assert (
+                self.occupancy_grid_map.width == self.occlusion_map.width
+            ), "Occlusion map width must match occupancy grid map."
+            assert (
+                self.occupancy_grid_map.height == self.occlusion_map.height
+            ), "Occlusion map height must match occupancy grid map."
+
     @staticmethod
-    def from_type(requested_type: AgentType, **kwargs):
+    def from_type(requested_type: AgentType, **kwargs) -> AgentInterface:
         """Instantiates from a selection of agent_interface presets
 
         Args:
@@ -483,7 +642,7 @@ class AgentInterface:
 
         return interface.replace(**kwargs)
 
-    def replace(self, **kwargs):
+    def replace(self, **kwargs) -> AgentInterface:
         """Clone this AgentInterface with the given fields updated
         >>> interface = AgentInterface(action=ActionSpaceType.Continuous) \
                             .replace(waypoint_paths=True)
@@ -491,6 +650,16 @@ class AgentInterface:
         Waypoints(...)
         """
         return replace(self, **kwargs)
+
+    @property
+    def requires_rendering(self):
+        """If this agent interface requires a renderer."""
+        return bool(
+            self.top_down_rgb
+            or self.occupancy_grid_map
+            or self.drivable_area_grid_map
+            or self.custom_renders
+        )
 
     @property
     def ogm(self):
@@ -542,10 +711,10 @@ class AgentInterface:
         return self.neighborhood_vehicle_states
 
     @staticmethod
-    def _resolve_config(config, type_):
-        if config is True:
+    def _resolve_config(_config, type_) -> Union[Any, Literal[False]]:
+        if _config is True:
             return type_()
-        elif isinstance(config, type_):
-            return config
+        elif isinstance(_config, type_):
+            return _config
         else:
             return False

@@ -34,12 +34,14 @@
 **/.mypy_cache/
 **/nosetests.xml
 **/OpEn_build/
+**/.panda3d_cache
 **/pip-delete-this-directory.txt
 **/pip-log.txt
 **/pip-wheel-metadata/
 **/__pycache__
 **/.pytest_cache
 **/.python-version
+**/.pytype
 **/*.rou.alt.xml
 **/*.rou.xml
 **/*.sif
@@ -54,7 +56,7 @@
 **/.tox/
 **/traffic_histories.pkl
 **/*.trips.xml
-**/.venv
+**/.venv*
 **/.vscode
 **/wheels/
 **/xdummy.log

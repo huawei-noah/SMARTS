@@ -28,7 +28,7 @@ import pytest
 from smarts.core import seed
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.coordinates import Heading
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
@@ -36,7 +36,7 @@ from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 
 @pytest.fixture
 def scenarios():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
     )

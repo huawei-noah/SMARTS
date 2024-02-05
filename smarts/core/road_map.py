@@ -36,6 +36,7 @@ from shapely.geometry import Polygon
 from smarts.core.coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
 from smarts.core.utils.core_math import (
     fast_quaternion_from_angle,
+    lerp,
     min_angles_difference_signed,
     signed_dist_to_line,
     vec_to_radians,
@@ -808,6 +809,14 @@ class Waypoint:
     lane_offset: float
     """Longitudinal distance along lane center-line of this waypoint."""
 
+    def __post_init__(self):
+        if isinstance(self.lane_width, (np.floating)):
+            object.__setattr__(self, "lane_width", float(self.lane_width))
+        if isinstance(self.speed_limit, (np.floating)):
+            object.__setattr__(self, "speed_limit", float(self.speed_limit))
+        if isinstance(self.lane_offset, (np.floating)):
+            object.__setattr__(self, "lane_offset", float(self.lane_offset))
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, Waypoint):
             return False
@@ -847,6 +856,11 @@ class Waypoint:
         )
         return self.heading.relative_to(h)
 
+    @property
+    def position(self):
+        """The position of the waypoint."""
+        return self.pos
+
     def signed_lateral_error(self, p) -> float:
         """Returns the signed lateral distance from the given point to the
         line formed by the waypoint position and the waypoint heading.
@@ -858,6 +872,74 @@ class Waypoint:
     def dist_to(self, p) -> float:
         """Calculates straight line distance to the given 2D point"""
         return np.linalg.norm(self.pos - p[: len(self.pos)])
+
+
+def interpolate_waypoints(
+    first_waypoint: Waypoint,
+    second_waypoint: Waypoint,
+    start_relative_offset: float,
+    interval: float,
+) -> Tuple[List[Waypoint], float]:
+    """Generate intermediary waypoints between the given waypoints.
+
+    Args:
+        first_waypoint (Waypoint): The initial start waypoint.
+        second_waypoint (Waypoint): The initial end waypoint.
+        start_relative_offset (float): The starting offset to generate the first waypoint.
+        interval (float): The interval to generate the waypoints at.
+
+    Returns:
+        Tuple[List[Waypoint], float]: The resulting waypoints and the used offset
+    """
+    assert interval > 0, f"Instead got {interval =}"
+    assert start_relative_offset >= 0, f"Instead got {start_relative_offset =}"
+    base_waypoint_offset_delta = abs(
+        second_waypoint.lane_offset - first_waypoint.lane_offset
+    )
+    accumulated_relative_offset = 0
+    out_waypoints: List[Waypoint] = []
+    normalize_factor = 1 / base_waypoint_offset_delta
+    while (
+        accumulated_relative_offset + start_relative_offset
+        <= base_waypoint_offset_delta
+    ):
+        normalized_relative_offset = (
+            accumulated_relative_offset + start_relative_offset
+        ) * normalize_factor
+        out_waypoints.append(
+            Waypoint(
+                pos=lerp(
+                    first_waypoint.pos, second_waypoint.pos, normalized_relative_offset
+                ),
+                heading=Heading(
+                    lerp(
+                        first_waypoint.heading,
+                        second_waypoint.heading,
+                        normalized_relative_offset,
+                    )
+                ),
+                lane_id=first_waypoint.lane_id,
+                lane_width=lerp(
+                    first_waypoint.lane_width,
+                    second_waypoint.lane_width,
+                    normalized_relative_offset,
+                ),
+                speed_limit=lerp(
+                    first_waypoint.lane_width,
+                    second_waypoint.lane_width,
+                    normalized_relative_offset,
+                ),
+                lane_index=first_waypoint.lane_index,
+                lane_offset=lerp(
+                    first_waypoint.lane_offset,
+                    second_waypoint.lane_offset,
+                    normalized_relative_offset,
+                ),
+            )
+        )
+        accumulated_relative_offset += interval
+    used = base_waypoint_offset_delta
+    return out_waypoints, used
 
 
 class RoadMapWithCaches(RoadMap):

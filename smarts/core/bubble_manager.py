@@ -35,7 +35,7 @@ from smarts.core.condition_state import ConditionState
 from smarts.core.data_model import SocialAgent
 from smarts.core.plan import (
     EndlessGoal,
-    Mission,
+    NavigationMission,
     Plan,
     PlanningError,
     PositionalGoal,
@@ -859,7 +859,9 @@ class BubbleManager(ActorCaptureManager):
             goal = PositionalGoal.from_road(dest_road_id, sim.scenario.road_map)
         else:
             goal = EndlessGoal()
-        mission = Mission(start=Start(vehicle.position[:2], vehicle.heading), goal=goal)
+        mission = NavigationMission(
+            start=Start(vehicle.position[:2], vehicle.heading), goal=goal
+        )
         try:
             plan.create_route(mission)
         except PlanningError:

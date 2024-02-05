@@ -22,7 +22,7 @@ python:
     - method: pip
       path: .
       extra_requirements:
-        - camera_obs
+        - camera-obs
         - doc
         - train
         - ray

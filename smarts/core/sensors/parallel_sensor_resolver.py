@@ -19,22 +19,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
 import multiprocessing as mp
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import psutil
 
 import smarts.core.serialization.default as serializer
 from smarts.core import config
-from smarts.core.sensors import SensorResolver, Sensors
-from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.simulation_local_constants import SimulationLocalConstants
+from smarts.core.sensors import SensorResolver, Sensors, SensorState
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.file import replace
+
+if TYPE_CHECKING:
+    from smarts.core.observations import Observation
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.sensor import Sensor
+    from smarts.core.simulation_frame import SimulationFrame
+    from smarts.core.simulation_local_constants import SimulationLocalConstants
+    from smarts.core.utils.pybullet import bullet_client as bc
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,19 +53,19 @@ class ParallelSensorResolver(SensorResolver):
 
     def __init__(self, process_count_override: Optional[int] = None) -> None:
         super().__init__()
-        self._logger = logging.getLogger("Sensors")
+        self._logger: logging.Logger = logging.getLogger("Sensors")
         self._sim_local_constants: SimulationLocalConstants = None
         self._workers: List[SensorsWorker] = []
-        self._process_count_override = process_count_override
+        self._process_count_override: Optional[int] = process_count_override
 
     def observe(
         self,
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
-        renderer,
-        bullet_client,
-    ):
+        renderer: RendererBase,
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool], Dict[str, Dict[str, Sensor]]]:
         """Runs observations in parallel where possible.
         Args:
             sim_frame (SimulationFrame):
@@ -82,12 +91,59 @@ class ParallelSensorResolver(SensorResolver):
             else max(1, self._process_count_override)
         )
 
+        used_workers = self._gen_workers_for_serializable_sensors(
+            sim_frame, sim_local_constants, agent_ids, used_processes
+        )
+        phys_observations = self._gen_phys_observations(
+            sim_frame, sim_local_constants, agent_ids, bullet_client, updated_sensors
+        )
+
+        # Collect futures
+        with timeit("waiting for observations", logger.debug):
+            if used_workers:
+                while agent_ids != set(observations):
+                    assert all(
+                        w.running for w in used_workers
+                    ), "A process worker crashed."
+                    for result in mp.connection.wait(
+                        [worker.connection for worker in used_workers], timeout=5
+                    ):
+                        # pytype: disable=attribute-error
+                        obs, ds, u_sens = result.recv()
+                        # pytype: enable=attribute-error
+                        observations.update(obs)
+                        dones.update(ds)
+                        for v_id, values in u_sens.items():
+                            updated_sensors[v_id].update(values)
+
+        # Merge physics sensor information
+        for agent_id, p_obs in phys_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **p_obs)
+
+        self._sync_custom_camera_sensors(sim_frame, renderer, observations)
+
+        if renderer:
+            renderer.render()
+
+        rendering_observations = self._gen_rendered_observations(
+            sim_frame, sim_local_constants, agent_ids, renderer, updated_sensors
+        )
+
+        # Merge sensor information
+        for agent_id, r_obs in rendering_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
+
+    def _gen_workers_for_serializable_sensors(
+        self, sim_frame, sim_local_constants, agent_ids, used_processes
+    ):
         workers: List[SensorsWorker] = self.get_workers(
             used_processes, sim_local_constants=sim_local_constants
         )
         used_workers: List[SensorsWorker] = []
         with timeit(
-            f"parallizable observations with {len(agent_ids)} and {len(workers)}",
+            f"setting up parallizable observations with {len(agent_ids)} and {len(workers)}",
             logger.debug,
         ):
             agent_ids_for_grouping = list(agent_ids)
@@ -106,50 +162,7 @@ class ParallelSensorResolver(SensorResolver):
                         )
                     )
                     used_workers.append(workers[i])
-
-            # While observation processes are operating do rendering
-            with timeit("rendering", logger.debug):
-                rendering = {}
-                for agent_id in agent_ids:
-                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        (
-                            rendering[agent_id],
-                            updated_unsafe_sensors,
-                        ) = Sensors.process_serialization_unsafe_sensors(
-                            sim_frame,
-                            sim_local_constants,
-                            agent_id,
-                            sim_frame.sensor_states[vehicle_id],
-                            vehicle_id,
-                            renderer,
-                            bullet_client,
-                        )
-                        updated_sensors[vehicle_id].update(updated_unsafe_sensors)
-
-            # Collect futures
-            with timeit("waiting for observations", logger.debug):
-                if used_workers:
-                    while agent_ids != set(observations):
-                        assert all(
-                            w.running for w in used_workers
-                        ), "A process worker crashed."
-                        for result in mp.connection.wait(
-                            [worker.connection for worker in used_workers], timeout=5
-                        ):
-                            # pytype: disable=attribute-error
-                            obs, ds, u_sens = result.recv()
-                            # pytype: enable=attribute-error
-                            observations.update(obs)
-                            dones.update(ds)
-                            for v_id, values in u_sens.items():
-                                updated_sensors[v_id].update(values)
-
-            with timeit(f"merging observations", logger.debug):
-                # Merge sensor information
-                for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = replace(observations[agent_id], **r_obs)
-
-        return observations, dones, updated_sensors
+        return used_workers
 
     def __del__(self):
         try:
@@ -168,7 +181,7 @@ class ParallelSensorResolver(SensorResolver):
         return local_constants == self._sim_local_constants
 
     def generate_workers(
-        self, count, workers_list: List[Any], worker_kwargs: "WorkerKwargs"
+        self, count: int, workers_list: List[SensorsWorker], worker_kwargs: WorkerKwargs
     ):
         """Generate the given number of workers requested."""
         while len(workers_list) < count:
@@ -182,7 +195,7 @@ class ParallelSensorResolver(SensorResolver):
             )
 
     def get_workers(
-        self, count, sim_local_constants: SimulationLocalConstants, **kwargs
+        self, count: int, sim_local_constants: SimulationLocalConstants, **kwargs
     ) -> List["SensorsWorker"]:
         """Get the give number of workers."""
         if not self._validate_configuration(sim_local_constants):
@@ -195,7 +208,7 @@ class ParallelSensorResolver(SensorResolver):
             self.generate_workers(count, self._workers, worker_kwargs)
         return self._workers[:count]
 
-    def step(self, sim_frame, sensor_states):
+    def step(self, sim_frame: SimulationFrame, sensor_states: Iterable[SensorState]):
         """Step the sensor state."""
         for sensor_state in sensor_states:
             sensor_state.step()

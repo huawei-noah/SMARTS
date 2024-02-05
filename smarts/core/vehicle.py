@@ -21,19 +21,21 @@ from __future__ import annotations
 
 import importlib.resources as pkg_resources
 import logging
+import warnings
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
 import smarts.assets.vehicles.visual_model as smarts_vehicle_visuals
+from smarts.core.sensor import CustomRenderSensor, OcclusionMapSensor
 
 from . import config
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis, Chassis
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
-from .sensors import (
+from .sensor import (
     AccelerometerSensor,
     DrivableAreaGridMapSensor,
     DrivenPathSensor,
@@ -72,6 +74,7 @@ class Vehicle:
         "driven_path_sensor",
         "trip_meter_sensor",
         "drivable_area_grid_map_sensor",
+        "occlusion_map_sensor",
         "neighborhood_vehicle_states_sensor",
         "waypoints_sensor",
         "road_waypoints_sensor",
@@ -79,6 +82,9 @@ class Vehicle:
         "lane_position_sensor",
         "via_sensor",
         "signals_sensor",
+    ) + tuple(
+        f"custom_render{i}_sensor"
+        for i in range(config()("core", "max_custom_image_sensors", cast=int))
     )
 
     def __init__(
@@ -296,7 +302,7 @@ class Vehicle:
 
     @staticmethod
     def agent_vehicle_dims(
-        mission: "plan.Mission", default: Optional[str] = None
+        mission: "plan.NavigationMission", default: Optional[str] = None
     ) -> Dimensions:
         """Get the vehicle dimensions from the mission requirements.
         Args:
@@ -348,7 +354,9 @@ class Vehicle:
             condition: bool = True,
             **kwargs,
         ):
-            assert sensor_name in cls._sensor_names
+            assert (
+                sensor_name in cls._sensor_names
+            ), f"{sensor_name}:{cls._sensor_names}"
             if (
                 replace
                 or has_no_sensors
@@ -391,7 +399,7 @@ class Vehicle:
         )
         # DrivableAreaGridMapSensor
         if agent_interface.drivable_area_grid_map:
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add a drivable_area_grid_map")
             add_sensor_if_needed(
                 DrivableAreaGridMapSensor,
@@ -401,11 +409,11 @@ class Vehicle:
                 width=agent_interface.drivable_area_grid_map.width,
                 height=agent_interface.drivable_area_grid_map.height,
                 resolution=agent_interface.drivable_area_grid_map.resolution,
-                renderer=sim.renderer,
+                renderer=sim.renderer_ref,
             )
         # OGMSensor
         if agent_interface.occupancy_grid_map:
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add an OGM")
             add_sensor_if_needed(
                 OGMSensor,
@@ -415,11 +423,29 @@ class Vehicle:
                 width=agent_interface.occupancy_grid_map.width,
                 height=agent_interface.occupancy_grid_map.height,
                 resolution=agent_interface.occupancy_grid_map.resolution,
-                renderer=sim.renderer,
+                renderer=sim.renderer_ref,
             )
+        if agent_interface.occlusion_map:
+            if not vehicle.subscribed_to("ogm_sensor"):
+                warnings.warn(
+                    "Occupancy grid map sensor must be attached to use occlusion sensor.",
+                    category=UserWarning,
+                )
+            else:
+                add_sensor_if_needed(
+                    OcclusionMapSensor,
+                    "occlusion_map_sensor",
+                    vehicle_state=vehicle_state,
+                    width=agent_interface.occlusion_map.width,
+                    height=agent_interface.occlusion_map.height,
+                    resolution=agent_interface.occlusion_map.resolution,
+                    renderer=sim.renderer_ref,
+                    ogm_sensor=vehicle.sensor_property("ogm_sensor"),
+                    add_surface_noise=agent_interface.occlusion_map.surface_noise,
+                )
         # RGBSensor
         if agent_interface.top_down_rgb:
-            if not sim.renderer:
+            if not sim.renderer_ref:
                 raise RendererException.required_to("add an RGB camera")
             add_sensor_if_needed(
                 RGBSensor,
@@ -429,8 +455,32 @@ class Vehicle:
                 width=agent_interface.top_down_rgb.width,
                 height=agent_interface.top_down_rgb.height,
                 resolution=agent_interface.top_down_rgb.resolution,
-                renderer=sim.renderer,
+                renderer=sim.renderer_ref,
             )
+        if len(agent_interface.custom_renders):
+            if not sim.renderer_ref:
+                raise RendererException.required_to("add a fragment program.")
+            for i, program in enumerate(agent_interface.custom_renders):
+                add_sensor_if_needed(
+                    CustomRenderSensor,
+                    f"custom_render{i}_sensor",
+                    vehicle_state=vehicle_state,
+                    width=program.width,
+                    height=program.height,
+                    resolution=program.resolution,
+                    renderer=sim.renderer_ref,
+                    fragment_shader_path=program.fragment_shader_path,
+                    render_dependencies=program.dependencies,
+                    ogm_sensor=vehicle.sensor_property("ogm_sensor", None),
+                    top_down_rgb_sensor=vehicle.sensor_property("rgb_sensor", None),
+                    drivable_area_grid_map_sensor=vehicle.sensor_property(
+                        "drivable_area_grid_map_sensor", default=None
+                    ),
+                    occlusion_map_sensor=vehicle.sensor_property(
+                        "occlusion_map_sensor", default=None
+                    ),
+                    name=program.name,
+                )
         if agent_interface.lidar_point_cloud:
             add_sensor_if_needed(
                 LidarSensor,
@@ -520,7 +570,7 @@ class Vehicle:
         self._chassis.teardown()
         self._chassis = chassis
 
-    def teardown(self, renderer, exclude_chassis=False):
+    def teardown(self, renderer: RendererBase, exclude_chassis: bool = False):
         """Clean up internal resources"""
         if not exclude_chassis:
             self._chassis.teardown()
@@ -528,7 +578,7 @@ class Vehicle:
             renderer.remove_vehicle_node(self._id)
         self._initialized = False
 
-    def attach_sensor(self, sensor, sensor_name):
+    def attach_sensor(self, sensor: Sensor, sensor_name: str):
         """replace previously-attached sensor with this one
         (to allow updating its parameters).
         Sensors might have been attached to a non-agent vehicle
@@ -542,7 +592,7 @@ class Vehicle:
         setattr(self, f"_{sensor_name}", sensor)
         self._sensors[sensor_name] = sensor
 
-    def detach_sensor(self, sensor_name):
+    def detach_sensor(self, sensor_name: str):
         """Detach a sensor by name."""
         self._log.debug("Removed existing %s on vehicle %s", sensor_name, self.id)
         sensor = getattr(self, f"_{sensor_name}", None)
@@ -551,15 +601,21 @@ class Vehicle:
             del self._sensors[sensor_name]
         return sensor
 
-    def subscribed_to(self, sensor_name):
+    def subscribed_to(self, sensor_name: str):
         """Confirm if the sensor is subscribed."""
         sensor = getattr(self, f"_{sensor_name}", None)
         return sensor is not None
 
-    def sensor_property(self, sensor_name):
+    def sensor_property(
+        self,
+        sensor_name: str,
+        default: Optional[Union[Sensor, Ellipsis.__class__]] = ...,
+    ):
         """Call a sensor by name."""
-        sensor = getattr(self, f"_{sensor_name}", None)
-        assert sensor is not None, f"'{sensor_name}' is not attached to '{self.id}'"
+        sensor = getattr(self, f"_{sensor_name}", None if default is ... else default)
+        assert (
+            sensor is not None or default is not ...
+        ), f"'{sensor_name}' is not attached to '{self.id}'"
         return sensor
 
     def _meta_create_instance_sensor_functions(self):

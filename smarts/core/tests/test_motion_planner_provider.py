@@ -26,7 +26,7 @@ import pytest
 
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface, DoneCriteria
 from smarts.core.coordinates import Heading
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 
@@ -48,7 +48,7 @@ def smarts():
 
 @pytest.fixture
 def loop_scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((0, 0, 0.5)), Heading(0)),
         goal=EndlessGoal(),
     )
@@ -71,5 +71,5 @@ def test_we_reach_target_pose_at_given_time(smarts, loop_scenario):
         observations, _, dones, _ = smarts.step(actions)
 
     ego_state = observations[AGENT_ID].ego_vehicle_state
-    assert np.linalg.norm(ego_state.position[:2] - np.array(target_position)) < 1e-16
+    assert np.linalg.norm(np.subtract(ego_state.position[:2], target_position)) < 1e-16
     assert np.isclose(ego_state.heading, target_heading)

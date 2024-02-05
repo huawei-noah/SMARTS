@@ -109,6 +109,13 @@ Enable ``visdom`` in the SMARTS environment by setting ``SMARTS_VISDOM_ENABLED``
     enabled=True
     hostname="http://localhost"
     port=8097
+    
+Start the visdom server:
+
+.. code-block:: bash
+
+    # 8097 is the default visdom port.
+    $ visdom -port 8097
 
 Below is a sample visualization of an agent's camera sensor observations.
 

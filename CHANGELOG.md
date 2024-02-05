@@ -14,6 +14,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The following methods now exist explicitly `Vehicle.{add_sensor|detach_sensor|subscribed_to|sensor_property|}`.
 - Resources loaded with `load_yaml_config_with_substitution()` now substitute in SMARTS configuration with single squiggle bracket `${}` syntax. This is currently restricted to environment variable names prefixed with `"SMARTS_"`. This extends to benchmark configuration and vehicle configuration.
 - Default vehicle definitions can be now modified using `assets:default_vehicle_definitions_list`/`SMARTS_ASSSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST` or by providing a `vehicle_definitions_list.yaml` in the scenario. These vehicle types are related to the `AgentInterface.vehicle_type` attribute.
+- New `CustomRender` agent interface option added. This allows using `glsl` fragment scripts to generate images from camera textures and simulation buffers.
+- New `ObfuscationMap` agent interface option added. This uses the `OccupancyGridMap` to help generate an image of ground viewable area from the ego vehicle's perspective.
 - There is now a centralized `TraCI` server mananger that can be used to prevent port collisions. It can be run using `python smarts.core.utils.sumo_server` and the use of the server can be enabled with `SMARTS_SUMO_TRACI_SERVE_MODE="central"`.
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
@@ -30,6 +32,12 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - `Vehicle.build_agent_vehicle()` and `Vehicle.build_social_vehicle()` moved to `VehicleIndex`.
 - `smarts.core.configuration.Configuration.get_settings()` now uses the `PyYAML` default instead of forcefully casting to `str`.
 - Added `AgentInterface.vehicle_class` which allows selection of a dynamics vehicle from the vehicle definitions list file.
+- Waypoints now have a `position` property (which will eventually replace `pos`).
+- You must now implement `act()` for any agent inheriting from `smarts.core.agent.Agent`.
+- `FunctionAgent` is now no longer dynamically defined.
+- `Vias.hit_via_points` is now a property.
+- `ViaPoint` now has an attribute `hit` which determines if the point has been "collected".
+- Dependencies switched back to using `-` instead of `_` (e.g. "camera-obs").
 ### Deprecated
 - Module `smarts.core.models` is now deprecated in favour of `smarts.assets`.
 - Deprecated a few things related to vehicles in the `Scenario` class, including the `vehicle_filepath`, `tire_parameters_filepath`, and `controller_parameters_filepath`. The functionality is now handled through the vehicle definitions.
@@ -57,6 +65,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - The via sensor and trip meter sensor now work without a mission.
 - Fixed a bug with `VehicleIndex.attach_sensors_to_vehicle()` that would generate an invalid plan.
 - Fixed a bug where vehicle sensor meta attributes would reference the wrong vehicle.
+- Resolved issue with road waypoints not showing waypoints if the horizon was larger than the start of the lane.
+- Fixed an issue where `SMARTS.reset()` would be unable to render cameras.
 - Squashed TraCI "retrying" stdout messages.
 ### Removed
 ### Security
@@ -126,6 +136,8 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Interest vehicles now show up in Envision.
 - Seed of `hiway-v1` env can be retrieved through a new property `seed`.
 - Added `TrafficEngineActor` to describe a scenario studio defined actor that is controlled by a traffic engine.
+- Docker images from now on out base from ``ubuntu:focal``.
+- A new Docker image has been added for software rendering for use cases where there is no display and GPU.
 ### Changed
 - Changed waypoints in sumo maps to use more incoming lanes into junctions.
 - Increased the cutoff radius for filtering out waypoints that are too far away in junctions in sumo maps.

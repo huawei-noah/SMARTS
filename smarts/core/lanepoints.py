@@ -25,13 +25,15 @@ import queue
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple, Sequence, Tuple
+from typing import TYPE_CHECKING, List, NamedTuple, Sequence, Tuple
 
 import numpy as np
 
 from smarts.core.coordinates import Heading, Point, Pose
-from smarts.core.road_map import RoadMap
 from smarts.core.utils.core_math import fast_quaternion_from_angle, vec_to_radians
+
+if TYPE_CHECKING:
+    from smarts.core.road_map import RoadMap
 
 
 @dataclass(frozen=True)

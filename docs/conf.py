@@ -60,7 +60,6 @@ extlinks = {
         "%s",
     ),
 }
-
 # Configuring automated generation of api documentation.
 # See: https://github.com/sphinx-contrib/apidoc
 apidoc_module_dir = ".."
@@ -72,6 +71,8 @@ apidoc_excluded_paths = [
     "scenarios",
     "smarts/ros",
     "zoo/policies/interaction_aware_motion_prediction",
+    "smarts/waymo/waymo_open_dataset/protos",
+    "zoo/evaluation/metrics",
 ]
 apidoc_extra_args = [
     "--force",
@@ -126,6 +127,7 @@ nitpick_ignore = {
     ("py:class", "ObsType"),
     ("py:class", "smarts.env.gymnasium.wrappers.metric.utils.T"),
     ("py:class", "enum.Enum"),
+    ("py:class", "bc.BulletClient"),
 }
 nitpick_ignore_regex = {
     (r"py:.*", r"av2\..*"),

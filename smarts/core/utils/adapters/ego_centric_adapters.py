@@ -55,7 +55,7 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
     wpps = obs.waypoint_paths or []
 
     def _replace_via(via: Union[Via, ViaPoint]):
-        return _replace(via, position=transform(via.position))
+        return _replace(via, position=transform(via.position + (0.0,)))
 
     vd = None
     if obs.via_data:
@@ -63,7 +63,6 @@ def ego_centric_observation_adapter(obs: Observation, *args: Any, **kwargs: Any)
         vd = _replace(
             obs.via_data,
             near_via_points=rpvp(obs.via_data.near_via_points),
-            hit_via_points=rpvp(obs.via_data.hit_via_points),
         )
     replace_wps = lambda lwps: [
         [

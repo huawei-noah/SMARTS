@@ -19,24 +19,36 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
 from collections import Counter
-from typing import Dict, Iterable, List, Optional, Set, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Collection,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 from smarts.core import config
-from smarts.core.agent_interface import AgentInterface
-from smarts.core.renderer_base import RendererBase
-from smarts.core.sensors import (
-    Observation,
-    Sensor,
-    SensorResolver,
-    Sensors,
-    SensorState,
-)
+from smarts.core.observations import Observation
+from smarts.core.sensors import SensorResolver, Sensors, SensorState
 from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
 from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
 from smarts.core.simulation_frame import SimulationFrame
 from smarts.core.simulation_local_constants import SimulationLocalConstants
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.sensor import Sensor
+    from smarts.core.utils.pybullet import bullet_client as bc
+    from smarts.core.vehicle import Vehicle
 
 
 class SensorManager:
@@ -59,9 +71,7 @@ class SensorManager:
             "core", "observation_workers", default=0, cast=int
         )
         parallel_resolver = ParallelSensorResolver
-        if (
-            backing := config()("core", "sensor_parallelization", default="mp")
-        ) == "ray":
+        if (backing := config()("core", "sensor_parallelization")) == "ray":
             try:
                 import ray
 
@@ -80,7 +90,7 @@ class SensorManager:
             parallel_resolver() if observation_workers > 0 else LocalSensorResolver()
         )
 
-    def step(self, sim_frame: SimulationFrame, renderer):
+    def step(self, sim_frame: SimulationFrame, renderer: RendererBase):
         """Update sensor values based on the new simulation state."""
         self._sensor_resolver.step(sim_frame, self._sensor_states.values())
 
@@ -89,12 +99,12 @@ class SensorManager:
 
     def observe(
         self,
-        sim_frame,
-        sim_local_constants,
-        agent_ids,
+        sim_frame: SimulationFrame,
+        sim_local_constants: SimulationLocalConstants,
+        agent_ids: Set[str],
         renderer_ref: RendererBase,
-        physics_ref,
-    ):
+        physics_ref: bc.BulletClient,
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Runs observations and updates the sensor states.
         Args:
             sim_frame (SimulationFrame):
@@ -130,10 +140,10 @@ class SensorManager:
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         interface: AgentInterface,
-        sensor_states,
-        vehicles,
-        renderer,
-        bullet_client,
+        sensor_states: Dict[str, SensorState],
+        vehicles: Dict[str, Vehicle],
+        renderer: RendererBase,
+        bullet_client: bc.BulletClient,
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
         """Operates all sensors on a batch of vehicles for a single agent."""
         # TODO: Replace this with a more efficient implementation that _actually_
@@ -165,7 +175,7 @@ class SensorManager:
 
         return observations, dones
 
-    def teardown(self, renderer):
+    def teardown(self, renderer: RendererBase):
         """Tear down the current sensors and clean up any internal resources."""
         self._logger.info("++ Sensors and sensor states reset. ++")
         for sensor in self._sensors.values():
@@ -225,7 +235,7 @@ class SensorManager:
         self._disassociate_sensor(sensor_id, schedule_teardown)
         return sensor
 
-    def _disassociate_sensor(self, sensor_id, schedule_teardown):
+    def _disassociate_sensor(self, sensor_id: str, schedule_teardown: bool):
         if schedule_teardown:
             self._scheduled_sensors.append((sensor_id, self._sensors[sensor_id]))
 
@@ -244,9 +254,9 @@ class SensorManager:
         """Determines if a actor has a sensor state associated with it."""
         return actor_id in self._sensor_states
 
-    def sensor_states_items(self):
+    def sensor_states_items(self) -> Iterator[Tuple[str, SensorState]]:
         """Gets all actor to sensor state associations."""
-        return self._sensor_states.items()
+        return map(lambda x: x, self._sensor_states.items())
 
     def sensors_for_actor_id(self, actor_id: str) -> List[Sensor]:
         """Gets all sensors associated with the given actor."""
@@ -267,16 +277,16 @@ class SensorManager:
             for actor_id in actor_ids
         }
 
-    def sensor_state_for_actor_id(self, actor_id: str):
+    def sensor_state_for_actor_id(self, actor_id: str) -> Optional[SensorState]:
         """Gets the sensor state for the given actor."""
         return self._sensor_states.get(actor_id)
 
     @staticmethod
-    def _actor_sid_to_sname(sensor_id: str):
+    def _actor_sid_to_sname(sensor_id: str) -> str:
         return sensor_id.partition("-")[0]
 
     @staticmethod
-    def _actor_and_sensor_name_to_sensor_id(sensor_name, actor_id):
+    def _actor_and_sensor_name_to_sensor_id(sensor_name: str, actor_id: str) -> str:
         return f"{sensor_name}-{actor_id}"
 
     def add_sensor_for_actor(self, actor_id: str, name: str, sensor: Sensor) -> str:
@@ -302,7 +312,9 @@ class SensorManager:
         self._sensor_references.update([sensor_id])
         return sensor_id
 
-    def clean_up_sensors_for_actors(self, current_actor_ids: Set[str], renderer):
+    def clean_up_sensors_for_actors(
+        self, current_actor_ids: Set[str], renderer: RendererBase
+    ):
         """Cleans up sensors that are attached to non-existing actors."""
         # This is not good enough by itself since actors can keep alive sensors that are not in use by an agent
         old_actor_ids = set(self._sensor_states)
