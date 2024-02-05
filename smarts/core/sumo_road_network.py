@@ -17,19 +17,24 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
+import itertools
 import logging
+import math
 import os
 import random
 from functools import cached_property, lru_cache
 from pathlib import Path
 from subprocess import check_output
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union, overload
 
 import numpy as np
 from shapely.geometry import Point as shPoint
 from shapely.geometry import Polygon
 from shapely.ops import nearest_points, snap
 
+from smarts.core.utils.core_logging import timeit
 from smarts.sstudio.sstypes import MapSpec
 
 from .coordinates import BoundingBox, Heading, Point, Pose, RefLinePoint
@@ -41,7 +46,16 @@ from .utils.geometry import buffered_shape
 from .utils.glb import make_map_glb, make_road_line_glb
 
 from smarts.core.utils.sumo_utils import sumolib  # isort:skip
-from sumolib.net.edge import Edge  # isort:skip
+
+
+def pairwise(iterable):
+    """Generates pairs of neighboring elements.
+    >>> list(pairwise('ABCDEFG'))
+    [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'E'), ('E', 'F'), ('F', 'G')]
+    """
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
 
 class SumoRoadNetwork(RoadMap):
@@ -53,18 +67,80 @@ class SumoRoadNetwork(RoadMap):
     This corresponds on a 1:1 scale to lanes 3.2m wide, which is typical
      in North America (although US highway lanes are wider at ~3.7m)."""
 
-    def __init__(self, graph, net_file: str, map_spec: MapSpec):
+    def __init__(self, graph: sumolib.net.Net, net_file: str, map_spec: MapSpec):
         self._log = logging.getLogger(self.__class__.__name__)
         self._graph = graph
         self._net_file = net_file
         self._map_spec = map_spec
         self._default_lane_width = SumoRoadNetwork._spec_lane_width(map_spec)
         self._surfaces = dict()
-        self._lanes = dict()
-        self._roads = dict()
+        self._lanes: Dict[str, SumoRoadNetwork.Lane] = dict()
+        self._roads: Dict[str, SumoRoadNetwork.Road] = dict()
         self._features = dict()
         self._waypoints_cache = SumoRoadNetwork._WaypointsCache()
+        self._rtree_roads = None
         self._load_traffic_lights()
+
+    def _init_rtree(
+        self, shapeList: List[sumolib.net.edge.Edge], includeJunctions=True
+    ):
+        import rtree
+
+        result = rtree.index.Index()
+        result.interleaved = True
+        MAX_VAL = 1e100
+        for ri, shape in enumerate(shapeList):
+            sumo_lanes: List[sumolib.net.lane.Lane] = shape.getLanes()
+            lane_bbs = list(
+                lane.getBoundingBox(includeJunctions) for lane in sumo_lanes
+            )
+            cxmin, cymin, cxmax, cymax = MAX_VAL, MAX_VAL, -MAX_VAL, -MAX_VAL
+            for xmin, ymin, xmax, ymax in lane_bbs:
+                cxmin = min(cxmin, xmin)
+                cxmax = max(cxmax, xmax)
+                cymin = min(cymin, ymin)
+                cymax = max(cymax, ymax)
+
+            bb = (cxmin, cymin, cxmax, cymax)
+            result.add(ri, bb)
+        return result
+
+    def _update_rtree(
+        self, rtree_, shapeList: List[sumolib.net.edge.Edge], includeJunctions=True
+    ):
+        import rtree
+
+        rtree_: rtree.index.Index
+        MAX_VAL = 1e100
+        for ri, shape in enumerate(shapeList):
+            sumo_lanes: List[sumolib.net.lane.Lane] = shape.getLanes()
+            lane_bbs = list(
+                lane.getBoundingBox(includeJunctions) for lane in sumo_lanes
+            )
+            cxmin, cymin, cxmax, cymax = MAX_VAL, MAX_VAL, -MAX_VAL, -MAX_VAL
+            for xmin, ymin, xmax, ymax in lane_bbs:
+                cxmin = min(cxmin, xmin)
+                cxmax = max(cxmax, xmax)
+                cymin = min(cymin, ymin)
+                cymax = max(cymax, ymax)
+
+            bb = (cxmin, cymin, cxmax, cymax)
+            rtree_.add(ri, bb)
+
+    def nearest_roads(self, point: Point, radius: float):
+        """Finds the nearest roads to the given point within the given radius."""
+        x = point[0]
+        y = point[1]
+        r = radius
+        edges: List[sumolib.net.edge.Edge] = sorted(
+            self._graph.getEdges(), key=lambda e: e.getID()
+        )
+        if self._rtree_roads is None:
+            self._rtree_roads = self._init_rtree(edges)
+        near_roads: List[RoadMap.Road] = []
+        for i in self._rtree_roads.intersection((x - r, y - r, x + r, y + r)):
+            near_roads.append(self.road_by_id(edges[i].getID()))
+        return near_roads
 
     @staticmethod
     def _check_net_origin(bbox):
@@ -81,7 +157,7 @@ class SumoRoadNetwork(RoadMap):
 
     @classmethod
     @lru_cache(maxsize=1)
-    def _shift_coordinates(cls, net_file_path, shifted_path):
+    def _shift_coordinates(cls, net_file_path: str, shifted_path: str):
         assert shifted_path != net_file_path
         logger = logging.getLogger(cls.__name__)
         logger.info(f"normalizing net coordinates into {shifted_path}...")
@@ -310,19 +386,146 @@ class SumoRoadNetwork(RoadMap):
     class Lane(RoadMap.Lane, Surface):
         """Describes a Sumo lane surface."""
 
-        def __init__(self, lane_id: str, sumo_lane, road_map):
+        def __init__(
+            self,
+            lane_id: str,
+            sumo_lane: sumolib.net.lane.Lane,
+            road_map: SumoRoadNetwork,
+        ):
             super().__init__(lane_id, road_map)
             self._lane_id = lane_id
             self._sumo_lane = sumo_lane
             self._road = road_map.road_by_id(sumo_lane.getEdge().getID())
             assert self._road
 
+            self._rtree_lane_fragments = None
+            self._lane_shape_for_rtree: Optional[List[Tuple[float, float]]] = None
+
         def __hash__(self) -> int:
             return hash(self.lane_id) ^ hash(self._map)
 
-        @property
+        def _init_rtree(self, lines):
+            import rtree
+
+            rtree.index.Property()
+            result = rtree.index.Index()
+            result.interleaved = True
+            for ri, (s, e) in enumerate(lines):
+                result.add(
+                    ri,
+                    (
+                        min(e[0], s[0]),
+                        min(e[1], s[1]),
+                        max(e[0], s[0]),
+                        max(e[1], s[1]),
+                    ),
+                )
+            return result
+
+        def _ensure_rtree(self):
+            if self._rtree_lane_fragments is None:
+                self._lane_shape_for_rtree = self._sumo_lane.getShape(False)
+                lane_fragments = list(pairwise(self._sumo_lane.getShape(False)))
+                self._rtree_lane_fragments = self._init_rtree(lane_fragments)
+
+        @lru_cache(maxsize=128)
+        def _segment_offset(self, end_index: int, start_index: int = 0) -> float:
+            dist = 0.0
+            for index in range(start_index, end_index):
+                dist += np.linalg.norm(
+                    np.subtract(
+                        self._lane_shape_for_rtree[index + 1],
+                        self._lane_shape_for_rtree[index],
+                    )
+                )
+            return dist
+
+        @overload
+        def get_distance(self, point: Point, radius: float) -> float:
+            ...
+
+        @overload
+        def get_distance(
+            self, point: Point, radius: float, *, get_offset: bool
+        ) -> Tuple[float, Optional[float]]:
+            ...
+
+        @overload
+        def get_distance(
+            self, point: Point, radius: float, *, perpendicular: bool
+        ) -> float:
+            ...
+
+        @overload
+        def get_distance(
+            self, point: Point, radius: float, /, get_offset: bool, perpendicular: bool
+        ) -> Tuple[float, Optional[float]]:
+            ...
+
+        def get_distance(
+            self,
+            point: Point,
+            radius: float,
+            get_offset=...,
+            perpendicular: bool = False,
+        ) -> Union[float, Tuple[float, Optional[float]]]:
+            """Get the distance on the lane from the given point within the given radius.
+            Specifying to get the offset returns the offset value.
+            """
+            x = point[0]
+            y = point[1]
+            r = radius
+            self._ensure_rtree()
+
+            dist = math.inf
+            INVALID_DISTANCE = -1
+            INVALID_INDEX = -1
+            found_index = INVALID_INDEX
+            for i in self._rtree_lane_fragments.intersection(
+                (x - r, y - r, x + r, y + r)
+            ):
+                d = sumolib.geomhelper.distancePointToLine(
+                    point,
+                    self._lane_shape_for_rtree[i],
+                    self._lane_shape_for_rtree[i + 1],
+                    perpendicular=perpendicular,
+                )
+
+                if d == INVALID_DISTANCE and i != 0 and dist == math.inf:
+                    # distance to inner corner
+                    dist = min(
+                        sumolib.geomhelper.distance(
+                            point, self._lane_shape_for_rtree[i]
+                        ),
+                        sumolib.geomhelper.distance(
+                            point, self._lane_shape_for_rtree[i + 1]
+                        ),
+                    )
+                    found_index = i
+                elif d != INVALID_DISTANCE and (dist is None or d < dist):
+                    dist = d
+                    found_index = i
+
+            if get_offset is not ...:
+                if get_offset is False:
+                    return dist, None
+                offset = 0.0
+                if found_index != INVALID_INDEX:
+                    offset = self._segment_offset(found_index)
+                    offset += sumolib.geomhelper.lineOffsetWithMinimumDistanceToPoint(
+                        point,
+                        self._lane_shape_for_rtree[found_index],
+                        self._lane_shape_for_rtree[found_index + 1],
+                        False,
+                    )
+                    assert isinstance(offset, float)
+                return dist, offset
+            return dist
+
+        @cached_property
         def bounding_box(self):
-            raise NotImplementedError()
+            xmin, ymin, xmax, ymax = self._sumo_lane.getBoundingBox(False)
+            return BoundingBox(Point(xmin, ymin), Point(xmax, ymax))
 
         @property
         def lane_id(self) -> str:
@@ -552,9 +755,15 @@ class SumoRoadNetwork(RoadMap):
             shape = self._sumo_lane.getShape(False)
             point = world_point[:2]
             if point not in shape:
-                return sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
-                    point, shape, perpendicular=False
-                )
+                if self._lane_shape_for_rtree is None and len(shape) < 5:
+                    offset = sumolib.geomhelper.polygonOffsetWithMinimumDistanceToPoint(
+                        point, shape, perpendicular=False
+                    )
+                else:
+                    _, offset = self.get_distance(
+                        world_point, 8, get_offset=True, perpendicular=False
+                    )
+                return offset
             # SUMO geomhelper.polygonOffset asserts when the point is part of the shape.
             # We get around the assertion with a check if the point is part of the shape.
             offset = 0
@@ -577,7 +786,7 @@ class SumoRoadNetwork(RoadMap):
         def from_lane_coord(self, lane_point: RefLinePoint) -> Point:
             shape = self._sumo_lane.getShape(False)
             x, y = sumolib.geomhelper.positionAtShapeOffset(shape, lane_point.s)
-            if lane_point.t != 0:
+            if lane_point.t != 0 and lane_point.t is not None:
                 dv = 1 if lane_point.s < self.length else -1
                 x2, y2 = sumolib.geomhelper.positionAtShapeOffset(
                     shape, lane_point.s + dv
@@ -645,7 +854,12 @@ class SumoRoadNetwork(RoadMap):
         """This is akin to a 'road segment' in real life.
         Many of these might correspond to a single named road in reality."""
 
-        def __init__(self, road_id: str, sumo_edge: Edge, road_map):
+        def __init__(
+            self,
+            road_id: str,
+            sumo_edge: sumolib.net.edge.Edge,
+            road_map: SumoRoadNetwork,
+        ):
             super().__init__(road_id, road_map)
             self._road_id = road_id
             self._sumo_edge = sumo_edge
@@ -771,7 +985,7 @@ class SumoRoadNetwork(RoadMap):
             bline = buffered_shape(line, 0.0)
             return line if bline.is_empty else bline
 
-    def road_by_id(self, road_id: str) -> RoadMap.Road:
+    def road_by_id(self, road_id: str) -> SumoRoadNetwork.Road:
         road = self._roads.get(road_id)
         if road:
             return road
@@ -781,6 +995,8 @@ class SumoRoadNetwork(RoadMap):
         ), f"SumoRoadNetwork got request for unknown road_id: '{road_id}'"
         road = SumoRoadNetwork.Road(road_id, sumo_edge, self)
         self._roads[road_id] = road
+        if self._rtree_roads is not None:
+            self._update_rtree(self._rtree_roads, [road._sumo_edge], False)
         assert road_id not in self._surfaces
         self._surfaces[road_id] = road
         return road
@@ -797,22 +1013,30 @@ class SumoRoadNetwork(RoadMap):
     ) -> List[Tuple[RoadMap.Lane, float]]:
         if radius is None:
             radius = self._default_lane_width
-        # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
-        # The includeJunctions parameter is the opposite of include_junctions because
-        # what it does in the Sumo query is attach the "node" that is the junction (node)
-        # shape to the shape of the non-special lanes that connect to it.  So if
-        # includeJunctions is True, we are more likely to hit "normal" lanes
-        # even when in an intersection where we want to hit "special"
-        # lanes when we specify include_junctions=True.  Note that "special"
-        # lanes are always candidates to be returned, no matter what.
-        # See:  https://github.com/eclipse/sumo/issues/5854
-        candidate_lanes = self._graph.getNeighboringLanes(
-            point[0],
-            point[1],
-            r=radius,
-            includeJunctions=not include_junctions,
-            allowFallback=False,  # makes this call fail if rtree is not installed
-        )
+        # # XXX: note that this getNeighboringLanes() call is fairly heavy/expensive (as revealed by profiling)
+        # # The includeJunctions parameter is the opposite of include_junctions because
+        # # what it does in the Sumo query is attach the "node" that is the junction (node)
+        # # shape to the shape of the non-special lanes that connect to it.  So if
+        # # includeJunctions is True, we are more likely to hit "normal" lanes
+        # # even when in an intersection where we want to hit "special"
+        # # lanes when we specify include_junctions=True.  Note that "special"
+        # # lanes are always candidates to be returned, no matter what.
+        # # See:  https://github.com/eclipse/sumo/issues/5854
+        # with timeit("Old sumo lane distance check", print):
+        #     candidate_lanes = self._graph.getNeighboringLanes(
+        #         point[0],
+        #         point[1],
+        #         r=radius,
+        #         includeJunctions=not include_junctions,
+        #         allowFallback=False,  # makes this call fail if rtree is not installed
+        #     )
+        candidate_lanes = []
+        for r in self.nearest_roads(point, radius):
+            for l in r.lanes:
+                l: SumoRoadNetwork.Lane
+                if (distance := l.get_distance(point, radius)) < math.inf:
+                    candidate_lanes.append((l._sumo_lane, distance))
+
         if not include_junctions:
             candidate_lanes = [
                 lane for lane in candidate_lanes if not lane[0].getEdge().isSpecial()
@@ -910,8 +1134,8 @@ class SumoRoadNetwork(RoadMap):
         ]
 
     def _internal_routes_between(
-        self, start_edge: Edge, end_edge: Edge
-    ) -> List[List[Edge]]:
+        self, start_edge: sumolib.net.edge.Edge, end_edge: sumolib.net.edge.Edge
+    ) -> List[List[sumolib.net.edge.Edge]]:
         if start_edge.isSpecial() or end_edge.isSpecial():
             return [[start_edge, end_edge]]
         routes = []

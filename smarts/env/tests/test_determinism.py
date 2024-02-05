@@ -139,8 +139,8 @@ def test_short_determinism():
 
 def test_long_determinism():
     max_steps_per_episode = 55000
-    episode_count = 1
-    capture_step = 13750
+    episode_count = 10
+    capture_step = 100
     scenarios = "scenarios/sumo/intersections/2lane"
     determinism(
         agent_spec(max_steps_per_episode), scenarios, episode_count, capture_step

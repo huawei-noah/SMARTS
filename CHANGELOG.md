@@ -35,6 +35,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Deprecated a few things related to vehicles in the `Scenario` class, including the `vehicle_filepath`, `tire_parameters_filepath`, and `controller_parameters_filepath`. The functionality is now handled through the vehicle definitions.
 - `AgentInterface.vehicle_type` is now deprecated with potential to be restored.
 ### Fixed
+- The performance of SUMO roadmap queries using `SumoRoadNetwork.{nearest_lanes|nearest_lane|offset_along_lane}()` have been greatly improved for long lanes.
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
 - Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.
 - Fixed a bug where `smarts.core.vehicle_index.VehicleIndex.attach_sensors_to_vehicle()` would pass a method instead of a `PlanFrame` to the generated vehicle `SensorState`.
