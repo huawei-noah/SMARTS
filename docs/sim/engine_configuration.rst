@@ -17,7 +17,7 @@ Configuration of the engine can come from several sources. These locations take 
 4. Global engine configuration, ``/etc/smarts/engine.ini``, if local configuration is not found.
 5. Package default configuration, ``$PYTHON_PATH/smarts/engine.ini``, if global configuration is not found.
 6. Code default, ``config(section, option, default=4)``, if global configuration is not found.
-7. Value default, see :ref:`engine_configuration_defaults`, if code default is not given.
+7. Option default if code default is not given.
 
 Note that configuration files resolve all settings at the first found configuration file (they do not layer.)
 
@@ -84,7 +84,6 @@ Engine settings
 
 The current list of engine settings are as follows:
 
-.. _engine_configuration_defaults:
 .. list-table::
    :header-rows: 1
 
