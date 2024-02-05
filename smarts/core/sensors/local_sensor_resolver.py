@@ -70,7 +70,7 @@ class LocalSensorResolver(SensorResolver):
             sim_frame, sim_local_constants, agent_ids
         )
         phys_observations = self._gen_phys_observations(
-            sim_frame, sim_local_constants, agent_ids, bullet_client
+            sim_frame, sim_local_constants, agent_ids, bullet_client, updated_sensors
         )
 
         # Merge physics sensor information

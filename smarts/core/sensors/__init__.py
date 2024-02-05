@@ -217,9 +217,10 @@ class SensorResolver:
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
         bullet_client: bc.BulletClient,
-    ):
+        updated_sensors: Dict[str, Dict[str, Sensor]],
+    ) -> Dict[str, Dict[str, Any]]:
         with timeit("physics sensors", logger.debug):
-            phys_observations = {}
+            phys_observations: Dict[str, Dict[str, Any]] = {}
             for agent_id in agent_ids:
                 for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
                     (
@@ -232,6 +233,7 @@ class SensorResolver:
                         vehicle_id,
                         bullet_client,
                     )
+                    updated_sensors[vehicle_id].update(updated_phys_sensors)
 
         return phys_observations
 
@@ -367,12 +369,12 @@ class Sensors:
 
         vehicle_state = sim_frame.vehicle_states[vehicle_id]
         lidar = None
+        updated_sensors = {}
         lidar_sensor = vehicle_sensors.get("lidar_sensor")
         if lidar_sensor:
             lidar_sensor.follow_vehicle(vehicle_state)
             lidar = lidar_sensor(bullet_client)
-
-        updated_sensors = {"lidar_sensor": lidar_sensor}
+            updated_sensors["lidar_sensor"] = lidar_sensor
 
         return (
             dict(

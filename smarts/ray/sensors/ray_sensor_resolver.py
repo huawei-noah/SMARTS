@@ -111,7 +111,7 @@ class RaySensorResolver(SensorResolver):
             sim_frame, sim_local_constants, agent_ids, ray_actors, len_workers
         )
         phys_observations = self._gen_phys_observations(
-            sim_frame, sim_local_constants, agent_ids, bullet_client
+            sim_frame, sim_local_constants, agent_ids, bullet_client, updated_sensors
         )
 
         # Collect futures
