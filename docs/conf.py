@@ -42,8 +42,8 @@ extensions = [
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx_click",  # extract documentation from a `click` application
-    "sphinxcontrib.apidoc",
-    "sphinxcontrib.spelling",
+    "sphinxcontrib.apidoc",  # automatically document the API
+    "sphinxcontrib.spelling",  # check documentation for spelling
 ]
 
 extlinks = {

@@ -16,6 +16,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Default vehicle definitions can be now modified using `assets:default_vehicle_definitions_list`/`SMARTS_ASSSETS_DEFAULT_VEHICLE_DEFINITIONS_LIST` or by providing a `vehicle_definitions_list.yaml` in the scenario. These vehicle types are related to the `AgentInterface.vehicle_type` attribute.
 - New `CustomRender` agent interface option added. This allows using `glsl` fragment scripts to generate images from camera textures and simulation buffers.
 - New `ObfuscationMap` agent interface option added. This uses the `OccupancyGridMap` to help generate an image of ground viewable area from the ego vehicle's perspective.
+- There is now a centralized `TraCI` server mananger that can be used to prevent port collisions. It can be run using `python smarts.core.utils.sumo_server` and the use of the server can be enabled with `SMARTS_SUMO_TRACI_SERVE_MODE="central"`.
 ### Changed
 - `VehicleIndex.build_agent_vehicle()` no longer has `filename` and `surface_patches` parameters.
 - The following modules have been renamed: `envision.types` -> `envision.etypes`, `smarts.core.utils.logging` -> `smarts.core.utils.core_logging`, `smarts.core.utils.math` -> `smarts.core.utils.core_math`, `smarts.sstudio.types` -> `smarts.sstudio.sstypes`. For compatibility reasons they can still be imported by their original module name.
@@ -42,6 +43,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Deprecated a few things related to vehicles in the `Scenario` class, including the `vehicle_filepath`, `tire_parameters_filepath`, and `controller_parameters_filepath`. The functionality is now handled through the vehicle definitions.
 - `AgentInterface.vehicle_type` is now deprecated with potential to be restored.
 ### Fixed
+- The performance of SUMO roadmap queries using `SumoRoadNetwork.{nearest_lanes|nearest_lane|offset_along_lane}()` have been greatly improved for long lanes.
 - `SumoTrafficSimulation` gives clearer reasons as to why it failed to connect to the TraCI server.
 - Suppressed an issue where `pybullet_utils.pybullet.BulletClient` would cause an error because it was catching a non `BaseException` type.
 - Fixed a bug where `smarts.core.vehicle_index.VehicleIndex.attach_sensors_to_vehicle()` would pass a method instead of a `PlanFrame` to the generated vehicle `SensorState`.
@@ -65,6 +67,7 @@ Copy and pasting the git commit messages is __NOT__ enough.
 - Fixed a bug where vehicle sensor meta attributes would reference the wrong vehicle.
 - Resolved issue with road waypoints not showing waypoints if the horizon was larger than the start of the lane.
 - Fixed an issue where `SMARTS.reset()` would be unable to render cameras.
+- Squashed TraCI "retrying" stdout messages.
 ### Removed
 ### Security
 

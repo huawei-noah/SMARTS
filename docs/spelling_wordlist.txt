@@ -75,6 +75,7 @@ superclass
 terminateds
 timestep
 Todo
+TraCI
 travelled
 truncateds
 unassociated

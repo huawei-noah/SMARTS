@@ -44,7 +44,7 @@ from smarts.core.plan import (
 from smarts.core.road_map import RoadMap
 from smarts.core.utils.cache import cache, clear_cache
 from smarts.core.utils.id import SocialAgentId
-from smarts.core.utils.string import truncate
+from smarts.core.utils.strings import truncate
 from smarts.core.vehicle import Vehicle
 from smarts.core.vehicle_index import VehicleIndex
 from smarts.sstudio.sstypes import BoidAgentActor

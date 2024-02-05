@@ -25,12 +25,12 @@ import subprocess
 
 def test_sumo_lib():
     # import does runtime check by necessity
-    from smarts.core.utils.sumo import sumolib
+    from smarts.core.utils.sumo_utils import sumolib
 
 
 def test_sumo_version():
     from smarts.core.utils import networking
-    from smarts.core.utils.sumo import SUMO_PATH, traci
+    from smarts.core.utils.sumo_utils import SUMO_PATH, traci
 
     load_params = [
         "--start",

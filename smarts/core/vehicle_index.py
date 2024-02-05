@@ -54,7 +54,7 @@ from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Dimensions, Pose
 from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
-from smarts.core.utils.string import truncate
+from smarts.core.utils.strings import truncate
 from smarts.core.vehicle_state import VEHICLE_CONFIGS
 
 from .actor import ActorRole

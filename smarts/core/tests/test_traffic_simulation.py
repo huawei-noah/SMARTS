@@ -33,7 +33,7 @@ from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.sumo import traci
+from smarts.core.utils.sumo_utils import traci
 
 SUMO_PORT = 8082
 
