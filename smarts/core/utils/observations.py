@@ -76,12 +76,14 @@ def points_to_pixels(
 
     Args:
         points (np.ndarray): Array of points. Shape (n,3).
-        ego_pos (np.ndarray): Ego position. Shape = (3,).
-        ego_heading (float): Ego heading in radians.
-        w (int): Width of RGB image
-        h (int): Height of RGB image.
-        res (float): Resolution of RGB image in meters/pixels. Computed as
-            ground_size/image_size.
+        center_position (np.ndarray): Center position of image. Generally, this
+            is equivalent to ego position. Shape = (3,).
+        heading (float): Heading of image in radians. Generally, this is
+            equivalent to ego heading.
+        width (int): Width of RGB image
+        height (int): Height of RGB image.
+        resolution (float): Resolution of RGB image in meters/pixels. Computed
+            as ground_size/image_size.
 
     Returns:
         np.ndarray: Array of point coordinates on the RGB image. Shape = (m,3).
