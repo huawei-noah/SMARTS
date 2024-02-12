@@ -1,5 +1,5 @@
 import math
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Tuple
 
 import gymnasium as gym
 import numpy as np
