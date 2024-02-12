@@ -19,16 +19,26 @@
 # THE SOFTWARE.
 
 import math
+import warnings
 from pathlib import Path
 from typing import Any, Dict, Final, List, Tuple, Union
 
 import numpy as np
-import trimesh
 from shapely.geometry import Polygon
-from trimesh.exchange import gltf
 
 from smarts.core.coordinates import BoundingBox
 from smarts.core.utils.geometry import triangulate_polygon
+
+# Suppress trimesh deprecation warning
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore",
+        message="Please use `coo_matrix` from the `scipy.sparse` namespace, the `scipy.sparse.coo` namespace is deprecated.",
+        category=DeprecationWarning,
+    )
+    import trimesh  # only suppress the warnings caused by trimesh
+    from trimesh.exchange import gltf
+    from trimesh.visual.material import PBRMaterial
 
 OLD_TRIMESH: Final[bool] = tuple(int(d) for d in trimesh.__version__.split(".")) <= (
     3,
@@ -135,11 +145,9 @@ def make_map_glb(
     scene = trimesh.Scene(metadata=metadata)
 
     meshes = _generate_meshes_from_polygons(polygons)
+    material = PBRMaterial("RoadDefault")
     for mesh in meshes:
-        mesh.visual = trimesh.visual.TextureVisuals(
-            material=trimesh.visual.material.PBRMaterial()
-        )
-
+        mesh.visual.material = material
         road_id = mesh.metadata["road_id"]
         lane_id = mesh.metadata.get("lane_id")
         name = str(road_id)
@@ -148,13 +156,14 @@ def make_map_glb(
         if OLD_TRIMESH:
             scene.add_geometry(mesh, name, extras=mesh.metadata)
         else:
-            scene.add_geometry(mesh, name, metadata=mesh.metadata)
+            scene.add_geometry(mesh, name, geom_name=name, metadata=mesh.metadata)
     return GLBData(gltf.export_glb(scene, include_normals=True))
 
 
 def make_road_line_glb(lines: List[List[Tuple[float, float]]]) -> GLBData:
     """Create a GLB file from a list of road/lane lines."""
     scene = trimesh.Scene()
+    material = trimesh.visual.material.PBRMaterial()
     for line_pts in lines:
         vertices = [(*pt, 0.1) for pt in line_pts]
         point_cloud = trimesh.PointCloud(vertices=vertices)

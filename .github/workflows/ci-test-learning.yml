@@ -17,7 +17,7 @@ jobs:
     container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: master
       - name: Setup package
@@ -27,7 +27,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install .[camera_obs,rllib,test,torch,train]
+          pip install .[camera-obs,rllib,test,torch,train]
       - name: Verify learning
         run: |
           cd $GITHUB_WORKSPACE

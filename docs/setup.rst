@@ -35,7 +35,7 @@ This includes SMARTS but none of the examples.
     $ bash utils/setup/install_deps.sh
 
     # This should install the latest version of SMARTS from package index (generally PyPI).
-    $ pip install 'smarts[camera_obs,sumo,example]'
+    $ pip install 'smarts[camera-obs,sumo,example]'
 
 
 Development
@@ -79,13 +79,13 @@ Run the following commands to setup the SMARTS simulator.
     $ pip install --upgrade pip
 
     # Install smarts with extras as needed. Extras include the following: 
-    # `camera_obs` - needed for rendering camera observations, and for testing.
+    # `camera-obs` - needed for rendering camera observations, and for testing.
     # `sumo` - needed for using SUMO scenarios.
     # `test` - needed for running tests.
     # `example` - needed for running examples.
     # `--config-settings editable_mode=strict` - may be needed depending on version of setuptools. 
     #      See https://github.com/huawei-noah/SMARTS/issues/2090.
-    $ pip install -e '.[camera_obs,sumo,test,example]' --config-settings editable_mode=strict
+    $ pip install -e '.[camera-obs,sumo,test,example]' --config-settings editable_mode=strict
 
     # Run sanity-test and verify they are passing.
     # If tests fail, check './sanity_test_result.xml' for test report. 

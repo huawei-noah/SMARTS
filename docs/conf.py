@@ -42,21 +42,24 @@ extensions = [
     "sphinx.ext.viewcode",  # link to sourcecode from docs
     "sphinx_rtd_theme",  # Read The Docs theme
     "sphinx_click",  # extract documentation from a `click` application
-    "sphinxcontrib.apidoc",
-    "sphinxcontrib.spelling",
+    "sphinxcontrib.apidoc",  # automatically document the API
+    "sphinxcontrib.spelling",  # check documentation for spelling
 ]
 
 extlinks = {
+    "assets": (
+        "https://github.com/huawei-noah/SMARTS/tree/master/smarts/assets/%s",
+        "%s",
+    ),
     "examples": (
-        "https://github.com/huawei-noah/SMARTS/blob/master/examples/%s",
+        "https://github.com/huawei-noah/SMARTS/tree/master/examples/%s",
         "%s",
     ),
     "scenarios": (
-        "https://github.com/huawei-noah/SMARTS/blob/master/scenarios/%s",
+        "https://github.com/huawei-noah/SMARTS/tree/master/scenarios/%s",
         "%s",
     ),
 }
-
 # Configuring automated generation of api documentation.
 # See: https://github.com/sphinx-contrib/apidoc
 apidoc_module_dir = ".."
@@ -68,6 +71,8 @@ apidoc_excluded_paths = [
     "scenarios",
     "smarts/ros",
     "zoo/policies/interaction_aware_motion_prediction",
+    "smarts/waymo/waymo_open_dataset/protos",
+    "zoo/evaluation/metrics",
 ]
 apidoc_extra_args = [
     "--force",
@@ -122,6 +127,7 @@ nitpick_ignore = {
     ("py:class", "ObsType"),
     ("py:class", "smarts.env.gymnasium.wrappers.metric.utils.T"),
     ("py:class", "enum.Enum"),
+    ("py:class", "bc.BulletClient"),
 }
 nitpick_ignore_regex = {
     (r"py:.*", r"av2\..*"),

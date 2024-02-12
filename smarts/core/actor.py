@@ -17,10 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from smarts.core.coordinates import Dimensions, Pose
 
 
 class ActorRole(IntEnum):
@@ -50,6 +54,14 @@ class ActorState:
     source: Optional[str] = None  # the source of truth for this Actor's state
     role: ActorRole = ActorRole.Unknown
     updated: bool = False
+
+    def get_pose(self) -> Optional[Pose]:
+        """Get the pose of this actor. Some actors do not have a physical location."""
+        return None
+
+    def get_dimensions(self) -> Optional[Dimensions]:
+        """Get the dimensions of this actor. Some actors do not have physical dimensions."""
+        return None
 
     def __lt__(self, other) -> bool:
         """Allows ordering ActorStates for use in sorted data-structures."""

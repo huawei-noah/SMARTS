@@ -95,14 +95,12 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, *args, **_)
     requested_cpus: int = config()(
         "ray",
         "num_cpus",
-        None,
-        int,
+        cast=int,
     )
     num_gpus = config()(
         "ray",
         "num_gpus",
-        0,
-        float,
+        cast=float,
     )
     num_cpus = (
         requested_cpus
@@ -114,8 +112,7 @@ def _parallel_task_iterator(env_args, benchmark_args, agent_locator, *args, **_)
     log_to_driver = config()(
         "ray",
         "log_to_driver",
-        False,
-        bool,
+        cast=bool,
     )
 
     if num_cpus == 0 and num_gpus == 0:

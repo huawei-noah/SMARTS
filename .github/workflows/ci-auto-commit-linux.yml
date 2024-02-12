@@ -24,7 +24,7 @@ jobs:
       - name: Add safe directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: master
       - name: Install SMARTS
@@ -33,7 +33,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install .[camera_obs,rllib,test,torch,train]
+          pip install .[camera-obs,rllib,test,torch,train]
       - name: Update requirements
         run: |
           . ${{env.venv_dir}}/bin/activate

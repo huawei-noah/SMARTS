@@ -106,7 +106,7 @@ class BezierMotionPlanner:
                 # accumulate position deltas [s[t+1] - s[t]]
                 for (ps, ps1) in zip(points[:-1], points[1:]):
                     # convert deltas to magnitudes
-                    delta_dist = ps1 - ps
+                    delta_dist = np.subtract(ps1, ps)
                     # add magnitudes
                     subsection_length = np.linalg.norm(delta_dist)
                     # add to lengths

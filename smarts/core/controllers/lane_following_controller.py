@@ -367,7 +367,7 @@ class LaneFollowingController:
     def find_current_lane(wp_paths, vehicle_position):
         """Find the lane of the vehicle given a set of waypoint paths."""
         relative_distant_lane = [
-            np.linalg.norm(wp_paths[idx][0].pos - vehicle_position[0:2])
+            np.linalg.norm(np.subtract(wp_paths[idx][0].pos, vehicle_position[:2]))
             for idx in range(len(wp_paths))
         ]
         return np.argmin(relative_distant_lane)

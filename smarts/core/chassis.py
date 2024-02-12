@@ -17,12 +17,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import logging
 import math
 import os
 from functools import cached_property
-from typing import Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import yaml
@@ -30,7 +32,9 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
-from smarts.core import models
+import smarts.assets.vehicles.chassis_params
+import smarts.assets.vehicles.controller_params
+import smarts.assets.vehicles.dynamics_model
 from smarts.core.coordinates import Dimensions, Heading, Pose
 from smarts.core.tire_models import TireForces
 from smarts.core.utils import pybullet
@@ -47,17 +51,32 @@ from smarts.core.utils.core_math import (
     vec_to_radians,
     yaw_from_quaternion,
 )
-from smarts.core.utils.pybullet import bullet_client as bc
 
-with pkg_resources.path(models, "vehicle.urdf") as path:
+if TYPE_CHECKING:
+    from smarts.core.utils.pybullet import bullet_client as bc
+
+
+with pkg_resources.path(
+    smarts.assets.vehicles.dynamics_model, "generic_sedan.urdf"
+) as path:
     DEFAULT_VEHICLE_FILEPATH = str(path.absolute())
-with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
+with pkg_resources.path(
+    smarts.assets.vehicles.controller_params, "generic_sedan.yaml"
+) as controller_path:
     controller_filepath = str(controller_path.absolute())
 with open(controller_filepath, "r") as controller_file:
-    DEFAULT_CONTROLLER_PARAMETERS = yaml.safe_load(controller_file)["sedan"]
+    DEFAULT_CONTROLLER_PARAMETERS = yaml.safe_load(controller_file)
+with pkg_resources.path(
+    smarts.assets.vehicles.chassis_params, "generic_sedan.yaml"
+) as chassis_path:
+    chassis_filepath = str(chassis_path.absolute())
+with open(chassis_filepath, "r") as chassis_file:
+    DEFAULT_CHASSIS_PARAMETERS = yaml.safe_load(chassis_file)
 
 
-def _query_bullet_contact_points(bullet_client, bullet_id, link_index):
+def _query_bullet_contact_points(
+    bullet_client: bc.BulletClient, bullet_id: str, link_index: int
+):
     contact_objects = set()
     # Give 0.05 meter leeway
     LEEWAY = 0.05
@@ -151,7 +170,7 @@ class Chassis:
         """The turning rate of the chassis in radians."""
         raise NotImplementedError
 
-    def inherit_physical_values(self, other: "Chassis"):
+    def inherit_physical_values(self, other: Chassis):
         """Apply GCD between the two chassis."""
         raise NotImplementedError
 
@@ -317,7 +336,7 @@ class BoxChassis(Chassis):
         self.speed = other.speed
         # ignore physics
 
-    def step(self, current_simulation_time):
+    def step(self, current_simulation_time: float):
         pass
 
     def teardown(self):
@@ -334,36 +353,32 @@ class AckermannChassis(Chassis):
         self,
         pose: Pose,
         bullet_client: bc.BulletClient,
-        vehicle_filepath=DEFAULT_VEHICLE_FILEPATH,
-        tire_parameters_filepath=None,
-        friction_map=None,
-        controller_parameters=DEFAULT_CONTROLLER_PARAMETERS,
-        initial_speed=None,
+        vehicle_dynamics_filepath: Optional[str] = DEFAULT_VEHICLE_FILEPATH,
+        tire_parameters_filepath: Optional[str] = None,
+        friction_map: Optional[Sequence[Dict[str, Any]]] = None,
+        controller_parameters: Dict[str, Any] = DEFAULT_CONTROLLER_PARAMETERS,
+        chassis_parameters: Dict[str, Any] = DEFAULT_CHASSIS_PARAMETERS,
+        initial_speed: Optional[float] = None,
     ):
         assert isinstance(pose, Pose)
         self._log = logging.getLogger(self.__class__.__name__)
-
         # XXX: Parameterize these vehicle properties?
         self._client = bullet_client
-        self._chassis_aero_force_gain = controller_parameters["chassis"][
-            "chassis_aero_force_gain"
-        ]
-        self._max_brake_gain = controller_parameters["chassis"]["max_brake_gain"]
+        self._chassis_aero_force_gain = chassis_parameters["chassis_aero_force_gain"]
+        self._max_brake_gain = chassis_parameters["max_brake_gain"]
         # This value was found emperically. It causes the wheel steer joints to
         # reach their maximum. We use this value to map to the -1, 1 steering range.
         # If it were larger we'd cap out our turning radius before we hit -1, or 1.
         # If it were smaller we'd never reach the tightest turning radius we could.
-        self._max_turn_radius = controller_parameters["chassis"]["max_turn_radius"]
-        self._wheel_radius = controller_parameters["chassis"]["wheel_radius"]
-        self._max_torque = controller_parameters["chassis"]["max_torque"]
-        self._max_btorque = controller_parameters["chassis"]["max_btorque"]
+        self._max_turn_radius = chassis_parameters["max_turn_radius"]
+        self._wheel_radius = chassis_parameters["wheel_radius"]
+        self._max_torque = chassis_parameters["max_torque"]
+        self._max_btorque = chassis_parameters["max_btorque"]
         # 720 is the maximum driver steering wheel angle
         # which equals to two full rotation of steering wheel.
         # This corresponds to maximum 41.3 deg angle at tires.
-        self._max_steering = controller_parameters["chassis"]["max_steering"]
-        self._steering_gear_ratio = controller_parameters["chassis"][
-            "steering_gear_ratio"
-        ]
+        self._max_steering = chassis_parameters["max_steering"]
+        self._steering_gear_ratio = chassis_parameters["steering_gear_ratio"]
         self._tire_model = None
         self._lat_forces = np.zeros(4)
         self._lon_forces = np.zeros(4)
@@ -373,7 +388,7 @@ class AckermannChassis(Chassis):
         self._road_wheel_frictions = None
 
         self._bullet_id = self._client.loadURDF(
-            vehicle_filepath,
+            vehicle_dynamics_filepath,
             [0, 0, 0],
             [0, 0, 0, 1],
             useFixedBase=False,
@@ -397,7 +412,7 @@ class AckermannChassis(Chassis):
                 }
                 break
 
-        self._controller_parameters = controller_parameters["control"]
+        self._controller_parameters = controller_parameters
 
         if (tire_parameters_filepath is not None) and os.path.exists(
             tire_parameters_filepath

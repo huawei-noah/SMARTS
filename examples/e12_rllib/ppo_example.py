@@ -7,7 +7,7 @@ import numpy as np
 try:
     from ray.rllib.algorithms.algorithm import Algorithm, AlgorithmConfig
     from ray.rllib.algorithms.callbacks import DefaultCallbacks
-    from ray.rllib.algorithms.pg import PGConfig
+    from ray.rllib.algorithms.ppo import PPOConfig
     from ray.rllib.env.base_env import BaseEnv
     from ray.rllib.evaluation.episode import Episode
     from ray.rllib.evaluation.episode_v2 import EpisodeV2
@@ -106,7 +106,7 @@ def main(
     smarts.core.seed(seed)
     assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0
     algo_config: AlgorithmConfig = (
-        PGConfig()
+        PPOConfig()
         .environment(
             env=RLlibHiWayEnv,
             env_config={
@@ -129,7 +129,7 @@ def main(
             enable_tf1_exec_eagerly=True,
         )
         .training(
-            lr_schedule=[(0, 1e-3), (1e3, 5e-4), (1e5, 1e-4), (1e7, 5e-5), (1e8, 1e-5)],
+            lr_schedule=[[0, 1e-3], [1e3, 5e-4], [1e5, 1e-4], [1e7, 5e-5], [1e8, 1e-5]],
             train_batch_size=train_batch_size,
         )
         .multi_agent(
@@ -197,7 +197,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.scenarios:
         args.scenarios = [
-            str(Path(__file__).absolute().parents[3] / "scenarios" / "sumo" / "loop"),
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop"),
         ]
     build_scenarios(scenarios=args.scenarios, clean=False, seed=args.seed)
 

@@ -26,7 +26,7 @@ import random
 import sys
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Type
 
 import numpy as np
 
@@ -66,6 +66,19 @@ class Start:
             heading=pose.heading,
             from_front_bumper=False,
         )
+
+    def __hash__(self):
+        hash_ = getattr(self, "hash", None)
+        if not hash_:
+            hash_ = hash(
+                (
+                    tuple(self.position),
+                    self.heading,
+                    self.from_front_bumper,
+                )
+            )
+            object.__setattr__(self, "hash", hash_)
+        return hash_
 
 
 @dataclass(frozen=True, unsafe_hash=True)
@@ -200,7 +213,7 @@ class VehicleSpec:
 
 
 @dataclass(frozen=True)
-class Mission:
+class NavigationMission:
     """A navigation mission describing a desired trip."""
 
     # XXX: Note that this Mission differs from sstudio.sstypes.Mission in that
@@ -231,9 +244,9 @@ class Mission:
     @staticmethod
     def endless_mission(
         start_pose: Pose,
-    ) -> Mission:
+    ) -> NavigationMission:
         """Generate an endless mission."""
-        return Mission(
+        return NavigationMission(
             start=Start(start_pose.as_position2d(), start_pose.heading),
             goal=EndlessGoal(),
             entry_tactic=None,
@@ -244,7 +257,7 @@ class Mission:
         road_map: RoadMap,
         min_range_along_lane: float = 0.3,
         max_range_along_lane: float = 0.9,
-    ) -> Mission:
+    ) -> NavigationMission:
         """A mission that starts from a random location and continues indefinitely."""
         assert min_range_along_lane > 0  # Need to start further than beginning of lane
         assert max_range_along_lane < 1  # Cannot start past end of lane
@@ -260,7 +273,7 @@ class Mission:
         offset *= n_lane.length
         coord = n_lane.from_lane_coord(RefLinePoint(offset))
         target_pose = n_lane.center_pose_at_point(coord)
-        return Mission.endless_mission(start_pose=target_pose)
+        return NavigationMission.endless_mission(start_pose=target_pose)
 
     def __post_init__(self):
         if self.entry_tactic is not None and self.entry_tactic.start_time != MISSING:
@@ -270,7 +283,7 @@ class Mission:
 
 
 @dataclass(frozen=True)
-class LapMission(Mission):
+class LapMission(NavigationMission):
     """A mission requiring a number of laps through the goal."""
 
     num_laps: Optional[int] = None  # None means infinite # of laps
@@ -299,7 +312,12 @@ class PlanFrame:
     """Describes a plan that is serializable."""
 
     road_ids: List[str]
-    mission: Optional[Mission]
+    mission: Optional[NavigationMission]
+
+    @classmethod
+    def empty(cls: Type[PlanFrame]):
+        """Creates an empty plan frame."""
+        return cls(road_ids=[], mission=None)
 
 
 class Plan:
@@ -308,7 +326,7 @@ class Plan:
     def __init__(
         self,
         road_map: RoadMap,
-        mission: Optional[Mission] = None,
+        mission: Optional[NavigationMission] = None,
         find_route: bool = True,
     ):
         self._road_map = road_map
@@ -328,7 +346,7 @@ class Plan:
         self._route = route
 
     @property
-    def mission(self) -> Optional[Mission]:
+    def mission(self) -> Optional[NavigationMission]:
         """The mission this plan is meant to fulfill."""
         # XXX: This currently can be `None`
         return self._mission
@@ -340,7 +358,7 @@ class Plan:
 
     def create_route(
         self,
-        mission: Mission,
+        mission: NavigationMission,
         start_lane_radius: Optional[float] = None,
         end_lane_radius: Optional[float] = None,
     ):
@@ -361,7 +379,9 @@ class Plan:
         assert not self._route or not len(
             self._route.road_ids
         ), "Already called create_route()."
-        self._mission = mission or Mission.random_endless_mission(self._road_map)
+        self._mission = mission or NavigationMission.random_endless_mission(
+            self._road_map
+        )
 
         if not self._mission.requires_route:
             self._route = self._road_map.empty_route()
@@ -375,7 +395,7 @@ class Plan:
             radius=start_lane_radius,
         )
         if not start_lanes:
-            self._mission = Mission.endless_mission(Pose.origin())
+            self._mission = NavigationMission.endless_mission(Pose.origin())
             raise PlanningError("Starting lane not found. Route must start in a lane.")
 
         via_roads = [self._road_map.road_by_id(via) for via in self._mission.route_vias]
@@ -402,7 +422,7 @@ class Plan:
                 break
 
         if len(self._route.roads) == 0:
-            self._mission = Mission.endless_mission(Pose.origin())
+            self._mission = NavigationMission.endless_mission(Pose.origin())
             start_road_ids = [start_lane.road.road_id for start_lane, _ in start_lanes]
             raise PlanningError(
                 "Unable to find a route between start={} and end={}. If either of "

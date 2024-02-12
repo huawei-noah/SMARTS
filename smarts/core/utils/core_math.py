@@ -21,7 +21,7 @@ import math
 from dataclasses import dataclass
 from itertools import chain, permutations, product, repeat
 from math import factorial
-from typing import Callable, List, Sequence, Tuple, Union
+from typing import Callable, Generator, List, Sequence, Tuple, Union
 
 
 @dataclass(frozen=True)
@@ -218,6 +218,20 @@ def lerp(a, b, p):
     assert 0 <= p and p <= 1
 
     return a * (1.0 - p) + b * p
+
+
+def safe_division(n: float, d: float, default=math.inf):
+    """This method uses a short circuit form where `and` converts right side to true|false (as 1|0)
+
+    .. note::
+
+        The cases are:
+        1) True and <value> == <value>
+        2) False and ``NaN`` == False
+    """
+    if n == 0:
+        return 0
+    return d and n / d or default
 
 
 def low_pass_filter(
@@ -539,8 +553,6 @@ def welford() -> Tuple[
         Tuple[ Callable[[float], None], Callable[[], float], Callable[[], float], Callable[[], int] ]: Callable functions to update, get mean, get std, and get steps.
     """
 
-    import math
-
     n = 0  # steps
     M = 0
     S = 0
@@ -652,3 +664,22 @@ def combination_pairs_with_unique_indices(
     if len_first <= len_second:
         return _unique_element_combination(first_group, second_group)
     return []
+
+
+def slope(horizontal, vertical, default=math.inf):
+    """Safely converts a 2 dimensional direction vector to a slope as ``y/x``.
+
+    Args:
+        horizontal (float): The x growth rate.
+        vertical (float): The y growth rate.
+        default (float): The default if the value approaches infinity. Defaults to ``1e10``.
+
+    Returns:
+        float: The slope of the direction vector.
+    """
+    return safe_division(vertical, horizontal, default=default)
+
+
+def is_power_of_2(value: int) -> bool:
+    """Test if the given value is a power of 2 greater than 2**0. (e.g. 2**4)"""
+    return (value & (value - 1) == 0) and value != 0

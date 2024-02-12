@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import importlib.resources as pkg_resources
 import math
 import threading
 
@@ -26,18 +27,11 @@ import numpy as np
 import pytest
 from panda3d.core import Thread as p3dThread
 
-from smarts.core.agent_interface import (
-    ActionSpaceType,
-    AgentInterface,
-    DoneCriteria,
-    NeighborhoodVehicles,
-)
+import smarts.assets
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
-from smarts.core.smarts import SMARTS
-from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.custom_exceptions import RendererException
 
 AGENT_ID = "Agent-007"
@@ -45,7 +39,7 @@ AGENT_ID = "Agent-007"
 
 @pytest.fixture
 def scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
     )
@@ -85,9 +79,10 @@ class RenderThread(threading.Thread):
             orientation=np.array([0, 0, 0, 0]),
             heading_=Heading(math.pi * 0.91),
         )
-        self._renderer.create_vehicle_node(
-            "simple_car.glb", self._vid, SceneColors.SocialVehicle, pose
-        )
+        with pkg_resources.path(smarts.assets, "simple_car.glb") as path:
+            self._renderer.create_vehicle_node(
+                path, self._vid, SceneColors.SocialVehicle, pose
+            )
         self._renderer.begin_rendering_vehicle(self._vid, is_agent=False)
         for s in range(self._num_steps):
             self._renderer.render()

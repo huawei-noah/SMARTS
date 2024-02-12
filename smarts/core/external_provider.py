@@ -17,15 +17,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import weakref
-from typing import Iterable, List, Sequence, Set
+from typing import TYPE_CHECKING, Iterable, List, Sequence, Set
 
 from .actor import ActorRole
 from .controllers import ActionSpaceType
 from .provider import Provider, ProviderManager, ProviderRecoveryFlags, ProviderState
 from .scenario import Scenario
 from .utils.file import replace
-from .vehicle_state import VehicleState
+
+if TYPE_CHECKING:
+    from .vehicle_state import VehicleState
 
 
 class ExternalProvider(Provider):

@@ -1,0 +1,7 @@
+model: Generic Bus
+type: bus
+controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_bus.yaml
+chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_bus.yaml
+dynamics_model: ${SMARTS_ASSETS_PATH}/vehicles/dynamics_model/generic_class_4_bus.urdf
+visual_model: ${SMARTS_ASSETS_PATH}/vehicles/visual_model/bus.glb
+tire_params: null # ${SMARTS_ASSETS_PATH}/vehicles/tire_params/base_tire_parameters.yaml

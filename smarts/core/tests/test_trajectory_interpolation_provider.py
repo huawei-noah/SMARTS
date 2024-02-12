@@ -171,7 +171,7 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
             dimensions=VEHICLE_CONFIGS["passenger"].dimensions,
             bullet_client=bullet_client,
         )
-        vehicle = Vehicle(vehicle_id, chassis)
+        vehicle = Vehicle(vehicle_id, chassis, visual_model_filepath=None)
 
         has_error = False
         try:
@@ -184,10 +184,10 @@ def test_trajectory_interpolation_controller(controller_actions, bullet_client):
         if "error" in vehicle_id:
             assert has_error
         elif vehicle_id == "budda":
-            assert np.linalg.norm(new_pos - original_position) < 1e-16
+            assert np.linalg.norm(np.subtract(new_pos, original_position)) < 1e-16
             assert np.isclose(vehicle.heading, original_heading)
         else:
-            assert not np.linalg.norm(new_pos - original_position) < 1e-16
+            assert np.linalg.norm(np.subtract(new_pos, original_position)) >= 1e-16
             assert not np.isclose(vehicle.heading, original_heading)
 
 
@@ -271,6 +271,6 @@ def test_trajectory_interpolation_provider(smarts, agent_spec, scenario):
     init_position = init_ego_state.position
     init_heading = init_ego_state.heading
     init_speed = init_ego_state.speed
-    assert np.linalg.norm(curr_position[:2] - init_position[:2]) > 1e-16
+    assert np.linalg.norm(np.subtract(curr_position[:2], init_position[:2])) > 1e-16
     assert not np.isclose(curr_heading, init_heading)
     assert not np.isclose(curr_speed, init_speed)

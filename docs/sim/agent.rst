@@ -159,7 +159,7 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      - ✓
      - ✓
      - ✓
-     - ✓  
+     - ✓
    * - **neighborhood_vehicles**
      - ✓
      - ✓
@@ -174,7 +174,7 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      - ✓
      - ✓
    * - **waypoint_paths** 
-     - ✓ 
+     - ✓
      - ✓
      - ✓
      - ✓
@@ -185,7 +185,7 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      - ✓
      - ✓
      - ✓
-     -                                                         
+     -
    * - **drivable_area_grid_map** 
      - ✓
      -
@@ -198,11 +198,10 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      -
      -
      -
-     -                                                         
+     -
    * - **occupancy_grid_map**
      - ✓
      -
-     - 
      -
      -
      -
@@ -211,7 +210,8 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      -
      -
      -
-     -                                                         
+     -
+     -
    * - **top_down_rgb**           
      - ✓
      -
@@ -224,7 +224,33 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      -
      -
      -
-     -                                                         
+     -
+   * - **occlusion_map**
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+   * - **custom_renders**
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
+     -
    * - **lidar_point_cloud**
      - ✓
      -
@@ -234,10 +260,10 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      -
      -
      -
-     -                        
      -
      -
-     -                                                         
+     -
+     -
    * - **accelerometer**
      - ✓ 
      - ✓
@@ -250,7 +276,7 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      - ✓
      - ✓
      - ✓
-     - ✓                                            
+     - ✓
    * - **signals**
      - ✓
      -
@@ -263,7 +289,7 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      -
      -
      -
-     - ✓                                           
+     - ✓
    * - **debug** 
      - ✓
      - ✓
@@ -276,7 +302,7 @@ The attributes enabled for each pre-configured `interface` is shown in the table
      - ✓
      - ✓
      - ✓
-     - ✓                                            
+     - ✓
 
 Here, ``max_episode_steps`` controls the max steps allowed for the agent in an episode. Defaults to ``None``, implies agent has no step limit.
 
@@ -357,3 +383,237 @@ The received ``obs`` argument in ``def act(self, obs)`` is controlled by the sel
 
 The ``act()`` method should return an action complying to the agent's chosen action type in its agent `interface`. 
 For example, if action type :attr:`~smarts.core.controllers.action_space_type.ActionSpaceType.LaneWithContinuousSpeed` was chosen, then ``act()`` should return an action ``(speed, lane_change)`` with type ``(float, int)``. See the :ref:`example <minimal_agent>` above.
+
+Custom camera rendering
+-----------------------
+
+The agent interface provides for additional configurable rendering cameras that can be used to augment what the agent can see.
+This generally involves providing a fragment shader to generate or modify existing or uninitialized pixels.
+
+
+Configuring custom rendering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These custom renders can be configured through the agent interface.
+
+.. code:: python
+
+    # adding a variable
+    # uniform vec2 position;
+    crcd = CustomRenderVariableDependency(
+        value=(4, 4),
+        variable_name="position"
+    )
+
+    # adding a buffer
+    # uniform float time;
+    crbd = CustomRenderBufferDependency(
+        buffer_dependency_name=BufferID.ELAPSED_SIM_TIME,
+        variable_name="time",
+    )
+
+    # referencing an inbuilt camera to
+    # uniform sampler2D iChannel0;
+    # uniform vec2 iChannel0Resolution;
+    crd0 = CustomRenderCameraDependency(
+        camera_dependency_name=CameraSensorID.OCCLUSION,
+        variable_name="iChannel0",
+    )
+    # fragment shader
+    fshader0 = "warp.frag"
+    cr0 = CustomRender(
+        name="step0",
+        fragment_shader_path=fshader0, 
+        dependencies=(crd0, crcd, crbd),
+        ...,
+    )
+    # referencing a previous shader step
+    # uniform sampler2D step0_texture;
+    crd1 = CustomRenderCameraDependency(
+        camera_dependency_name="step0",
+        variable_name="step0_texture",
+    )
+    # fragment shader
+    fshader1 = "ftl.frag"
+    cr1 = CustomRender(
+        name="step1",
+        fragment_shader_path=fshader1, # fragment shader
+        dependencies=(crd1,),
+        ...,
+    )
+
+    AgentInterface(
+        ...,
+        custom_renders=(
+            cr0,
+            cr1,
+        )
+    )
+
+.. note::
+
+    For camera dependencies a variable name will translate into both the texture sampler and resolution of the target camera.
+
+
+Available internal render buffers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The render optionally has access to certain buffers. Note the following code:
+
+.. code:: python
+
+    # adding a buffer
+    crbd = CustomRenderBufferDependency(
+        buffer_dependency_name=BufferID.DELTA_TIME,
+        variable_name="dt",
+    )
+
+
+These values are as follows:
+
+.. list-table::
+   :header-rows: 1
+
+   * - **configuration**
+     - DELTA_TIME
+     - STEP_COUNT
+     - STEPS_COMPLETED
+     - ELAPSED_SIM_TIME
+     - EVENTS_COLLISIONS
+     - EVENTS_OFF_ROAD
+     - EVENTS_OFF_ROUTE
+     - EVENTS_ON_SHOULDER
+     - EVENTS_WRONG_WAY
+     - EVENTS_NOT_MOVING
+     - EVENTS_REACHED_GOAL
+     - EVENTS_REACHED_MAX_EPISODE_STEPS
+     - EVENTS_AGENTS_ALIVE_DONE
+     - EVENTS_INTEREST_DONE
+     - EGO_VEHICLE_STATE_POSITION
+     - EGO_VEHICLE_STATE_BOUNDING_BOX
+     - EGO_VEHICLE_STATE_HEADING
+     - EGO_VEHICLE_STATE_SPEED
+     - EGO_VEHICLE_STATE_STEERING
+     - EGO_VEHICLE_STATE_YAW_RATE
+     - EGO_VEHICLE_STATE_ROAD_ID
+     - EGO_VEHICLE_STATE_LANE_ID
+     - EGO_VEHICLE_STATE_LANE_INDEX
+     - EGO_VEHICLE_STATE_LINEAR_VELOCITY
+     - EGO_VEHICLE_STATE_ANGULAR_VELOCITY
+     - EGO_VEHICLE_STATE_LINEAR_ACCELERATION
+     - EGO_VEHICLE_STATE_ANGULAR_ACCELERATION
+     - EGO_VEHICLE_STATE_LINEAR_JERK
+     - EGO_VEHICLE_STATE_ANGULAR_JERK
+     - EGO_VEHICLE_STATE_LANE_POSITION
+     - UNDER_THIS_VEHICLE_CONTROL
+     - NEIGHBORHOOD_VEHICLE_STATES_POSITION
+     - NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX
+     - NEIGHBORHOOD_VEHICLE_STATES_HEADING
+     - NEIGHBORHOOD_VEHICLE_STATES_SPEED
+     - NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID
+     - NEIGHBORHOOD_VEHICLE_STATES_LANE_ID
+     - NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX
+     - NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION
+     - NEIGHBORHOOD_VEHICLE_STATES_INTEREST
+     - WAYPOINT_PATHS_POSITION
+     - WAYPOINT_PATHS_HEADING
+     - WAYPOINT_PATHS_LANE_ID
+     - WAYPOINT_PATHS_LANE_WIDTH
+     - WAYPOINT_PATHS_SPEED_LIMIT
+     - WAYPOINT_PATHS_LANE_INDEX
+     - WAYPOINT_PATHS_LANE_OFFSET
+     - DISTANCE_TRAVELLED
+     - ROAD_WAYPOINTS_POSITION
+     - ROAD_WAYPOINTS_HEADING
+     - ROAD_WAYPOINTS_LANE_ID
+     - ROAD_WAYPOINTS_LANE_WIDTH
+     - ROAD_WAYPOINTS_SPEED_LIMIT
+     - ROAD_WAYPOINTS_LANE_INDEX
+     - ROAD_WAYPOINTS_LANE_OFFSET
+     - VIA_DATA_NEAR_VIA_POINTS_POSITION
+     - VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX
+     - VIA_DATA_NEAR_VIA_POINTS_ROAD_ID
+     - VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED
+     - VIA_DATA_NEAR_VIA_POINTS_HIT
+     - LIDAR_POINT_CLOUD_POINTS
+     - LIDAR_POINT_CLOUD_HITS
+     - LIDAR_POINT_CLOUD_ORIGIN
+     - LIDAR_POINT_CLOUD_DIRECTION
+     - VEHICLE_TYPE
+     - SIGNALS_LIGHT_STATE
+     - SIGNALS_STOP_POINT
+     - SIGNALS_LAST_CHANGED
+   * - **type**
+     - uniform float
+     - uniform int
+     - uniform int
+     - uniform float
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform vec3
+     - uniform vec3
+     - uniform float
+     - uniform float
+     - uniform float
+     - uniform float
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform vec2
+     - uniform vec2
+     - uniform vec2
+     - uniform vec2
+     - uniform vec2
+     - uniform vec2
+     - uniform vec3
+     - uniform int
+     - uniform vec3
+     - uniform vec3
+     - uniform float
+     - uniform float
+     - uniform int
+     - uniform int
+     - uniform int
+     - uniform vec3
+     - uniform int
+     - uniform vec2
+     - uniform float
+     - uniform int
+     - uniform float
+     - uniform float
+     - uniform int
+     - uniform float
+     - uniform float
+     - uniform vec2
+     - uniform float
+     - uniform int
+     - uniform float
+     - uniform float
+     - uniform int
+     - uniform float
+     - uniform vec2
+     - uniform int
+     - uniform int
+     - uniform float
+     - uniform int
+     - uniform vec3
+     - uniform int
+     - uniform vec3
+     - uniform vec3
+     - uniform int
+     - uniform int
+     - uniform vec2
+     - uniform float
+
+
+.. note::
+
+    See :ref:`observation information <obs_action_reward>` for more information.

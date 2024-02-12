@@ -14,7 +14,7 @@ try:
     from ray import tune
     from ray.rllib.algorithms.algorithm import AlgorithmConfig
     from ray.rllib.algorithms.callbacks import DefaultCallbacks
-    from ray.rllib.algorithms.pg import PGConfig
+    from ray.rllib.algorithms.ppo import PPOConfig
     from ray.rllib.env.base_env import BaseEnv
     from ray.rllib.evaluation.episode import Episode
     from ray.rllib.evaluation.episode_v2 import EpisodeV2
@@ -147,7 +147,7 @@ def main(
     smarts.core.seed(seed)
     assert len(set(rllib_policies.keys()).difference(agent_specs)) == 0
     algo_config: AlgorithmConfig = (
-        PGConfig()
+        PPOConfig()
         .environment(
             env=RLlibHiWayEnv,
             env_config={
@@ -225,7 +225,7 @@ def main(
         scheduler=pbt,
         max_concurrent_trials=4,
     )
-    trainable = "PG"
+    trainable = "PPO"
     if resume_training:
         tuner = tune.Tuner.restore(
             str(experiment_dir),
@@ -246,8 +246,7 @@ def main(
 
     # Get the best checkpoint corresponding to the best result.
     best_checkpoint = best_result.checkpoint
-
-    best_logdir = Path(best_result.log_dir)
+    best_logdir = Path(best_checkpoint.path)
     model_path = best_logdir
 
     copy_tree(str(model_path), save_model_path, overwrite=True)
@@ -280,7 +279,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if not args.scenarios:
         args.scenarios = [
-            str(Path(__file__).absolute().parents[3] / "scenarios" / "sumo" / "loop"),
+            str(Path(__file__).absolute().parents[2] / "scenarios" / "sumo" / "loop"),
         ]
     if args.num_samples < 2:
         warnings.warn(

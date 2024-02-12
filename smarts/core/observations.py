@@ -19,16 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Tuple
 
 import numpy as np
 
-from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
-from smarts.core.plan import Mission
-from smarts.core.road_map import Waypoint
-from smarts.core.signals import SignalLightState
+from smarts.core.utils.cache import cache
 
-from .events import Events
+if TYPE_CHECKING:
+    from smarts.core import plan, signals
+    from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
+    from smarts.core.events import Events
+    from smarts.core.road_map import Waypoint
 
 
 class VehicleObservation(NamedTuple):
@@ -62,8 +65,8 @@ class EgoVehicleObservation(NamedTuple):
 
     id: str
     """Vehicle identifier."""
-    position: np.ndarray
-    """Center coordinate of the vehicle bounding box's bottom plane. `shape=(3,)`. `dtype=np.float64`."""
+    position: Tuple[float, float, float]
+    """Center coordinate of the vehicle bounding box's bottom plane."""
     bounding_box: Dimensions
     """Bounding box describing the length, width, and height, of the vehicle."""
     heading: Heading
@@ -80,20 +83,20 @@ class EgoVehicleObservation(NamedTuple):
     """Identifier for the lane nearest to this vehicle."""
     lane_index: int
     """Index of the nearest lane on the road nearest to this vehicle. Right most lane has index 0 and index increments to the left."""
-    mission: Mission
+    mission: plan.NavigationMission
     """Vehicle's desired destination."""
-    linear_velocity: np.ndarray
-    """Velocity of vehicle along the global coordinate axes. Units=m/s. A numpy array of shape=(3,) and dtype=np.float64."""
-    angular_velocity: np.ndarray
-    """Velocity of vehicle-heading rotation about the z-axis. Equivalent vector representation of yaw_rate. Units=rad/s. A numpy array of shape=(3,) and dtype=np.float64."""
-    linear_acceleration: Optional[np.ndarray]
-    """Acceleration of vehicle along the global coordinate axes. Units=m/s^2. A numpy array of shape=(3,). dtype=np.float64. Requires accelerometer sensor."""
-    angular_acceleration: Optional[np.ndarray]
-    """Acceleration of vehicle-heading rotation about the z-axis. Units=rad/s^2. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    linear_jerk: Optional[np.ndarray]
-    """Jerk of vehicle along the global coordinate axes. Units=m/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
-    angular_jerk: Optional[np.ndarray]
-    """Jerk of vehicle-heading rotation about the z-axis. Units=rad/s^3. A numpy array of shape=(3,) and dtype=np.float64. Requires accelerometer sensor."""
+    linear_velocity: Tuple[float, float, float]
+    """Velocity of vehicle along the global coordinate axes. Units=m/s."""
+    angular_velocity: Tuple[float, float, float]
+    """Velocity of vehicle-heading rotation about the z-axis. Equivalent vector representation of yaw_rate. Units=rad/s."""
+    linear_acceleration: Optional[Tuple[float, float, float]]
+    """Acceleration of vehicle along the global coordinate axes. Units=m/s^2. Requires accelerometer sensor."""
+    angular_acceleration: Optional[Tuple[float, float, float]]
+    """Acceleration of vehicle-heading rotation about the z-axis. Units=rad/s^2. Requires accelerometer sensor."""
+    linear_jerk: Optional[Tuple[float, float, float]]
+    """Jerk of vehicle along the global coordinate axes. Units=m/s^3. Requires accelerometer sensor."""
+    angular_jerk: Optional[Tuple[float, float, float]]
+    """Jerk of vehicle-heading rotation about the z-axis. Units=rad/s^3. Requires accelerometer sensor."""
     lane_position: Optional[RefLinePoint] = None
     """(s,t,h) coordinates within the lane, where s is the longitudinal offset along the lane, t is the lateral displacement from the lane center, and h (not yet supported) is the vertical displacement from the lane surface.
     See the Reference Line coordinate system in OpenDRIVE here: https://www.asam.net/index.php?eID=dumpFile&t=f&f=4089&token=deea5d707e2d0edeeb4fccd544a973de4bc46a09#_coordinate_systems """
@@ -104,6 +107,9 @@ class RoadWaypoints(NamedTuple):
 
     lanes: Dict[str, List[List[Waypoint]]]
     """Mapping of road ids to their lane waypoints."""
+
+    def __hash__(self) -> int:
+        return hash(tuple((k, len(v)) for k, v in self.lanes.items()))
 
 
 class GridMapMetadata(NamedTuple):
@@ -129,6 +135,9 @@ class TopDownRGB(NamedTuple):
     data: np.ndarray
     """A RGB image with the ego vehicle at the center."""
 
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
 
 class OccupancyGridMap(NamedTuple):
     """Occupancy map."""
@@ -140,6 +149,21 @@ class OccupancyGridMap(NamedTuple):
     
     See https://en.wikipedia.org/wiki/Occupancy_grid_mapping."""
 
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
+
+class OcclusionRender(NamedTuple):
+    """Occlusion map."""
+
+    metadata: GridMapMetadata
+    """Map metadata."""
+    data: np.ndarray
+    """A map showing what is visible from the ego vehicle"""
+
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
 
 class DrivableAreaGridMap(NamedTuple):
     """Drivable area map."""
@@ -148,6 +172,21 @@ class DrivableAreaGridMap(NamedTuple):
     """Map metadata."""
     data: np.ndarray
     """A grid map that shows the static drivable area around the ego vehicle."""
+
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
+
+
+class CustomRenderData(NamedTuple):
+    """Describes information about a custom render."""
+
+    metadata: GridMapMetadata
+    """Render metadata."""
+    data: np.ndarray
+    """The image data from the render."""
+
+    def __hash__(self) -> int:
+        return self.metadata.__hash__()
 
 
 class ViaPoint(NamedTuple):
@@ -161,26 +200,31 @@ class ViaPoint(NamedTuple):
     """Road id this collectible is associated with."""
     required_speed: float
     """Approximate speed required to collect this collectible."""
+    hit: bool
+    """If this via point was hit in the last step."""
 
 
 class Vias(NamedTuple):
     """Listing of nearby collectible ViaPoints and ViaPoints collected in the last step."""
 
-    near_via_points: List[ViaPoint]
+    near_via_points: Tuple[ViaPoint]
     """Ordered list of nearby points that have not been hit."""
-    hit_via_points: List[ViaPoint]
-    """List of points that were hit in the previous step."""
+
+    @property
+    def hit_via_points(self) -> Tuple[ViaPoint]:
+        """List of points that were hit in the previous step."""
+        return tuple(vp for vp in self.near_via_points if vp.hit)
 
 
 class SignalObservation(NamedTuple):
     """Describes an observation of a traffic signal (light) on this time-step."""
 
-    state: SignalLightState
+    state: signals.SignalLightState
     """The state of the traffic signal."""
     stop_point: Point
     """The stopping point for traffic controlled by the signal, i.e., the
     point where actors should stop when the signal is in a stop state."""
-    controlled_lanes: List[str]
+    controlled_lanes: Tuple[str]
     """If known, the lane_ids of all lanes controlled-by this signal.
     May be empty if this is not easy to determine."""
     last_changed: Optional[float]
@@ -204,7 +248,7 @@ class Observation(NamedTuple):
     """Ego vehicle status."""
     under_this_agent_control: bool
     """Whether this agent currently has control of the vehicle."""
-    neighborhood_vehicle_states: Optional[List[VehicleObservation]]
+    neighborhood_vehicle_states: Optional[Tuple[VehicleObservation]]
     """List of neighborhood vehicle states."""
     waypoint_paths: Optional[List[List[Waypoint]]]
     """Dynamic evenly-spaced points on the road ahead of the vehicle, showing potential routes ahead."""
@@ -226,5 +270,31 @@ class Observation(NamedTuple):
     """Occupancy map."""
     top_down_rgb: Optional[TopDownRGB] = None
     """RGB camera observation."""
-    signals: Optional[List[SignalObservation]] = None
+    signals: Optional[Tuple[SignalObservation]] = None
     """List of nearby traffic signal (light) states on this time-step."""
+    occlusion_map: Optional[OcclusionRender] = None
+    """Observable area map."""
+    custom_renders: Tuple[CustomRenderData, ...] = tuple()
+    """Custom renders."""
+
+    def __hash__(self):
+        return hash(
+            (
+                self.dt,
+                self.step_count,
+                self.elapsed_sim_time,
+                self.events,
+                self.ego_vehicle_state,
+                # self.waypoint_paths, # likely redundant
+                self.neighborhood_vehicle_states,
+                self.distance_travelled,
+                self.road_waypoints,
+                self.via_data,
+                self.drivable_area_grid_map,
+                self.occupancy_grid_map,
+                self.top_down_rgb,
+                self.signals,
+                self.occlusion_map,
+                self.custom_renders,
+            )
+        )

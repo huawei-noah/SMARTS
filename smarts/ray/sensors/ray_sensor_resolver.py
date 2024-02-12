@@ -19,21 +19,30 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import concurrent.futures
 import logging
 from collections import defaultdict
-from typing import Optional, Set
+from typing import TYPE_CHECKING, Dict, Iterable, Optional, Set, Tuple
 
 import ray
 
 from smarts.core import config
-from smarts.core.configuration import Config
 from smarts.core.sensors import SensorResolver, Sensors
 from smarts.core.serialization.default import dumps, loads
-from smarts.core.simulation_frame import SimulationFrame
-from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.file import replace
+
+if TYPE_CHECKING:
+    from smarts.core.configuration import Config
+    from smarts.core.observations import Observation
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.sensor import Sensor
+    from smarts.core.sensors import SensorState
+    from smarts.core.simulation_frame import SimulationFrame
+    from smarts.core.simulation_local_constants import SimulationLocalConstants
+    from smarts.core.utils.pybullet import bullet_client as bc
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +69,8 @@ class RaySensorResolver(SensorResolver):
         if not ray.is_initialized():
             ray.init(
                 num_cpus=self._num_observation_workers,
-                num_gpus=conf("ray", "num_gpus", default=None, cast=int),
-                log_to_driver=conf("ray", "log_to_driver", default=False, cast=bool),
+                num_gpus=conf("ray", "num_gpus", cast=int),
+                log_to_driver=conf("ray", "log_to_driver", cast=bool),
             )
         self._sim_local_constants: SimulationLocalConstants = None
         self._current_workers = []
@@ -90,17 +99,57 @@ class RaySensorResolver(SensorResolver):
         sim_frame: SimulationFrame,
         sim_local_constants: SimulationLocalConstants,
         agent_ids: Set[str],
-        renderer,
-        bullet_client,
-    ):
+        renderer: RendererBase,
+        bullet_client: bc.BulletClient,
+    ) -> Tuple[Dict[str, Observation], Dict[str, bool], Dict[str, Dict[str, Sensor]]]:
         observations, dones, updated_sensors = {}, {}, defaultdict(dict)
 
         ray_actors = self.get_ray_worker_actors(self._num_observation_workers)
         len_workers = len(ray_actors)
 
+        tasks = self._gen_tasks_for_serializable_sensors(
+            sim_frame, sim_local_constants, agent_ids, ray_actors, len_workers
+        )
+        phys_observations = self._gen_phys_observations(
+            sim_frame, sim_local_constants, agent_ids, bullet_client, updated_sensors
+        )
+
+        # Collect futures
+        with timeit("waiting for observations", logger.debug):
+            for fut in concurrent.futures.as_completed(
+                [task.future() for task in tasks]
+            ):
+                obs, ds, u_sens = fut.result()
+                observations.update(obs)
+                dones.update(ds)
+                for v_id, values in u_sens.items():
+                    updated_sensors[v_id].update(values)
+
+        # Merge physics sensor information
+        for agent_id, p_obs in phys_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **p_obs)
+
+        self._sync_custom_camera_sensors(sim_frame, renderer, observations)
+
+        if renderer:
+            renderer.render()
+
+        rendering_observations = self._gen_rendered_observations(
+            sim_frame, sim_local_constants, agent_ids, renderer, updated_sensors
+        )
+
+        # Merge sensor information
+        for agent_id, r_obs in rendering_observations.items():
+            observations[agent_id] = replace(observations[agent_id], **r_obs)
+
+        return observations, dones, updated_sensors
+
+    def _gen_tasks_for_serializable_sensors(
+        self, sim_frame, sim_local_constants, agent_ids, ray_actors, len_workers
+    ):
         tasks = []
         with timeit(
-            f"parallizable observations with {len(agent_ids)} and {len(ray_actors)}",
+            f"setting up parallizable observations with {len(agent_ids)} and {len(ray_actors)}",
             logger.debug,
         ):
             # Update remote state (if necessary)
@@ -129,44 +178,9 @@ class RaySensorResolver(SensorResolver):
                         )
                     )
 
-            # While observation processes are operating do rendering
-            with timeit("rendering", logger.debug):
-                rendering = {}
-                for agent_id in agent_ids:
-                    for vehicle_id in sim_frame.vehicles_for_agents[agent_id]:
-                        (
-                            rendering[agent_id],
-                            updated_unsafe_sensors,
-                        ) = Sensors.process_serialization_unsafe_sensors(
-                            sim_frame,
-                            sim_local_constants,
-                            agent_id,
-                            sim_frame.sensor_states[vehicle_id],
-                            vehicle_id,
-                            renderer,
-                            bullet_client,
-                        )
-                        updated_sensors[vehicle_id].update(updated_unsafe_sensors)
+        return tasks
 
-            # Collect futures
-            with timeit("waiting for observations", logger.debug):
-                for fut in concurrent.futures.as_completed(
-                    [task.future() for task in tasks]
-                ):
-                    obs, ds, u_sens = fut.result()
-                    observations.update(obs)
-                    dones.update(ds)
-                    for v_id, values in u_sens.items():
-                        updated_sensors[v_id].update(values)
-
-            with timeit("merging observations", logger.debug):
-                # Merge sensor information
-                for agent_id, r_obs in rendering.items():
-                    observations[agent_id] = replace(observations[agent_id], **r_obs)
-
-        return observations, dones, updated_sensors
-
-    def step(self, sim_frame, sensor_states):
+    def step(self, sim_frame: SimulationFrame, sensor_states: Iterable[SensorState]):
         """Step the sensor state."""
         for sensor_state in sensor_states:
             sensor_state.step()
@@ -179,7 +193,7 @@ class RayProcessWorker:
     def __init__(self) -> None:
         self._simulation_local_constants: Optional[SimulationLocalConstants] = None
 
-    def update_local_constants(self, sim_local_constants):
+    def update_local_constants(self, sim_local_constants: SimulationLocalConstants):
         """Updates the process worker.
 
         Args:
@@ -187,7 +201,7 @@ class RayProcessWorker:
         """
         self._simulation_local_constants = loads(sim_local_constants)
 
-    def do_work(self, remote_sim_frame, agent_ids):
+    def do_work(self, remote_sim_frame: SimulationFrame, agent_ids: Set[str]):
         """Run the sensors against the current simulation state.
 
         Args:

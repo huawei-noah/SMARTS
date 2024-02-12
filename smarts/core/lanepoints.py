@@ -25,13 +25,15 @@ import queue
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import List, NamedTuple, Sequence, Tuple
+from typing import TYPE_CHECKING, List, NamedTuple, Sequence, Tuple
 
 import numpy as np
 
 from smarts.core.coordinates import Heading, Point, Pose
-from smarts.core.road_map import RoadMap
 from smarts.core.utils.core_math import fast_quaternion_from_angle, vec_to_radians
+
+if TYPE_CHECKING:
+    from smarts.core.road_map import RoadMap
 
 
 @dataclass(frozen=True)
@@ -102,7 +104,7 @@ class LanePoints:
         the network, the result of this function can be used to interpolate
         lane-points along lanes to the desired granularity.
         """
-        from smarts.core.utils.sumo import sumolib  # isort:skip
+        from smarts.core.utils.sumo_utils import sumolib  # isort:skip
         from sumolib.net.edge import Edge  # isort:skip
         from sumolib.net.lane import Lane  # isort:skip
         from .sumo_road_network import SumoRoadNetwork

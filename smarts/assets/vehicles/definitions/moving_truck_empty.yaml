@@ -1,0 +1,7 @@
+model: Generic Empty Moving Truck
+type: truck
+controller_params: ${SMARTS_ASSETS_PATH}/vehicles/controller_params/generic_moving_truck.yaml
+chassis_params: ${SMARTS_ASSETS_PATH}/vehicles/chassis_params/generic_moving_truck.yaml
+dynamics_model: ${SMARTS_ASSETS_PATH}/vehicles/dynamics_model/generic_class_5_truck_empty.urdf
+visual_model: ${SMARTS_ASSETS_PATH}/vehicles/visual_model/moving_truck.glb
+tire_params: null # ${SMARTS_ASSETS_PATH}/vehicles/tire_params/base_tire_parameters.yaml

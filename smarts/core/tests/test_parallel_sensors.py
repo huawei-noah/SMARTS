@@ -25,7 +25,7 @@ import pytest
 
 from smarts.core.agent_interface import AgentInterface, AgentType
 from smarts.core.controllers import ActionSpaceType
-from smarts.core.plan import Mission
+from smarts.core.plan import NavigationMission
 from smarts.core.scenario import Scenario
 from smarts.core.sensors.local_sensor_resolver import LocalSensorResolver
 from smarts.core.sensors.parallel_sensor_resolver import ParallelSensorResolver
@@ -54,7 +54,7 @@ def scenario() -> Scenario:
         ),
     )
     missions = [
-        Mission.random_endless_mission(
+        NavigationMission.random_endless_mission(
             s.road_map,
         )
         for _ in AGENT_IDS

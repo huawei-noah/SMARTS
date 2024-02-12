@@ -1,4 +1,12 @@
-FROM ubuntu:bionic
+# Steps to build and push the SMARTS docker image
+# ```bash
+# $ cd </path/to/SMARTS>
+# export VERSION=v0.5.0
+# $ docker build --no-cache -f ./utils/docker/Dockerfile -t huaweinoah/smarts:$VERSION .
+# $ docker login
+# $ docker push huaweinoah/smarts:$VERSION
+# ```
+FROM ubuntu:focal
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -17,10 +25,11 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
+        git \
+        libenchant-dev \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
-        libenchant-dev \
         xorg && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
@@ -28,15 +37,11 @@ RUN apt-get update --fix-missing && \
 # Update default python version.
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.8 1
 
-# Setup virtual environment and install pip.
+# Setup python virtual environment and install pip.
 ENV VIRTUAL_ENV=/opt/.venv
 RUN python3.8 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN pip install --upgrade pip && pip install wheel==0.38.4
-
-# Setup SUMO.
-RUN pip install eclipse-sumo==1.12.0
-ENV SUMO_HOME $VIRTUAL_ENV/lib64/python3.8/site-packages/sumo
 
 # Install requirements.txt .
 COPY ./requirements.txt /tmp/requirements.txt
@@ -45,11 +50,13 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 # Copy source files and install.
 COPY . /src
 WORKDIR /src
-RUN pip install --no-cache-dir -e .[camera_obs,dev,rllib,test,torch,train] && \
+RUN pip install --no-cache-dir -e .[camera-obs,dev,rllib,test,torch,train] && \
     cp -r /src/smarts.egg-info /media/smarts.egg-info
 
 # For Envision.
 EXPOSE 8081
+# For centralized TraCI management server
+EXPOSE 8097
 
 # Suppress message of missing /dev/input folder and copy smarts.egg-info if not there
 RUN echo "mkdir -p /dev/input\n" \

@@ -19,12 +19,14 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+import importlib.resources as pkg_resources
 import math
-import threading
+from typing import Optional, Set
 
 import numpy as np
 import pytest
 
+import smarts.core.glsl
 from smarts.core.agent_interface import (
     ActionSpaceType,
     AgentInterface,
@@ -33,11 +35,18 @@ from smarts.core.agent_interface import (
 )
 from smarts.core.colors import SceneColors
 from smarts.core.coordinates import Heading, Pose
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
+from smarts.core.renderer_base import (
+    RendererBase,
+    RendererNotSetUpWarning,
+    ShaderStepBufferDependency,
+)
 from smarts.core.scenario import Scenario
+from smarts.core.shader_buffer import BufferID
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
 from smarts.core.utils.custom_exceptions import RendererException
+from smarts.core.utils.tests.fixtures import large_observation
 
 AGENT_ID = "Agent-007"
 
@@ -52,7 +61,7 @@ def _smarts_with_agent(agent) -> SMARTS:
 
 
 @pytest.fixture
-def smarts():
+def smarts_w_renderer():
     buddha = AgentInterface(
         debug=True,
         done_criteria=DoneCriteria(collision=False, off_road=False, off_route=False),
@@ -82,7 +91,7 @@ def smarts_wo_renderer():
 
 @pytest.fixture
 def scenario():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
     )
@@ -94,20 +103,41 @@ def scenario():
     return scenario
 
 
-def test_optional_renderer(smarts: SMARTS, scenario):
-    assert not smarts.is_rendering
-    renderer = smarts.renderer
+@pytest.fixture(params=["p3d"], scope="module")
+def renderer(request: pytest.FixtureRequest):
+    renderer: Optional[RendererBase] = None
+
+    if request.param == "p3d":
+        from smarts.p3d.renderer import BACKEND_LITERALS, DEBUG_MODE, Renderer
+
+        renderer = Renderer("na", debug_mode=DEBUG_MODE.WARNING)
+
+    assert renderer is not None
+    yield renderer
+
+    renderer.destroy()
+
+
+@pytest.fixture
+def observation_buffers() -> Set[BufferID]:
+    return {v for v in BufferID}
+
+
+def test_optional_renderer(smarts_w_renderer: SMARTS, scenario: Scenario):
+    assert not smarts_w_renderer.is_rendering
+    renderer = smarts_w_renderer.renderer
     assert renderer
 
-    smarts._renderer = None
-    smarts.reset(scenario)
-    assert smarts.is_rendering
+    smarts_w_renderer._renderer = None
+    smarts_w_renderer.reset(scenario)
+    assert smarts_w_renderer.is_rendering
 
-    smarts._renderer = None
-    for _ in range(10):
-        smarts.step({AGENT_ID: "keep_lane"})
+    smarts_w_renderer._renderer = None
 
-    assert not smarts.is_rendering
+    with pytest.raises(expected_exception=AttributeError, match=r"NoneType"):
+        smarts_w_renderer.step({AGENT_ID: "keep_lane"})
+
+    assert not smarts_w_renderer.is_rendering
 
 
 def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
@@ -118,3 +148,51 @@ def test_no_renderer(smarts_wo_renderer: SMARTS, scenario):
         smarts_wo_renderer.step({AGENT_ID: "keep_lane"})
 
     assert not smarts_wo_renderer.is_rendering
+
+
+def test_custom_shader_pass_buffers(
+    renderer: Optional[RendererBase],
+    observation_buffers: Set[BufferID],
+    large_observation,
+):
+    # Use a full dummy observation.
+    # Construct the renderer
+    # Construct the shader pass
+    # Use a shader that uses all buffers
+    # Assign all shader buffers in the pass.
+    # Update the shader pass using the current observation
+    # Render
+    # Test that the pixels default to white. (black is error)
+
+    assert renderer
+    renderer.reset()
+    camera_id = "test_shader"
+    with pkg_resources.path(
+        smarts.core.glsl, "test_custom_shader_pass_shader.frag"
+    ) as fshader:
+        renderer.build_shader_step(
+            camera_id,
+            fshader_path=fshader,
+            dependencies=[
+                ShaderStepBufferDependency(
+                    buffer_id=b_id, script_uniform_name=b_id.value
+                )
+                for b_id in observation_buffers
+            ],
+            priority=40,
+            height=100,
+            width=100,
+        )
+
+    camera = renderer.camera_for_id(camera_id=camera_id)
+    camera.update(Pose.from_center(np.array([0, 0, 0]), Heading(0)), 10)
+    camera.update(observation=large_observation)
+
+    with pytest.warns(RendererNotSetUpWarning):
+        renderer.render()
+
+    ram_image = camera.wait_for_ram_image("RGB")
+    mem_view = memoryview(ram_image)
+    image: np.ndarray = np.frombuffer(mem_view, np.uint8)[::3]
+
+    assert image[0] == 0

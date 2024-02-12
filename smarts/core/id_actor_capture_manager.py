@@ -19,14 +19,19 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import logging
-from typing import Dict, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, Set, Tuple
 
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.condition_state import ConditionState
-from smarts.core.plan import Mission
-from smarts.core.vehicle import Vehicle
+from smarts.core.plan import NavigationMission
 from smarts.sstudio.sstypes import IdEntryTactic
+
+if TYPE_CHECKING:
+    from smarts.core import scenario
+    from smarts.core.smarts import SMARTS
 
 
 class IdActorCaptureManager(ActorCaptureManager):
@@ -34,13 +39,9 @@ class IdActorCaptureManager(ActorCaptureManager):
 
     def __init__(self) -> None:
         self._log = logging.getLogger(self.__class__.__name__)
-        self._actor_for_agent: Dict[str, Tuple[str, Mission]] = {}
+        self._actor_for_agent: Dict[str, Tuple[str, NavigationMission]] = {}
 
-    def step(self, sim):
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
-
+    def step(self, sim: SMARTS):
         if not (
             sim.agent_manager.pending_agent_ids
             | sim.agent_manager.pending_social_agent_ids
@@ -81,7 +82,7 @@ class IdActorCaptureManager(ActorCaptureManager):
                 continue
             if not condition_result:
                 continue
-            vehicle: Optional[Vehicle] = self._take_existing_vehicle(
+            vehicle = self._take_existing_vehicle(
                 sim,
                 actor_id,
                 agent_id,
@@ -94,16 +95,9 @@ class IdActorCaptureManager(ActorCaptureManager):
         for actor_id in used_actors:
             del self._actor_for_agent[actor_id]
 
-    def reset(self, scenario, sim):
-        from smarts.core.smarts import SMARTS
-
-        assert isinstance(sim, SMARTS)
-        from smarts.core.scenario import Scenario
-
-        assert isinstance(scenario, Scenario)
-
+    def reset(self, scenario, sim: SMARTS):
         self._actor_for_agent.clear()
-        missions: Dict[str, Mission] = scenario.missions
+        missions: Dict[str, NavigationMission] = scenario.missions
         cancelled_agents = set()
         for agent_id, mission in missions.items():
             if mission is None:

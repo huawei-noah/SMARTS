@@ -11,24 +11,24 @@ env:
 
 jobs:
   auto-commit-mac:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: master
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: "3.9"
       - name: Update requirements
         run: |
           cd $GITHUB_WORKSPACE
-          python3.8 -m venv ${{env.venv_dir}}
+          python3.9 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install .[camera_obs,rllib,test,torch,train]
+          pip install .[camera-obs,rllib,test,torch,train]
           pip freeze | grep -v 'smarts' | grep -v 'pkg-resources==0.0.0' > utils/setup/mac_requirements.txt
       - name: Commit changes
         uses: EndBug/add-and-commit@v7

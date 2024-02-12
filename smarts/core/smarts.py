@@ -17,6 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import importlib.resources as pkg_resources
 import logging
 import os
@@ -40,16 +42,17 @@ import numpy as np
 
 from envision import etypes as envision_types
 from envision.client import Client as EnvisionClient
-from smarts import VERSION
+from smarts import VERSION, assets
 from smarts.core.actor_capture_manager import ActorCaptureManager
 from smarts.core.id_actor_capture_manager import IdActorCaptureManager
 from smarts.core.plan import Plan
 from smarts.core.renderer_base import RendererBase
+from smarts.core.sensors import SensorState
 from smarts.core.simulation_local_constants import SimulationLocalConstants
 from smarts.core.utils.core_logging import timeit
 from smarts.core.utils.type_operations import TypeSuite
 
-from . import config, models
+from . import config
 from .actor import ActorRole, ActorState
 from .agent_interface import AgentInterface
 from .agent_manager import AgentManager
@@ -73,7 +76,7 @@ from .provider import (
     ProviderState,
 )
 from .road_map import RoadMap
-from .scenario import Mission, Scenario
+from .scenario import NavigationMission, Scenario
 from .sensor_manager import SensorManager
 from .signal_provider import SignalProvider
 from .signals import SignalLightState, SignalState
@@ -83,6 +86,7 @@ from .traffic_provider import TrafficProvider
 from .trap_manager import TrapManager
 from .utils import pybullet
 from .utils.core_math import rounder_for_dt
+from .utils.custom_exceptions import RendererException
 from .utils.id import Id
 from .utils.pybullet import bullet_client as bc
 from .vehicle import Vehicle
@@ -137,7 +141,6 @@ class SMARTS(ProviderManager):
     ):
         conf = config()
         self._log = logging.getLogger(self.__class__.__name__)
-        self._log.setLevel(level=logging.ERROR)
         self._sim_id = Id.new("smarts")
         self._is_setup = False
         self._is_destroyed = False
@@ -152,12 +155,12 @@ class SMARTS(ProviderManager):
             visdom = None
 
         self._visdom: Any = None
-        if conf("visdom", "enabled", default=False, cast=bool) or visdom is True:
+        if conf("visdom", "enabled", cast=bool) or visdom is True:
             from smarts.visdom.visdom_client import VisdomClient
 
             self._visdom = VisdomClient(
-                hostname=conf("visdom", "hostname", default="http://localhost"),
-                port=conf("visdom", "port", default=8097),
+                hostname=conf("visdom", "hostname"),
+                port=conf("visdom", "port"),
             )
         elif not isinstance(self._visdom, bool):
             self._visdom = visdom
@@ -211,9 +214,9 @@ class SMARTS(ProviderManager):
         self._last_provider_state = None
         self._reset_agents_only = reset_agents_only  # a.k.a "teleportation"
 
-        # For macOS GUI. See our `BulletClient` docstring for details.
-        # from .utils.bullet import BulletClient
-        # self._bullet_client = BulletClient(pybullet.GUI)
+        # For macOS GUI. See our `BulletClientMACOS` docstring for details.
+        # from .utils.pybullet import BulletClientMACOS
+        # self._bullet_client = BulletClientMACOS(pybullet.GUI)
         self._bullet_client = pybullet.SafeBulletClient(
             pybullet.DIRECT
         )  # pylint: disable=no-member
@@ -271,15 +274,17 @@ class SMARTS(ProviderManager):
         except (KeyboardInterrupt, SystemExit):
             # ensure we clean-up if the user exits the simulation
             self._log.info("Simulation was interrupted by the user.")
-            if not config()("core", "debug", default=False, cast=bool):
-                self.destroy()
+            self.destroy()
             raise  # re-raise the KeyboardInterrupt
+        except RendererException:
+            self.destroy()
+            raise  # re-raise renderer not found exceptions without retrying.
         except Exception as e:
             self._log.error(
                 "Simulation crashed with exception. Attempting to cleanly shutdown."
             )
             self._log.exception(e)
-            if not config().get_setting("core", "debug", default=False, cast=bool):
+            if not config().get_setting("core", "debug", cast=bool):
                 self.destroy()
             raise  # re-raise
 
@@ -342,10 +347,12 @@ class SMARTS(ProviderManager):
         # want these during their observation/reward computations.
         # This is a hack to give us some short term perf wins. Longer term we
         # need to expose better support for batched computations
-        self._sync_smarts_and_provider_actor_states(provider_state)
-        self._sensor_manager.clean_up_sensors_for_actors(
-            set(v.actor_id for v in self._vehicle_states), renderer=self.renderer_ref
-        )
+        with timeit("Syncing provider state", self._log.debug):
+            self._sync_smarts_and_provider_actor_states(provider_state)
+            self._sensor_manager.clean_up_sensors_for_actors(
+                set(v.actor_id for v in self._vehicle_states),
+                renderer=self.renderer_ref,
+            )
 
         # Reset frame state
         try:
@@ -364,9 +371,12 @@ class SMARTS(ProviderManager):
             # so that all updates are ready before rendering happens per
             with timeit("Syncing the renderer", self._log.debug):
                 self.renderer_ref.sync(self.cached_frame)
-            with timeit("Running through the render pipeline", self._log.debug):
-                self.renderer_ref.render()
 
+            # TODO OBSERVATIONS: this needs to happen between the base and rendered observations
+            # with timeit("Running through the render pipeline", self._log.debug):
+            #     self.renderer_ref.render()
+
+        # TODO OBSERVATIONS: Need to split the observation generation
         with timeit("Calculating observations and rewards", self._log.debug):
             observations, rewards, scores, dones = self._agent_manager.observe()
 
@@ -456,7 +466,7 @@ class SMARTS(ProviderManager):
                 - If no agents: the initial simulation observation at `start_time`
                 - If agents: the first step of the simulation with an agent observation
         """
-        tries = config()("core", "reset_retries", 0, cast=int) + 1
+        tries = config()("core", "reset_retries", cast=int) + 1
         first_exception = None
         for _ in range(tries):
             try:
@@ -533,18 +543,20 @@ class SMARTS(ProviderManager):
         self._check_valid()
         self._scenario = scenario
 
-        if self._renderer:
-            self._renderer.setup(scenario)
         self._setup_bullet_client(self._bullet_client)
         provider_state = self._setup_providers(self._scenario)
-        self._vehicle_index.load_controller_params(
-            scenario.controller_parameters_filepath
+        self._vehicle_index.load_vehicle_definitions_list(
+            scenario.vehicle_definitions_filepath
         )
 
         self._agent_manager.setup_agents()
         self._bubble_manager = BubbleManager(scenario.bubbles, scenario.road_map)
         for actor_capture_manager in self._actor_capture_managers:
             actor_capture_manager.reset(scenario, self)
+        if self._renderer or any(
+            a.requires_rendering for a in self._agent_manager.agent_interfaces.values()
+        ):
+            self.renderer.setup(scenario)
 
         self._harmonize_providers(provider_state)
         self._last_provider_state = provider_state
@@ -592,7 +604,7 @@ class SMARTS(ProviderManager):
         self._is_setup = False
 
     def add_agent_with_mission(
-        self, agent_id: str, agent_interface: AgentInterface, mission: Mission
+        self, agent_id: str, agent_interface: AgentInterface, mission: NavigationMission
     ):
         """Add an agent to the simulation. The simulation will attempt to provide a vehicle for
         the agent.
@@ -613,7 +625,7 @@ class SMARTS(ProviderManager):
         vehicle_id: str,
         agent_id: str,
         agent_interface: AgentInterface,
-        mission: Mission,
+        mission: NavigationMission,
     ) -> Vehicle:
         """Add the new specified ego agent and then take over control of the specified vehicle."""
         self._check_valid()
@@ -629,7 +641,7 @@ class SMARTS(ProviderManager):
         self,
         vehicle_id: str,
         agent_id: str,
-        mission: Mission,
+        mission: NavigationMission,
         recreate: bool,
         is_hijacked: bool,
     ) -> Vehicle:
@@ -755,7 +767,7 @@ class SMARTS(ProviderManager):
             if teardown_agent:
                 self.teardown_social_agents([shadow_agent_id])
         if self._vehicle_index.shadower_id_from_vehicle_id(vehicle_id) is None:
-            self._sensor_manager.remove_sensors_by_actor_id(vehicle_id)
+            self._sensor_manager.remove_actor_sensors_by_actor_id(vehicle_id)
 
     def _agent_releases_actor(
         self,
@@ -836,14 +848,14 @@ class SMARTS(ProviderManager):
     def _setup_pybullet_ground_plane(self, client: bc.BulletClient):
         plane_path = self._scenario.plane_filepath
         if not os.path.exists(plane_path):
-            with pkg_resources.path(models, "plane.urdf") as path:
+            with pkg_resources.path(assets, "plane.urdf") as path:
                 plane_path = str(path.absolute())
 
         if not self._map_bb:
             self._map_bb = self.road_map.bounding_box
 
         if self._map_bb:
-            # 1e6 is the default value for plane length and width in smarts/models/plane.urdf.
+            # 1e6 is the default value for plane length and width in smarts/assets/plane.urdf.
             DEFAULT_PLANE_DIM = 1e6
             ground_plane_scale = (
                 2.2 * max(self._map_bb.length, self._map_bb.width) / DEFAULT_PLANE_DIM
@@ -951,28 +963,76 @@ class SMARTS(ProviderManager):
         for v_id in vehicle_ids:
             self._remove_vehicle_from_providers(v_id)
 
-    def attach_sensors_to_vehicles(self, agent_interface, vehicle_ids):
+    def attach_sensors_to_vehicles(
+        self,
+        agent_interface: AgentInterface,
+        vehicle_ids,
+        overwrite_sensors=False,
+        reset_sensors=False,
+    ):
         """Set the specified vehicles with the sensors needed to satisfy the specified agent
-        interface.
+        interface. See :attr:`smarts.core.smarts.SMARTS.prepare_observe_from`.
+
+        Args:
+            agent_interface (AgentInterface): The minimum interface generating the observations.
+            vehicle_ids (Sequence[str]): The vehicles to target.
+            overwrite_sensors (bool, optional): If to replace existing sensors (USE CAREFULLY). Defaults to False.
+            reset_sensors (bool, optional): If to remove all existing sensors before adding sensors (USE **VERY** CAREFULLY). Defaults to False.
+        """
+        self.prepare_observe_from(
+            vehicle_ids, agent_interface, overwrite_sensors, reset_sensors
+        )
+
+    def prepare_observe_from(
+        self,
+        vehicle_ids: Sequence[str],
+        interface: AgentInterface,
+        overwrite_sensors,
+        reset_sensors,
+    ):
+        """Assigns the given vehicle sensors as is described by the agent interface.
+
+        Args:
+            vehicle_ids (Sequence[str]): The vehicles to target.
+            interface (AgentInterface): The minimum interface generating the observations.
+            overwrite_sensors (bool, optional): If to replace existing sensors (USE CAREFULLY).
+            reset_sensors (bool, optional): If to remove all existing sensors (USE **VERY** CAREFULLY).
         """
         self._check_valid()
+
         for v_id in vehicle_ids:
             v = self._vehicle_index.vehicle_by_id(v_id)
             Vehicle.attach_sensors_to_vehicle(
-                self._sensor_manager, self, v, agent_interface
+                self.sensor_manager,
+                self,
+                v,
+                interface,
+                replace=overwrite_sensors,
+                reset_sensors=reset_sensors,
             )
 
     def observe_from(
-        self, vehicle_ids: Sequence[str], interface: AgentInterface
+        self,
+        vehicle_ids: Sequence[str],
+        interface: AgentInterface,
     ) -> Tuple[Dict[str, Observation], Dict[str, bool]]:
-        """Generate observations from the specified vehicles."""
+        """Generate observations from the specified vehicles.
+
+        Args:
+            vehicle_ids (Sequence[str]): The vehicles to target.
+            interface (AgentInterface): The intended interface generating the observations (this may be ignored.)
+
+        Returns:
+            Tuple[Dict[str, Observation], Dict[str, bool]]: A dictionary of observations and the hypothetical dones.
+        """
         self._check_valid()
 
-        vehicles = {
+        vehicles: Dict[str, Vehicle] = {
             v_id: self.vehicle_index.vehicle_by_id(v_id) for v_id in vehicle_ids
         }
         sensor_states = {
             vehicle.id: self._sensor_manager.sensor_state_for_actor_id(vehicle.id)
+            or SensorState.invalid()
             for vehicle in vehicles.values()
         }
         return self.sensor_manager.observe_batch(
@@ -989,21 +1049,21 @@ class SMARTS(ProviderManager):
     def renderer(self) -> RendererBase:
         """The renderer singleton. On call, the sim will attempt to create it if it does not exist."""
         if not self._renderer:
-            from .utils.custom_exceptions import RendererException
-
             try:
+                from smarts.core.renderer_base import DEBUG_MODE
                 from smarts.p3d.renderer import Renderer
 
-                self._renderer = Renderer(self._sim_id)
-            except ImportError as e:
-                raise RendererException.required_to("use camera observations")
-            except Exception as e:
+                self._renderer = Renderer(self._sim_id, debug_mode=DEBUG_MODE.ERROR)
+            except ImportError as exc:
+                raise RendererException.required_to("use camera observations") from exc
+            except Exception as exc:
                 self._renderer = None
-                raise RendererException("Unable to create renderer.")
+                raise RendererException("Unable to create renderer.") from exc
             if not self._renderer.is_setup:
                 if self._scenario:
                     self._renderer.setup(self._scenario)
                     self._vehicle_index.begin_rendering_vehicles(self._renderer)
+        assert self._renderer is not None
         return self._renderer
 
     @property
@@ -1327,39 +1387,47 @@ class SMARTS(ProviderManager):
     def _step_providers(self, actions) -> ProviderState:
         provider_vehicle_actions = dict()
         for provider in self.providers:
-            agent_actions, vehicle_actions = self._provider_actions(provider, actions)
-            provider_vehicle_actions[provider] = vehicle_actions
-            if isinstance(provider, AgentsProvider):
-                provider.perform_agent_actions(agent_actions)
+            with timeit(
+                f"Performing actions on {provider.__class__.__name__}", self._log.debug
+            ):
+                agent_actions, vehicle_actions = self._provider_actions(
+                    provider, actions
+                )
+                provider_vehicle_actions[provider] = vehicle_actions
+                if isinstance(provider, AgentsProvider):
+                    provider.perform_agent_actions(agent_actions)
 
-        self._check_ground_plane()
-        self._step_pybullet()
-        self._process_collisions()
+        with timeit("Stepping physics", self._log.debug):
+            self._check_ground_plane()
+            self._step_pybullet()
+            self._process_collisions()
 
         accumulated_provider_state = ProviderState()
 
         agent_vehicle_ids = self._vehicle_index.agent_vehicle_ids()
         for provider in self.providers:
-            try:
-                provider_state = provider.step(
-                    provider_vehicle_actions[provider],
-                    self._last_dt,
-                    self._elapsed_sim_time,
-                )
-            except Exception as provider_error:
-                provider_state = self._handle_provider(provider, provider_error)
-                raise
+            with timeit(f"Stepping {provider.__class__.__name__}", self._log.debug):
+                try:
+                    provider_state = provider.step(
+                        provider_vehicle_actions[provider],
+                        self._last_dt,
+                        self._elapsed_sim_time,
+                    )
+                except Exception as provider_error:
+                    provider_state = self._handle_provider(provider, provider_error)
+                    raise
 
-            # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
-            assert not isinstance(
-                provider, TrafficProvider
-            ) or not provider_state.intersects(
-                agent_vehicle_ids
-            ), f"{agent_vehicle_ids} in {provider_state.actors}"
+                # by this point, "stop_managing()" should have been called for the hijacked vehicle on all TrafficProviders
+                assert not isinstance(
+                    provider, TrafficProvider
+                ) or not provider_state.intersects(
+                    agent_vehicle_ids
+                ), f"{agent_vehicle_ids} in {provider_state.actors}"
 
-            accumulated_provider_state.merge(provider_state)
+                accumulated_provider_state.merge(provider_state)
 
-        self._harmonize_providers(accumulated_provider_state)
+        with timeit("Harmonizing provider state", self._log.debug):
+            self._harmonize_providers(accumulated_provider_state)
         return accumulated_provider_state
 
     def _sync_smarts_and_provider_actor_states(

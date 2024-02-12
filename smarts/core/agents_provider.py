@@ -169,7 +169,6 @@ class AgentsProvider(Provider):
                     controller_state,
                     sensor_state,
                     agent_interface.action,
-                    agent_interface.vehicle_type,
                 )
 
     @property

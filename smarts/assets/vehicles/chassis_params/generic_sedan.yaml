@@ -1,0 +1,8 @@
+chassis_aero_force_gain : 0.63
+max_brake_gain : 10000
+max_turn_radius : 2.2
+wheel_radius : 0.31265
+max_torque : 1600
+max_btorque : 1400
+max_steering : 12.56
+steering_gear_ratio : 17.4

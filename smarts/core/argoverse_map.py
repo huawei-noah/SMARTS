@@ -439,14 +439,14 @@ class ArgoverseMap(RoadMapWithCaches):
             closest_index = np.argmin(dists)
             p1 = self.left_pts[closest_index]
             p2 = self.right_pts[closest_index]
-            width = np.linalg.norm(p2 - p1)
+            width = np.linalg.norm(np.subtract(p2, p1))
             return width, 1.0
 
         @cached_property
         def length(self) -> float:
             length = 0
             for p1, p2 in zip(self._centerline, self._centerline[1:]):
-                length += np.linalg.norm(p2 - p1)
+                length += np.linalg.norm(np.subtract(p2, p1))
             return length
 
         @cached_property
@@ -1019,7 +1019,8 @@ class ArgoverseMap(RoadMapWithCaches):
                 for path in new_paths:
                     if (
                         len(path) > 0
-                        and np.linalg.norm(path[0].pos - pose.position[:2]) < 8
+                        and np.linalg.norm(np.subtract(path[0].pos, pose.position[:2]))
+                        < 8
                         and abs(path[0].heading.relative_to(pose.heading)) < np.pi / 3
                     ):
                         waypoint_paths.append(path)

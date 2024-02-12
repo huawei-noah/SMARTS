@@ -29,18 +29,18 @@ import pytest
 from smarts.core.agent_interface import ActionSpaceType, AgentInterface
 from smarts.core.coordinates import Heading
 from smarts.core.local_traffic_provider import LocalTrafficProvider
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.scenario import Scenario
 from smarts.core.smarts import SMARTS
 from smarts.core.sumo_traffic_simulation import SumoTrafficSimulation
-from smarts.core.utils.sumo import traci
+from smarts.core.utils.sumo_utils import traci
 
 SUMO_PORT = 8082
 
 
 @pytest.fixture
 def scenarios():
-    mission = Mission(
+    mission = NavigationMission(
         start=Start(np.array((71.65, 63.78)), Heading(math.pi * 0.91)),
         goal=EndlessGoal(),
     )

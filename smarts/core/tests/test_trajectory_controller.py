@@ -21,13 +21,12 @@
 # THE SOFTWARE.
 import importlib.resources as pkg_resources
 import math
-from pathlib import Path
 
 import numpy as np
 import pytest
-import yaml
 
-from smarts.core import models
+import smarts.assets.vehicles.controller_params
+import smarts.assets.vehicles.dynamics_model
 from smarts.core.chassis import AckermannChassis
 from smarts.core.controllers import (
     TrajectoryTrackingController,
@@ -35,55 +34,64 @@ from smarts.core.controllers import (
 )
 from smarts.core.coordinates import Heading, Pose
 from smarts.core.utils import pybullet
-from smarts.core.utils.pybullet import bullet_client as bc
+from smarts.core.utils.pybullet import SafeBulletClient
+from smarts.core.utils.resources import (
+    VehicleDefinitions,
+    load_vehicle_definitions_list,
+    load_yaml_config_with_substitution,
+)
 from smarts.core.vehicle import Vehicle
 
 time_step = 0.1
 
 
-@pytest.fixture(params=["sedan", "bus"])
-def vehicle_controller_file(request):
-    vehicle_file_name = request.param + ".urdf"
-    if request.param == "sedan":
-        vehicle_file_name = "vehicle.urdf"
+@pytest.fixture
+def vehicle_definitions_list() -> VehicleDefinitions:
+    return load_vehicle_definitions_list(None)
 
-    with pkg_resources.path(models, vehicle_file_name) as path:
-        vehicle_file_path = str(path.absolute())
-    with pkg_resources.path(models, "controller_parameters.yaml") as controller_path:
-        controller_filepath = str(controller_path.absolute())
-    with open(controller_filepath, "r") as controller_file:
-        vehicle_controller_file_path = yaml.safe_load(controller_file)[request.param]
 
-    return (vehicle_file_path, vehicle_controller_file_path)
+@pytest.fixture(
+    params=["bus", "sedan", "pickup", "moving_truck_empty", "moving_truck_loaded"]
+)
+def vehicle_definition(
+    vehicle_definitions_list: VehicleDefinitions, request: pytest.FixtureRequest
+):
+    return vehicle_definitions_list.load_vehicle_definition(request.param)
 
 
 @pytest.fixture
 def bullet_client(fixed_timestep_sec=time_step):
-    client = bc.BulletClient(pybullet.DIRECT)
+    client = SafeBulletClient(pybullet.DIRECT)
     client.resetSimulation()
     client.setGravity(0, 0, -9.8)
     client.setPhysicsEngineParameter(
         fixedTimeStep=fixed_timestep_sec,
         numSubSteps=int(fixed_timestep_sec / (1 / 240)),
     )
-    path = Path(__file__).parent / "../models/plane.urdf"
-    path = str(path.absolute())
-    plane_body_id = client.loadURDF(path, useFixedBase=True)
+    with pkg_resources.path(smarts.assets, "plane.urdf") as path:
+        path = str(path.absolute())
+        plane_body_id = client.loadURDF(path, useFixedBase=True)
     yield client
     client.disconnect()
 
 
 @pytest.fixture
-def vehicle(bullet_client, vehicle_controller_file, fixed_timestep_sec=time_step):
+def vehicle(bullet_client, vehicle_definition, fixed_timestep_sec=time_step):
     pose = Pose.from_center((0, 0, 0), Heading(0))
     vehicle1 = Vehicle(
         id="vehicle",
         chassis=AckermannChassis(
             pose=pose,
             bullet_client=bullet_client,
-            vehicle_filepath=vehicle_controller_file[0],
-            controller_parameters=vehicle_controller_file[1],
+            vehicle_dynamics_filepath=vehicle_definition["dynamics_model"],
+            controller_parameters=load_yaml_config_with_substitution(
+                vehicle_definition["controller_params"]
+            ),
+            chassis_parameters=load_yaml_config_with_substitution(
+                vehicle_definition["chassis_params"]
+            ),
         ),
+        visual_model_filepath=None,
     )
     return vehicle1
 

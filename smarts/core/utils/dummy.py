@@ -26,7 +26,7 @@ import math
 import numpy as np
 
 import smarts.sstudio.sstypes as t
-from smarts.core.coordinates import Dimensions, Heading, RefLinePoint
+from smarts.core.coordinates import Dimensions, Heading, Point, RefLinePoint
 from smarts.core.events import Events
 from smarts.core.observations import (
     DrivableAreaGridMap,
@@ -35,12 +35,16 @@ from smarts.core.observations import (
     Observation,
     OccupancyGridMap,
     RoadWaypoints,
+    SignalObservation,
     TopDownRGB,
     VehicleObservation,
+    ViaPoint,
     Vias,
 )
-from smarts.core.plan import EndlessGoal, Mission, Start
+from smarts.core.plan import EndlessGoal, NavigationMission, Start
 from smarts.core.road_map import Waypoint
+from smarts.core.signals import SignalLightState
+from smarts.core.vehicle_state import Collision
 
 
 def dummy_observation() -> Observation:
@@ -50,7 +54,7 @@ def dummy_observation() -> Observation:
         step_count=1,
         elapsed_sim_time=0.2,
         events=Events(
-            collisions=[],
+            collisions=(Collision("v", "2"),),
             off_road=False,
             off_route=False,
             on_shoulder=False,
@@ -63,7 +67,7 @@ def dummy_observation() -> Observation:
         ),
         ego_vehicle_state=EgoVehicleObservation(
             id="AGENT-007-07a0ca6e",
-            position=np.array([161.23485529, 3.2, 0.0]),
+            position=(161.23485529, 3.2, 0.0),
             bounding_box=Dimensions(length=3.68, width=1.47, height=1.0),
             heading=Heading(-1.5707963267948966),
             speed=5.0,
@@ -73,7 +77,7 @@ def dummy_observation() -> Observation:
             lane_id="east_2",
             lane_index=2,
             lane_position=RefLinePoint(161.23485529, 0.0, 0.0),
-            mission=Mission(
+            mission=NavigationMission(
                 start=Start(
                     position=np.array([163.07485529, 3.2]),
                     heading=Heading(-1.5707963267948966),
@@ -91,15 +95,15 @@ def dummy_observation() -> Observation:
                 via=(),
                 vehicle_spec=None,
             ),
-            linear_velocity=np.array([5.000000e00, 3.061617e-16, 0.000000e00]),
-            angular_velocity=np.array([0.0, 0.0, 0.0]),
-            linear_acceleration=np.array([0.0, 0.0, 0.0]),
-            angular_acceleration=np.array([0.0, 0.0, 0.0]),
-            linear_jerk=np.array([0.0, 0.0, 0.0]),
-            angular_jerk=np.array([0.0, 0.0, 0.0]),
+            linear_velocity=(5.000000e00, 3.061617e-16, 0.000000e00),
+            angular_velocity=(0.0, 0.0, 0.0),
+            linear_acceleration=(0.0, 0.0, 0.0),
+            angular_acceleration=(0.0, 0.0, 0.0),
+            linear_jerk=(0.0, 0.0, 0.0),
+            angular_jerk=(0.0, 0.0, 0.0),
         ),
         under_this_agent_control=True,
-        neighborhood_vehicle_states=[
+        neighborhood_vehicle_states=(
             VehicleObservation(
                 id="car-west_0_0-east_0_max-784511-726648-0-0.0",
                 position=(-1.33354215, -3.2, 0.0),
@@ -122,7 +126,7 @@ def dummy_observation() -> Observation:
                 lane_index=1,
                 lane_position=RefLinePoint(-1.47159011, 0.0, 0.0),
             ),
-        ],
+        ),
         waypoint_paths=[
             [
                 Waypoint(
@@ -316,6 +320,11 @@ def dummy_observation() -> Observation:
                 ],
             }
         ),
-        via_data=Vias(near_via_points=[], hit_via_points=[]),
+        signals=(
+            SignalObservation(
+                SignalLightState.GO, Point(181.0, 0.0), ("east_1",), None
+            ),
+        ),
+        via_data=Vias(near_via_points=(ViaPoint((181.0, 0.0), 1, "east", 5.0, False),)),
         steps_completed=4,
     )

@@ -27,6 +27,8 @@ from shapely.affinity import rotate as shapely_rotate
 from shapely.geometry import Polygon
 from shapely.geometry import box as shapely_box
 
+from smarts.core.coordinates import Dimensions
+
 from .actor import ActorState
 from .colors import SceneColors
 from .coordinates import Dimensions, Heading, Pose
@@ -126,6 +128,28 @@ class VehicleState(ActorState):
             isinstance(__o, type(self))
             and super().__eq__(__o)
             and self.pose == __o.pose
+        )
+
+    def get_pose(self) -> Optional[Pose]:
+        return self.pose
+
+    def get_dimensions(self) -> Optional[Dimensions]:
+        return self.dimensions
+
+    def linear_velocity_tuple(self) -> Optional[Tuple[float, float, float]]:
+        """Generates a tuple representation of linear velocity with standard python types."""
+        return (
+            None
+            if self.linear_velocity is None
+            else tuple(float(f) for f in self.linear_velocity)
+        )
+
+    def angular_velocity_tuple(self) -> Optional[Tuple[float, float, float]]:
+        """Generates a tuple representation of angular velocity with standard python types."""
+        return (
+            None
+            if self.angular_velocity is None
+            else tuple(float(f) for f in self.angular_velocity)
         )
 
     @property

@@ -1,13 +1,14 @@
-# Steps to build and push minimal SMARTS docker image
+# Steps to build and push the software rendering SMARTS docker image
 # ```bash
 # $ cd </path/to/SMARTS>
-# export VERSION=v0.5.0
-# $ docker build --no-cache -f ./utils/docker/Dockerfile.minimal -t huaweinoah/smarts:$VERSION-minimal .
-# $ docker login
-# $ docker push huaweinoah/smarts:$VERSION-minimal
+# export VERSION=v2.0.0
+# export DOCK_TYPE=minimal
+# $ docker build --no-cache -f ./utils/docker/Dockerfile.$DOCK_TYPE -t ghcr.io/smarts-project/smarts:$VERSION-$DOCK_TYPE .
+# $ # This uses a key for the smarts-project repository
+# $ sudo echo $GHCR_SMARTS_PROJECT | docker login ghcr.io --username smarts-project --password-stdin
+# $ docker push ghcr.io/smarts-project/smarts:$VERSION-$DOCK_TYPE
 # ```
-
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -18,11 +19,11 @@ RUN apt-get update --fix-missing && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y \
+        git \
+        libenchant-dev \
         libspatialindex-dev \
         python3.8 \
         python3.8-venv \
-        libenchant-dev \
-        git \
         wget \
         xorg && \
     apt-get autoremove -y && \
@@ -38,6 +39,8 @@ RUN wget https://bootstrap.pypa.io/get-pip.py -O get-pip.py && \
 
 # For Envision
 EXPOSE 8081
+# For centralized TraCI management server
+EXPOSE 8097
 
 # Suppress message of missing /dev/input folder
 RUN echo "mkdir -p /dev/input" >> ~/.bashrc

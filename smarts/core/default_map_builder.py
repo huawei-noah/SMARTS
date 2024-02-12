@@ -17,27 +17,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
 
 import os
 import sys
+import warnings
 from enum import IntEnum
-from typing import NamedTuple, Optional, Tuple
+from typing import TYPE_CHECKING, NamedTuple, Optional, Tuple
 
-from smarts.core.road_map import RoadMap
 from smarts.core.utils.file import file_md5_hash, path2hash
+
+if TYPE_CHECKING:
+    from smarts.core.road_map import RoadMap
+    from smarts.sstudio.sstypes import MapSpec
+
 
 _existing_map = None
 
 
-def _cache_result(map_spec, road_map, road_map_hash: str):
+class _RoadMapInfo(NamedTuple):
+    map_spec: MapSpec  # pytype: disable=invalid-annotation
+    obj: RoadMap
+    map_hash: str
+
+
+def _cache_result(map_spec, road_map: RoadMap, road_map_hash: str):
     global _existing_map
-    from smarts.sstudio.sstypes import MapSpec
-
-    class _RoadMapInfo(NamedTuple):
-        map_spec: MapSpec  # pytype: disable=invalid-annotation
-        obj: RoadMap
-        map_hash: str
-
     _existing_map = _RoadMapInfo(map_spec, road_map, road_map_hash)
 
 
@@ -151,6 +156,10 @@ def get_road_map(map_spec) -> Tuple[Optional[RoadMap], Optional[str]]:
             return None, None
         map_class = ArgoverseMap
     else:
+        warnings.warn(
+            f"A map source for road surface generation can not be resolved from the given reference: `{map_spec.source}`.",
+            category=UserWarning,
+        )
         return None, None
 
     if _existing_map:

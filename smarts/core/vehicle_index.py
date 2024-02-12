@@ -23,16 +23,24 @@
     shadower
     shadowers
 """
+from __future__ import annotations
+
 import logging
 from copy import copy, deepcopy
+from functools import lru_cache
 from io import StringIO
+from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
+    Any,
     Dict,
     FrozenSet,
+    Iterable,
     Iterator,
     List,
     NamedTuple,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -42,35 +50,48 @@ import numpy as np
 import tableprint as tp
 
 from smarts.core import gen_id
+from smarts.core.colors import SceneColors
+from smarts.core.coordinates import Dimensions, Pose
 from smarts.core.utils import resources
 from smarts.core.utils.cache import cache, clear_cache
-from smarts.core.utils.string import truncate
+from smarts.core.utils.strings import truncate
+from smarts.core.vehicle_state import VEHICLE_CONFIGS
 
 from .actor import ActorRole
 from .chassis import AckermannChassis, BoxChassis
 from .controllers import ControllerState
 from .road_map import RoadMap
 from .sensors import SensorState
-from .vehicle import Vehicle, VehicleState
+from .vehicle import Vehicle
+
+if TYPE_CHECKING:
+    from smarts.core import plan
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.controllers.action_space_type import ActionSpaceType
+    from smarts.core.renderer_base import RendererBase
+    from smarts.core.smarts import SMARTS
+
+    from .vehicle import VehicleState
 
 VEHICLE_INDEX_ID_LENGTH = 128
 
 
-def _2id(id_: str):
+def _2id(id_: str) -> bytes:
     separator = b"$"
     assert len(id_) <= VEHICLE_INDEX_ID_LENGTH - len(separator), id_
 
     if not isinstance(id_, bytes):
         id_ = bytes(id_.encode())
 
+    assert isinstance(id_, bytes)
     return (separator + id_).zfill(VEHICLE_INDEX_ID_LENGTH - len(separator))
 
 
 class _ControlEntity(NamedTuple):
-    vehicle_id: Union[bytes, str]
-    owner_id: Union[bytes, str]
+    vehicle_id: bytes
+    owner_id: bytes
     role: ActorRole
-    shadower_id: Union[bytes, str]
+    shadower_id: bytes
     # Applies to shadower and owner
     # TODO: Consider moving this to an ActorRole field
     is_boid: bool
@@ -91,23 +112,25 @@ class VehicleIndex:
         # Fixed-length ID to original ID
         # TODO: This quitely breaks if owner and vehicle IDs are the same. It assumes
         #       global uniqueness.
-        self._2id_to_id = {}
+        self._2id_to_id: Dict[bytes, str] = {}
 
         # {vehicle_id (fixed-length): <Vehicle>}
-        self._vehicles: Dict[str, Vehicle] = {}
+        self._vehicles: Dict[bytes, Vehicle] = {}
 
         # {vehicle_id (fixed-length): <ControllerState>}
-        self._controller_states = {}
+        self._controller_states: Dict[bytes, ControllerState] = {}
 
         # Loaded from yaml file on scenario reset
-        self._controller_params = {}
+        self._vehicle_definitions: resources.VehicleDefinitions = (
+            resources.VehicleDefinitions({}, "")
+        )
 
     @classmethod
     def identity(cls):
         """Returns an empty identity index."""
         return cls()
 
-    def __sub__(self, other: "VehicleIndex") -> "VehicleIndex":
+    def __sub__(self, other: VehicleIndex) -> VehicleIndex:
         vehicle_ids = set(self._controlled_by["vehicle_id"]) - set(
             other._controlled_by["vehicle_id"]
         )
@@ -115,7 +138,7 @@ class VehicleIndex:
         vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
         return self._subset(vehicle_ids)
 
-    def __and__(self, other: "VehicleIndex") -> "VehicleIndex":
+    def __and__(self, other: VehicleIndex) -> VehicleIndex:
         vehicle_ids = set(self._controlled_by["vehicle_id"]) & set(
             other._controlled_by["vehicle_id"]
         )
@@ -123,28 +146,28 @@ class VehicleIndex:
         vehicle_ids = [self._2id_to_id[id_] for id_ in vehicle_ids]
         return self._subset(vehicle_ids)
 
-    def _subset(self, vehicle_ids):
+    def _subset(self, vehicle_ids: Iterable[str]):
         assert self.vehicle_ids().issuperset(
             vehicle_ids
         ), f"{', '.join(list(self.vehicle_ids())[:3])} ⊅ {', '.join(list(vehicle_ids)[:3])}"
 
-        vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
+        b_vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
 
         index = VehicleIndex()
         indices = np.isin(
-            self._controlled_by["vehicle_id"], vehicle_ids, assume_unique=True
+            self._controlled_by["vehicle_id"], b_vehicle_ids, assume_unique=True
         )
         index._controlled_by = self._controlled_by[indices]
-        index._2id_to_id = {id_: self._2id_to_id[id_] for id_ in vehicle_ids}
-        index._vehicles = {id_: self._vehicles[id_] for id_ in vehicle_ids}
+        index._2id_to_id = {id_: self._2id_to_id[id_] for id_ in b_vehicle_ids}
+        index._vehicles = {id_: self._vehicles[id_] for id_ in b_vehicle_ids}
         index._controller_states = {
             id_: self._controller_states[id_]
-            for id_ in vehicle_ids
+            for id_ in b_vehicle_ids
             if id_ in self._controller_states
         }
         return index
 
-    def __deepcopy__(self, memo):
+    def __deepcopy__(self, memo) -> VehicleIndex:
         result = self.__class__.__new__(self.__class__)
         memo[id(self)] = result
 
@@ -190,11 +213,11 @@ class VehicleIndex:
         }
 
     @cache
-    def vehicle_is_hijacked_or_shadowed(self, vehicle_id) -> Tuple[bool, bool]:
+    def vehicle_is_hijacked_or_shadowed(self, vehicle_id: str) -> Tuple[bool, bool]:
         """Determine if a vehicle is either taken over by an owner or watched."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
 
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        v_index = self._controlled_by["vehicle_id"] == b_vehicle_id
         if not np.any(v_index):
             return False, False
 
@@ -205,26 +228,28 @@ class VehicleIndex:
         return bool(vehicle["is_hijacked"]), bool(vehicle["shadower_id"])
 
     @cache
-    def vehicle_ids_by_owner_id(self, owner_id, include_shadowers=False) -> List[str]:
+    def vehicle_ids_by_owner_id(
+        self, owner_id: str, include_shadowers: bool = False
+    ) -> List[str]:
         """Returns all vehicles for the given owner ID as a list. This is most
         applicable when an agent is controlling multiple vehicles (e.g. with boids).
         """
-        owner_id = _2id(owner_id)
+        b_owner_id = _2id(owner_id)
 
-        v_index = self._controlled_by["owner_id"] == owner_id
+        v_index = self._controlled_by["owner_id"] == b_owner_id
         if include_shadowers:
-            v_index = v_index | (self._controlled_by["shadower_id"] == owner_id)
+            v_index = v_index | (self._controlled_by["shadower_id"] == b_owner_id)
 
-        vehicle_ids = self._controlled_by[v_index]["vehicle_id"]
-        return [self._2id_to_id[id_] for id_ in vehicle_ids]
+        b_vehicle_ids = self._controlled_by[v_index]["vehicle_id"]
+        return [self._2id_to_id[id_] for id_ in b_vehicle_ids]
 
     @cache
-    def owner_id_from_vehicle_id(self, vehicle_id) -> Optional[str]:
+    def owner_id_from_vehicle_id(self, vehicle_id: str) -> Optional[str]:
         """Find the owner id associated with the given vehicle."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
 
         owner_ids = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
+            self._controlled_by["vehicle_id"] == b_vehicle_id
         ]["owner_id"]
 
         if owner_ids:
@@ -233,12 +258,12 @@ class VehicleIndex:
         return None
 
     @cache
-    def shadower_id_from_vehicle_id(self, vehicle_id) -> Optional[str]:
+    def shadower_id_from_vehicle_id(self, vehicle_id: str) -> Optional[str]:
         """Find the first shadowing entity watching a vehicle."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
 
         shadower_ids = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
+            self._controlled_by["vehicle_id"] == b_vehicle_id
         ]["shadower_id"]
 
         if shadower_ids:
@@ -256,17 +281,17 @@ class VehicleIndex:
         )
 
     @cache
-    def vehicle_position(self, vehicle_id):
+    def vehicle_position(self, vehicle_id: str):
         """Find the position of the given vehicle."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
 
         positions = self._controlled_by[
-            self._controlled_by["vehicle_id"] == vehicle_id
+            self._controlled_by["vehicle_id"] == b_vehicle_id
         ]["position"]
 
         return positions[0] if len(positions) > 0 else None
 
-    def vehicles_by_owner_id(self, owner_id, include_shadowers=False):
+    def vehicles_by_owner_id(self, owner_id: str, include_shadowers: bool = False):
         """Find vehicles associated with the given owner id.
         Args:
             owner_id:
@@ -290,7 +315,7 @@ class VehicleIndex:
         return is_shadowed
 
     @property
-    def vehicles(self):
+    def vehicles(self) -> List[Vehicle]:
         """A list of all existing vehicles."""
         return list(self._vehicles.values())
 
@@ -300,45 +325,54 @@ class VehicleIndex:
         return map(lambda x: (self._2id_to_id[x[0]], x[1]), self._vehicles.items())
 
     @cache
-    def vehicle_by_id(self, vehicle_id, default=...):
+    def vehicle_by_id(
+        self,
+        vehicle_id: str,
+        default: Optional[Union[Vehicle, Ellipsis.__class__]] = ...,
+    ):
         """Get a vehicle by its id."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
         if default is ...:
-            return self._vehicles[vehicle_id]
-        return self._vehicles.get(vehicle_id, default)
+            return self._vehicles[b_vehicle_id]
+        return self._vehicles.get(b_vehicle_id, default)
 
     @clear_cache
-    def teardown_vehicles_by_vehicle_ids(self, vehicle_ids, renderer: Optional[object]):
+    def teardown_vehicles_by_vehicle_ids(
+        self, vehicle_ids: Sequence[str], renderer: Optional[RendererBase]
+    ):
         """Terminate and remove a vehicle from the index using its id."""
         self._log.debug("Tearing down vehicle ids: %s", vehicle_ids)
 
-        vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
-        if len(vehicle_ids) == 0:
+        b_vehicle_ids = [_2id(id_) for id_ in vehicle_ids]
+        if len(b_vehicle_ids) == 0:
             return
 
-        for vehicle_id in vehicle_ids:
-            vehicle = self._vehicles.pop(vehicle_id, None)
+        for b_vehicle_id in b_vehicle_ids:
+            vehicle = self._vehicles.pop(b_vehicle_id, None)
             if vehicle is not None:
                 vehicle.teardown(renderer=renderer)
 
             # popping since sensor_states/controller_states may not include the
             # vehicle if it's not being controlled by an agent
-            self._controller_states.pop(vehicle_id, None)
+            self._controller_states.pop(b_vehicle_id, None)
 
             # TODO: This stores agents as well; those aren't being cleaned-up
-            self._2id_to_id.pop(vehicle_id, None)
+            self._2id_to_id.pop(b_vehicle_id, None)
 
         remove_vehicle_indices = np.isin(
-            self._controlled_by["vehicle_id"], vehicle_ids, assume_unique=True
+            self._controlled_by["vehicle_id"], b_vehicle_ids, assume_unique=True
         )
 
         self._controlled_by = self._controlled_by[~remove_vehicle_indices]
 
     def teardown_vehicles_by_owner_ids(
-        self, owner_ids, renderer, include_shadowing=True
-    ):
+        self,
+        owner_ids: Iterable[str],
+        renderer: RendererBase,
+        include_shadowing: bool = True,
+    ) -> List[str]:
         """Terminate and remove all vehicles associated with an owner id."""
-        vehicle_ids = []
+        vehicle_ids: List[str] = []
         for owner_id in owner_ids:
             vehicle_ids.extend(
                 [v.id for v in self.vehicles_by_owner_id(owner_id, include_shadowing)]
@@ -359,7 +393,7 @@ class VehicleIndex:
             )
 
     @clear_cache
-    def teardown(self, renderer):
+    def teardown(self, renderer: RendererBase):
         """Clean up resources, resetting the index."""
         self._controlled_by = VehicleIndex._build_empty_controlled_by()
 
@@ -373,20 +407,19 @@ class VehicleIndex:
     @clear_cache
     def start_agent_observation(
         self,
-        sim,
-        vehicle_id,
-        agent_id,
-        agent_interface,
-        plan,
-        boid=False,
-        initialize_sensors=True,
+        sim: SMARTS,
+        vehicle_id: str,
+        agent_id: str,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
+        boid: bool = False,
+        initialize_sensors: bool = True,
     ):
         """Associate an agent to a vehicle. Set up any needed sensor requirements."""
-        original_agent_id = agent_id
-        vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
-        self._2id_to_id[agent_id] = original_agent_id
+        b_vehicle_id, b_agent_id = _2id(vehicle_id), _2id(agent_id)
+        self._2id_to_id[b_agent_id] = agent_id
 
-        vehicle = self._vehicles[vehicle_id]
+        vehicle = self._vehicles[b_vehicle_id]
 
         sim.sensor_manager.add_sensor_state(
             vehicle.id,
@@ -400,14 +433,14 @@ class VehicleIndex:
                 sim.sensor_manager, sim, vehicle, agent_interface
             )
 
-        self._controller_states[vehicle_id] = ControllerState.from_action_space(
+        self._controller_states[b_vehicle_id] = ControllerState.from_action_space(
             agent_interface.action, vehicle.pose, sim
         )
 
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        v_index = self._controlled_by["vehicle_id"] == b_vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
         self._controlled_by[v_index] = tuple(
-            entity._replace(shadower_id=agent_id, is_boid=boid)
+            entity._replace(shadower_id=b_agent_id, is_boid=boid)
         )
 
         # XXX: We are not giving the vehicle a chassis here but rather later
@@ -420,13 +453,13 @@ class VehicleIndex:
     @clear_cache
     def switch_control_to_agent(
         self,
-        sim,
-        vehicle_id,
-        agent_id,
-        boid=False,
-        hijacking=False,
-        recreate=False,
-        agent_interface=None,
+        sim: SMARTS,
+        vehicle_id: str,
+        agent_id: str,
+        boid: bool = False,
+        hijacking: bool = False,
+        recreate: bool = False,
+        agent_interface: Optional[AgentInterface] = None,
     ):
         """Give control of the specified vehicle to the specified agent.
         Args:
@@ -445,31 +478,34 @@ class VehicleIndex:
             agent_interface:
                 The agent interface for sensor requirements.
         """
-        self._log.debug(f"Switching control of {agent_id} to {vehicle_id}")
+        self._log.debug("Switching control of '%s' to '%s'", vehicle_id, agent_id)
 
-        vehicle_id, agent_id = _2id(vehicle_id), _2id(agent_id)
+        b_vehicle_id, b_agent_id = _2id(vehicle_id), _2id(agent_id)
         if recreate:
             # XXX: Recreate is presently broken for bubbles because it impacts the
             #      sumo traffic sim sync(...) logic in how it detects a vehicle as
             #      being hijacked vs joining. Presently it's still used for trapping.
             return self._switch_control_to_agent_recreate(
-                sim, vehicle_id, agent_id, boid, hijacking
+                sim, b_vehicle_id, b_agent_id, boid, hijacking
             )
 
-        vehicle = self._vehicles[vehicle_id]
+        vehicle = self._vehicles[b_vehicle_id]
         chassis = None
         if agent_interface and agent_interface.action in sim.dynamic_action_spaces:
+            vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+                agent_interface.vehicle_class
+            )
             chassis = AckermannChassis(
                 pose=vehicle.pose,
                 bullet_client=sim.bc,
-                vehicle_filepath=Vehicle.vehicle_urdf_path(
-                    vehicle_type=agent_interface.vehicle_type,
-                    override_path=sim.scenario.vehicle_filepath,
-                ),
-                tire_parameters_filepath=sim.scenario.tire_parameters_filepath,
+                vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
+                tire_parameters_filepath=vehicle_definition.get("tire_params"),
                 friction_map=sim.scenario.surface_patches,
-                controller_parameters=self.controller_params_for_vehicle_type(
-                    agent_interface.vehicle_type
+                controller_parameters=self._vehicle_definitions.controller_params_for_vehicle_class(
+                    agent_interface.vehicle_class
+                ),
+                chassis_parameters=self._vehicle_definitions.chassis_params_for_vehicle_class(
+                    agent_interface.vehicle_class
                 ),
                 initial_speed=vehicle.speed,
             )
@@ -482,13 +518,13 @@ class VehicleIndex:
             )
         vehicle.swap_chassis(chassis)
 
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        v_index = self._controlled_by["vehicle_id"] == b_vehicle_id
         entity = _ControlEntity(*self._controlled_by[v_index][0])
         role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
         self._controlled_by[v_index] = tuple(
             entity._replace(
                 role=role,
-                owner_id=agent_id,
+                owner_id=b_agent_id,
                 shadower_id=b"",
                 is_boid=boid,
                 is_hijacked=hijacking,
@@ -510,44 +546,46 @@ class VehicleIndex:
 
         v_index = self._controlled_by["shadower_id"] == shadower_id
         if vehicle_id:
-            vehicle_id = _2id(vehicle_id)
+            b_vehicle_id = _2id(vehicle_id)
             # This multiplication finds overlap of "shadower_id" and "vehicle_id"
-            v_index = (self._controlled_by["vehicle_id"] == vehicle_id) * v_index
+            v_index = (self._controlled_by["vehicle_id"] == b_vehicle_id) * v_index
 
         for entity in self._controlled_by[v_index]:
             entity = _ControlEntity(*entity)
             self._controlled_by[v_index] = tuple(entity._replace(shadower_id=b""))
 
     @clear_cache
-    def stop_agent_observation(self, vehicle_id) -> Vehicle:
+    def stop_agent_observation(self, vehicle_id: str) -> Vehicle:
         """Strip all sensors from a vehicle and stop all owners from watching the vehicle."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
 
-        vehicle = self._vehicles[vehicle_id]
+        vehicle = self._vehicles[b_vehicle_id]
 
-        v_index = self._controlled_by["vehicle_id"] == vehicle_id
+        v_index = self._controlled_by["vehicle_id"] == b_vehicle_id
         entity = self._controlled_by[v_index][0]
         entity = _ControlEntity(*entity)
-        self._controlled_by[v_index] = tuple(entity._replace(shadower_id=""))
+        self._controlled_by[v_index] = tuple(entity._replace(shadower_id=b""))
 
         return vehicle
 
     @clear_cache
     def relinquish_agent_control(
-        self, sim, vehicle_id: str, road_map
-    ) -> Tuple[VehicleState, List[str]]:
+        self, sim: SMARTS, vehicle_id: str, road_map: RoadMap
+    ) -> Tuple[VehicleState, Optional[RoadMap.Route]]:
         """Give control of the vehicle back to its original controller."""
         self._log.debug(f"Relinquishing agent control v_id={vehicle_id}")
 
         v_id = _2id(vehicle_id)
 
         ss = sim.sensor_manager.sensor_state_for_actor_id(vehicle_id)
-        route = ss.get_plan(road_map).route
+        route = ss.get_plan(road_map).route if ss else None
         vehicle = self.stop_agent_observation(vehicle_id)
 
         # pytype: disable=attribute-error
         Vehicle.detach_all_sensors_from_vehicle(vehicle)
         # pytype: enable=attribute-error
+        sim.sensor_manager.remove_actor_sensors_by_actor_id(vehicle_id)
+        sim.sensor_manager.remove_sensor_state_by_actor_id(vehicle_id)
 
         vehicle = self._vehicles[v_id]
         box_chassis = BoxChassis(
@@ -574,11 +612,17 @@ class VehicleIndex:
         return vehicle.state, route
 
     @clear_cache
-    def attach_sensors_to_vehicle(self, sim, vehicle_id, agent_interface, plan):
+    def attach_sensors_to_vehicle(
+        self,
+        sim: SMARTS,
+        vehicle_id: str,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
+    ):
         """Attach sensors as per the agent interface requirements to the specified vehicle."""
-        vehicle_id = _2id(vehicle_id)
+        b_vehicle_id = _2id(vehicle_id)
 
-        vehicle = self._vehicles[vehicle_id]
+        vehicle = self._vehicles[b_vehicle_id]
         Vehicle.attach_sensors_to_vehicle(
             sim.sensor_manager,
             sim,
@@ -589,19 +633,24 @@ class VehicleIndex:
             vehicle.id,
             SensorState(
                 agent_interface.max_episode_steps,
-                plan_frame=plan.frame,
+                plan_frame=plan.frame(),
             ),
         )
-        self._controller_states[vehicle_id] = ControllerState.from_action_space(
+        self._controller_states[b_vehicle_id] = ControllerState.from_action_space(
             agent_interface.action, vehicle.pose, sim
         )
 
     def _switch_control_to_agent_recreate(
-        self, sim, vehicle_id, agent_id, boid, hijacking
+        self,
+        sim: SMARTS,
+        b_vehicle_id: bytes,
+        b_agent_id: bytes,
+        boid: bool,
+        hijacking: bool,
     ):
         # XXX: vehicle_id and agent_id are already fixed-length as this is an internal
         #      method.
-        agent_id = self._2id_to_id[agent_id]
+        agent_id = self._2id_to_id[b_agent_id]
 
         # TODO: There existed a SUMO connection error bug
         #       (https://gitlab.smartsai.xyz/smarts/SMARTS/-/issues/671) that occurred
@@ -614,22 +663,26 @@ class VehicleIndex:
         assert (
             agent_interface is not None
         ), f"Missing agent_interface for agent_id={agent_id}"
-        vehicle = self._vehicles[vehicle_id]
+        vehicle = self._vehicles[b_vehicle_id]
         sensor_state = sim.sensor_manager.sensor_state_for_actor_id(vehicle.id)
-        controller_state = self._controller_states[vehicle_id]
+        assert sensor_state is not None
+        controller_state = self._controller_states[b_vehicle_id]
         plan = sensor_state.get_plan(sim.road_map)
 
+        vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+            agent_interface.vehicle_class
+        )
         # Create a new vehicle to replace the old one
-        new_vehicle = Vehicle.build_agent_vehicle(
+        new_vehicle = VehicleIndex._build_agent_vehicle(
             sim,
             vehicle.id,
-            agent_interface,
-            plan,
-            Vehicle.vehicle_urdf_path(
-                vehicle_type=agent_interface.vehicle_type,
-                override_path=sim.scenario.vehicle_filepath,
-            ),
-            sim.scenario.tire_parameters_filepath,
+            agent_interface.action,
+            vehicle_definition.get("type"),
+            agent_interface.vehicle_class,
+            plan.mission,
+            vehicle_definition.get("dynamics_model"),
+            vehicle_definition.get("tire_params"),
+            vehicle_definition.get("visual_model"),
             not hijacking,
             sim.scenario.surface_patches,
         )
@@ -646,7 +699,7 @@ class VehicleIndex:
 
         # Remove the old vehicle
         self.teardown_vehicles_by_vehicle_ids([vehicle.id], sim.renderer_ref)
-        sim.sensor_manager.remove_sensors_by_actor_id(vehicle.id)
+        sim.sensor_manager.remove_actor_sensors_by_actor_id(vehicle.id)
         # HACK: Directly remove the vehicle from the traffic provider (should do this via the sim instead)
         for traffic_sim in sim.traffic_sims:
             if traffic_sim.manages_actor(vehicle.id):
@@ -670,30 +723,111 @@ class VehicleIndex:
 
         return new_vehicle
 
+    @classmethod
+    def _build_agent_vehicle(
+        cls,
+        sim: SMARTS,
+        vehicle_id: str,
+        action: Optional[ActionSpaceType],
+        vehicle_type: str,
+        vehicle_class: str,
+        mission: plan.NavigationMission,
+        vehicle_dynamics_filepath: Optional[str],
+        tire_filepath: str,
+        visual_model_filepath: str,
+        trainable: bool,
+        surface_patches: Sequence[Dict[str, Any]],
+        initial_speed: Optional[float] = None,
+    ) -> Vehicle:
+        """Create a new vehicle and set up sensors and planning information as required by the
+        ego agent.
+        """
+        chassis_dims = Vehicle.agent_vehicle_dims(mission, default=vehicle_type)
+
+        start = mission.start
+        if start.from_front_bumper:
+            start_pose = Pose.from_front_bumper(
+                front_bumper_position=np.array(start.position[:2]),
+                heading=start.heading,
+                length=chassis_dims.length,
+            )
+        else:
+            start_pose = Pose.from_center(start.position, start.heading)
+
+        vehicle_color = SceneColors.Agent if trainable else SceneColors.SocialAgent
+        controller_parameters = (
+            sim.vehicle_index._vehicle_definitions.controller_params_for_vehicle_class(
+                vehicle_class
+            )
+        )
+        chassis_parameters = (
+            sim.vehicle_index._vehicle_definitions.chassis_params_for_vehicle_class(
+                vehicle_class
+            )
+        )
+
+        chassis = None
+        if action in sim.dynamic_action_spaces:
+            if mission.vehicle_spec:
+                logger = logging.getLogger(cls.__name__)
+                logger.warning(
+                    "setting vehicle dimensions on a AckermannChassis not yet supported"
+                )
+            chassis = AckermannChassis(
+                pose=start_pose,
+                bullet_client=sim.bc,
+                vehicle_dynamics_filepath=vehicle_dynamics_filepath,
+                tire_parameters_filepath=tire_filepath,
+                friction_map=surface_patches,
+                controller_parameters=controller_parameters,
+                chassis_parameters=chassis_parameters,
+                initial_speed=initial_speed,
+            )
+        else:
+            chassis = BoxChassis(
+                pose=start_pose,
+                speed=initial_speed,
+                dimensions=chassis_dims,
+                bullet_client=sim.bc,
+            )
+
+        vehicle = Vehicle(
+            id=vehicle_id,
+            chassis=chassis,
+            color=vehicle_color,
+            vehicle_config_type=vehicle_type,
+            vehicle_class=vehicle_class,
+            visual_model_filepath=visual_model_filepath,
+        )
+
+        return vehicle
+
     def build_agent_vehicle(
         self,
-        sim,
-        agent_id,
-        agent_interface,
-        plan,
-        tire_filepath,
+        sim: SMARTS,
+        agent_id: str,
+        agent_interface: AgentInterface,
+        plan: "plan.Plan",
         trainable: bool,
         initial_speed: Optional[float] = None,
         boid: bool = False,
         *,
-        vehicle_id=None,
-    ):
+        vehicle_id: Optional[str] = None,
+    ) -> Vehicle:
         """Build an entirely new vehicle for an agent."""
-        vehicle = Vehicle.build_agent_vehicle(
+        vehicle_definition = self._vehicle_definitions.load_vehicle_definition(
+            agent_interface.vehicle_class
+        )
+        vehicle = VehicleIndex._build_agent_vehicle(
             sim=sim,
             vehicle_id=vehicle_id or agent_id,
-            agent_interface=agent_interface,
-            plan=plan,
-            vehicle_filepath=Vehicle.vehicle_urdf_path(
-                vehicle_type=agent_interface.vehicle_type,
-                override_path=sim.scenario.vehicle_filepath,
-            ),
-            tire_filepath=tire_filepath,
+            action=agent_interface.action,
+            vehicle_type=vehicle_definition.get("type"),
+            vehicle_class=agent_interface.vehicle_class,
+            mission=plan.mission,
+            vehicle_dynamics_filepath=vehicle_definition.get("dynamics_model"),
+            tire_filepath=vehicle_definition.get("tire_params"),
+            visual_model_filepath=vehicle_definition.get("visual_model"),
             trainable=trainable,
             surface_patches=sim.scenario.surface_patches,
             initial_speed=initial_speed,
@@ -721,17 +855,16 @@ class VehicleIndex:
     @clear_cache
     def _enfranchise_agent(
         self,
-        sim,
-        agent_id,
-        agent_interface,
-        vehicle,
-        controller_state,
-        sensor_state,
+        sim: SMARTS,
+        agent_id: str,
+        agent_interface: AgentInterface,
+        vehicle: Vehicle,
+        controller_state: ControllerState,
+        sensor_state: SensorState,
         boid: bool = False,
         hijacking: bool = False,
     ):
         # XXX: agent_id must be the original agent_id (not the fixed _2id(...))
-        original_agent_id = agent_id
 
         Vehicle.attach_sensors_to_vehicle(
             sim.sensor_manager, sim, vehicle, agent_interface
@@ -740,19 +873,19 @@ class VehicleIndex:
             vehicle.create_renderer_node(sim.renderer_ref)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=True)
 
-        vehicle_id = _2id(vehicle.id)
-        agent_id = _2id(original_agent_id)
+        b_vehicle_id = _2id(vehicle.id)
+        b_agent_id = _2id(agent_id)
 
         sim.sensor_manager.add_sensor_state(vehicle.id, sensor_state)
-        self._controller_states[vehicle_id] = controller_state
-        self._vehicles[vehicle_id] = vehicle
-        self._2id_to_id[vehicle_id] = vehicle.id
-        self._2id_to_id[agent_id] = original_agent_id
+        self._controller_states[b_vehicle_id] = controller_state
+        self._vehicles[b_vehicle_id] = vehicle
+        self._2id_to_id[b_vehicle_id] = vehicle.id
+        self._2id_to_id[b_agent_id] = agent_id
 
         role = ActorRole.SocialAgent if hijacking else ActorRole.EgoAgent
         entity = _ControlEntity(
-            vehicle_id=vehicle_id,
-            owner_id=agent_id,
+            vehicle_id=b_vehicle_id,
+            owner_id=b_agent_id,
             role=role,
             shadower_id=b"",
             is_boid=boid,
@@ -761,27 +894,53 @@ class VehicleIndex:
         )
         self._controlled_by = np.insert(self._controlled_by, 0, tuple(entity))
 
+    @staticmethod
+    def _build_social_vehicle(
+        sim: SMARTS, vehicle_id: str, vehicle_state: VehicleState
+    ) -> Vehicle:
+        """Create a new unassociated vehicle."""
+        dims = Dimensions.copy_with_defaults(
+            vehicle_state.dimensions,
+            VEHICLE_CONFIGS[vehicle_state.vehicle_config_type].dimensions,
+        )
+        chassis = BoxChassis(
+            pose=vehicle_state.pose,
+            speed=vehicle_state.speed,
+            dimensions=dims,
+            bullet_client=sim.bc,
+        )
+        return Vehicle(
+            id=vehicle_id,
+            chassis=chassis,
+            vehicle_config_type=vehicle_state.vehicle_config_type,
+            visual_model_filepath=None,
+        )
+
     @clear_cache
     def build_social_vehicle(
-        self, sim, vehicle_state, owner_id, vehicle_id=None
+        self,
+        sim: SMARTS,
+        vehicle_state: VehicleState,
+        owner_id: str,
+        vehicle_id: Optional[str] = None,
     ) -> Vehicle:
         """Build an entirely new vehicle for a social agent."""
         if vehicle_id is None:
             vehicle_id = gen_id()
 
-        vehicle = Vehicle.build_social_vehicle(
+        vehicle = VehicleIndex._build_social_vehicle(
             sim,
             vehicle_id,
             vehicle_state,
         )
 
-        vehicle_id, owner_id = _2id(vehicle_id), _2id(owner_id) if owner_id else b""
+        b_vehicle_id, b_owner_id = _2id(vehicle_id), _2id(owner_id) if owner_id else b""
         if sim.is_rendering:
             vehicle.create_renderer_node(sim.renderer_ref)
             sim.renderer.begin_rendering_vehicle(vehicle.id, is_agent=False)
 
-        self._vehicles[vehicle_id] = vehicle
-        self._2id_to_id[vehicle_id] = vehicle.id
+        self._vehicles[b_vehicle_id] = vehicle
+        self._2id_to_id[b_vehicle_id] = vehicle.id
 
         role = vehicle_state.role
         assert role not in (
@@ -789,8 +948,8 @@ class VehicleIndex:
             ActorRole.SocialAgent,
         ), f"role={role} from {vehicle_state.source}"
         entity = _ControlEntity(
-            vehicle_id=vehicle_id,
-            owner_id=owner_id,
+            vehicle_id=b_vehicle_id,
+            owner_id=b_owner_id,
             role=role,
             shadower_id=b"",
             is_boid=False,
@@ -801,7 +960,7 @@ class VehicleIndex:
 
         return vehicle
 
-    def begin_rendering_vehicles(self, renderer):
+    def begin_rendering_vehicles(self, renderer: RendererBase):
         """Render vehicles using the specified renderer."""
         agent_vehicle_ids = self.agent_vehicle_ids()
         for vehicle in self._vehicles.values():
@@ -812,17 +971,13 @@ class VehicleIndex:
     @cache
     def controller_state_for_vehicle_id(self, vehicle_id: str) -> ControllerState:
         """Retrieve the controller state of the given vehicle."""
-        vehicle_id = _2id(vehicle_id)
-        return self._controller_states[vehicle_id]
+        return self._controller_states[_2id(vehicle_id)]
 
-    def load_controller_params(self, controller_filepath: str):
-        """Set the default controller parameters for owner controlled vehicles."""
-        self._controller_params = resources.load_controller_params(controller_filepath)
-
-    def controller_params_for_vehicle_type(self, vehicle_type: str):
-        """Get the controller parameters for the given vehicle type"""
-        assert self._controller_params, "Controller params have not been loaded"
-        return self._controller_params[vehicle_type]
+    def load_vehicle_definitions_list(self, vehicle_definitions_filepath: str):
+        """Loads in a list of vehicle definitions."""
+        self._vehicle_definitions = resources.load_vehicle_definitions_list(
+            vehicle_definitions_filepath
+        )
 
     @staticmethod
     def _build_empty_controlled_by():
@@ -842,7 +997,7 @@ class VehicleIndex:
             ],
         )
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         io = StringIO("")
         n_columns = len(self._controlled_by.dtype.names)
 

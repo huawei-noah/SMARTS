@@ -568,7 +568,7 @@ class OpEnAgent(Agent):
             # Give the closest SV_N social vehicles to the planner
             social_vehicles = sorted(
                 obs.neighborhood_vehicle_states,
-                key=lambda sv: np.linalg.norm(sv.position - ego.position),
+                key=lambda sv: np.linalg.norm(np.subtract(sv.position, ego.position)),
             )[: self.SV_N]
 
             # repeat the last social vehicle to ensure SV_N social vehicles

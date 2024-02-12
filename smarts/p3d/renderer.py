@@ -23,15 +23,17 @@
 from __future__ import annotations
 
 import importlib.resources as pkg_resources
+import itertools
 import logging
 import math
 import os
 import re
 import warnings
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from threading import Lock
-from typing import Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Collection, Dict, Literal, Optional, Tuple, Union
 
 import gltf
 import numpy as np
@@ -39,6 +41,8 @@ from direct.showbase.ShowBase import ShowBase
 
 # pytype: disable=import-error
 from panda3d.core import (
+    Camera,
+    CardMaker,
     FrameBufferProperties,
     Geom,
     GeomLinestrips,
@@ -53,19 +57,38 @@ from panda3d.core import (
     NodePath,
     OrthographicLens,
     Shader,
+    ShaderInput,
     Texture,
     WindowProperties,
     loadPrcFileData,
 )
 
-from smarts.core import glsl, models
+from smarts.core import glsl
 from smarts.core.colors import Colors, SceneColors
 from smarts.core.coordinates import Point, Pose
 from smarts.core.masks import RenderMasks
-from smarts.core.renderer_base import DEBUG_MODE, OffscreenCamera, RendererBase
-from smarts.core.scenario import Scenario
+from smarts.core.renderer_base import (
+    DEBUG_MODE,
+    OffscreenCamera,
+    RendererBase,
+    RendererNotSetUpWarning,
+    ShaderStep,
+    ShaderStepBufferDependency,
+    ShaderStepCameraDependency,
+    ShaderStepDependencyBase,
+    ShaderStepVariableDependency,
+)
+from smarts.core.scenario import Scenario as StaticScenario
+from smarts.core.shader_buffer import BufferID
 from smarts.core.signals import SignalState, signal_state_to_color
+from smarts.core.simulation_frame import SimulationFrame
+from smarts.core.utils.core_logging import suppress_output
 from smarts.core.vehicle_state import VehicleState
+
+if TYPE_CHECKING:
+    from smarts.core.agent_interface import AgentInterface
+    from smarts.core.observations import Observation
+
 
 # pytype: enable=import-error
 
@@ -96,6 +119,7 @@ class _ShowBaseInstance(ShowBase):
             )
             loadPrcFileData("", "aux-display pandagl")
             loadPrcFileData("", "aux-display pandadx9")
+            loadPrcFileData("", "aux-display pandadx8")
             loadPrcFileData("", "aux-display pandagles")
             loadPrcFileData("", "aux-display pandagles2")
             loadPrcFileData("", "aux-display p3headlessgl")
@@ -109,6 +133,9 @@ class _ShowBaseInstance(ShowBase):
             loadPrcFileData("", "audio-library-name null")
             loadPrcFileData("", "gl-version 3 3")
             loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
+            loadPrcFileData(
+                "", f"default-directnotify-level {cls._debug_mode.name.lower()}"
+            )
             loadPrcFileData("", "print-pipe-types false")
             # loadPrcFileData("", "basic-shaders-only #t")
             # https://www.panda3d.org/manual/?title=Multithreaded_Render_Pipeline
@@ -145,6 +172,9 @@ class _ShowBaseInstance(ShowBase):
         """Set rendering debug information verbosity."""
         cls._debug_mode = debug_mode
         loadPrcFileData("", f"notify-level {cls._debug_mode.name.lower()}")
+        loadPrcFileData(
+            "", f"default-directnotify-level {cls._debug_mode.name.lower()}"
+        )
 
     @classmethod
     def set_rendering_backend(
@@ -155,7 +185,8 @@ class _ShowBaseInstance(ShowBase):
         if "__it__" not in cls.__dict__:
             cls._rendering_backend = rendering_backend
         else:
-            warnings.warn("Cannot apply rendering backend after setup.")
+            if cls._rendering_backend != rendering_backend:
+                warnings.warn("Cannot apply rendering backend after setup.")
 
     def destroy(self):
         """Destroy this renderer and clean up all remaining resources."""
@@ -192,18 +223,17 @@ class _ShowBaseInstance(ShowBase):
         # when we call poll() here.
         hidden = []
         with self._render_lock:
-            for np in self.render.children:
-                if np != sim_root and not np.isHidden():
-                    np.hide()
-                    hidden.append(np)
+            for node_path in self.render.children:
+                if node_path != sim_root and not node_path.isHidden():
+                    node_path.hide()
+                    hidden.append(node_path)
             self.taskMgr.mgr.poll()
-            for np in hidden:
-                np.show()
+            for node_path in hidden:
+                node_path.show()
 
 
 @dataclass
-class P3dOffscreenCamera(OffscreenCamera):
-    """A camera used for rendering images to a graphics buffer."""
+class _P3DCameraMixin:
 
     camera_np: NodePath
     buffer: GraphicsOutput
@@ -222,7 +252,7 @@ class P3dOffscreenCamera(OffscreenCamera):
         for i in range(retries):
             if self.tex.mightHaveRamImage():
                 break
-            self.renderer.log.debug(
+            getattr(self, "renderer").log.debug(
                 f"No image available (attempt {i}/{retries}), forcing a render"
             )
             region = self.buffer.getDisplayRegion(0)
@@ -233,7 +263,40 @@ class P3dOffscreenCamera(OffscreenCamera):
         assert ram_image is not None
         return ram_image
 
-    def update(self, pose: Pose, height: float):
+    @property
+    def image_dimensions(self):
+        """The dimensions of the output camera image."""
+        return (self.tex.getXSize(), self.tex.getYSize())
+
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        """The position of the camera."""
+        raise NotImplementedError()
+
+    @property
+    def padding(self) -> Tuple[int, int, int, int]:
+        """The padding on the image. This follows the "css" convention: (top, left, bottom, right)."""
+        return self.tex.getPadYSize(), self.tex.getPadXSize(), 0, 0
+
+    @property
+    def heading(self) -> float:
+        """The heading of this camera."""
+        return np.radians(self.camera_np.getH())
+
+    def teardown(self):
+        """Clean up internal resources."""
+        self.camera_np.removeNode()
+        region = self.buffer.getDisplayRegion(0)
+        region.window.clearRenderTextures()
+        self.buffer.removeAllDisplayRegions()
+        getattr(self, "renderer").remove_buffer(self.buffer)
+
+
+@dataclass
+class P3DOffscreenCamera(_P3DCameraMixin, OffscreenCamera):
+    """A camera used for rendering images to a graphics buffer."""
+
+    def update(self, pose: Pose, height: float, *args, **kwargs):
         """Update the location of the camera.
         Args:
             pose:
@@ -247,24 +310,396 @@ class P3dOffscreenCamera(OffscreenCamera):
         self.camera_np.setH(heading)
 
     @property
-    def image_dimensions(self):
-        return (self.tex.getXSize(), self.tex.getYSize())
-
-    @property
     def position(self) -> Tuple[float, float, float]:
         return self.camera_np.getPos()
 
-    @property
-    def heading(self) -> float:
-        return np.radians(self.camera_np.getH())
 
-    def teardown(self):
-        """Clean up internal resources."""
-        self.camera_np.removeNode()
-        region = self.buffer.getDisplayRegion(0)
-        region.window.clearRenderTextures()
-        self.buffer.removeAllDisplayRegions()
-        self.renderer.remove_buffer(self.buffer)
+class _BufferAccessor:
+    _static_methods = {}
+    _acceleration_set = {
+        BufferID.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
+        BufferID.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION,
+    }
+    _jerk_set = {
+        BufferID.EGO_VEHICLE_STATE_LINEAR_JERK,
+        BufferID.EGO_VEHICLE_STATE_ANGULAR_JERK,
+    }
+    _waypoints_set = {
+        BufferID.WAYPOINT_PATHS_POSITION,
+        BufferID.WAYPOINT_PATHS_HEADING,
+        BufferID.WAYPOINT_PATHS_LANE_ID,
+        BufferID.WAYPOINT_PATHS_LANE_INDEX,
+        BufferID.WAYPOINT_PATHS_LANE_OFFSET,
+        BufferID.WAYPOINT_PATHS_LANE_WIDTH,
+        BufferID.WAYPOINT_PATHS_SPEED_LIMIT,
+    }
+    _road_waypoints_set = {
+        BufferID.ROAD_WAYPOINTS_POSITION,
+        BufferID.ROAD_WAYPOINTS_HEADING,
+        BufferID.ROAD_WAYPOINTS_LANE_ID,
+        BufferID.ROAD_WAYPOINTS_LANE_INDEX,
+        BufferID.ROAD_WAYPOINTS_LANE_OFFSET,
+        BufferID.ROAD_WAYPOINTS_LANE_WIDTH,
+        BufferID.ROAD_WAYPOINTS_LANE_INDEX,
+        BufferID.ROAD_WAYPOINTS_SPEED_LIMIT,
+    }
+    _via_near_set = {
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_POSITION,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED,
+        BufferID.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID,
+    }
+    _lidar_set = {
+        BufferID.LIDAR_POINT_CLOUD_DIRECTION,
+        BufferID.LIDAR_POINT_CLOUD_HITS,
+        BufferID.LIDAR_POINT_CLOUD_ORIGIN,
+        BufferID.LIDAR_POINT_CLOUD_POINTS,
+    }
+    _signals_set = {
+        # BufferID.SIGNALS_CONTROLLED_LANES,
+        BufferID.SIGNALS_LAST_CHANGED,
+        BufferID.SIGNALS_LIGHT_STATE,
+        BufferID.SIGNALS_STOP_POINT,
+    }
+
+    def __init__(self) -> None:
+        self._memos = {}
+
+    def should_get_data(self, buffer_id: BufferID, observation: Observation):
+        """If the buffer can and should get data from the observation."""
+        if (
+            buffer_id in self._acceleration_set
+            and observation.ego_vehicle_state.linear_acceleration is None
+        ):
+            return False
+        elif (
+            buffer_id in self._jerk_set
+            and observation.ego_vehicle_state.linear_jerk is None
+        ):
+            return False
+        elif buffer_id in self._waypoints_set and (
+            observation.waypoint_paths is None or len(observation.waypoint_paths) == 0
+        ):
+            return False
+        elif buffer_id in self._road_waypoints_set and (
+            observation.road_waypoints is None
+            or len(observation.road_waypoints.lanes) == 0
+        ):
+            return False
+        elif (
+            buffer_id in self._via_near_set
+            and len(observation.via_data.near_via_points) == 0
+        ):
+            return False
+        elif buffer_id in self._signals_set and (
+            observation.signals is None or len(observation.signals) > 0
+        ):
+            return False
+        elif buffer_id in self._lidar_set and (observation.lidar_point_cloud is None):
+            return False
+
+        return True
+
+    def get_data_for_buffer(self, buffer_id: BufferID, observation: Observation):
+        """Retrieve the data buffer from the observation."""
+        if len(self._static_methods) == 0:
+            self._gen_methods_for_buffer()
+        return self._static_methods.get(buffer_id, lambda o, m: None)(
+            observation, self._get_memo_for_buffer(buffer_id)
+        )
+
+    def _get_memo_for_buffer(self, buffer_id: BufferID):
+        if buffer_id in self._waypoints_set:
+            return self._waypoint_paths_flattened
+        elif buffer_id in self._road_waypoints_set:
+            return self._road_waypoints_flattened
+        return None
+
+    @lru_cache(maxsize=1)
+    def _road_waypoints_flattened(self, o: Observation):
+        return [
+            wp
+            for wp in itertools.chain(
+                *(wpl for wpl in itertools.chain(*o.road_waypoints.lanes.values()))
+            )
+        ]
+
+    @lru_cache(maxsize=1)
+    def _waypoint_paths_flattened(self, o: Observation):
+        return [wp for wp in itertools.chain(*o.waypoint_paths)]
+
+    @classmethod
+    def _gen_methods_for_buffer(cls):
+        cls._static_methods[BufferID.DELTA_TIME] = lambda o, m: o.dt
+        cls._static_methods[BufferID.ELAPSED_SIM_TIME] = lambda o, m: o.elapsed_sim_time
+        cls._static_methods[BufferID.EGO_VEHICLE_STATE_HEADING] = lambda o, m: float(
+            o.ego_vehicle_state.heading
+        )
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_SPEED
+        ] = lambda o, m: o.ego_vehicle_state.speed
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_YAW_RATE
+        ] = lambda o, m: o.ego_vehicle_state.yaw_rate
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_STEERING
+        ] = lambda o, m: o.ego_vehicle_state.steering
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LANE_INDEX
+        ] = lambda o, m: o.ego_vehicle_state.yaw_rate
+        cls._static_methods[
+            BufferID.DISTANCE_TRAVELLED
+        ] = lambda o, m: o.distance_travelled
+
+        cls._static_methods[BufferID.STEP_COUNT] = lambda o, m: o.step_count
+        cls._static_methods[BufferID.STEPS_COMPLETED] = lambda o, m: o.steps_completed
+        cls._static_methods[BufferID.VEHICLE_TYPE] = (
+            lambda o, m: hash(o.ego_vehicle_state.mission.vehicle_spec.veh_config_type)
+            if o.ego_vehicle_state.mission.vehicle_spec
+            else -1
+        )
+
+        cls._static_methods[BufferID.EVENTS_COLLISIONS] = lambda o, m: len(
+            o.events.collisions
+        )
+        cls._static_methods[BufferID.EVENTS_OFF_ROAD] = lambda o, m: int(
+            o.events.off_road
+        )
+        cls._static_methods[BufferID.EVENTS_OFF_ROUTE] = lambda o, m: int(
+            o.events.off_route
+        )
+        cls._static_methods[BufferID.EVENTS_ON_SHOULDER] = lambda o, m: int(
+            o.events.on_shoulder
+        )
+        cls._static_methods[BufferID.EVENTS_WRONG_WAY] = lambda o, m: int(
+            o.events.wrong_way
+        )
+        cls._static_methods[BufferID.EVENTS_NOT_MOVING] = lambda o, m: int(
+            o.events.not_moving
+        )
+        cls._static_methods[BufferID.EVENTS_REACHED_GOAL] = lambda o, m: int(
+            o.events.reached_goal
+        )
+        cls._static_methods[
+            BufferID.EVENTS_REACHED_MAX_EPISODE_STEPS
+        ] = lambda o, m: int(o.events.reached_max_episode_steps)
+        cls._static_methods[BufferID.EVENTS_AGENTS_ALIVE_DONE] = lambda o, m: int(
+            o.events.agents_alive_done
+        )
+        cls._static_methods[BufferID.EVENTS_INTEREST_DONE] = lambda o, m: int(
+            o.events.interest_done
+        )
+        cls._static_methods[BufferID.UNDER_THIS_VEHICLE_CONTROL] = lambda o, m: int(
+            o.under_this_agent_control
+        )
+
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_POSITION
+        ] = lambda o, m: o.ego_vehicle_state.position
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_BOUNDING_BOX
+        ] = lambda o, m: o.ego_vehicle_state.bounding_box.as_lwh
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LANE_POSITION
+        ] = lambda o, m: tuple(o.ego_vehicle_state.lane_position)
+
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LINEAR_VELOCITY
+        ] = lambda o, m: o.ego_vehicle_state.linear_velocity
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_ANGULAR_VELOCITY
+        ] = lambda o, m: o.ego_vehicle_state.angular_velocity
+
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LINEAR_ACCELERATION
+        ] = lambda o, m: o.ego_vehicle_state.linear_acceleration
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION
+        ] = lambda o, m: o.ego_vehicle_state.angular_acceleration
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_LINEAR_JERK
+        ] = lambda o, m: o.ego_vehicle_state.linear_jerk
+        cls._static_methods[
+            BufferID.EGO_VEHICLE_STATE_ANGULAR_JERK
+        ] = lambda o, m: o.ego_vehicle_state.angular_jerk
+
+        cls._static_methods[BufferID.EGO_VEHICLE_STATE_ROAD_ID] = lambda o, m: hash(
+            o.ego_vehicle_state.road_id
+        )
+        cls._static_methods[BufferID.EGO_VEHICLE_STATE_LANE_ID] = lambda o, m: hash(
+            o.ego_vehicle_state.lane_id
+        )
+
+        # XXX: Float cast is sometimes needed because Panda3D reacts badly to non-standard types like numpy float64.
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION
+        ] = lambda o, m: [vs.position for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX
+        ] = lambda o, m: [
+            vs.bounding_box.as_lwh for vs in o.neighborhood_vehicle_states
+        ]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION
+        ] = lambda o, m: [
+            tuple(float(v) for v in vs.lane_position)
+            if vs.lane_position is not None
+            else (-1.0, -1.0, -1.0)
+            for vs in o.neighborhood_vehicle_states
+        ]
+
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_HEADING
+        ] = lambda o, m: [float(vs.heading) for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[BufferID.NEIGHBORHOOD_VEHICLE_STATES_SPEED] = lambda o, m: [
+            vs.speed for vs in o.neighborhood_vehicle_states
+        ]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID
+        ] = lambda o, m: [hash(vs.road_id) for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID
+        ] = lambda o, m: [hash(vs.lane_id) for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX
+        ] = lambda o, m: [vs.lane_index for vs in o.neighborhood_vehicle_states]
+        cls._static_methods[
+            BufferID.NEIGHBORHOOD_VEHICLE_STATES_INTEREST
+        ] = lambda o, m: [int(vs.interest) for vs in o.neighborhood_vehicle_states]
+
+        cls._static_methods[BufferID.WAYPOINT_PATHS_POSITION] = lambda o, m: [
+            wp.position.tolist() for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_HEADING] = lambda o, m: [
+            float(wp.heading) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_WIDTH] = lambda o, m: [
+            wp.lane_width for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_SPEED_LIMIT] = lambda o, m: [
+            wp.speed_limit for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_OFFSET] = lambda o, m: [
+            wp.lane_offset for wp in m(o)
+        ]
+
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_ID] = lambda o, m: [
+            hash(wp.lane_id) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.WAYPOINT_PATHS_LANE_INDEX] = lambda o, m: [
+            wp.lane_index for wp in m(o)
+        ]
+
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_POSITION] = lambda o, m: [
+            wp.position.tolist() for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_HEADING] = lambda o, m: [
+            float(wp.heading) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_WIDTH] = lambda o, m: [
+            wp.lane_width for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_SPEED_LIMIT] = lambda o, m: [
+            wp.speed_limit for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_OFFSET] = lambda o, m: [
+            wp.lane_offset for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_ID] = lambda o, m: [
+            hash(wp.lane_id) for wp in m(o)
+        ]
+        cls._static_methods[BufferID.ROAD_WAYPOINTS_LANE_INDEX] = lambda o, m: [
+            wp.lane_index for wp in m(o)
+        ]
+
+        cls._static_methods[BufferID.VIA_DATA_NEAR_VIA_POINTS_POSITION] = lambda o, m: [
+            via.position for via in o.via_data.near_via_points
+        ]
+        cls._static_methods[
+            BufferID.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX
+        ] = lambda o, m: [via.lane_index for via in o.via_data.near_via_points]
+        cls._static_methods[BufferID.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID] = lambda o, m: [
+            hash(via.road_id) for via in o.via_data.near_via_points
+        ]
+        cls._static_methods[BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT] = lambda o, m: [
+            int(via.hit) for via in o.via_data.near_via_points
+        ]
+        cls._static_methods[
+            BufferID.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED
+        ] = lambda o, m: [via.required_speed for via in o.via_data.near_via_points]
+
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_POINTS] = lambda o, m: [
+            l.tolist() for l in o.lidar_point_cloud[0]
+        ]
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_HITS] = lambda o, m: [
+            int(h) for h in o.lidar_point_cloud[1]
+        ]
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_ORIGIN] = lambda o, m: [
+            o.tolist() for o, _ in o.lidar_point_cloud[2]
+        ]
+        cls._static_methods[BufferID.LIDAR_POINT_CLOUD_DIRECTION] = lambda o, m: [
+            d.tolist() for _, d in o.lidar_point_cloud[2]
+        ]
+
+        cls._static_methods[BufferID.SIGNALS_LIGHT_STATE] = lambda o, m: [
+            int(l.state) for l in o.signals
+        ]
+        cls._static_methods[BufferID.SIGNALS_STOP_POINT] = lambda o, m: [
+            tuple(l.stop_point) for l in o.signals
+        ]
+        cls._static_methods[BufferID.SIGNALS_LAST_CHANGED] = lambda o, m: [
+            l.last_changed for l in o.signals
+        ]
+
+
+@dataclass
+class P3DShaderStep(_P3DCameraMixin, ShaderStep):
+    """A camera used for rendering images using a shader and a full-screen quad."""
+
+    fullscreen_quad_node: NodePath
+
+    def update(
+        self,
+        pose: Optional[Pose] = None,
+        height: Optional[float] = None,
+        observation: Optional[Observation] = None,
+        **kwargs,
+    ):
+        """Update the location of the shader directional values.
+        Args:
+            pose:
+                The pose of the camera target.
+            height:
+                The height of the camera above the camera target.
+        """
+        inputs = {}
+        if pose is not None:
+            self.fullscreen_quad_node.setShaderInputs(
+                iHeading=pose.heading,
+                iTranslation=(pose.point.x, pose.point.y),
+            )
+            inputs["iHeading"] = pose.heading
+            inputs["iTranslation"] = (pose.point.x, pose.point.y)
+        if height is not None:
+            inputs["iElevation"] = height
+        if len(self.buffer_dependencies) == 0:
+            return
+
+        buffers = set(self.buffer_dependencies)
+        if observation is not None:
+            ba = _BufferAccessor()
+            for b in buffers:
+                if ba.should_get_data(b.buffer_id, observation):
+                    inputs[b.script_uniform_name] = ba.get_data_for_buffer(
+                        b.buffer_id, observation
+                    )
+        if inputs:
+            self.fullscreen_quad_node.setShaderInputs(**inputs)
+
+    @property
+    def position(self) -> Tuple[float, float, float]:
+        raise ValueError("Shader step does not have a position.")
 
 
 class Renderer(RendererBase):
@@ -286,7 +721,7 @@ class Renderer(RendererBase):
         self._dashed_lines_np = None
         self._vehicle_nodes = {}
         self._signal_nodes = {}
-        self._camera_nodes = {}
+        self._camera_nodes: Dict[str, Union[P3DOffscreenCamera, P3DShaderStep]] = {}
         _ShowBaseInstance.set_rendering_verbosity(debug_mode=debug_mode)
         _ShowBaseInstance.set_rendering_backend(rendering_backend=rendering_backend)
         # Note: Each instance of the SMARTS simulation will have its own Renderer,
@@ -345,20 +780,24 @@ class Renderer(RendererBase):
         geom = Geom(vdata)
         geom.addPrimitive(prim)
 
-        np = GeomNode(name)
-        np.addGeom(geom)
-        return np
+        node_path = GeomNode(name)
+        node_path.addGeom(geom)
+        return node_path
 
-    def setup(self, scenario: Scenario):
-        """Initialize this renderer."""
-        self._root_np = self._showbase_instance.setup_sim_root(self._simid)
-        self._vehicles_np = self._root_np.attachNewNode("vehicles")
-        self._signals_np = self._root_np.attachNewNode("signals")
+    def _ensure_root(self):
+        if self._root_np is None:
+            self._root_np = self._showbase_instance.setup_sim_root(self._simid)
+            # if self._log.getEffectiveLevel() <= logging.DEBUG:
+            #     self._log.debug(
+            print(
+                "Renderer started with backend %s",
+                self._showbase_instance.pipe.get_type(),
+            )
 
-        map_path = scenario.map_glb_filepath
-        map_dir = Path(map_path).parent
-
+    def load_road_map(self, map_path: Union[str, Path]):
+        """Load the road map from its path."""
         # Load map
+        self._ensure_root()
         if self._road_map_np:
             self._log.debug(
                 "road_map=%s already exists. Removing and adding a new "
@@ -366,13 +805,27 @@ class Renderer(RendererBase):
                 self._road_map_np,
                 map_path,
             )
-        map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
-        np = self._root_np.attachNewNode("road_map")
-        map_np.reparent_to(np)
-        np.hide(RenderMasks.OCCUPANCY_HIDE)
-        np.setColor(SceneColors.Road.value)
-        self._road_map_np = np
+        with suppress_output():
+            map_np = self._showbase_instance.loader.loadModel(map_path, noCache=True)
+        node_path = self._root_np.attachNewNode("road_map")
+        map_np.reparent_to(node_path)
+        node_path.hide(RenderMasks.OCCUPANCY_HIDE)
+        node_path.setColor(SceneColors.Road.value)
+        self._road_map_np = node_path
+        self._is_setup = True
+        return map_np.getBounds()
 
+    def setup(self, scenario: StaticScenario):
+        """Initialize this renderer."""
+        self._ensure_root()
+        self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        self._signals_np = self._root_np.attachNewNode("signals")
+
+        map_path = scenario.map_glb_filepath
+        map_dir = Path(map_path).parent
+
+        # Load map
+        self.load_road_map(map_path)
         # Road lines (solid, yellow)
         road_lines_path = map_dir / "road_lines.glb"
         if road_lines_path.exists():
@@ -381,7 +834,6 @@ class Renderer(RendererBase):
             solid_lines_np.setColor(SceneColors.EdgeDivider.value)
             solid_lines_np.hide(RenderMasks.OCCUPANCY_HIDE)
             solid_lines_np.setRenderModeThickness(2)
-
         # Lane lines (dashed, white)
         lane_lines_path = map_dir / "lane_lines.glb"
         if lane_lines_path.exists():
@@ -402,7 +854,7 @@ class Renderer(RendererBase):
                 )
                 dashed_lines_np.setShader(dashed_line_shader, priority=20)
                 dashed_lines_np.setShaderInput(
-                    "Resolution", self._showbase_instance.getSize()
+                    "iResolution", self._showbase_instance.getSize()
                 )
             self._dashed_lines_np = dashed_lines_np
         if scenario_metadata := scenario.metadata:
@@ -417,15 +869,22 @@ class Renderer(RendererBase):
 
     def render(self):
         """Render the scene graph of the simulation."""
-        assert self._is_setup
+        if not self._is_setup:
+            self._ensure_root()
+            warnings.warn(
+                "Renderer is not setup. Rendering before scene setup may be unintentional.",
+                RendererNotSetUpWarning,
+            )
         self._showbase_instance.render_node(self._root_np)
 
     def reset(self):
         """Reset the render back to initialized state."""
-        self._vehicles_np.removeNode()
-        self._vehicles_np = self._root_np.attachNewNode("vehicles")
-        self._signals_np.removeNode()
-        self._signals_np = self._root_np.attachNewNode("signals")
+        if self._vehicles_np is not None:
+            self._vehicles_np.removeNode()
+            self._vehicles_np = self._root_np.attachNewNode("vehicles")
+        if self._signals_np is not None:
+            self._signals_np.removeNode()
+            self._signals_np = self._root_np.attachNewNode("signals")
         self._vehicle_nodes = {}
         self._signal_nodes = {}
 
@@ -433,7 +892,7 @@ class Renderer(RendererBase):
         """provided for non-SMARTS uses; normally not used by SMARTS."""
         self._showbase_instance.taskMgr.step()
 
-    def sync(self, sim_frame):
+    def sync(self, sim_frame: SimulationFrame):
         """Update the current state of the vehicles and signals within the renderer."""
         signal_ids = set()
         for actor_id, actor_state in sim_frame.actor_states_by_id.items():
@@ -490,13 +949,16 @@ class Renderer(RendererBase):
         self._interest_color = interest_color
 
     def create_vehicle_node(
-        self, glb_model: str, vid: str, color: Union[Colors, SceneColors], pose: Pose
+        self,
+        glb_model: Union[str, Path],
+        vid: str,
+        color: Union[Colors, SceneColors],
+        pose: Pose,
     ):
         """Create a vehicle node."""
         if vid in self._vehicle_nodes:
             return False
-        with pkg_resources.path(models, glb_model) as path:
-            node_path = self._showbase_instance.loader.loadModel(str(path.absolute()))
+        node_path = self._showbase_instance.loader.loadModel(glb_model)
         node_path.setName("vehicle-%s" % vid)
         if (
             self._interest_filter is not None
@@ -509,6 +971,8 @@ class Renderer(RendererBase):
         pos, heading = pose.as_panda3d()
         node_path.setPosHpr(*pos, heading, 0, 0)
         node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
+        if color in (SceneColors.Agent,):
+            node_path.hide(RenderMasks.OCCUPANCY_HIDE)
         self._vehicle_nodes[vid] = node_path
         return True
 
@@ -572,13 +1036,13 @@ class Renderer(RendererBase):
         geom_node = GeomNode(name)
         geom_node.addGeom(geom)
 
-        np = self._root_np.attachNewNode(geom_node)
-        np.setName(name)
-        np.setColor(color.value)
-        np.setPos(position.x, position.y, 0.01)
-        np.setScale(0.9, 0.9, 1)
-        np.hide(RenderMasks.DRIVABLE_AREA_HIDE)
-        self._signal_nodes[sig_id] = np
+        node_path = self._root_np.attachNewNode(geom_node)
+        node_path.setName(name)
+        node_path.setColor(color.value)
+        node_path.setPos(position.x, position.y, 0.01)
+        node_path.setScale(0.9, 0.9, 1)
+        node_path.hide(RenderMasks.DRIVABLE_AREA_HIDE)
+        self._signal_nodes[sig_id] = node_path
         return True
 
     def begin_rendering_signal(self, sig_id: str):
@@ -609,7 +1073,7 @@ class Renderer(RendererBase):
         signal_np.removeNode()
         del self._signal_nodes[sig_id]
 
-    def camera_for_id(self, camera_id) -> P3dOffscreenCamera:
+    def camera_for_id(self, camera_id: str) -> Union[P3DOffscreenCamera, P3DShaderStep]:
         """Get a camera by its id."""
         camera = self._camera_nodes.get(camera_id)
         assert (
@@ -624,7 +1088,7 @@ class Renderer(RendererBase):
         width: int,
         height: int,
         resolution: float,
-    ) -> str:
+    ) -> None:
         """Generates a new off-screen camera."""
         # setup buffer
         win_props = WindowProperties.size(width, height)
@@ -650,7 +1114,7 @@ class Renderer(RendererBase):
         # Necessary for the lane lines to be in the proper proportions
         if self._dashed_lines_np is not None:
             self._dashed_lines_np.setShaderInput(
-                "Resolution", (buffer.size.x, buffer.size.y)
+                "iResolution", (buffer.size.x, buffer.size.y)
             )
 
         # setup texture
@@ -672,7 +1136,306 @@ class Renderer(RendererBase):
         # mask is set to make undesirable objects invisible to this camera
         camera_np.node().setCameraMask(camera_np.node().getCameraMask() & mask)
 
-        camera = P3dOffscreenCamera(self, camera_np, buffer, tex)
+        camera = P3DOffscreenCamera(self, camera_np, buffer, tex)
         self._camera_nodes[name] = camera
 
-        return name
+    def build_shader_step(
+        self,
+        name: str,
+        fshader_path: Union[str, Path],
+        dependencies: Collection[
+            ShaderStepDependencyBase  # Union[ShaderStepCameraDependency, ShaderStepVariableDependency, ShaderStepBufferDependency]
+        ],
+        priority: int,
+        height: int,
+        width: int,
+    ) -> None:
+        # setup buffer
+        win_props = WindowProperties.size(width, height)
+        fb_props = FrameBufferProperties()
+        fb_props.setRgbColor(True)
+        fb_props.setRgbaBits(8, 8, 8, 0)
+        # XXX: Though we don't need the depth buffer returned, setting this to 0
+        #      causes undefined behavior where the ordering of meshes is random.
+        fb_props.setDepthBits(0)
+
+        buffer = self._showbase_instance.win.engine.makeOutput(
+            self._showbase_instance.pipe,
+            "{}-buffer".format(name),
+            priority,
+            fb_props,
+            win_props,
+            GraphicsPipe.BFRefuseWindow,
+            self._showbase_instance.win.getGsg(),
+            self._showbase_instance.win,
+        )
+
+        cm = CardMaker("filter-stage-quad")
+        cm.setFrameFullscreenQuad()
+        quad = NodePath(cm.generate())
+        quad.setDepthTest(0)
+        quad.setDepthWrite(0)
+        quad.setColor(1, 0.5, 0.5, 1)
+
+        # setup texture
+        tex = Texture()
+        # tex.setup_2d_texture(width, height, Texture.T_unsigned_byte, Texture.F_r8i)
+        region = buffer.getDisplayRegion(0)
+        region.window.addRenderTexture(
+            tex, GraphicsOutput.RTM_copy_ram, GraphicsOutput.RTP_color
+        )
+
+        # setup camera
+        lens = OrthographicLens()
+        lens.setFilmSize(width, height)
+        lens.setFilmSize(2, 2)
+        lens.setFilmOffset(0, 0)
+        lens.setNearFar(-1000, 1000)
+
+        quadcamnode = Camera(name)
+        quadcamnode.setLens(lens)
+        quadcam: NodePath = quad.attachNewNode(quadcamnode)
+
+        dr = buffer.makeDisplayRegion((0, 1, 0, 1))
+        dr.disableClears()
+        dr.setCamera(quadcam)
+        dr.setActive(True)
+        dr.setScissorEnabled(False)
+
+        # buffer clearing
+        buffer.setClearColor((0, 0, 0, 0))  # Set background color to black
+        buffer.setClearColorActive(True)
+
+        assert tex.getExpectedRamImageSize() == tex.getXSize() * tex.getYSize() * 3
+
+        with pkg_resources.path(glsl, "unlit_shader.vert") as vshader_path:
+            quad.setShader(
+                Shader.load(Shader.SL_GLSL, vertex=vshader_path, fragment=fshader_path)
+            )
+            camera_dependencies = tuple(
+                c for c in dependencies if isinstance(c, ShaderStepCameraDependency)
+            )
+            cameras = tuple(
+                self.camera_for_id(c.camera_id)
+                for c in camera_dependencies
+                if isinstance(c, ShaderStepCameraDependency)
+            )
+            for dep, dep_cam in zip(camera_dependencies, cameras):
+                quad.setShaderInput(dep.script_variable_name, dep_cam.tex)
+                size_x, size_y = dep_cam.image_dimensions
+                quad.setShaderInput(
+                    f"{dep.script_variable_name}Resolution", n1=size_x, n2=size_y
+                )
+            buffer_dependencies = tuple(
+                v for v in dependencies if isinstance(v, ShaderStepBufferDependency)
+            )
+
+            Renderer._set_shader_inputs(
+                quad, width, height, buffers=buffer_dependencies
+            )
+            variable_dependencies = tuple(
+                v for v in dependencies if isinstance(v, ShaderStepVariableDependency)
+            )
+            for dep in variable_dependencies:
+                shader_input = ShaderInput(dep.script_variable_name, dep.value)
+                quad.setShaderInput(shader_input)
+
+            camera = P3DShaderStep(
+                self,
+                shader_file=fshader_path,
+                camera_dependencies=cameras,
+                buffer_dependencies=buffer_dependencies,
+                camera_np=quadcam,
+                buffer=buffer,
+                tex=tex,
+                fullscreen_quad_node=quad,
+            )
+            self._camera_nodes[name] = camera
+
+    @staticmethod
+    def _set_shader_inputs(
+        surface, width, height, buffers: Tuple[ShaderStepBufferDependency]
+    ):
+
+        inputs = {
+            "iResolution": (width, height),
+            "iTranslation": (0.0, 0.0),
+            "iHeading": 0.0,
+            "iElevation": 0.0,
+        }
+
+        for svn, bn in ((b.script_uniform_name, b.buffer_id) for b in buffers):
+            initial_value = None
+            # SINGLE VALUES
+            if bn in (
+                BufferID.DELTA_TIME,
+                BufferID.ELAPSED_SIM_TIME,
+                BufferID.EGO_VEHICLE_STATE_HEADING,
+                BufferID.EGO_VEHICLE_STATE_SPEED,
+                BufferID.EGO_VEHICLE_STATE_STEERING,
+                BufferID.EGO_VEHICLE_STATE_YAW_RATE,
+                BufferID.DISTANCE_TRAVELLED,
+            ):
+                initial_value = float()
+            elif bn in (
+                BufferID.STEP_COUNT,
+                BufferID.STEPS_COMPLETED,
+                BufferID.VEHICLE_TYPE,
+            ):
+                initial_value = int()
+            elif bn in (
+                BufferID.EVENTS_COLLISIONS,
+                BufferID.EVENTS_OFF_ROAD,
+                BufferID.EVENTS_OFF_ROUTE,
+                BufferID.EVENTS_ON_SHOULDER,
+                BufferID.EVENTS_WRONG_WAY,
+                BufferID.EVENTS_NOT_MOVING,
+                BufferID.EVENTS_REACHED_GOAL,
+                BufferID.EVENTS_REACHED_MAX_EPISODE_STEPS,
+                BufferID.EVENTS_AGENTS_ALIVE_DONE,
+                BufferID.EVENTS_INTEREST_DONE,
+                BufferID.UNDER_THIS_VEHICLE_CONTROL,
+            ):
+                initial_value = bool()
+            elif bn in (
+                BufferID.EGO_VEHICLE_STATE_POSITION,
+                BufferID.EGO_VEHICLE_STATE_BOUNDING_BOX,
+                BufferID.EGO_VEHICLE_STATE_LANE_POSITION,
+            ):
+                initial_value = (float(), float(), float())
+            elif bn in (
+                BufferID.EGO_VEHICLE_STATE_LINEAR_VELOCITY,
+                BufferID.EGO_VEHICLE_STATE_ANGULAR_VELOCITY,
+                BufferID.EGO_VEHICLE_STATE_LINEAR_ACCELERATION,
+                BufferID.EGO_VEHICLE_STATE_ANGULAR_ACCELERATION,
+                BufferID.EGO_VEHICLE_STATE_LINEAR_JERK,
+                BufferID.EGO_VEHICLE_STATE_ANGULAR_JERK,
+            ):
+                initial_value = (float(), float())
+            elif bn in (
+                BufferID.EGO_VEHICLE_STATE_ROAD_ID,
+                BufferID.EGO_VEHICLE_STATE_LANE_ID,
+                BufferID.EGO_VEHICLE_STATE_LANE_INDEX,
+            ):
+                initial_value = int()
+
+            # Vector of NEIGHBORHOOD_VEHICLE_STATES
+            elif bn in (
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_POSITION,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_BOUNDING_BOX,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_POSITION,
+            ):
+                initial_value = [
+                    (float(), float(), float()),
+                ] * 20
+            elif bn in (
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_HEADING,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_SPEED,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            elif bn in (
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_ROAD_ID,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_ID,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_LANE_INDEX,
+                BufferID.NEIGHBORHOOD_VEHICLE_STATES_INTEREST,
+            ):
+                initial_value = [
+                    int(),
+                ]
+
+            # Vector of waypoints from WAYPOINT_PATHS
+            elif bn in (BufferID.WAYPOINT_PATHS_POSITION,):
+                initial_value = [(float(), float())]
+            elif bn in (
+                BufferID.WAYPOINT_PATHS_HEADING,
+                BufferID.WAYPOINT_PATHS_LANE_WIDTH,
+                BufferID.WAYPOINT_PATHS_SPEED_LIMIT,
+                BufferID.WAYPOINT_PATHS_LANE_OFFSET,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            elif bn in (
+                BufferID.WAYPOINT_PATHS_LANE_ID,
+                BufferID.WAYPOINT_PATHS_LANE_INDEX,
+            ):
+                initial_value = [
+                    int(),
+                ]
+
+            # Vector of waypoints from ROAD_WAYPOINTS
+            elif bn in (BufferID.ROAD_WAYPOINTS_POSITION,):
+                initial_value = [
+                    (float(), float()),
+                ]
+            elif bn in (
+                BufferID.ROAD_WAYPOINTS_HEADING,
+                BufferID.ROAD_WAYPOINTS_LANE_WIDTH,
+                BufferID.ROAD_WAYPOINTS_SPEED_LIMIT,
+                BufferID.ROAD_WAYPOINTS_LANE_OFFSET,
+            ):
+                initial_value = [
+                    float(),
+                ]
+            elif bn in (
+                BufferID.ROAD_WAYPOINTS_LANE_ID,
+                BufferID.ROAD_WAYPOINTS_LANE_INDEX,
+            ):
+                initial_value = [
+                    int(),
+                ]
+
+            # Vector of via data from VIA_DATA
+            elif bn in (BufferID.VIA_DATA_NEAR_VIA_POINTS_POSITION,):
+                initial_value = [
+                    (float(), float()),
+                ]
+            elif bn in (
+                BufferID.VIA_DATA_NEAR_VIA_POINTS_LANE_INDEX,
+                BufferID.VIA_DATA_NEAR_VIA_POINTS_ROAD_ID,
+                BufferID.VIA_DATA_NEAR_VIA_POINTS_HIT,
+            ):
+                initial_value = [
+                    int(),
+                ]
+            elif bn in (BufferID.VIA_DATA_NEAR_VIA_POINTS_REQUIRED_SPEED,):
+                initial_value = [
+                    float(),
+                ]
+
+            # Vector of lidar point information from LIDAR_POINT_CLOUD
+            elif bn in (
+                BufferID.LIDAR_POINT_CLOUD_POINTS,
+                BufferID.LIDAR_POINT_CLOUD_ORIGIN,
+                BufferID.LIDAR_POINT_CLOUD_DIRECTION,
+            ):
+                initial_value = [
+                    (float(), float(), float()),
+                ]
+            elif bn in (BufferID.LIDAR_POINT_CLOUD_HITS,):
+                initial_value = [
+                    int(),
+                ]
+
+            # SIGNALS
+            elif bn in (
+                BufferID.SIGNALS_LIGHT_STATE,
+                # BufferName.SIGNALS_CONTROLLED_LANES,
+            ):
+                initial_value = [
+                    int(),
+                ]
+            elif bn in (BufferID.SIGNALS_STOP_POINT,):
+                initial_value = [float(), float()]
+            elif bn in (BufferID.SIGNALS_LAST_CHANGED,):
+                initial_value = [
+                    float(),
+                ]
+            else:
+                raise ValueError(f"Buffer `{bn}` is not yet implemented.")
+
+            inputs[svn] = initial_value
+
+        surface.setShaderInputs(**inputs)

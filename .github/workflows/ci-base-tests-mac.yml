@@ -12,7 +12,7 @@ env:
 
 jobs:
   base-tests-mac:
-    runs-on: macos-11
+    runs-on: macos-12
     strategy:
       matrix:
         tests:
@@ -21,20 +21,18 @@ jobs:
           - ./examples/tests --ignore=./examples/tests/test_learning.py
           - ./smarts/sstudio
           - ./smarts/env/tests/test_rllib_hiway_env.py
-          - ./smarts/core --nb-exec-timeout 65536 --ignore=./smarts/core/tests/test_notebook.py
+          - ./smarts/core --nb-exec-timeout 65536 --ignore=./smarts/core/tests/test_notebook.py --ignore=./smarts/core/tests/test_renderers.py::test_custom_shader_pass_buffers
           - ./smarts/env --ignore=./smarts/env/tests/test_rllib_hiway_env.py
           - ./smarts/ray
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: master
-      - name: Setup Python
-        run: |
-          brew update
-          brew install python@3.8
-          brew unlink python@3.9
-          brew link --force --overwrite python@3.8
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
       - name: Setup SUMO
         run: |
           brew install xquartz
@@ -43,12 +41,12 @@ jobs:
           brew install geos
       - name: Install dependencies
         run: |
-          python3.8 -m venv ${{env.venv_dir}}
+          python3.9 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
           pip install -r utils/setup/mac_requirements.txt
-          pip install -e .[camera_obs,opendrive,rllib,test,test_notebook,torch,train,argoverse,envision,sumo]
+          pip install -e .[camera-obs,opendrive,rllib,test,test-notebook,torch,train,argoverse,envision,sumo]
           if echo ${{matrix.tests}} | grep -q -e "/env"; then pip install -e .[rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "/examples"; then pip install -e .[examples,rllib]; fi
           if echo ${{matrix.tests}} | grep -q "/ray"; then pip install -e .[ray]; fi
@@ -71,4 +69,5 @@ jobs:
             --ignore=./smarts/core/tests/test_renderers.py \
             --ignore=./smarts/core/tests/test_smarts.py \
             --ignore=./smarts/core/tests/test_env_frame_rate.py \
-            --ignore=./smarts/core/tests/test_observations.py
+            --ignore=./smarts/core/tests/test_observations.py \
+            --ignore=./smarts/core/utils/tests/test_traci_port_acquisition.py

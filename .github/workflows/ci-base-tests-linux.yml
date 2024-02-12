@@ -9,7 +9,7 @@ jobs:
   base-tests:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
+    container: ghcr.io/smarts-project/smarts:v2.0.0-software_render
     strategy:
       matrix:
         tests:
@@ -23,17 +23,18 @@ jobs:
           - ./examples/tests/test_examples.py
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install -e .[camera_obs,opendrive,test,test_notebook,torch,train,gif_recorder,gymnasium,argoverse,envision,sumo]
+          pip install -e .[camera-obs,opendrive,test,test-notebook,torch,train,gif-recorder,gymnasium,argoverse,envision,sumo]
           if echo ${{matrix.tests}} | grep -q -e "test_rllib_hiway_env.py"; then pip install -e .[rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "test_examples.py"; then pip install -e .[examples,rllib]; fi
           if echo ${{matrix.tests}} | grep -q -e "/smarts/ray"; then pip install -e .[ray]; fi
+          if echo ${{matrix.tests}} | grep -q -e "/smarts/core"; then (/usr/bin/Xorg -noreset +extension GLX +extension RANDR +extension RENDER -logfile ./xdummy.log -config /etc/X11/xorg.conf -novtswitch :1 &); fi
       - name: Build scenarios
         run: |
           . ${{env.venv_dir}}/bin/activate
@@ -55,6 +56,7 @@ jobs:
             --doctest-modules \
             --forked \
             --dist=no \
+            --durations=10 \
             -n auto \
             --ignore-glob="**/ros.py" \
             --ignore-glob="**/waymo_map.py" \
@@ -63,6 +65,7 @@ jobs:
             --ignore=./smarts/core/tests/test_smarts_memory_growth.py \
             --ignore=./smarts/core/tests/test_env_frame_rate.py \
             --ignore=./smarts/env/tests/test_benchmark.py \
+            --ignore=./smarts/core/utils/tests/test_traci_port_acquisition.py \
             -k 'not test_long_determinism'
 
   examples-rl:
@@ -76,7 +79,7 @@ jobs:
           - e11_platoon
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           cd ${GITHUB_WORKSPACE}/examples/${{matrix.tests}}
@@ -84,7 +87,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install -e ./../../.[camera_obs,argoverse,sumo,test]
+          pip install -e ./../../.[camera-obs,argoverse,sumo,test]
           pip install -e ./inference/
       - name: Run smoke tests
         run: |
@@ -108,7 +111,7 @@ jobs:
           - e11_platoon
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Install dependencies
         run: |
           cd ${GITHUB_WORKSPACE}
@@ -116,7 +119,7 @@ jobs:
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
           pip install wheel==0.38.4
-          pip install -e .[camera_obs,argoverse,test,ray,sumo]
+          pip install -e .[camera-obs,argoverse,test,ray,sumo]
           scl zoo install examples/${{matrix.tests}}/inference
       - name: Run smoke tests
         run: |

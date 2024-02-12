@@ -66,6 +66,9 @@ target/
 # VSCode
 .vscode
 
+# panda3d
+.panda3d_cache
+
 # pyenv
 .python-version
 
@@ -154,6 +157,7 @@ collected_observations/
 
 # Experiments
 outputs/
+vaw/
 
 # Temp
 driving-smarts-2.competition-scenarios

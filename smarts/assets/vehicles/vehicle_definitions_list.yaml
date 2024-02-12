@@ -1,0 +1,8 @@
+generic_bus: &GENERIC_BUS ${SMARTS_ASSETS_PATH}/vehicles/definitions/bus.yaml
+generic_sedan: &GENERIC_SEDAN ${SMARTS_ASSETS_PATH}/vehicles/definitions/sedan.yaml
+generic_pickup_truck: &GENERIC_PICKUP ${SMARTS_ASSETS_PATH}/vehicles/definitions/pickup_truck.yaml
+bus: *GENERIC_BUS
+moving_truck_empty: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_empty.yaml
+moving_truck_loaded: ${SMARTS_ASSETS_PATH}/vehicles/definitions/moving_truck_loaded.yaml
+pickup: *GENERIC_PICKUP
+sedan: *GENERIC_SEDAN

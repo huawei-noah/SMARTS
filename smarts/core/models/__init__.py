@@ -17,3 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+
+import sys
+import warnings
+
+import smarts.assets
+
+warnings.warn(
+    "The `smarts.core.models` module has been deprecated in favor of `smarts.assets`. Please update your code.",
+    category=DeprecationWarning,
+)
+# Redirect this module to the smarts.assets module
+sys.modules[__name__] = smarts.assets

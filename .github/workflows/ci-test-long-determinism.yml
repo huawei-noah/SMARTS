@@ -17,7 +17,7 @@ jobs:
     container: ghcr.io/smarts-project/smarts:v0.6.1-minimal
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: master
       - name: Setup package
@@ -26,7 +26,7 @@ jobs:
           python3.8 -m venv ${{env.venv_dir}}
           . ${{env.venv_dir}}/bin/activate
           pip install --upgrade pip
-          pip install .[camera_obs,rllib,test,torch,train]
+          pip install .[camera-obs,rllib,test,torch,train]
       - name: Verify long determinism
         run: |
           cd $GITHUB_WORKSPACE

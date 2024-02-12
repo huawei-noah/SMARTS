@@ -17,10 +17,12 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+from __future__ import annotations
+
 import math
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any, NamedTuple, Optional, SupportsFloat, Tuple, Union
+from typing import Any, Collection, NamedTuple, Optional, SupportsFloat, Tuple, Union
 
 import numpy as np
 from shapely.geometry import Point as SPoint
@@ -42,8 +44,8 @@ class Dimensions(NamedTuple):
 
     @classmethod
     def init_with_defaults(
-        cls, length: float, width: float, height: float, defaults: "Dimensions"
-    ) -> "Dimensions":
+        cls, length: float, width: float, height: float, defaults: Dimensions
+    ) -> Dimensions:
         """Create with the given default values"""
         if not length or length == -1:
             length = defaults.length
@@ -54,9 +56,7 @@ class Dimensions(NamedTuple):
         return cls(length, width, height)
 
     @classmethod
-    def copy_with_defaults(
-        cls, dims: "Dimensions", defaults: "Dimensions"
-    ) -> "Dimensions":
+    def copy_with_defaults(cls, dims: Dimensions, defaults: Dimensions) -> Dimensions:
         """Make a copy of the given dimensions with a default option."""
         return cls.init_with_defaults(dims.length, dims.width, dims.height, defaults)
 
@@ -86,11 +86,11 @@ class Point(NamedTuple):
     z: Optional[float] = 0
 
     @classmethod
-    def from_np_array(cls, np_array: np.ndarray):
+    def from_np_array(cls, np_array: np.ndarray) -> Point:
         """Factory for constructing a Point object from a numpy array."""
         assert 2 <= len(np_array) <= 3
         z = np_array[2] if len(np_array) > 2 else 0.0
-        return cls(np_array[0], np_array[1], z)
+        return cls(float(np_array[0]), float(np_array[1]), float(z))
 
     @property
     def as_np_array(self) -> np.ndarray:
@@ -215,7 +215,9 @@ class Heading(float):
     def __init__(self, value=...):
         float.__init__(value)
 
-    def __new__(self, x: Union[SupportsFloat, SupportsIndex, Ellipsis.__class__] = ...):
+    def __new__(
+        self, x: Union[SupportsFloat, SupportsIndex, Ellipsis.__class__] = ...
+    ) -> Heading:
         """A override to constrain heading to -pi to pi"""
         value = x
         if isinstance(value, (int, float)):
@@ -227,7 +229,7 @@ class Heading(float):
         return float.__new__(self, value)
 
     @classmethod
-    def from_bullet(cls, bullet_heading):
+    def from_bullet(cls, bullet_heading) -> Heading:
         """Bullet's space is in radians, 0 faces north, and turns
         counter-clockwise.
         """
@@ -236,7 +238,7 @@ class Heading(float):
         return h
 
     @classmethod
-    def from_panda3d(cls, p3d_heading):
+    def from_panda3d(cls, p3d_heading) -> Heading:
         """Panda3D's space is in degrees, 0 faces north,
         and turns counter-clockwise.
         """
@@ -245,7 +247,7 @@ class Heading(float):
         return h
 
     @classmethod
-    def from_sumo(cls, sumo_heading):
+    def from_sumo(cls, sumo_heading) -> Heading:
         """Sumo's space uses degrees, 0 faces north, and turns clockwise."""
         heading = Heading.flip_clockwise(math.radians(sumo_heading))
         h = Heading(heading)
@@ -258,21 +260,21 @@ class Heading(float):
         return getattr(self, "_source", None)
 
     @property
-    def as_panda3d(self):
+    def as_panda3d(self) -> float:
         """Convert to Panda3D facing format."""
         return math.degrees(self)
 
     @property
-    def as_bullet(self):
+    def as_bullet(self) -> Heading:
         """Convert to bullet physics facing format."""
         return self
 
     @property
-    def as_sumo(self):
+    def as_sumo(self) -> float:
         """Convert to SUMO facing format"""
         return math.degrees(Heading.flip_clockwise(self))
 
-    def relative_to(self, other: "Heading"):
+    def relative_to(self, other: Heading) -> Heading:
         """
         Computes the relative heading w.r.t. the given heading
         >>> Heading(math.pi/4).relative_to(Heading(math.pi))
@@ -286,7 +288,7 @@ class Heading(float):
 
         return Heading(rel_heading)
 
-    def direction_vector(self):
+    def direction_vector(self) -> np.ndarray:
         """Convert to a 2D directional vector that aligns with Cartesian Coordinate System"""
         return radians_to_vec(self)
 
@@ -340,6 +342,8 @@ class Pose:
         if "point" in self.__dict__:
             # clear the cached_property
             del self.__dict__["point"]
+        if "position_tuple" in self.__dict__:
+            del self.__dict__["position_tuple"]
         if heading != self.heading_:
             self.orientation = fast_quaternion_from_angle(heading)
             self.heading_ = heading
@@ -347,10 +351,15 @@ class Pose:
     @cached_property
     def point(self) -> Point:
         """The positional value of this pose as a point."""
-        return Point(*self.position)
+        return Point.from_np_array(self.position)
+
+    @cached_property
+    def position_tuple(self) -> Tuple[Optional[float], ...]:
+        """The position value of this pose as a tuple."""
+        return tuple(self.point)
 
     @classmethod
-    def from_front_bumper(cls, front_bumper_position, heading, length) -> "Pose":
+    def from_front_bumper(cls, front_bumper_position, heading, length) -> Pose:
         """Convert from front bumper location to a Pose with center of vehicle.
 
         Args:
@@ -371,7 +380,7 @@ class Pose:
         )
 
     @classmethod
-    def from_center(cls, base_position, heading: Heading):
+    def from_center(cls, base_position: Collection[float], heading: Heading) -> Pose:
         """Convert from centered location
 
         Args:
@@ -396,7 +405,7 @@ class Pose:
         base_position: np.ndarray,
         heading: Heading,
         local_heading: Heading,
-    ):
+    ) -> Pose:
         """Convert from an explicit offset
 
         Args:
@@ -441,12 +450,12 @@ class Pose:
             self.heading.as_sumo,
         )
 
-    def as_bullet(self):
+    def as_bullet(self) -> Tuple[np.ndarray, np.ndarray]:
         """Convert to bullet origin (position of bullet origin, orientation quaternion"""
         return (self.position, self.orientation)
 
     @property
-    def heading(self):
+    def heading(self) -> Heading:
         """The heading value converted from orientation."""
 
         # XXX: changing the orientation should invalidate this
@@ -460,11 +469,11 @@ class Pose:
         """Convert to a 2d position array"""
         return self.position[:2]
 
-    def as_panda3d(self):
+    def as_panda3d(self) -> Tuple[np.ndarray, float]:
         """Convert to panda3D (object bounds center position, heading)"""
         return (self.position, self.heading.as_panda3d)
 
     @classmethod
-    def origin(cls):
+    def origin(cls) -> Pose:
         """Pose at the origin coordinate of smarts."""
         return cls(np.repeat([0], 3), np.array([0, 0, 0, 1]))

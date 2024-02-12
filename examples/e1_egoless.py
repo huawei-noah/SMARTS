@@ -8,9 +8,7 @@ from smarts.core.utils.episodes import episodes
 from smarts.sstudio.scenario_construction import build_scenarios
 
 
-def main(*_, **kwargs):
-    max_episode_steps = None
-    num_episodes = 10
+def main(num_episodes, max_episode_steps, *_, **kwargs):
     scenarios_path = Path(__file__).absolute().parents[1] / "scenarios" / "sumo"
 
     # Scenarios have to be built for the scenario to be complete. This can be done
@@ -31,7 +29,7 @@ def main(*_, **kwargs):
         env.reset()
         episode.record_scenario(env.unwrapped.scenario_log)
 
-        for _ in range(max_episode_steps or 300):
+        for _ in range(max_episode_steps):
             env.step({})
             episode.record_step({}, {}, {}, {}, {})
 
@@ -42,4 +40,7 @@ if __name__ == "__main__":
     parser = empty_parser(Path(__file__).stem)
     args = parser.parse_args()
 
-    main()
+    main(
+        num_episodes=10,
+        max_episode_steps=300,
+    )

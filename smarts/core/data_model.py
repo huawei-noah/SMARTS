@@ -17,11 +17,15 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from __future__ import annotations
 
-from smarts.zoo.agent_spec import AgentSpec
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
 from smarts.zoo.registry import make
+
+if TYPE_CHECKING:
+    from smarts.zoo.agent_spec import AgentSpec
 
 
 @dataclass
