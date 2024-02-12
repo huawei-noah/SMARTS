@@ -121,4 +121,3 @@ class FilterObs:
 
         return filtered_obs
         # fmt: on
-
