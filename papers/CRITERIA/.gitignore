@@ -1,0 +1,143 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+.DS_Store
+MANIFEST
+sanity_test_result.xml
+pip-wheel-metadata/
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Sphinx documentation
+docs/_build/
+docs/api
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VSCode
+.vscode
+
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
+
+# Environments
+.venv*
+venv
+.bugtest
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.idea/*
+
+# pytest benchmark
+.benchmarks/
+
+# generated scenario files
+*.rou.alt.xml
+*.rou.xml
+*.trips.xml
+shifted_map-AUTOGEN.net.xml
+*.egg
+*.glb
+*flamegraph-perf.log
+*flamegraph.svg
+*flamegraph.html
+**/social_agents/*
+*.pkl
+*.shf
+*.tfrecord*
+build.db
+
+# but keep model assets
+!**/models/*.glb
+*.blend1
+
+# run logs
+**/examples/**/logs
+**/examples/**/videos
+_run_logs
+results
+supervisord.log
+supervisord.pid
+xdummy.log
+
+# Argoverse dataset
+log_map_archive_[a-z0-9-]*.json
+scenario_[a-z0-9-]*.parquet
+
+# replay data
+*.jsonl
+
+# Optimization Engine build directory
+OpEn_build/
+
+# Singularity
+*.sif
+
+# vim swap files
+*.swp
+
+# Static type check
+.pytype
