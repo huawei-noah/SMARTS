@@ -765,7 +765,9 @@ lidar_point_cloud_space_format = StandardConfigurableSpaceFormat(
 
 
 neighborhood_vehicle_states_space_format = StandardConfigurableSpaceFormat(
-    lambda obs: _format_neighborhood_vehicle_states(obs.neighborhood_vehicle_states),
+    lambda obs, agent_interface: _format_neighborhood_vehicle_states(
+        obs.neighborhood_vehicle_states, agent_interface
+    ),
     lambda agent_interface: bool(agent_interface.neighborhood_vehicle_states),
     "neighborhood_vehicle_states",
     _configure_neighborhood_vehicle_states_space,
@@ -1072,7 +1074,7 @@ class ObservationSpacesFormatter:
             vehicles are insufficient, default feature values are padded.
             "neighborhood_vehicle_states": dict({
                 "box":
-                    Bounding box of neighbor vehicles. Defaults to np.array([0,0,0]) per
+                    Bounding box of neighbor vehicles. Defaults to np.array([.0,.0,.0]) per
                     vehicle. shape=(10,3). dtype=np.float32.
                 "heading":
                     Heading of neighbor vehicles in radians [-pi, pi]. Defaults to
@@ -1091,11 +1093,16 @@ class ObservationSpacesFormatter:
                     vehicle. shape=(10,). dtype=np.int8.
                 "position":
                     Coordinate of the center of neighbor vehicles' bounding box's bottom
-                    plane. Defaults to np.array([0,0,0]) per vehicle. shape=(10,3).
+                    plane. Defaults to np.array([.0,.0,.0]) per vehicle. shape=(10,3).
                     dtype=np.float64.
                 "speed":
                     Speed of neighbor vehicles in m/s. Defaults to np.array([0]) per
                     vehicle. shape=(10,). dtype=np.float32.
+                "lane_position":
+                    A reference line coordinates. Coordinates are s, t, and h relating
+                    to offset along lane, horizontal displacement, and surface
+                    displacement. Defaults to np.array([.0,.0,.0]) per vehicle. shape=(10,3).
+                    dtype=np.float64
             })
 
             Occupancy grid map. Map is binary, with 255 if a cell is occupied, else 0.
