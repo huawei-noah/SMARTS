@@ -235,7 +235,7 @@ def _format_neighborhood_vehicle_states(
             _format_id(nghb.lane_id, _WAYPOINT_NAME_LIMIT, "lane id"),
             nghb.interest,
         )
-        for nghb in out_nvs[:des_shp]
+        for nghb in neighborhood_vehicle_states[:des_shp]
     ]
     box, heading, vehicle_id, lane_index, pos, speed, lane_id, interest = zip(
         *out_nvs
