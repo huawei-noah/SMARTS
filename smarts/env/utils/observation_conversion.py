@@ -224,7 +224,7 @@ def _format_neighborhood_vehicle_states(
             "speed": np.zeros((des_shp,), dtype=np.float32),
         }
 
-    neighborhood_vehicle_states = [
+    out_nvs = [
         (
             nghb.bounding_box.as_lwh,
             nghb.heading,
@@ -235,10 +235,10 @@ def _format_neighborhood_vehicle_states(
             _format_id(nghb.lane_id, _WAYPOINT_NAME_LIMIT, "lane id"),
             nghb.interest,
         )
-        for nghb in neighborhood_vehicle_states[:des_shp]
+        for nghb in out_nvs[:des_shp]
     ]
     box, heading, vehicle_id, lane_index, pos, speed, lane_id, interest = zip(
-        *neighborhood_vehicle_states
+        *out_nvs
     )
 
     box = np.array(box, dtype=np.float32)
