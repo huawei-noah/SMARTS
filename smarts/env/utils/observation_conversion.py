@@ -32,6 +32,7 @@ from smarts.core.agent_interface import AgentInterface
 from smarts.core.observations import Observation, SignalObservation, VehicleObservation
 from smarts.core.plan import NavigationMission
 from smarts.core.road_map import Waypoint
+from smarts.core.configuration import Config
 
 _LIDAR_SHP = 300
 _NEIGHBOR_SHP = 50
@@ -757,6 +758,24 @@ class TopDownRGBSpaceFormat(Image8BSpaceFormat):
     @property
     def name(self):
         return "top_down_rgb"
+    
+
+class CustomRenderSpaceFormat(Image8BSpaceFormat):
+    """Formats a specific custom_render"""
+
+    def __init__(self, agent_interface: AgentInterface, index: int) -> None:
+        self._index = index
+        super().__init__(dimensions=agent_interface.custom_renders[index], layers=3)
+
+    def format(self, obs: Observation):
+        return obs.custom_renders[self._index].data.astype(np.uint8)
+
+    def active(self, agent_interface: AgentInterface) -> bool:
+        return bool(agent_interface.custom_renders[self._index])
+
+    @property
+    def name(self):
+        return str(self._index)
 
 
 waypoint_paths_space_format = StandardSpaceFormat(
@@ -1051,6 +1070,14 @@ class ObservationSpacesFormatter:
 
             RGB image, from the top view, with ego vehicle at the center.
             shape=(height, width, 3). dtype=np.uint8.
+            "top_down_rgb": np.ndarray
+
+            Occlusion observable area map.
+            shape=(height, width, 3). dtype=np.uint8.
+            "top_down_rgb": np.ndarray
+
+            TODO Custom renders.
+            shape=(max_custom_image_sensors, height, width, 3). dtype=np.uint8.
             "top_down_rgb": np.ndarray
 
             Feature array of 20 waypoints ahead or in the mission route, from the
