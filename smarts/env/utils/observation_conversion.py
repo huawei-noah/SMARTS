@@ -24,7 +24,7 @@ from __future__ import annotations
 import math
 import warnings
 from enum import IntEnum
-from functools import cached_property, partial
+from functools import cached_property
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import gymnasium as gym
