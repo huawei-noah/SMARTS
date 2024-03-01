@@ -237,9 +237,7 @@ def _format_neighborhood_vehicle_states(
         )
         for nghb in neighborhood_vehicle_states[:des_shp]
     ]
-    box, heading, vehicle_id, lane_index, pos, speed, lane_id, interest = zip(
-        *out_nvs
-    )
+    box, heading, vehicle_id, lane_index, pos, speed, lane_id, interest = zip(*out_nvs)
 
     box = np.array(box, dtype=np.float32)
     heading = np.array(heading, dtype=np.float32)
