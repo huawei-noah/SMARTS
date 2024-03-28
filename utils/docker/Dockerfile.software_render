@@ -1,7 +1,7 @@
 # Steps to build and push minimal SMARTS docker image
 # ```bash
 # $ cd </path/to/SMARTS>
-# export VERSION=v2.0.0
+# export VERSION=v2.0.1
 # export DOCK_TYPE=software_render
 # $ docker build --no-cache -f ./utils/docker/Dockerfile.$DOCK_TYPE -t ghcr.io/smarts-project/smarts:$VERSION-$DOCK_TYPE .
 # $ # This uses a key for the smarts-project repository

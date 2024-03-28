@@ -17,6 +17,10 @@ Copy and pasting the git commit messages is __NOT__ enough.
 ### Removed
 ### Security
 
+## [v2.0.1] - 2024-03-28
+### Fixed
+- Restored deprecated `debug_log` to benchmark runner.
+
 ## [v2.0.0] - 2024-02-04
 ### Added
 - Added a utility method `SMARTS.prepare_observe_from()` which allows safely adding sensors to vehicles.

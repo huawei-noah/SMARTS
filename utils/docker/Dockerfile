@@ -1,7 +1,7 @@
 # Steps to build and push the SMARTS docker image
 # ```bash
 # $ cd </path/to/SMARTS>
-# export VERSION=v0.5.0
+# export VERSION=v2.0.1
 # $ docker build --no-cache -f ./utils/docker/Dockerfile -t huaweinoah/smarts:$VERSION .
 # $ docker login
 # $ docker push huaweinoah/smarts:$VERSION
