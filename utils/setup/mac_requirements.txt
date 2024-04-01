@@ -14,7 +14,7 @@ dm-tree==0.1.8
 exceptiongroup==1.2.0
 execnet==2.0.2
 filelock==3.13.3
-flatbuffers==24.3.7
+flatbuffers==24.3.25
 frozenlist==1.4.1
 fsspec==2024.3.1
 future==1.0.0
@@ -50,7 +50,7 @@ packaging==24.0
 Panda3D==1.10.14
 panda3d-gltf==0.13
 panda3d-simplepbr==0.12.0
-pillow==10.2.0
+pillow==10.3.0
 pluggy==1.4.0
 protobuf==4.25.3
 psutil==5.9.8
@@ -81,14 +81,14 @@ tensorflow-io-gcs-filesystem==0.36.0
 tensorflow-probability==0.24.0
 termcolor==2.4.0
 tomli==2.0.1
-torch==2.2.1
-torchvision==0.17.1
-trimesh==4.2.2
+torch==2.2.2
+torchvision==0.17.2
+trimesh==4.2.4
 Twisted==24.3.0
 typing_extensions==4.10.0
 urllib3==2.2.1
 wcwidth==0.2.13
-Werkzeug==3.0.1
+Werkzeug==3.0.2
 wrapt==1.16.0
 yattag==1.15.2
 zipp==3.18.1
