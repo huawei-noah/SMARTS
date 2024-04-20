@@ -12,7 +12,7 @@ constantly==23.10.4
 coverage==7.4.4
 decorator==5.1.1
 dm-tree==0.1.8
-exceptiongroup==1.2.0
+exceptiongroup==1.2.1
 execnet==2.1.1
 filelock==3.13.4
 flatbuffers==24.3.25
@@ -23,7 +23,7 @@ gast==0.4.0
 google-auth==2.29.0
 google-auth-oauthlib==1.0.0
 google-pasta==0.2.0
-grpcio==1.62.1
+grpcio==1.62.2
 h5py==3.11.0
 hyperlink==21.0.0
 idna==3.7
