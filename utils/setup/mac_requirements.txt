@@ -16,11 +16,11 @@ execnet==2.1.1
 filelock==3.14.0
 flatbuffers==24.3.25
 frozenlist==1.4.1
-fsspec==2024.3.1
+fsspec==2024.5.0
 future==1.0.0
 gast==0.5.4
 google-pasta==0.2.0
-grpcio==1.63.0
+grpcio==1.64.0
 h5py==3.11.0
 hyperlink==21.0.0
 idna==3.7
@@ -58,7 +58,7 @@ py==1.11.0
 py-cpuinfo==9.0.0
 pybullet==3.2.6
 Pygments==2.18.0
-pytest==8.2.0
+pytest==8.2.1
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
 pytest-forked==1.6.0
@@ -66,7 +66,7 @@ pytest-xdist==3.6.1
 PyYAML==6.0.1
 ray==2.9.0
 referencing==0.35.1
-requests==2.31.0
+requests==2.32.1
 rich==13.7.1
 rpds-py==0.18.1
 scipy==1.13.0
@@ -83,7 +83,7 @@ termcolor==2.4.0
 tomli==2.0.1
 torch==2.2.2
 torchvision==0.17.2
-trimesh==4.3.2
+trimesh==4.4.0
 Twisted==24.3.0
 typing_extensions==4.11.0
 urllib3==2.2.1
@@ -91,5 +91,5 @@ wcwidth==0.2.13
 Werkzeug==3.0.3
 wrapt==1.16.0
 yattag==1.15.2
-zipp==3.18.1
-zope.interface==6.3
+zipp==3.18.2
+zope.interface==6.4
