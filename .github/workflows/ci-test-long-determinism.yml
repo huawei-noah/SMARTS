@@ -1,8 +1,8 @@
 name: SMARTS CI Long Determinism
 
 on:
-  schedule:
-    - cron: "0 23 * * 6"
+  # schedule:
+  #   - cron: "0 23 * * 6"
       # Time is in UTC
       # Runs at 11.00pm, UTC  , every Saturday
       # Runs at  7.00pm, UTC-4, every Saturday
