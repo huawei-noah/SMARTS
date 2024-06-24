@@ -8,12 +8,12 @@ charset-normalizer==3.3.2
 click==8.1.7
 cloudpickle==3.0.0
 constantly==23.10.4
-coverage==7.5.3
+coverage==7.5.4
 decorator==5.1.1
 dm-tree==0.1.8
 exceptiongroup==1.2.1
 execnet==2.1.1
-filelock==3.15.1
+filelock==3.15.4
 flatbuffers==24.3.25
 frozenlist==1.4.1
 fsspec==2024.6.0
@@ -24,7 +24,7 @@ grpcio==1.64.1
 h5py==3.11.0
 hyperlink==21.0.0
 idna==3.7
-importlib_metadata==7.1.0
+importlib_metadata==7.2.1
 incremental==22.10.0
 iniconfig==2.0.0
 Jinja2==3.1.4
@@ -53,7 +53,7 @@ panda3d-simplepbr==0.12.0
 pillow==10.3.0
 pluggy==1.5.0
 protobuf==4.25.3
-psutil==5.9.8
+psutil==6.0.0
 py==1.11.0
 py-cpuinfo==9.0.0
 pybullet==3.2.6
