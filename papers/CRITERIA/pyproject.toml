@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CRITERIA"
+version = "2024.2.20"
+dependencies = [
+    "compress-pickle",
+    "opencv-python",
+    "numpy~=1.19.3",
+    "openpyxl",
+    "pandas",
+    "scipy",
+    "shapely",
+    "toml>=0.10.2",
+    "torch",
+    "tqdm==4.66.2"
+]
+[project.optional-dependencies]
+argoverse = [
+    "colour",
+    "descartes",
+    "h5py",
+    "hydra-core==1.1.0",
+    "imageio",
+    "lapsolver",
+    "matplotlib",
+    "motmetrics==1.1.3",
+    "numba",
+    "numpy~=1.19.3", # this is broken in argoverse for some platforms
+    "omegaconf==2.1.0",
+    "opencv-python>=4.1.0.25",
+    "pandas>=0.23.1",
+    "pillow",
+    "polars",
+    "pyntcloud>=0.1.0",
+    "scipy>=1.4.0",
+    "shapely",
+    "sklearn",
+    "tqdm",
+    "typing_extensions",
+    # "argoverse @ git+https://github.com/argoverse/argoverse-api.git@f886ac54fba9f06f8a7d109eb663c7f501b3aa8e",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pkg*"]  # alternatively: `exclude = ["additional*"]`
+namespaces = false
+
+[tool.setuptools.package-data]
+mypkg = ["*.txt", "*.rst"]

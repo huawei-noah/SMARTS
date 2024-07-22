@@ -1,0 +1,169 @@
+title = "CRITERIA configuration"
+# Shared values
+# ====== SET THESE =======
+## The argoverse data directory
+## This relates to Argoverse Motion Forecasting {train|val|test} set
+argoverse_data_dir = "./argoverse_motion_forecasting/val/data/"
+## The location of the base metrics results
+metrics_results_dir = "./data/metrics_result/"
+# ====== /SET THESE =======
+file_formatter = "pickle" # json|pickle|compress_pickle
+# Formatting string: format arguments metrics_results_dir and ext are provided
+metrics_results_file = "{metrics_results_dir}/models_metrics_results.{ext}"
+vis_map_path = "./data/map_folder"
+scene_df_file = "./data/scene_classification_result/12_scenes.xlsx"
+# Formatting string: format arguments metrics_results_dir, metric_name, ext, and model_name are supplied
+default_format_string = "{metrics_results_dir}/{metric_name}_result/{model_name}_{metric_name}.{ext}"
+
+[prediction_models]
+# ====== SET THESE =======
+## The model prediction data
+# Files are like "predictions/TNT/TNT.pickle"
+FTGN.source = "./predictions/FTGN/FTGN.pickle"
+HiVT.source = "./predictions/HiVT/HiVT.pickle"
+LaneGCN.source = "./predictions/LaneGCN/LaneGCN.pickle"
+mmTransformer.source = "./predictions/mmTransformer/mmTransformer.pickle"
+TNT.source = "./predictions/TNT/TNT.pickle"
+# ====== /SET THESE =======
+
+
+## ======== METRICS =========
+# These relate to metrics classes
+[metrics]
+reference_frame = 19
+trajectory_count = 20
+trajectories_per_second = 10
+dao.max_distance = 56
+dao.scale = 10000
+dao.vis_map_path = "" # specify to override
+hor.scale = 100
+sor.scale = 100
+tad.scale = 100
+miss_rate.miss_threshold = 2
+# categorized ground truth into public/normal/agressive/extremely agressive/danger catogories
+# different range for acceleration
+aggression_danger.ad_public = [-0.9, 0.9,]
+aggression_danger.ad_normal = [-2.0, 1.47,]
+aggression_danger.ad_aggressive = [-5.08, 3.07,]
+aggression_danger.ad_extremely_aggressive = [-5.6, 7.6,]
+## ======== /METRICS =========
+
+# ========== PROGRAMS ============
+[compute_metric_result]
+default_format_string=""
+
+[compute_single_metric_result]
+prediction_model = "TNT"
+
+[compute_single_scenario_result]
+prediction_model = "TNT"
+
+[scenario_metric_extract]
+prediction_model = "TNT"
+metrics_results_file = ""
+
+[scenario_metric_extract.metric_dict]
+# All supported metrics are listed
+# You can specify one or more metrics in the dictionary
+# use inf and -inf for no upper/lower limit
+minFDE= [0.0, 5.0]
+minADE= [0.0, 5.0]
+RF= [0.0, inf]
+minASD= [0.0, 5.0]
+# TODO confirm FSD TAR_ablation
+# minFSD=[0.0, 5.0]
+# TAR_ablation=[0.0, 1.0]
+TAD= [0.0, 5.0]
+TDD= [0.0, 5.0]
+DAO= [0.0, 90.0]
+DAC= [0.0, 80.0]
+TAR= [0.0, 0.8]
+
+[preprocess_argoverse]
+city_names = ["MIA", "PIT"]
+# override map path file
+vis_map_path = ""
+
+[group_result]
+# override results output file
+metrics_results_file = ""
+# override results source directory
+metrics_results_dir = ""
+# Formatting string: format arguments metric_name and model_name are supplied
+default_format_string = ""
+metric_names = [
+    "minFDE",
+    "minADE",
+    "RF",
+    "minFSD",
+    "minASD",
+    "TAD",
+    "TDD",
+    "DAO",
+    "DAC",
+    "TAR",
+    # "TAR_ablation",
+]
+
+# Allows overrides of individual sources files
+## Removing a section causes that model to not be combined
+[group_result.model_results_sources.TNT]
+# The following source file overloads are available for all models
+#  if not specified they use metrics_results_dir
+source_minADE=""
+source_minFDE=""
+source_TAD=""
+source_TDD=""
+source_TAR=""
+source_TAR_ablation=""
+source_DAO=""
+source_DAC=""
+source_RF=""
+source_minFSD=""
+source_minASD=""
+[group_result.model_results_sources.LaneGCN]
+[group_result.model_results_sources.HiVT]
+[group_result.model_results_sources.FTGN]
+[group_result.model_results_sources.mmTransformer]
+
+[scenario_distance_classify]
+prediction_model = "TNT"
+distance_barrier = 28.5
+long_short_excel="./data/scene_classification_result/long_short.xlsx"
+
+[scenario_difficulty_classify]
+prediction_model = "TNT"
+minFDE_classifications.easy = [0.0, 0.1]
+minFDE_classifications.medium = [0.1, 0.65]
+minFDE_classifications.hard = [0.65, 1.0]
+dist.count = 6
+dist.chunks = 400
+dist.check_rate = 0.2
+avgminFDE_excel="./data/scene_classification_result/avgminFDE_difficulty.xlsx"
+
+[scenario_intersect_classify]
+prediction_model = "TNT"
+cruise_intersect_excel="./data/scene_classification_result/cruise_intersect.xlsx"
+
+[group_classify]
+scene_df_file = "" #"./data/scene_classification_result/12_scenes.xlsx"
+long_short_excel="./data/scene_classification_result/long_short.xlsx"
+avgminFDE_excel="./data/scene_classification_result/avgminFDE_difficulty.xlsx"
+cruise_intersect_excel="./data/scene_classification_result/cruise_intersect.xlsx"
+
+[weighted_difficulty_result]
+scene_classification_result_file = "./data/scene_classification_result/avgminFDE_difficulty.xlsx"
+weights.easy.TAD = 0.9
+weights.middle.TAD = 0.05
+weights.hard.TAD = 0.05
+weights.easy.TAR = 0.9
+weights.middle.TAR = 0.05
+weights.hard.TAR = 0.05
+weights.easy.TDD = 0.9
+weights.middle.TDD = 0.05
+weights.hard.TDD = 0.05
+
+[scenes_result]
+scene_df_file = "" #"./data/scene_classification_result/12_scenes.xlsx"
+# ========== /PROGRAMS ============
+

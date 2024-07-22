@@ -66,6 +66,9 @@ target/
 # VSCode
 .vscode
 
+# panda3d
+.panda3d_cache
+
 # pyenv
 .python-version
 
@@ -94,22 +97,6 @@ venv
 # pytest benchmark
 .benchmarks/
 
-# generated scenario files
-*.rou.alt.xml
-*.rou.xml
-*.trips.xml
-shifted_map-AUTOGEN.net.xml
-*.egg
-*.glb
-*flamegraph-perf.log
-*flamegraph.svg
-*flamegraph.html
-**/social_agents/*
-*.pkl
-*.shf
-*.tfrecord*
-build.db
-
 # but keep model assets
 !**/models/*.glb
 *.blend1
@@ -127,11 +114,8 @@ xdummy.log
 log_map_archive_[a-z0-9-]*.json
 scenario_[a-z0-9-]*.parquet
 
-# replay data
-*.jsonl
-
-# Optimization Engine build directory
-OpEn_build/
+# Data files
+data/
 
 # Singularity
 *.sif
