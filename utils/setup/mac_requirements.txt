@@ -13,10 +13,10 @@ decorator==5.1.1
 dm-tree==0.1.8
 exceptiongroup==1.2.2
 execnet==2.1.1
-filelock==3.15.4
+filelock==3.16.0
 flatbuffers==24.3.25
 frozenlist==1.4.1
-fsspec==2024.6.1
+fsspec==2024.9.0
 future==1.0.0
 gast==0.6.0
 google-pasta==0.2.0
@@ -83,7 +83,7 @@ termcolor==2.4.0
 tomli==2.0.1
 torch==2.2.2
 torchvision==0.17.2
-trimesh==4.4.8
+trimesh==4.4.9
 Twisted==24.7.0
 typing_extensions==4.12.2
 urllib3==2.2.2
