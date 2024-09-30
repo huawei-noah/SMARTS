@@ -20,8 +20,8 @@ fsspec==2024.9.0
 future==1.0.0
 gast==0.6.0
 google-pasta==0.2.0
-grpcio==1.66.1
-h5py==3.11.0
+grpcio==1.66.2
+h5py==3.12.1
 hyperlink==21.0.0
 idna==3.10
 importlib_metadata==8.5.0
@@ -44,7 +44,7 @@ networkx==3.2.1
 numpy==1.26.4
 opencv-python==4.10.0.84
 opencv-python-headless==4.10.0.84
-opt-einsum==3.3.0
+opt_einsum==3.4.0
 optree==0.12.1
 packaging==24.1
 Panda3D==1.10.14
