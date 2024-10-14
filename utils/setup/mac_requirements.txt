@@ -4,11 +4,11 @@ astunparse==1.6.3
 attrs==24.2.0
 Automat==24.8.1
 certifi==2024.8.30
-charset-normalizer==3.3.2
+charset-normalizer==3.4.0
 click==8.1.7
-cloudpickle==3.0.0
+cloudpickle==3.1.0
 constantly==23.10.4
-coverage==7.6.1
+coverage==7.6.3
 decorator==5.1.1
 dm-tree==0.1.8
 exceptiongroup==1.2.2
@@ -29,12 +29,12 @@ incremental==24.7.2
 iniconfig==2.0.0
 Jinja2==3.1.4
 jsonschema==4.23.0
-jsonschema-specifications==2023.12.1
+jsonschema-specifications==2024.10.1
 keras==3.6.0
 libclang==18.1.1
 Markdown==3.7
 markdown-it-py==3.0.0
-MarkupSafe==3.0.0
+MarkupSafe==3.0.1
 mdurl==0.1.2
 ml-dtypes==0.3.2
 mpmath==1.3.0
@@ -83,7 +83,7 @@ termcolor==2.5.0
 tomli==2.0.2
 torch==2.2.2
 torchvision==0.17.2
-trimesh==4.4.9
+trimesh==4.5.0
 Twisted==24.7.0
 typing_extensions==4.12.2
 urllib3==2.2.3
@@ -92,4 +92,4 @@ Werkzeug==3.0.4
 wrapt==1.16.0
 yattag==1.16.0
 zipp==3.20.2
-zope.interface==7.0.3
+zope.interface==7.1.0
