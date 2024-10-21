@@ -8,7 +8,7 @@ charset-normalizer==3.4.0
 click==8.1.7
 cloudpickle==3.1.0
 constantly==23.10.4
-coverage==7.6.3
+coverage==7.6.4
 decorator==5.1.1
 dm-tree==0.1.8
 exceptiongroup==1.2.2
@@ -16,11 +16,11 @@ execnet==2.1.1
 filelock==3.16.1
 flatbuffers==24.3.25
 frozenlist==1.4.1
-fsspec==2024.9.0
+fsspec==2024.10.0
 future==1.0.0
 gast==0.6.0
 google-pasta==0.2.0
-grpcio==1.66.2
+grpcio==1.67.0
 h5py==3.12.1
 hyperlink==21.0.0
 idna==3.10
@@ -34,7 +34,7 @@ keras==3.6.0
 libclang==18.1.1
 Markdown==3.7
 markdown-it-py==3.0.0
-MarkupSafe==3.0.1
+MarkupSafe==3.0.2
 mdurl==0.1.2
 ml-dtypes==0.3.2
 mpmath==1.3.0
@@ -50,10 +50,10 @@ packaging==24.1
 Panda3D==1.10.14
 panda3d-gltf==0.13
 panda3d-simplepbr==0.12.0
-pillow==10.4.0
+pillow==11.0.0
 pluggy==1.5.0
 protobuf==4.25.5
-psutil==6.0.0
+psutil==6.1.0
 py==1.11.0
 py-cpuinfo==9.0.0
 pybullet==3.2.6
