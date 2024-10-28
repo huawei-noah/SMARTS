@@ -15,7 +15,7 @@ exceptiongroup==1.2.2
 execnet==2.1.1
 filelock==3.16.1
 flatbuffers==24.3.25
-frozenlist==1.4.1
+frozenlist==1.5.0
 fsspec==2024.10.0
 future==1.0.0
 gast==0.6.0
@@ -67,7 +67,7 @@ PyYAML==6.0.2
 ray==2.9.0
 referencing==0.35.1
 requests==2.32.3
-rich==13.9.2
+rich==13.9.3
 rpds-py==0.20.0
 scipy==1.13.1
 shapely==2.0.6
@@ -83,13 +83,13 @@ termcolor==2.5.0
 tomli==2.0.2
 torch==2.2.2
 torchvision==0.17.2
-trimesh==4.5.0
-Twisted==24.7.0
+trimesh==4.5.1
+Twisted==24.10.0
 typing_extensions==4.12.2
 urllib3==2.2.3
 wcwidth==0.2.13
-Werkzeug==3.0.4
+Werkzeug==3.0.6
 wrapt==1.16.0
 yattag==1.16.0
 zipp==3.20.2
-zope.interface==7.1.0
+zope.interface==7.1.1
