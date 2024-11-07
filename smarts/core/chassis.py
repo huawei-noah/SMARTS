@@ -226,7 +226,7 @@ class BoxChassis(Chassis):
             self._bullet_body, bullet_client
         )
         bullet_client.setCollisionFilterGroupMask(
-            self._bullet_body._bullet_id, -1, 0x0, 0x0
+            self._bullet_body._bullet_id, -1, 0x1, 0x1
         )
         self._pose = None
         self.control(pose, speed)
