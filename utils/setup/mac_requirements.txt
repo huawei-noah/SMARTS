@@ -8,7 +8,7 @@ charset-normalizer==3.4.0
 click==8.1.7
 cloudpickle==3.1.0
 constantly==23.10.4
-coverage==7.6.4
+coverage==7.6.8
 decorator==5.1.1
 dm-tree==0.1.8
 exceptiongroup==1.2.2
@@ -20,7 +20,7 @@ fsspec==2024.10.0
 future==1.0.0
 gast==0.6.0
 google-pasta==0.2.0
-grpcio==1.67.1
+grpcio==1.68.1
 h5py==3.12.1
 hyperlink==21.0.0
 idna==3.10
@@ -30,7 +30,7 @@ iniconfig==2.0.0
 Jinja2==3.1.4
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
-keras==3.6.0
+keras==3.7.0
 libclang==18.1.1
 Markdown==3.7
 markdown-it-py==3.0.0
@@ -45,7 +45,7 @@ numpy==1.26.4
 opencv-python==4.10.0.84
 opencv-python-headless==4.10.0.84
 opt_einsum==3.4.0
-optree==0.13.0
+optree==0.13.1
 packaging==24.2
 Panda3D==1.10.15
 panda3d-gltf==0.13
@@ -58,7 +58,7 @@ py==1.11.0
 py-cpuinfo==9.0.0
 pybullet==3.2.6
 Pygments==2.18.0
-pytest==8.3.3
+pytest==8.3.4
 pytest-benchmark==5.1.0
 pytest-cov==6.0.0
 pytest-forked==1.6.0
@@ -68,7 +68,7 @@ ray==2.9.0
 referencing==0.35.1
 requests==2.32.3
 rich==13.9.4
-rpds-py==0.21.0
+rpds-py==0.22.0
 scipy==1.13.1
 shapely==2.0.6
 six==1.16.0
@@ -80,16 +80,16 @@ tensorflow==2.16.2
 tensorflow-io-gcs-filesystem==0.37.1
 tensorflow-probability==0.25.0
 termcolor==2.5.0
-tomli==2.1.0
+tomli==2.2.1
 torch==2.2.2
 torchvision==0.17.2
-trimesh==4.5.2
-Twisted==24.10.0
+trimesh==4.5.3
+Twisted==24.11.0
 typing_extensions==4.12.2
 urllib3==2.2.3
 wcwidth==0.2.13
 Werkzeug==3.1.3
-wrapt==1.16.0
+wrapt==1.17.0
 yattag==1.16.1
 zipp==3.21.0
-zope.interface==7.1.1
+zope.interface==7.2
