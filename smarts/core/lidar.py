@@ -32,6 +32,10 @@ from .utils.core_math import batches, rotate_quat
 if TYPE_CHECKING:
     from .lidar_sensor_params import SensorParams
 
+def add_origin_perturbation(origin, magnitude=0.001):
+    """Add noise to origin"""
+    perturbation = np.random.uniform(-magnitude, magnitude, size=2)
+    return origin + np.array([perturbation[0], perturbation[1], 0]) 
 
 class Lidar:
     """Lidar utilities."""
@@ -109,8 +113,9 @@ class Lidar:
                 )
                 self._base_rays.append((origin, direction))
 
+        perturbed_origin = add_origin_perturbation(self._origin)
         rays = [
-            (origin + self._origin, direction + self._origin)
+            (origin + perturbed_origin, direction + perturbed_origin)
             for origin, direction in self._base_rays
         ]
         return rays
