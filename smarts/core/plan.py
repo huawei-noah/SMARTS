@@ -361,6 +361,7 @@ class Plan:
         mission: NavigationMission,
         start_lane_radius: Optional[float] = None,
         end_lane_radius: Optional[float] = None,
+        include_junctions_end: bool = False,
     ):
         """Generates a route that conforms to a mission.
 
@@ -402,10 +403,10 @@ class Plan:
 
         end_lanes = self._road_map.nearest_lanes(
             self._mission.goal.position,
-            include_junctions=False,
+            include_junctions=include_junctions_end,
             radius=end_lane_radius,
         )
-        assert end_lanes is not None, "No end lane found. Route must end in a lane."
+        assert end_lanes not in (None, []), "No end lane found. Route must end in a lane."
 
         # When an agent is in an intersection, the `nearest_lanes` method might
         # not return the correct road as the first choice. Hence, nearest

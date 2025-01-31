@@ -76,6 +76,18 @@ class ClassFactory:
 
         return instance
 
+    @property
+    def namespace(self):
+        return None
+
+    @property
+    def entry_point(self):
+        return self.entrypoint
+
+    @property
+    def id(self):
+        return self.name
+
     def __repr__(self):
         return f"""ClassFactory(
   name={self.name},
