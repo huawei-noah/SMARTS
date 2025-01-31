@@ -224,6 +224,6 @@ def score_rule_violation(costs: Costs) -> float:
     Returns:
         float: Rule violation score.
     """
-    rule_violation = np.array([costs.speed_limit, costs.wrong_way])
+    rule_violation = np.array([costs.speed_limit, costs.wrong_way, costs.on_shoulder])
     rule_violation = np.mean(rule_violation, dtype=float)
     return rule_violation

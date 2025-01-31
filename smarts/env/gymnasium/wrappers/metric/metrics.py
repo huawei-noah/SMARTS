@@ -60,6 +60,12 @@ class MetricsError(Exception):
     pass
 
 
+def _get_env_attr(env, attr):
+    try:
+        return env.get_wrapper_attr(attr)
+    except AttributeError:
+        return getattr(env, attr)
+
 class MetricsBase(gym.Wrapper):
     """Computes agents' performance metrics in a SMARTS environment."""
 
@@ -76,7 +82,7 @@ class MetricsBase(gym.Wrapper):
         self._formula: FormulaBase = Formula()
         self._params = self._formula.params()
 
-        _check_env(agent_interfaces=self.env.agent_interfaces, params=self._params)
+        _check_env(agent_interfaces=_get_env_attr(self.env, 'agent_interfaces'), params=self._params)
 
         self._scen: Scenario
         self._scen_name: str
@@ -179,19 +185,20 @@ class MetricsBase(gym.Wrapper):
     def reset(self, **kwargs):
         """Resets the environment."""
         result = super().reset(**kwargs)
-        self._cur_agents = set(self.env.agent_interfaces.keys())
+        engine = _get_env_attr(self.env, "smarts")
+        self._cur_agents = set(_get_env_attr(self.env, "agent_interfaces").keys())
         self._steps = dict.fromkeys(self._cur_agents, 0)
         self._done_agents = set()
-        self._scen = self.env.smarts.scenario
-        self._scen_name = self.env.smarts.scenario.name
-        self._road_map = self.env.smarts.scenario.road_map
-        self._vehicle_index = self.env.smarts.vehicle_index
+        self._scen = engine.scenario
+        self._scen_name = engine.scenario.name
+        self._road_map = engine.scenario.road_map
+        self._vehicle_index = engine.vehicle_index
         self._cost_funcs = {}
 
-        _check_scen(scenario=self._scen, agent_interfaces=self.env.agent_interfaces)
+        _check_scen(scenario=self._scen, agent_interfaces=_get_env_attr(self.env, "agent_interfaces"))
 
         # Get the actor of interest, if any is present in the current scenario.
-        interest_actors = self.env.smarts.cached_frame.interest_actors().keys()
+        interest_actors = engine.cached_frame.interest_actors().keys()
         if len(interest_actors) == 0:
             interest_actor = None
         elif len(interest_actors) == 1:
@@ -204,11 +211,12 @@ class MetricsBase(gym.Wrapper):
 
         # fmt: off
         # Refresh the cost functions for every episode.
+        agent_interfaces = _get_env_attr(self.env, "agent_interfaces")
         for agent_name in self._cur_agents:
             cost_funcs_kwargs = {}
+            interest_criteria = agent_interfaces[agent_name].done_criteria.interest
             if self._params.dist_to_destination.active:
-                interest_criteria = self.env.agent_interfaces[agent_name].done_criteria.interest
-                if interest_criteria == None:
+                if interest_criteria is None:
                     end_pos = self._scen.missions[agent_name].goal.position
                     dist_tot, route = get_dist(
                         road_map=self._road_map,
@@ -219,7 +227,7 @@ class MetricsBase(gym.Wrapper):
                     end_pos, dist_tot, route = _get_end_and_dist(
                         interest_actor=interest_actor,
                         vehicle_index=self._vehicle_index,
-                        traffic_sims=self.env.smarts.traffic_sims,
+                        traffic_sims=engine.traffic_sims,
                         scenario=self._scen,
                         road_map=self._road_map,
                     )
@@ -250,8 +258,24 @@ class MetricsBase(gym.Wrapper):
                     }
                 })
 
-            max_episode_steps = self._scen.metadata.get("scenario_duration",0) / self.env.smarts.fixed_timestep_sec
-            max_episode_steps = max_episode_steps or self.env.agent_interfaces[agent_name].max_episode_steps
+            if self._params.dist_to_leader.active:
+                if isinstance(interest_criteria, InterestDoneCriteria) and (interest_actor is not None):
+                    leader_start_pos, leader_end_pos = _get_start_and_end(
+                        interest_actor=interest_actor,
+                        vehicle_index=self._vehicle_index,
+                        traffic_sims=engine.traffic_sims,
+                        scenario=self._scen,
+                        road_map=self._road_map,
+                    )
+                    cost_funcs_kwargs.update({
+                        "dist_to_leader": {
+                            "leader_id": interest_actor,
+                            "leader_start_pos": leader_start_pos,
+                            "leader_end_pos": leader_end_pos,
+                        }
+                    })
+            max_episode_steps = self._scen.metadata.get("scenario_duration",0) / engine.fixed_timestep_sec
+            max_episode_steps = max_episode_steps or agent_interfaces[agent_name].max_episode_steps
             cost_funcs_kwargs.update({
                 "dist_to_obstacles": {
                     "ignore": self._params.dist_to_obstacles.ignore
@@ -325,6 +349,74 @@ class MetricsBase(gym.Wrapper):
             components.
         """
         return self._formula.score(records=self.records())
+
+
+def _get_start_and_end(
+    interest_actor: str,
+    vehicle_index: VehicleIndex,
+    traffic_sims: List[TrafficProvider],
+    scenario: Scenario,
+    road_map: RoadMap,
+) -> Tuple[Optional[Point], Optional[Point]]:
+    """Computes the start point for the given actor of interest.
+
+    Args:
+        interest_actor (str): Name of vehicle of interest.
+        vehicle_index (VehicleIndex): Index of all vehicles currently present.
+        traffic_sims (List[TrafficProvider]): List of traffic providers.
+        scenario (Scenario): Current scenario.
+        road_map (RoadMap): Underlying road map.
+
+    Returns:
+        Tuple[Point]: start point, and planned route.
+    """
+    # Check if the interest vehicle is a social agent.
+    interest_social_missions = [
+        mission for name, mission in scenario.missions.items() if interest_actor in name
+    ]
+    # Check if the actor of interest is a traffic vehicle.
+    interest_traffic_sims = [
+        traffic_sim
+        for traffic_sim in traffic_sims
+        if traffic_sim.manages_actor(interest_actor)
+    ]
+    if len(interest_social_missions) + len(interest_traffic_sims) != 1:
+        raise MetricsError(
+            "Social agents and traffic providers contain zero or "
+            "more than one actor of interest."
+        )
+    
+    start_point = None
+
+    if len(interest_social_missions) == 1:
+        interest_social_mission = interest_social_missions[0]
+        goal = interest_social_mission.goal
+        assert isinstance(goal, PositionalGoal)
+        start_point = interest_social_mission.start.point
+        end_point = goal.position
+    else:
+        interest_traffic_sim = interest_traffic_sims[0]
+        if isinstance(interest_traffic_sim, (SumoTrafficSimulation, LocalTrafficProvider)):
+            start_point = Point(*vehicle_index.vehicle_position(interest_actor))
+            dest_road = interest_traffic_sim.vehicle_dest_road(interest_actor)
+            end_point = (
+                road_map.road_by_id(dest_road)
+                .lane_at_index(0)
+                .from_lane_coord(RefLinePoint(s=np.inf))
+            )
+        elif isinstance(interest_traffic_sim, TrafficHistoryProvider):
+            history = interest_traffic_sim.vehicle_history_window(vehicle_id=interest_actor)
+            start_point = Point(x=history.start_position_x, y=history.start_position_y)
+
+            end_point = Point(x=history.end_position_x, y=history.end_position_y)
+        else:
+            raise MetricsError(f"Unsupported traffic provider {interest_traffic_sim.source_str}.")
+        # TODO : Plan.create_route() creates the shortest route which is
+        # sufficient in simple maps, but it may or may not match the actual
+        # roads traversed by the history vehicle in complex maps. Ideally we
+        # should use the actual road ids traversed by the history vehicle to
+        # compute the distance.
+    return start_point, end_point
 
 
 def _get_end_and_dist(

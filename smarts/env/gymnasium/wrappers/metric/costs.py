@@ -21,7 +21,7 @@ from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Dict, List, NewType, Optional, Tuple
+from typing import Callable, Dict, List, NewType, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -36,6 +36,9 @@ from smarts.env.gymnasium.wrappers.metric.types import Costs
 from smarts.env.gymnasium.wrappers.metric.utils import SlidingWindow, nearest_waypoint
 
 Done = NewType("Done", bool)
+
+if TYPE_CHECKING:
+    from smarts.core.vehicle import Vehicle
 
 
 def _collisions() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
@@ -129,7 +132,6 @@ def _dist_to_destination(
         road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
     ) -> Costs:
         nonlocal mean, step, end_pos, dist_tot, route, prev_route_lane, prev_route_lane_point, prev_route_displacement, prev_dist_travelled, tot_dist_travelled
-
         tot_dist_travelled += obs.distance_travelled
 
         if not done:
@@ -202,6 +204,122 @@ def _dist_to_destination(
 
             return Costs(dist_to_destination=dist_remainder_capped / dist_tot)
 
+    return func
+
+
+def _dist_to_leader(
+    leader_start_pos: Point,
+    leader_id: Optional[str],
+    leader_end_pos: Point,
+) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+    last_leader_pos = leader_start_pos
+    leader_original_end_pos = leader_end_pos
+    prev_route_lane = None
+    prev_route_lane_point = leader_start_pos
+    prev_route_displacement = 0
+    prev_dist_travelled = 0
+    mean = 0
+    step = 0
+    dist_tot = 0
+    tot_dist_travelled = 0
+    route = None
+
+    # TODO: Update to exactly match the FM term in SFD
+
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
+        nonlocal mean, step, leader_start_pos, leader_id, last_leader_pos, leader_original_end_pos
+        nonlocal dist_tot, prev_route_lane, prev_route_lane_point, prev_route_displacement
+        nonlocal prev_dist_travelled, tot_dist_travelled, route
+
+        if not done:
+            leader_pos = vehicle_index.vehicle_position(leader_id)
+            last_leader_pos = Point(*leader_pos)
+            dist_tot, route = get_dist(
+                road_map=road_map,
+                point_a=leader_start_pos,
+                point_b=last_leader_pos,
+                include_junctions_end=True,
+            )
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            (
+                cur_on_route,
+                cur_route_lane,
+                cur_route_lane_point,
+                cur_route_displacement,
+            ) = on_route(road_map=road_map, route=route, point=cur_pos)
+
+            if cur_on_route:
+                prev_route_lane = cur_route_lane
+                prev_route_lane_point = cur_route_lane_point
+                prev_route_displacement = cur_route_displacement
+                prev_dist_travelled = tot_dist_travelled
+            return Costs(dist_to_leader=np.nan)
+        elif dist_tot == 0:
+            return Costs(dist_to_leader=np.nan)
+        else:
+            if route is None:
+                dist_tot, route = get_dist(
+                    road_map=road_map,
+                    point_a=leader_start_pos,
+                    point_b=last_leader_pos,
+                    include_junctions_end=True,
+                )
+            cur_pos = Point(*obs.ego_vehicle_state.position)
+            (
+                cur_on_route,
+                cur_route_lane,
+                cur_route_lane_point,
+                cur_route_displacement,
+            ) = on_route(road_map=road_map, route=route, point=cur_pos)
+
+            # Step 1: Compute the last off-route distance driven by the vehicle, if any.
+            if not cur_on_route:
+                off_route_dist = tot_dist_travelled - prev_dist_travelled
+                assert off_route_dist >= 0
+                off_route_dist += prev_route_displacement
+                last_route_lane = prev_route_lane
+                last_route_pos = prev_route_lane_point
+            else:
+                off_route_dist = cur_route_displacement
+                last_route_lane = cur_route_lane
+                last_route_pos = cur_route_lane_point
+
+            # Step 2: Compute the remaining route distance from the last recorded on-route position.
+            on_route_dist = route.distance_between(
+                start=RoadMap.Route.RoutePoint(pt=last_route_pos),
+                end=RoadMap.Route.RoutePoint(pt=last_leader_pos),
+            )
+
+            # Step 3: Compute absolute `on_route_dist` because it could be
+            # negative when an agent overshoots the end position while
+            # remaining outside the goal capture radius at all times.
+            on_route_dist = abs(on_route_dist)
+
+            # Step 4: Compute lane error penalty if vehicle is in the same road as goal, but in a different lane.
+            # TODO: Lane error penalty should be computed. It is not computed
+            # currently because the end lane of a SUMO traffic vehicle of
+            # interest is currently not accessible.
+            lane_error_dist = 0
+            # end_lane = route.end_lane
+            # if last_route_lane.road == end_lane.road:
+            #     lane_error = abs(last_route_lane.index - end_lane.index)
+            #     end_offset = end_lane.offset_along_lane(world_point=end_pos)
+            #     lane_width, _ = end_lane.width_at_offset(end_offset)
+            #     lane_error_dist = lane_error * lane_width
+
+            # Step 5: Total distance to destination.
+            dist_remainder = off_route_dist + on_route_dist + lane_error_dist
+
+            # Step 6: Cap distance to destination.
+            dist_remainder_capped = min(dist_remainder, dist_tot)
+
+            try:
+                return Costs(dist_to_leader=dist_remainder_capped / dist_tot)
+            except:
+                print(dist_tot)
+                raise
     return func
 
 
@@ -374,6 +492,28 @@ def _off_road() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     return func
 
 
+def _on_shoulder(once: bool = True) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
+    sum = 0
+    triggered = 0
+
+    def func(
+        road_map: RoadMap, vehicle_index: VehicleIndex, done: Done, obs: Observation
+    ) -> Costs:
+        nonlocal sum, triggered
+
+        if not once:
+            sum = sum + obs.events.on_shoulder
+            j_on_shoulder = sum
+            return Costs(on_shoulder=j_on_shoulder)
+        else:
+            if obs.events.on_shoulder:
+                triggered = 1
+        return Costs(on_shoulder=triggered)
+
+
+    return func
+
+
 def _speed_limit() -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
@@ -445,6 +585,7 @@ def _steps(
 def _vehicle_gap(
     num_agents: int,
     actor: str,
+    on_lane_required: bool = True,
 ) -> Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]:
     mean = 0
     step = 0
@@ -517,7 +658,7 @@ def _vehicle_gap(
             dist = np.linalg.norm(waypoints_masked[:, 0, :] - ego_pos, axis=-1)
             ego_wp_inds = np.where(dist == dist.min())[0]
 
-            if aoi_wp_ind[0] in ego_wp_inds:
+            if (not on_lane_required) or aoi_wp_ind[0] in ego_wp_inds:
                 # Ego is in the same lane as the actor of interest.
                 j_gap = max(aoi_wp_ind[1] * waypoint_spacing - vehicle_length, 0) / (
                     column_length - vehicle_length
@@ -559,10 +700,12 @@ class CostFuncsBase:
     collisions: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _collisions
     comfort: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _comfort
     dist_to_destination: Callable[[Point,float,RoadMap.Route,RoadMap.Lane,Point,float], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_destination
+    dist_to_leader: Callable[[Point,Optional[str],Point], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_leader
     dist_to_obstacles: Callable[[List[str]], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _dist_to_obstacles
     jerk_linear: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _jerk_linear
     lane_center_offset: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _lane_center_offset
     off_road: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _off_road
+    on_shoulder: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _on_shoulder
     speed_limit: Callable[[], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _speed_limit
     steps: Callable[[int], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _steps
     vehicle_gap: Callable[[int, str], Callable[[RoadMap, VehicleIndex, Done, Observation], Costs]] = _vehicle_gap
@@ -606,7 +749,7 @@ class CostError(Exception):
 
 
 def get_dist(
-    road_map: RoadMap, point_a: Point, point_b: Point, tolerate: bool = False
+    road_map: RoadMap, point_a: Point, point_b: Point, tolerate: bool = False, include_junctions_end = False,
 ) -> Tuple[float, RoadMap.Route]:
     """
     Computes the shortest route distance from point_a to point_b in the road
@@ -639,7 +782,7 @@ def get_dist(
         ),
     )
     plan = Plan(road_map=road_map, mission=mission, find_route=False)
-    plan.create_route(mission=mission, start_lane_radius=3, end_lane_radius=0.5)
+    plan.create_route(mission=mission, start_lane_radius=3, end_lane_radius=3, include_junctions_end=include_junctions_end)
     assert isinstance(plan.route, RoadMap.Route)
     from_route_point = RoadMap.Route.RoutePoint(pt=point_a)
     to_route_point = RoadMap.Route.RoutePoint(pt=point_b)

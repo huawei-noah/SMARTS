@@ -55,6 +55,16 @@ class DistToDestination:
 
 
 @dataclass(frozen=True)
+class DistToLeader:
+    """Parameters for distance to leader vehicle cost function."""
+
+    active: bool = False
+    """If True, enables computation of corresponding cost function. Else, 
+    disabled.
+    """
+
+
+@dataclass(frozen=True)
 class DistToObstacles:
     """Parameters for distance to obstacles cost function."""
 
@@ -91,6 +101,15 @@ class LaneCenterOffset:
 @dataclass(frozen=True)
 class OffRoad:
     """Parameters for off road cost function."""
+
+    active: bool = False
+    """If True, enables computation of corresponding cost function. Else, 
+    disabled.
+    """
+
+@dataclass(frozen=True)
+class OnShoulder:
+    """Parameters for on shoulder road cost function."""
 
     active: bool = False
     """If True, enables computation of corresponding cost function. Else, 
@@ -146,11 +165,13 @@ class Params:
 
     collisions: Collisions = Collisions()
     comfort: Comfort = Comfort()
+    dist_to_leader: DistToLeader = DistToLeader()
     dist_to_destination: DistToDestination = DistToDestination()
     dist_to_obstacles: DistToObstacles = DistToObstacles()
     jerk_linear: JerkLinear = JerkLinear()
     lane_center_offset: LaneCenterOffset = LaneCenterOffset()
     off_road: OffRoad = OffRoad()
+    on_shoulder: OnShoulder = OnShoulder()
     speed_limit: SpeedLimit = SpeedLimit()
     steps: Steps = Steps()
     vehicle_gap: VehicleGap = VehicleGap()

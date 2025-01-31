@@ -37,10 +37,12 @@ from smarts.env.gymnasium.wrappers.metric.params import (
     Collisions,
     Comfort,
     DistToDestination,
+    DistToLeader,
     DistToObstacles,
     JerkLinear,
     LaneCenterOffset,
     OffRoad,
+    OnShoulder,
     Params,
     SpeedLimit,
     Steps,
@@ -68,9 +70,11 @@ class Formula(FormulaBase):
             collisions=Collisions(active=False),
             comfort=Comfort(active=True),
             dist_to_destination=DistToDestination(active=True),
+            dist_to_leader=DistToLeader(active=True),
             dist_to_obstacles=DistToObstacles(active=False),
             jerk_linear=JerkLinear(active=False),
             lane_center_offset=LaneCenterOffset(active=True),
+            on_shoulder=OnShoulder(active=True),
             off_road=OffRoad(active=False),
             speed_limit=SpeedLimit(active=True),
             steps=Steps(active=False),
@@ -119,7 +123,7 @@ def costs_to_score(costs: Costs) -> Score:
     Returns:
         Score: Score.
     """
-    dist_to_destination = costs.dist_to_destination
+    dist_to_destination = costs.dist_to_leader
     humanness_error = _score_humanness_error(costs=costs)
     rule_violation = score_rule_violation(costs=costs)
     vehicle_gap = costs.vehicle_gap
