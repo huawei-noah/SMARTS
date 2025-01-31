@@ -41,17 +41,17 @@ warnings.simplefilter("ignore", category=ResourceWarning)
 # pytype: disable=attribute-error
 
 
-def load_config():
+def load_config(config):
     """Load config file."""
     parent_dir = Path(__file__).resolve().parent
-    config_file = yaml.safe_load((parent_dir / "config.yaml").read_text())
+    config_file = yaml.safe_load((parent_dir / config).read_text())
     config = ObjDict(config_file["smarts"])
     return config
 
 
 def main(args: argparse.Namespace):
     parent_dir = Path(__file__).resolve().parent
-    config = load_config()
+    config = load_config(args.cfg)
 
     # Load env config.
     config.mode = args.mode
@@ -232,6 +232,13 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--head", help="Display the simulation in Envision.", action="store_true"
+    )
+    parser.add_argument(
+        "--cfg",
+        help="The config to use. Default is the continuous config.",
+        type=str,
+        choices=["config.yaml", "config_rtp.yaml"],
+        default="config.yaml",
     )
 
     args = parser.parse_args()
