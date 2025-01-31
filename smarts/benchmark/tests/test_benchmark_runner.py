@@ -49,6 +49,20 @@ def _get_model(action):
 
 @pytest.mark.parametrize(
     "get_benchmark_args",
+    ["smarts/benchmark/driving_smarts/v2022/config.yaml"],
+    indirect=True,
+)
+def test_2022_competition(get_benchmark_args):
+    from contrib_policy.policy import Policy
+
+    agent_locator = "examples.e10_drive.inference:contrib-agent-v0"
+    action = 1
+    with mock.patch.object(Policy, "_get_model", _get_model(action)):
+        benchmark(benchmark_args=get_benchmark_args, agent_locator=agent_locator)
+
+
+@pytest.mark.parametrize(
+    "get_benchmark_args",
     [
         "smarts/benchmark/driving_smarts/v2023/config_1.yaml",
         "smarts/benchmark/driving_smarts/v2023/config_2.yaml",
