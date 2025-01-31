@@ -118,7 +118,18 @@ def install_agents(agent_paths):
         else:
             click.echo(f"Installed {agent_path} successfully")
 
+@zoo_cli.command(
+    name="list",
+    help="List currently available agents.",
+)
+def list_agents():
+    from smarts.zoo.registry import agent_registry
+    from gymnasium import pprint_registry
+
+    pprint_registry(agent_registry.index)
+
 
 zoo_cli.add_command(build_policy)
 zoo_cli.add_command(manager)
 zoo_cli.add_command(install_agents)
+zoo_cli.add_command(list_agents)

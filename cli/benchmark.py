@@ -63,7 +63,7 @@ def run(
     <benchmark_id> is formatted like BENCHMARK_NAME==BENCHMARK_VERSION.
     <agent_locator> is the locator string for the registered agent.
 
-    An example use: `scl benchmark run --auto-install driving_smarts==0.0 random-relative-target-pose-agent-v0`
+    Example use: `scl benchmark run --auto-install driving_smarts_2022==0.0 random-relative-target-pose-agent-v0`
     """
     from smarts.benchmark import BENCHMARK_LISTING_FILE, run_benchmark
 
