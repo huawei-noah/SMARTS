@@ -29,8 +29,10 @@ import gymnasium as gym
 import psutil
 import ray
 
+import smarts
 from smarts.benchmark.driving_smarts import load_config
 from smarts.core import config
+from smarts.core.agent_interface import ObservationFormat
 from smarts.core.utils.core_logging import suppress_output
 from smarts.core.utils.import_utils import import_module_from_file
 from smarts.env.gymnasium.wrappers.metric.formula import FormulaBase, Score
@@ -47,6 +49,25 @@ def _eval_worker(name, env_config, episodes, agent_locator, error_tolerant=False
     return _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant)
 
 
+def _get_env_attr(env, attr):
+    try:
+        return env.get_wrapper_attr(attr)
+    except AttributeError:
+        return getattr(env, attr)
+
+def _observation_format_adapt(observation_format):
+
+    if observation_format == ObservationFormat.DICT:
+        def func(env, info: Dict, observation: Dict, agent_id: str):
+            return observation[agent_id]
+    elif observation_format == ObservationFormat.SMARTS_OBS:
+        def func(env, info: Dict, observation: Dict, agent_id: str):
+            return info[agent_id]['env_obs']
+    else:
+        raise NotImplementedError(f"Observation format `{observation_format}` is not supported!")
+
+    return func
+
 def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant=False):
     import warnings
 
@@ -57,11 +78,17 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
         agent_interface=agent_registry.make(locator=agent_locator).interface,
         **env_config["kwargs"],
     )
+    
     env = Metrics(env, formula_path=env_config["metric_formula"])
     agents = {
         agent_id: agent_registry.make_agent(locator=agent_locator)[0]
-        for agent_id in env.agent_ids
+        for agent_id in _get_env_attr(env, "agent_ids")
     }
+    agent_observation_format_adaptors = {
+        agent_id: _observation_format_adapt(agent_registry.make(locator=agent_locator).interface.observation_format)
+        for agent_id in _get_env_attr(env, "agent_ids")
+    }
+
 
     obs, info = env.reset()
     current_resets = 0
@@ -69,7 +96,9 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
         while current_resets < episodes:
             try:
                 action = {
-                    agent_id: agents[agent_id].act(agent_obs)
+                    agent_id: agents[agent_id].act(
+                        agent_observation_format_adaptors[agent_id](env, info, obs, agent_id)
+                    )
                     for agent_id, agent_obs in obs.items()
                 }
                 # assert env.action_space.contains(action)
@@ -88,6 +117,29 @@ def _eval_worker_local(name, env_config, episodes, agent_locator, error_tolerant
     finally:
         records = env.records()
         env.close()
+    # try:
+    #   while current_resets < episodes:
+    #     try:
+    #         action = {
+    #             agent_id: agents[agent_id].act(agent_obs['env_obs'])
+    #             for agent_id, agent_obs in info.items()
+    #         }
+    #         # assert env.action_space.contains(action)
+    #     except ArithmeticError:
+    #         logging.error("Policy robustness failed.")
+    #         # # TODO MTA: mark policy failures
+    #         # env.mark_policy_failure()
+    #         if not error_tolerant:
+    #             raise
+    #         terminated, truncated = False, True
+    #     else:
+    #         obs, reward, terminated, truncated, info = env.step(action)
+    #     if terminated["__all__"] or truncated["__all__"]:
+    #         current_resets += 1
+    #         obs, info = env.reset()
+    # finally:
+    #     records = env.records()
+    #     env.close()
     return name, records
 
 
@@ -178,11 +230,13 @@ def benchmark(benchmark_args, agent_locator) -> Tuple[Dict, Dict]:
         print(message)
 
     debug = benchmark_args.get("debug", {})
+    # debug = {"serial": True}
     iterator = _serial_task_iterator if debug.get("serial") else _parallel_task_iterator
 
-    root_dir = Path(__file__).resolve().parents[3]
+    smarts_dir = Path(smarts.__path__[0]).resolve()
+    root_dir = smarts_dir.parent
     metric_formula_default = (
-        root_dir / "smarts" / "env" / "gymnasium" / "wrappers" / "metric" / "formula.py"
+        smarts_dir / "env" / "gymnasium" / "wrappers" / "metric" / "formula.py"
     )
     weighted_scores, agent_scores = {}, {}
     for env_name, env_config in benchmark_args["envs"].items():

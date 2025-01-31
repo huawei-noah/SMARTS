@@ -387,6 +387,16 @@ class DoneCriteria:
         warnings.warn("Use interest.", category=DeprecationWarning)
         return self.interest
 
+class ObservationFormat(Enum):
+    DICT = auto()
+    """This agent uses dictionary formatted SMARTS observations. Likely with gym environments.""" 
+    SMARTS_OBS = auto()
+    """This agent uses SMARTS observations from the high level engine interface."""
+    CUSTOM_DICT = auto()
+    """This agent uses a modified set of dictionary formatted observations and is not fully wrapped."""
+    # PRIVILAGED = auto()
+    # """This agent uses privilaged SMARTS engine calls."""
+
 
 @dataclass
 class AgentInterface:
@@ -479,6 +489,11 @@ class AgentInterface:
 
     custom_renders: Tuple[CustomRender, ...] = tuple()
     """Add custom renderer outputs.
+    """
+
+    observation_format: ObservationFormat = ObservationFormat.DICT
+    """
+    The observation format that this agent wants to use.
     """
 
     def __post_init__(self):

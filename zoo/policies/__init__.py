@@ -5,6 +5,7 @@ from smarts.core.agent_interface import (
     AgentInterface,
     AgentType,
     DoneCriteria,
+    ObservationFormat,
     Waypoints,
 )
 from smarts.core.controllers import ActionSpaceType
@@ -162,6 +163,7 @@ def entry_point_iamp(**kwargs):
     return AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.TargetPose,
+            observation_format=ObservationFormat.SMARTS_OBS,
         ),
         agent_builder=lib.Policy,
     )
@@ -180,6 +182,7 @@ def entry_point_casl(**kwargs):
     return AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.TargetPose,
+            observation_format=ObservationFormat.SMARTS_OBS,
         ),
         agent_builder=lib.Policy,
     )
@@ -199,6 +202,8 @@ def entry_point_dsac(**kwargs):
     return AgentSpec(
         interface=AgentInterface(
             action=ActionSpaceType.TargetPose,
+            lidar_point_cloud=True,
+            observation_format=ObservationFormat.SMARTS_OBS,
         ),
         agent_builder=lib.Policy,
     )

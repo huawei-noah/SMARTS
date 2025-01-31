@@ -132,13 +132,25 @@ def costs_to_score(costs: Costs) -> Score:
         + 0.25 * (1 - rule_violation)
     )
 
+    weighted = (
+        0.1 * (1 - dist_to_destination)
+        + 0.3 * (1 - time)
+        + 0.15 * (1 - humanness_error)
+        + 0.45 * (1 - rule_violation)
+    )
+
     return Score(
         {
             "overall": overall,
+            "weighted": np.round(weighted, 3),
             "dist_to_destination": dist_to_destination,
             "time": time,
             "humanness_error": humanness_error,
             "rule_violation": rule_violation,
+            "progress_rate": np.round(1 - dist_to_destination, 3),
+            "rule_compliance": np.round(1 - rule_violation, 3),
+            "humanness": np.round(1 - humanness_error, 3),
+            "mission_time_efficiency": np.round(1 - time, 3),
         }
     )
 
