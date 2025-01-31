@@ -36,6 +36,7 @@ from smarts.env.gymnasium.hiway_env_v1 import HiWayEnvV1, SumoOptions
 from smarts.env.gymnasium.wrappers.limit_relative_target_pose import (
     LimitRelativeTargetPose,
 )
+from smarts.env.gymnasium.wrappers.limit_target_pose import LimitTargetPose
 from smarts.env.utils.observation_conversion import ObservationOptions
 from smarts.env.utils.scenario import get_scenario_specs
 from smarts.sstudio.scenario_construction import build_scenario
@@ -46,6 +47,7 @@ logger.setLevel(logging.WARNING)
 SUPPORTED_ACTION_TYPES = (
     ActionSpaceType.Continuous,
     ActionSpaceType.RelativeTargetPose,
+    ActionSpaceType.TargetPose,
 )
 
 
@@ -152,6 +154,8 @@ def platoon_env(
     )
     if resolved_agent_interface.action == ActionSpaceType.RelativeTargetPose:
         env = LimitRelativeTargetPose(env)
+    elif resolved_agent_interface.action == ActionSpaceType.TargetPose:
+        env = LimitTargetPose(env)
 
     return env
 
