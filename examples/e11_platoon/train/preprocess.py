@@ -25,6 +25,7 @@ class Preprocess(gym.Wrapper):
 
         self.observation_space = self._make_dict.observation_space
 
+        self._prev_heading: float
         self._format_action = FormatAction(
             action_space_type=agent_spec.interface.action
         )
@@ -39,8 +40,11 @@ class Preprocess(gym.Wrapper):
 
     def step(self, action):
         """Uses the :meth:`step` of the :attr:`env` that can be overwritten to change the returned data."""
-        formatted_action = self._format_action.format(action)
+        formatted_action = self._format_action.format(
+            action=action, prev_heading=self._prev_heading
+        )
         obs, reward, terminated, truncated, info = self.env.step(formatted_action)
+        self._prev_heading = obs["ego_vehicle_state"]["heading"]
         obs = self._process(obs)
         return obs, reward, terminated, truncated, info
 
@@ -49,5 +53,6 @@ class Preprocess(gym.Wrapper):
 
         self._frame_stack.reset()
         obs, info = self.env.reset(seed=seed, options=options)
+        self._prev_heading = obs["ego_vehicle_state"]["heading"]
         obs = self._process(obs)
         return obs, info
