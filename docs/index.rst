@@ -96,3 +96,12 @@ If you use SMARTS in your research, please cite the `paper <https://arxiv.org/ab
    resources/faq.rst
    resources/contributing.rst
    resources/todo.rst
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+   :caption: Notebooks / Examples
+
+   notebooks/smarts_quickstart
+   notebooks/smarts_colab_notes
+   notebooks/smarts_record_and_replay
+
